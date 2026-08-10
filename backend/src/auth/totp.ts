@@ -17,7 +17,12 @@ export async function erzeugeQrCodeDataUri(otpAuthUri: string): Promise<string> 
   return QRCode.toDataURL(otpAuthUri);
 }
 
+/** otplib wirft bei formal ungueltigen Codes (z.B. falsche Laenge) statt {valid:false} zurueckzugeben - beides muss hier als "falscher Code" behandelt werden, nicht als Serverfehler. */
 export async function totpCodeGueltig(secret: string, code: string): Promise<boolean> {
-  const ergebnis = await verify({ secret, token: code });
-  return ergebnis.valid;
+  try {
+    const ergebnis = await verify({ secret, token: code });
+    return ergebnis.valid;
+  } catch {
+    return false;
+  }
 }

@@ -87,6 +87,12 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     return oeffentlichesProfil(req.benutzer);
   });
 
+  /** Oeffentlich abrufbar (keine Anmeldung noetig), damit die Login-Seite bei einer frischen Installation auf die Ersteinrichtung hinweisen kann. */
+  app.get("/auth/bootstrap-verfuegbar", async () => {
+    const bestehende = await findAllByType<Benutzer>("benutzer");
+    return { verfuegbar: bestehende.length === 0 };
+  });
+
   /**
    * Einmalige Erst-Einrichtung (Huhn-Ei-Problem: ohne bestehenden Benutzer kann niemand
    * einen einladen). Funktioniert nur, solange noch KEIN Benutzer existiert - danach

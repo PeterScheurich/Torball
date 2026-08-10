@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { Team, Verein } from "@torball/shared";
 import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
+import { requireAuth } from "../auth/plugin";
 
 interface VereinBody {
   name: string;
@@ -25,11 +26,13 @@ const vereinBodySchema = {
 } as const;
 
 export async function vereinRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/vereine", async () => {
+  app.get("/vereine", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     return findAllByType<Verein>("verein");
   });
 
   app.get<{ Params: { id: string } }>("/vereine/:id", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const verein = await findById<Verein>(req.params.id);
     if (!verein) return reply.code(404).send({ error: "Verein nicht gefunden" });
     return verein;
@@ -39,6 +42,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
     "/vereine",
     { schema: { body: vereinBodySchema } },
     async (req, reply) => {
+      if (!requireAuth(req, reply)) return;
       const id = newId("verein");
       const verein: Verein = {
         _id: id,
@@ -55,6 +59,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
     "/vereine/:id",
     { schema: { body: vereinBodySchema } },
     async (req, reply) => {
+      if (!requireAuth(req, reply)) return;
       const bestehend = await findById<Verein>(req.params.id);
       if (!bestehend) return reply.code(404).send({ error: "Verein nicht gefunden" });
       const aktualisiert: Verein = { ...bestehend, ...req.body };
@@ -63,6 +68,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.delete<{ Params: { id: string } }>("/vereine/:id", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const bestehend = await findById<Verein>(req.params.id);
     if (!bestehend) return reply.code(404).send({ error: "Verein nicht gefunden" });
 

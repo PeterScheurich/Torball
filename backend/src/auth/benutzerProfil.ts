@@ -4,7 +4,10 @@ import type { Benutzer } from "@torball/shared";
 export type OeffentlichesBenutzerProfil = Omit<
   Benutzer,
   "passwortHash" | "zweiFaSecret" | "einladungTokenHash" | "einladungAblauf" | "resetTokenHash" | "resetAblauf"
->;
+> & {
+  /** Ersetzt passwortHash nach aussen: erlaubt der Benutzerverwaltung, "Einladung noch offen" anzuzeigen, ohne den Hash selbst preiszugeben. */
+  hatPasswort: boolean;
+};
 
 export function oeffentlichesProfil(benutzer: Benutzer): OeffentlichesBenutzerProfil {
   const {
@@ -16,5 +19,5 @@ export function oeffentlichesProfil(benutzer: Benutzer): OeffentlichesBenutzerPr
     resetAblauf,
     ...rest
   } = benutzer;
-  return rest;
+  return { ...rest, hatPasswort: Boolean(passwortHash) };
 }

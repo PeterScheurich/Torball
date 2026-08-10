@@ -1,6 +1,8 @@
-import type { FastifyInstance } from "fastify";
-import type { MannschaftImTurnier } from "@torball/shared";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { MannschaftImTurnier, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
+import { requireAuth } from "../auth/plugin";
+import { hatMindestens } from "../auth/turnierZugriff";
 
 interface MannschaftBody {
   turnierId: string;
@@ -68,8 +70,54 @@ const reihenfolgeSchema = {
   },
 } as const;
 
+/** Lesehilfe: Mannschaft laden und pruefen, ob req.benutzer mindestens Lesezugriff auf deren Turnier hat. */
+async function ladeMitLesezugriff(
+  id: string,
+  req: FastifyRequest,
+  reply: FastifyReply,
+): Promise<MannschaftImTurnier | undefined> {
+  if (!requireAuth(req, reply)) return undefined;
+  const mannschaft = await findById<MannschaftImTurnier>(id);
+  if (!mannschaft) {
+    reply.code(404).send({ error: "Mannschaft nicht gefunden" });
+    return undefined;
+  }
+  const turnier = await findById<Turnier>(mannschaft.turnierId);
+  if (!turnier || !(await hatMindestens(turnier, req.benutzer, "lesen"))) {
+    reply.code(403).send({ error: "Kein Zugriff auf das zugehörige Turnier" });
+    return undefined;
+  }
+  return mannschaft;
+}
+
+/** Wie ladeMitLesezugriff, aber verlangt Schreibzugriff (fuer Aendern/Loeschen). */
+async function ladeMitSchreibzugriff(
+  id: string,
+  req: FastifyRequest,
+  reply: FastifyReply,
+): Promise<MannschaftImTurnier | undefined> {
+  if (!requireAuth(req, reply)) return undefined;
+  const mannschaft = await findById<MannschaftImTurnier>(id);
+  if (!mannschaft) {
+    reply.code(404).send({ error: "Mannschaft nicht gefunden" });
+    return undefined;
+  }
+  const turnier = await findById<Turnier>(mannschaft.turnierId);
+  if (!turnier || !(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+    reply.code(403).send({ error: "Kein Schreibzugriff auf das zugehörige Turnier" });
+    return undefined;
+  }
+  return mannschaft;
+}
+
 export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
-  app.get<{ Params: { turnierId: string } }>("/turniere/:turnierId/mannschaften", async (req) => {
+  app.get<{ Params: { turnierId: string } }>("/turniere/:turnierId/mannschaften", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    const turnier = await findById<Turnier>(req.params.turnierId);
+    if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+    if (!(await hatMindestens(turnier, req.benutzer, "lesen"))) {
+      return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
+    }
     return findAllBySelector<MannschaftImTurnier>({
       docType: "mannschaftImTurnier",
       turnierId: req.params.turnierId,
@@ -77,18 +125,20 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get<{ Params: { id: string } }>("/mannschaften/:id", async (req, reply) => {
-    const mannschaft = await findById<MannschaftImTurnier>(req.params.id);
-    if (!mannschaft) return reply.code(404).send({ error: "Mannschaft nicht gefunden" });
-    return mannschaft;
+    return ladeMitLesezugriff(req.params.id, req, reply);
   });
 
   app.post<{ Body: MannschaftBody }>(
     "/mannschaften",
     { schema: { body: mannschaftBodySchema } },
     async (req, reply) => {
-      const turnier = await findById(req.body.turnierId);
+      if (!requireAuth(req, reply)) return;
+      const turnier = await findById<Turnier>(req.body.turnierId);
       if (!turnier) {
         return reply.code(400).send({ error: "Referenziertes Turnier existiert nicht" });
+      }
+      if (!(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+        return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
       }
 
       // Neue Mannschaft wird immer ans Ende der bisherigen Reihenfolge angehaengt.
@@ -115,8 +165,8 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
     "/mannschaften/:id",
     { schema: { body: mannschaftAktualisierungSchema } },
     async (req, reply) => {
-      const bestehend = await findById<MannschaftImTurnier>(req.params.id);
-      if (!bestehend) return reply.code(404).send({ error: "Mannschaft nicht gefunden" });
+      const bestehend = await ladeMitSchreibzugriff(req.params.id, req, reply);
+      if (!bestehend) return;
       const aktualisiert: MannschaftImTurnier = { ...bestehend, ...req.body };
       return insertDoc(aktualisiert);
     },
@@ -127,6 +177,13 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
     "/turniere/:turnierId/mannschaften/reihenfolge",
     { schema: { body: reihenfolgeSchema } },
     async (req, reply) => {
+      if (!requireAuth(req, reply)) return;
+      const turnier = await findById<Turnier>(req.params.turnierId);
+      if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+      if (!(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+        return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+      }
+
       const bestehende = await findAllBySelector<MannschaftImTurnier>({
         docType: "mannschaftImTurnier",
         turnierId: req.params.turnierId,
@@ -154,8 +211,8 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.delete<{ Params: { id: string } }>("/mannschaften/:id", async (req, reply) => {
-    const bestehend = await findById<MannschaftImTurnier>(req.params.id);
-    if (!bestehend) return reply.code(404).send({ error: "Mannschaft nicht gefunden" });
+    const bestehend = await ladeMitSchreibzugriff(req.params.id, req, reply);
+    if (!bestehend) return;
     await deleteDoc(bestehend._id, bestehend._rev!);
     return reply.code(204).send();
   });

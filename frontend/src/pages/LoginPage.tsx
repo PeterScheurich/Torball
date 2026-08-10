@@ -1,0 +1,102 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { bootstrapVerfuegbar } from "../api";
+import { useAuth } from "../auth";
+
+export function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [passwort, setPasswort] = useState("");
+  const [totpCode, setTotpCode] = useState("");
+  const [benoetigtTotp, setBenoetigtTotp] = useState(false);
+  const [ersteinrichtungVerfuegbar, setErsteinrichtungVerfuegbar] = useState(false);
+  const [fehler, setFehler] = useState<string | undefined>();
+  const [sendet, setSendet] = useState(false);
+  const navigate = useNavigate();
+  const { login: authLogin } = useAuth();
+
+  useEffect(() => {
+    bootstrapVerfuegbar()
+      .then((r) => setErsteinrichtungVerfuegbar(r.verfuegbar))
+      .catch(() => setErsteinrichtungVerfuegbar(false));
+  }, []);
+
+  async function anmelden(event: React.FormEvent) {
+    event.preventDefault();
+    setFehler(undefined);
+    setSendet(true);
+    try {
+      const ergebnis = await authLogin(email, passwort, benoetigtTotp ? totpCode : undefined);
+      if ("benoetigtTotp" in ergebnis) {
+        setBenoetigtTotp(true);
+        return;
+      }
+      navigate("/");
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler bei der Anmeldung");
+    } finally {
+      setSendet(false);
+    }
+  }
+
+  return (
+    <>
+      <h1>Anmeldung</h1>
+
+      {ersteinrichtungVerfuegbar && (
+        <p>
+          Es existiert noch kein Benutzer. <Link to="/ersteinrichtung">Ersteinrichtung starten</Link>
+        </p>
+      )}
+
+      <form onSubmit={anmelden}>
+        <div className="feld">
+          <label htmlFor="email">E-Mail</label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="username"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={benoetigtTotp}
+          />
+        </div>
+        <div className="feld">
+          <label htmlFor="passwort">Passwort</label>
+          <input
+            id="passwort"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={passwort}
+            onChange={(e) => setPasswort(e.target.value)}
+            disabled={benoetigtTotp}
+          />
+        </div>
+        {benoetigtTotp && (
+          <div className="feld">
+            <label htmlFor="totpCode">Bestätigungscode (2FA)</label>
+            <input
+              id="totpCode"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+              autoFocus
+              value={totpCode}
+              onChange={(e) => setTotpCode(e.target.value)}
+            />
+          </div>
+        )}
+        {fehler && <p role="alert">{fehler}</p>}
+        <button type="submit" disabled={sendet}>
+          Anmelden
+        </button>
+      </form>
+
+      <p>
+        <Link to="/passwort-vergessen">Passwort vergessen?</Link>
+      </p>
+    </>
+  );
+}

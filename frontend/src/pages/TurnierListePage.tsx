@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Turnier } from "@torball/shared";
 import { deleteTurnier, getTurniere } from "../api";
+import { useAuth } from "../auth";
 import { formatiereDatum } from "../format";
 
 export function TurnierListePage() {
   const [turniere, setTurniere] = useState<Turnier[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
+  const { benutzer } = useAuth();
+  const darfAnlegen = benutzer?.globaleRolle === "admin" || benutzer?.globaleRolle === "manager";
 
   useEffect(() => {
     laden();
@@ -74,11 +77,13 @@ export function TurnierListePage() {
         </table>
       )}
 
-      <p>
-        <Link to="/turniere/neu" className="button-link">
-          Neues Turnier anlegen
-        </Link>
-      </p>
+      {darfAnlegen && (
+        <p>
+          <Link to="/turniere/neu" className="button-link">
+            Neues Turnier anlegen
+          </Link>
+        </p>
+      )}
     </>
   );
 }

@@ -8,6 +8,8 @@ import type {
   TurnierStatus,
 } from "@torball/shared";
 import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
+import { requireAuth, requireRolle } from "../auth/plugin";
+import { hatMindestens } from "../auth/turnierZugriff";
 
 /** Felder, die der Client beim Anlegen setzen kann; alles andere bekommt einen Default (Abschnitt 20.5). */
 type TurnierBody = Partial<Omit<Turnier, "_id" | "_rev" | "docType" | "turnierId">> &
@@ -78,13 +80,20 @@ function mitDefaults(turnier: Turnier): Turnier {
 }
 
 export async function turnierRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/turniere", async () => {
-    return (await findAllByType<Turnier>("turnier")).map(mitDefaults);
+  app.get("/turniere", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    const alle = (await findAllByType<Turnier>("turnier")).map(mitDefaults);
+    const zugriffe = await Promise.all(alle.map((t) => hatMindestens(t, req.benutzer, "lesen")));
+    return alle.filter((_, i) => zugriffe[i]);
   });
 
   app.get<{ Params: { id: string } }>("/turniere/:id", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const turnier = await findById<Turnier>(req.params.id);
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+    if (!(await hatMindestens(turnier, req.benutzer, "lesen"))) {
+      return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
+    }
     return mitDefaults(turnier);
   });
 
@@ -92,12 +101,14 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     "/turniere",
     { schema: { body: turnierBodySchema } },
     async (req, reply) => {
+      if (!requireRolle(req, reply, ["admin", "manager"])) return;
       const id = newId("turnier");
       const turnier: Turnier = {
         _id: id,
         docType: "turnier",
         turnierId: id,
         erstelltAm: new Date().toISOString(),
+        erstelltVon: req.benutzer!._id,
         ...turnierDefaults(),
         ...req.body,
       };
@@ -109,8 +120,12 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   app.put<{ Params: { id: string }; Body: Partial<TurnierBody> }>(
     "/turniere/:id",
     async (req, reply) => {
+      if (!requireAuth(req, reply)) return;
       const bestehend = await findById<Turnier>(req.params.id);
       if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+      if (!(await hatMindestens(bestehend, req.benutzer, "schreiben"))) {
+        return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+      }
       const aktualisiert: Turnier = {
         ...bestehend,
         ...req.body,
@@ -121,8 +136,12 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.delete<{ Params: { id: string } }>("/turniere/:id", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const bestehend = await findById<Turnier>(req.params.id);
     if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+    if (!(await hatMindestens(bestehend, req.benutzer, "schreiben"))) {
+      return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+    }
 
     // Turnier-Unterobjekte (Mannschaft-im-Turnier, Spiel) haben laut Datenmodell keine
     // eigenstaendige Existenz ausserhalb ihres Turniers (ON DELETE CASCADE) - werden hier

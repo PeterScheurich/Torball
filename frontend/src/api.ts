@@ -1,12 +1,29 @@
-import type { MannschaftImTurnier, Spiel, Spielfeld, Spielmodus, Turnier } from "@torball/shared";
+import type {
+  Benutzer,
+  GlobaleRolle,
+  MannschaftImTurnier,
+  Spiel,
+  Spielfeld,
+  Spielmodus,
+  Turnier,
+  TurnierBerechtigung,
+  TurnierRolle,
+} from "@torball/shared";
 
 const BASIS = "/api";
+
+/** Nie ueber die API zurueckgegeben: Passwort-Hash, 2FA-Secret, Einladungs-/Reset-Token-Hashes (siehe backend/src/auth/benutzerProfil.ts). */
+export type BenutzerProfil = Omit<
+  Benutzer,
+  "passwortHash" | "zweiFaSecret" | "einladungTokenHash" | "einladungAblauf" | "resetTokenHash" | "resetAblauf"
+> & { hatPasswort: boolean };
 
 async function anfrage<T>(pfad: string, init?: RequestInit): Promise<T> {
   let antwort: Response;
   try {
     antwort = await fetch(`${BASIS}${pfad}`, {
       ...init,
+      credentials: "same-origin",
       headers: init?.body ? { "Content-Type": "application/json" } : undefined,
     });
   } catch {
@@ -162,4 +179,107 @@ export function spielStartzeitAendern(spielId: string, startzeitGeplant: string)
     method: "PUT",
     body: JSON.stringify({ startzeitGeplant }),
   });
+}
+
+// --- Authentifizierung ---
+
+export type LoginErgebnis = BenutzerProfil | { benoetigtTotp: true };
+
+export function login(email: string, passwort: string, totpCode?: string): Promise<LoginErgebnis> {
+  return anfrage("/auth/login", { method: "POST", body: JSON.stringify({ email, passwort, totpCode }) });
+}
+
+export function logout(): Promise<void> {
+  return anfrage("/auth/logout", { method: "POST" });
+}
+
+export function getMe(): Promise<BenutzerProfil> {
+  return anfrage("/auth/me");
+}
+
+export function bootstrapAdmin(email: string, passwort: string, name: string): Promise<BenutzerProfil> {
+  return anfrage("/auth/bootstrap-admin", { method: "POST", body: JSON.stringify({ email, passwort, name }) });
+}
+
+export function bootstrapVerfuegbar(): Promise<{ verfuegbar: boolean }> {
+  return anfrage("/auth/bootstrap-verfuegbar");
+}
+
+// --- Benutzerverwaltung ---
+
+export function getBenutzerListe(): Promise<BenutzerProfil[]> {
+  return anfrage("/benutzer");
+}
+
+export interface NeuerBenutzer {
+  email: string;
+  name: string;
+  globaleRolle: GlobaleRolle;
+}
+
+/** Solange kein E-Mail-Versand angebunden ist, kommt der Einladungslink direkt in der Antwort zurueck. */
+export function benutzerEinladen(daten: NeuerBenutzer): Promise<{ benutzer: BenutzerProfil; einladungsToken: string }> {
+  return anfrage("/benutzer", { method: "POST", body: JSON.stringify(daten) });
+}
+
+export function benutzerAktualisieren(
+  id: string,
+  daten: Partial<Pick<Benutzer, "name" | "globaleRolle" | "gesperrt">>,
+): Promise<BenutzerProfil> {
+  return anfrage(`/benutzer/${id}`, { method: "PUT", body: JSON.stringify(daten) });
+}
+
+export function getEinladung(token: string): Promise<{ email: string; name: string }> {
+  return anfrage(`/benutzer/einladung/${token}`);
+}
+
+export function einladungAnnehmen(token: string, passwort: string): Promise<BenutzerProfil> {
+  return anfrage(`/benutzer/einladung/${token}/annehmen`, { method: "POST", body: JSON.stringify({ passwort }) });
+}
+
+export function passwortVergessen(email: string): Promise<{ ok: true }> {
+  return anfrage("/benutzer/passwort-vergessen", { method: "POST", body: JSON.stringify({ email }) });
+}
+
+export function passwortReset(token: string, neuesPasswort: string): Promise<{ ok: true }> {
+  return anfrage(`/benutzer/passwort-reset/${token}`, { method: "POST", body: JSON.stringify({ neuesPasswort }) });
+}
+
+export interface TotpEinrichtung {
+  secret: string;
+  otpAuthUri: string;
+  qrCodeDataUri: string;
+}
+
+export function totpEinrichten(): Promise<TotpEinrichtung> {
+  return anfrage("/benutzer/2fa/einrichten", { method: "POST" });
+}
+
+export function totpBestaetigen(code: string): Promise<BenutzerProfil> {
+  return anfrage("/benutzer/2fa/bestaetigen", { method: "POST", body: JSON.stringify({ code }) });
+}
+
+export function totpDeaktivieren(passwort: string): Promise<BenutzerProfil> {
+  return anfrage("/benutzer/2fa/deaktivieren", { method: "POST", body: JSON.stringify({ passwort }) });
+}
+
+// --- Turnier-Berechtigungen ---
+
+export function getTurnierBerechtigungen(turnierId: string): Promise<TurnierBerechtigung[]> {
+  return anfrage(`/turniere/${turnierId}/berechtigungen`);
+}
+
+export function turnierBerechtigungVergeben(
+  turnierId: string,
+  benutzerId: string,
+  rolle: TurnierRolle,
+): Promise<TurnierBerechtigung> {
+  return anfrage(`/turniere/${turnierId}/berechtigungen`, {
+    method: "POST",
+    body: JSON.stringify({ benutzerId, rolle }),
+  });
+}
+
+export function turnierBerechtigungEntziehen(id: string): Promise<void> {
+  return anfrage(`/berechtigungen/${id}`, { method: "DELETE" });
 }

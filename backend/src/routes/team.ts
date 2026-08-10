@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { Team } from "@torball/shared";
 import { deleteDoc, findAllByType, findById, insertDoc, newId } from "../repository";
+import { requireAuth } from "../auth/plugin";
 
 interface TeamBody {
   vereinId: string;
@@ -19,11 +20,13 @@ const teamBodySchema = {
 } as const;
 
 export async function teamRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/teams", async () => {
+  app.get("/teams", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     return findAllByType<Team>("team");
   });
 
   app.get<{ Params: { id: string } }>("/teams/:id", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const team = await findById<Team>(req.params.id);
     if (!team) return reply.code(404).send({ error: "Team nicht gefunden" });
     return team;
@@ -33,6 +36,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
     "/teams",
     { schema: { body: teamBodySchema } },
     async (req, reply) => {
+      if (!requireAuth(req, reply)) return;
       const vereinExistiert = await findById(req.body.vereinId);
       if (!vereinExistiert) {
         return reply.code(400).send({ error: "Referenzierter Verein existiert nicht" });
@@ -54,6 +58,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
     "/teams/:id",
     { schema: { body: teamBodySchema } },
     async (req, reply) => {
+      if (!requireAuth(req, reply)) return;
       const bestehend = await findById<Team>(req.params.id);
       if (!bestehend) return reply.code(404).send({ error: "Team nicht gefunden" });
       const aktualisiert: Team = { ...bestehend, ...req.body };
@@ -62,6 +67,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.delete<{ Params: { id: string } }>("/teams/:id", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const bestehend = await findById<Team>(req.params.id);
     if (!bestehend) return reply.code(404).send({ error: "Team nicht gefunden" });
     await deleteDoc(bestehend._id, bestehend._rev!);

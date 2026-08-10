@@ -1,7 +1,9 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { Spiel, Turnier } from "@torball/shared";
 import { findAllBySelector, findById, insertDoc } from "../repository";
 import { berechneStartzeit, spieldauerMinuten } from "../spielplan/zeitplanung";
+import { requireAuth } from "../auth/plugin";
+import { hatMindestens } from "../auth/turnierZugriff";
 
 /** Nur diese Felder darf die Turnierleitung nachtraeglich anpassen (Abschnitt 8: "Reihenfolge, Spielfeld und Startzeiten"). */
 interface SpielAnpassungBody {
@@ -44,14 +46,37 @@ const reihenfolgeSchema = {
   },
 } as const;
 
+/** Laedt das Turnier eines Spiels und prueft die geforderte Zugriffsstufe; schickt bei Fehlschlag selbst die Antwort. */
+async function pruefeSpielZugriff(
+  spiel: Spiel,
+  req: FastifyRequest,
+  reply: FastifyReply,
+  mindestens: "lesen" | "schreiben",
+): Promise<boolean> {
+  const turnier = await findById<Turnier>(spiel.turnierId);
+  if (!turnier || !(await hatMindestens(turnier, req.benutzer, mindestens))) {
+    reply.code(403).send({ error: "Kein Zugriff auf das zugehörige Turnier" });
+    return false;
+  }
+  return true;
+}
+
 export async function spielRoutes(app: FastifyInstance): Promise<void> {
-  app.get<{ Params: { turnierId: string } }>("/turniere/:turnierId/spiele", async (req) => {
+  app.get<{ Params: { turnierId: string } }>("/turniere/:turnierId/spiele", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    const turnier = await findById<Turnier>(req.params.turnierId);
+    if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+    if (!(await hatMindestens(turnier, req.benutzer, "lesen"))) {
+      return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
+    }
     return findAllBySelector<Spiel>({ docType: "spiel", turnierId: req.params.turnierId });
   });
 
   app.get<{ Params: { id: string } }>("/spiele/:id", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
     const spiel = await findById<Spiel>(req.params.id);
     if (!spiel) return reply.code(404).send({ error: "Spiel nicht gefunden" });
+    if (!(await pruefeSpielZugriff(spiel, req, reply, "lesen"))) return;
     return spiel;
   });
 
@@ -59,8 +84,10 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
     "/spiele/:id",
     { schema: { body: spielAnpassungSchema } },
     async (req, reply) => {
+      if (!requireAuth(req, reply)) return;
       const bestehend = await findById<Spiel>(req.params.id);
       if (!bestehend) return reply.code(404).send({ error: "Spiel nicht gefunden" });
+      if (!(await pruefeSpielZugriff(bestehend, req, reply, "schreiben"))) return;
       const aktualisiert: Spiel = { ...bestehend, ...req.body };
       return insertDoc(aktualisiert);
     },
@@ -77,8 +104,10 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
     "/spiele/:id/startzeit",
     { schema: { body: startzeitSchema } },
     async (req, reply) => {
+      if (!requireAuth(req, reply)) return;
       const spiel = await findById<Spiel>(req.params.id);
       if (!spiel) return reply.code(404).send({ error: "Spiel nicht gefunden" });
+      if (!(await pruefeSpielZugriff(spiel, req, reply, "schreiben"))) return;
       if (!spiel.startzeitGeplant) {
         return reply.code(400).send({ error: "Spiel hat noch keine geplante Startzeit, die verschoben werden koennte" });
       }
@@ -141,8 +170,12 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
     "/turniere/:turnierId/spiele/reihenfolge",
     { schema: { body: reihenfolgeSchema } },
     async (req, reply) => {
+      if (!requireAuth(req, reply)) return;
       const turnier = await findById<Turnier>(req.params.turnierId);
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+      if (!(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+        return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+      }
 
       const bestehende = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id });
       const gesperrt = bestehende.some((spiel) => spiel.status !== "geplant" || spiel.ergebnisAbgeschlossen);
