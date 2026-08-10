@@ -1,4 +1,4 @@
-import { Link, NavLink, Route, Routes, useNavigate } from "react-router-dom";
+import { Link, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { TurnierListePage } from "./pages/TurnierListePage";
 import { TurnierAnlegenPage } from "./pages/TurnierAnlegenPage";
 import { MannschaftenErfassenPage } from "./pages/MannschaftenErfassenPage";
@@ -13,13 +13,15 @@ import { ErgebnisErfassungPage } from "./pages/ErgebnisErfassungPage";
 import { ProfilPage } from "./pages/ProfilPage";
 import { BenutzerverwaltungPage } from "./pages/BenutzerverwaltungPage";
 import { StammdatenPage } from "./pages/StammdatenPage";
+import { EinstellungenPage } from "./pages/EinstellungenPage";
 import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
-import { ThemeUmschalter } from "./components/ThemeUmschalter";
+import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { useAuth } from "./auth";
 
 function Kopfzeile() {
   const { benutzer, logout } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const darfBenutzerVerwalten = benutzer?.globaleRolle === "admin" || benutzer?.globaleRolle === "manager";
 
   async function abmelden() {
@@ -37,33 +39,40 @@ function Kopfzeile() {
         </Link>
         <div className="marke">
           {benutzer && (
-            <>
-              {darfBenutzerVerwalten && (
-                <NavLink
-                  to="/benutzerverwaltung"
-                  className={({ isActive }) => (isActive ? "kopfzeile-link kopfzeile-link-aktiv" : "kopfzeile-link")}
-                >
-                  Benutzerverwaltung
-                </NavLink>
-              )}
-              <NavLink
-                to="/stammdaten"
-                className={({ isActive }) => (isActive ? "kopfzeile-link kopfzeile-link-aktiv" : "kopfzeile-link")}
-              >
+            <KopfzeilenMenue
+              label="Stammdaten"
+              aktiv={pathname.startsWith("/stammdaten") || pathname.startsWith("/benutzerverwaltung")}
+            >
+              <Link to="/stammdaten" className="kopfzeile-menue-eintrag" role="menuitem">
                 Vereine &amp; Teams
-              </NavLink>
-              <NavLink
-                to="/profil"
-                className={({ isActive }) => (isActive ? "kopfzeile-link kopfzeile-link-aktiv" : "kopfzeile-link")}
-              >
-                {benutzer.name}
-              </NavLink>
-              <button type="button" className="symbol-button" onClick={abmelden} aria-label="Abmelden" title="Abmelden">
-                🚪
-              </button>
-            </>
+              </Link>
+              {darfBenutzerVerwalten && (
+                <Link to="/benutzerverwaltung" className="kopfzeile-menue-eintrag" role="menuitem">
+                  Benutzerverwaltung
+                </Link>
+              )}
+            </KopfzeilenMenue>
           )}
-          <ThemeUmschalter />
+          <NavLink
+            to="/einstellungen"
+            className={({ isActive }) => (isActive ? "kopfzeile-link kopfzeile-link-aktiv" : "kopfzeile-link")}
+          >
+            Einstellungen
+          </NavLink>
+          {benutzer && (
+            <KopfzeilenMenue
+              label={<><span aria-hidden="true">👤</span> {benutzer.name}</>}
+              ariaLabel={`Benutzermenü für ${benutzer.name}`}
+              aktiv={pathname.startsWith("/profil")}
+            >
+              <Link to="/profil" className="kopfzeile-menue-eintrag" role="menuitem">
+                Mein Profil
+              </Link>
+              <button type="button" className="kopfzeile-menue-eintrag" role="menuitem" onClick={abmelden}>
+                Abmelden
+              </button>
+            </KopfzeilenMenue>
+          )}
         </div>
       </nav>
     </header>
@@ -82,6 +91,7 @@ function App() {
           <Route path="/passwort-vergessen" element={<PasswortVergessenPage />} />
           <Route path="/passwort-reset/:token" element={<PasswortResetPage />} />
           <Route path="/ergebnis-erfassung/:tokenWert" element={<ErgebnisErfassungPage />} />
+          <Route path="/einstellungen" element={<EinstellungenPage />} />
 
           <Route element={<GeschuetzteRoute />}>
             <Route path="/" element={<TurnierListePage />} />
