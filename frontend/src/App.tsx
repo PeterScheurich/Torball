@@ -10,7 +10,11 @@ function App() {
     <>
       <header>
         <nav>
-          <Link to="/">Torball-Turniere</Link>
+          <Link to="/" className="marke">
+            <img className="logo logo-hell" src="/images/torball-logo.svg" alt="" width="32" height="32" />
+            <img className="logo logo-dunkel" src="/images/torball-logo-dark.svg" alt="" width="32" height="32" />
+            Torball-Turniere
+          </Link>
         </nav>
       </header>
       <main>

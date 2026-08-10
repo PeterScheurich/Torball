@@ -107,6 +107,44 @@ header nav a {
   text-decoration: none;
 }
 
+.marke {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  border-radius: 50%;
+}
+
+/* Passendes Logo je Farbschema (Abschnitt 24.3: Default nach Systemeinstellung,
+   [data-theme] bereits vorbereitet fuer einen spaeteren manuellen Umschalter). */
+.logo-dunkel {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .logo-hell {
+    display: none;
+  }
+  .logo-dunkel {
+    display: inline;
+  }
+}
+
+:root[data-theme='dark'] .logo-hell {
+  display: none;
+}
+:root[data-theme='dark'] .logo-dunkel {
+  display: inline;
+}
+:root[data-theme='light'] .logo-hell {
+  display: inline;
+}
+:root[data-theme='light'] .logo-dunkel {
+  display: none;
+}
+
 h1 {
   font-size: 1.75rem;
   margin: 0 0 16px;
