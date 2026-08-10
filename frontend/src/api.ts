@@ -2,6 +2,7 @@ import type {
   Benutzer,
   GlobaleRolle,
   MannschaftImTurnier,
+  Protokollierungsart,
   Spiel,
   Spielfeld,
   Spielmodus,
@@ -53,6 +54,7 @@ export interface NeuesTurnier {
   startzeit?: string;
   felder: Spielfeld[];
   spielplanModus?: Spielmodus;
+  protokollierungsart?: Protokollierungsart;
 }
 
 export function getTurniere(): Promise<Turnier[]> {
@@ -71,7 +73,10 @@ export function deleteTurnier(id: string): Promise<void> {
   return anfrage(`/turniere/${id}`, { method: "DELETE" });
 }
 
-export function updateTurnier(id: string, daten: Partial<Pick<Turnier, "spielplanModus">>): Promise<Turnier> {
+export function updateTurnier(
+  id: string,
+  daten: Partial<Pick<Turnier, "spielplanModus" | "protokollierungsart">>,
+): Promise<Turnier> {
   return anfrage(`/turniere/${id}`, { method: "PUT", body: JSON.stringify(daten) });
 }
 
@@ -300,4 +305,87 @@ export function turnierBerechtigungVergeben(
 
 export function turnierBerechtigungEntziehen(id: string): Promise<void> {
   return anfrage(`/berechtigungen/${id}`, { method: "DELETE" });
+}
+
+// --- Ergebniserfassung (Abschnitt 9/14) ---
+
+export interface ErgebnisEingabe {
+  ergebnisA: number;
+  ergebnisB: number;
+  istForfait?: boolean;
+}
+
+export function spielErgebnisSetzen(spielId: string, daten: ErgebnisEingabe): Promise<Spiel> {
+  return anfrage(`/spiele/${spielId}/ergebnis`, { method: "PUT", body: JSON.stringify(daten) });
+}
+
+export function spielAbschliessen(spielId: string): Promise<Spiel> {
+  return anfrage(`/spiele/${spielId}/abschliessen`, { method: "PUT" });
+}
+
+export function turnierSpieleAbschliessen(turnierId: string): Promise<Spiel[]> {
+  return anfrage(`/turniere/${turnierId}/spiele/abschliessen`, { method: "PUT" });
+}
+
+export interface TabellenZeile {
+  mannschaftId: string;
+  spiele: number;
+  siege: number;
+  unentschieden: number;
+  niederlagen: number;
+  toreFuer: number;
+  toreGegen: number;
+  tordifferenz: number;
+  punkte: number;
+}
+
+export function getTabelle(turnierId: string): Promise<TabellenZeile[]> {
+  return anfrage(`/turniere/${turnierId}/tabelle`);
+}
+
+export function getErgebnisToken(turnierId: string): Promise<{ tokenWert: string | null }> {
+  return anfrage(`/turniere/${turnierId}/ergebnis-token`);
+}
+
+export function erzeugeErgebnisToken(turnierId: string): Promise<{ tokenWert: string }> {
+  return anfrage(`/turniere/${turnierId}/ergebnis-token`, { method: "POST" });
+}
+
+export function widerrufeErgebnisToken(turnierId: string): Promise<void> {
+  return anfrage(`/turniere/${turnierId}/ergebnis-token/widerrufen`, { method: "POST" });
+}
+
+// --- Oeffentliche Ergebniserfassung per Token (kein Login) ---
+
+export interface ErgebnisErfassungSpiel {
+  _id: string;
+  runde?: string;
+  feldId?: string;
+  mannschaftAId: string;
+  mannschaftBId: string;
+  ergebnisA?: number;
+  ergebnisB?: number;
+  istForfait: boolean;
+  ergebnisAbgeschlossen: boolean;
+}
+
+export interface ErgebnisErfassungDaten {
+  turnierName: string;
+  mannschaften: { _id: string; name: string }[];
+  spiele: ErgebnisErfassungSpiel[];
+}
+
+export function getErgebnisErfassung(tokenWert: string): Promise<ErgebnisErfassungDaten> {
+  return anfrage(`/ergebnis-erfassung/${tokenWert}`);
+}
+
+export function ergebnisPerTokenSetzen(
+  tokenWert: string,
+  spielId: string,
+  daten: ErgebnisEingabe & { erfasserName: string; geraetKennung?: string },
+): Promise<ErgebnisErfassungSpiel> {
+  return anfrage(`/ergebnis-erfassung/${tokenWert}/spiele/${spielId}`, {
+    method: "PUT",
+    body: JSON.stringify(daten),
+  });
 }

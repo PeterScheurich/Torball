@@ -255,6 +255,10 @@ form {
 
 /* Fuer ein Formular INNERHALB einer Tabellenzelle (z.B. E-Mail-Aenderung im Profil) -
    Eingabe und Speichern-Button nebeneinander statt der Standard-Formular-Spalte. */
+.ergebnis-eingabe {
+  width: 4em;
+}
+
 .inline-form {
   flex-direction: row;
   flex-wrap: wrap;

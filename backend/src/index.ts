@@ -11,6 +11,8 @@ import { turnierBerechtigungRoutes } from "./routes/turnierBerechtigung";
 import { mannschaftRoutes } from "./routes/mannschaft";
 import { spielplanRoutes } from "./routes/spielplan";
 import { spielRoutes } from "./routes/spiel";
+import { ergebnisRoutes } from "./routes/ergebnis";
+import { ergebnisTokenRoutes } from "./routes/ergebnisToken";
 
 const server = Fastify({ logger: true });
 
@@ -36,6 +38,8 @@ const start = async () => {
     server.register(mannschaftRoutes);
     server.register(spielplanRoutes);
     server.register(spielRoutes);
+    server.register(ergebnisRoutes);
+    server.register(ergebnisTokenRoutes);
 
     await ensureIndexes();
     await server.listen({ port: 3000, host: "0.0.0.0" });

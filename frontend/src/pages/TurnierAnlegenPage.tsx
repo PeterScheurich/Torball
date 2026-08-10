@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Spielmodus } from "@torball/shared";
+import type { Protokollierungsart, Spielmodus } from "@torball/shared";
 import { createTurnier } from "../api";
 
 export function TurnierAnlegenPage() {
@@ -9,6 +9,7 @@ export function TurnierAnlegenPage() {
   const [startzeit, setStartzeit] = useState("");
   const [anzahlFelder, setAnzahlFelder] = useState<1 | 2>(1);
   const [spielplanModus, setSpielplanModus] = useState<Spielmodus>("einfach");
+  const [protokollierungsart, setProtokollierungsart] = useState<Protokollierungsart>("manuell");
   const [fehler, setFehler] = useState<string | undefined>();
   const navigate = useNavigate();
 
@@ -22,7 +23,14 @@ export function TurnierAnlegenPage() {
     }));
 
     try {
-      const neu = await createTurnier({ name, datum, startzeit: startzeit || undefined, felder, spielplanModus });
+      const neu = await createTurnier({
+        name,
+        datum,
+        startzeit: startzeit || undefined,
+        felder,
+        spielplanModus,
+        protokollierungsart,
+      });
       navigate(`/turniere/${encodeURIComponent(neu._id)}/mannschaften-erfassen`);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Anlegen");
@@ -67,6 +75,17 @@ export function TurnierAnlegenPage() {
           >
             <option value="einfach">Jeder gegen Jeden (einfach)</option>
             <option value="doppelt">Jeder zweimal gegen Jeden (doppelt)</option>
+          </select>
+        </div>
+        <div className="feld">
+          <label htmlFor="protokollierungsart">Protokollierung</label>
+          <select
+            id="protokollierungsart"
+            value={protokollierungsart}
+            onChange={(e) => setProtokollierungsart(e.target.value === "digital" ? "digital" : "manuell")}
+          >
+            <option value="manuell">Manuell (Papierprotokoll, nur Endergebnisse erfasst)</option>
+            <option value="digital">Digital (Live-Ereignisprotokollierung - noch nicht umgesetzt)</option>
           </select>
         </div>
         {fehler && <p role="alert">{fehler}</p>}

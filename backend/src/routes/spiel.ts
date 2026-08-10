@@ -47,7 +47,7 @@ const reihenfolgeSchema = {
 } as const;
 
 /** Laedt das Turnier eines Spiels und prueft die geforderte Zugriffsstufe; schickt bei Fehlschlag selbst die Antwort. */
-async function pruefeSpielZugriff(
+export async function pruefeSpielZugriff(
   spiel: Spiel,
   req: FastifyRequest,
   reply: FastifyReply,

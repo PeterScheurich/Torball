@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { Spielmodus, Turnier } from "@torball/shared";
+import type { Protokollierungsart, Spielmodus, Turnier } from "@torball/shared";
 import { getTurnier, updateTurnier } from "../api";
+import { ErgebnisVerwaltung } from "../components/ErgebnisVerwaltung";
 import { MannschaftenListe } from "../components/MannschaftenListe";
 import { SpielplanVerwaltung } from "../components/SpielplanVerwaltung";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 
-type Tab = "uebersicht" | "mannschaften" | "spielplan";
+type Tab = "uebersicht" | "mannschaften" | "spielplan" | "ergebnisse";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "uebersicht", label: "Übersicht" },
   { id: "mannschaften", label: "Mannschaften" },
   { id: "spielplan", label: "Spielplan" },
+  { id: "ergebnisse", label: "Ergebnisse" },
 ];
 
 export function TurnierVerwaltenPage() {
@@ -25,6 +27,7 @@ export function TurnierVerwaltenPage() {
     uebersicht: null,
     mannschaften: null,
     spielplan: null,
+    ergebnisse: null,
   });
 
   useEffect(() => {
@@ -39,6 +42,15 @@ export function TurnierVerwaltenPage() {
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern des Spielmodus");
+    }
+  }
+
+  async function protokollierungsartAendern(art: Protokollierungsart) {
+    try {
+      setTurnier(await updateTurnier(turnierId, { protokollierungsart: art }));
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Protokollierungsart");
     }
   }
 
@@ -126,6 +138,29 @@ export function TurnierVerwaltenPage() {
                   </select>
                 </td>
               </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="protokollierungsart">Protokollierung</label>
+                </th>
+                <td>
+                  <select
+                    id="protokollierungsart"
+                    value={turnier.protokollierungsart}
+                    onChange={(e) =>
+                      protokollierungsartAendern(e.target.value === "digital" ? "digital" : "manuell")
+                    }
+                  >
+                    <option value="manuell">Manuell (Papierprotokoll, nur Endergebnisse erfasst)</option>
+                    <option value="digital">Digital (Live-Ereignisprotokollierung - noch nicht umgesetzt)</option>
+                  </select>
+                  {turnier.protokollierungsart === "digital" && (
+                    <p>
+                      Die digitale Live-Protokollierung ist noch nicht umgesetzt - für Ergebniserfassung aktuell
+                      auf „Manuell" umstellen.
+                    </p>
+                  )}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -142,6 +177,10 @@ export function TurnierVerwaltenPage() {
 
       <div role="tabpanel" id="panel-spielplan" aria-labelledby="tab-spielplan" hidden={aktiverTab !== "spielplan"}>
         <SpielplanVerwaltung turnierId={turnierId} />
+      </div>
+
+      <div role="tabpanel" id="panel-ergebnisse" aria-labelledby="tab-ergebnisse" hidden={aktiverTab !== "ergebnisse"}>
+        <ErgebnisVerwaltung turnierId={turnierId} />
       </div>
     </>
   );
