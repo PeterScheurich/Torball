@@ -31,6 +31,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
   const [wiederholungen, setWiederholungen] = useState<1 | 2>(1);
   const [fehler, setFehler] = useState<string | undefined>();
   const [ziehIndex, setZiehIndex] = useState<number | null>(null);
+  const [ziehZielIndex, setZiehZielIndex] = useState<number | null>(null);
 
   const laden = useCallback(async () => {
     try {
@@ -99,7 +100,58 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
     <div>
       {fehler && <p role="alert">{fehler}</p>}
 
-      {spiele.length > 0 ? (
+      <div className="feld">
+        <label htmlFor="wiederholungen">Modus</label>
+        <select
+          id="wiederholungen"
+          value={wiederholungen}
+          onChange={(e) => setWiederholungen(Number(e.target.value) === 2 ? 2 : 1)}
+        >
+          <option value={1}>Jeder gegen Jeden (einfach)</option>
+          <option value={2}>Jeder zweimal gegen Jeden (doppelt)</option>
+        </select>
+      </div>
+
+      <button type="button" onClick={vorschlagAnzeigen} disabled={mannschaften.length < 2}>
+        Vorschlag anzeigen
+      </button>{" "}
+      <button type="button" onClick={spielplanErzeugen} disabled={mannschaften.length < 2}>
+        {spiele.length > 0 ? "Spielplan neu erzeugen" : "Spielplan erzeugen"}
+      </button>
+
+      {/* Ergebnisbereich steht bewusst immer an derselben Stelle unterhalb der Steuerung:
+          Vorschau, falls gerade berechnet, sonst der zuletzt gespeicherte Spielplan - nie beides
+          gleichzeitig und nie "oberhalb" der gerade benutzten Bedienelemente. */}
+      {vorschlag ? (
+        <>
+          <h3>Vorschau (noch nicht gespeichert)</h3>
+          <table>
+            <caption className="sr-only">Berechneter Spielplan-Vorschlag</caption>
+            <thead>
+              <tr>
+                <th scope="col">Spiel</th>
+                <th scope="col">Feld</th>
+                <th scope="col">Startzeit</th>
+                <th scope="col">Mannschaft A</th>
+                <th scope="col">Mannschaft B</th>
+                <th scope="col">Hinweis</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vorschlagSortiert!.map((eintrag, i) => (
+                <tr key={i}>
+                  <td>{eintrag.slot + 1}</td>
+                  <td>{eintrag.feldId}</td>
+                  <td>{startzeitAnzeigen(eintrag.startzeitGeplant)}</td>
+                  <td>{nameVon(eintrag.mannschaftAId)}</td>
+                  <td>{nameVon(eintrag.mannschaftBId)}</td>
+                  <td>{eintrag.warnung ?? ""}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ) : spiele.length > 0 ? (
         <>
           <p>Spielplan ist bereits erzeugt (Version {turnier.spielplanVersion}).</p>
           <table>
@@ -123,10 +175,15 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
               {spieleSortiert.map((s, i) => (
                 <tr
                   key={s._id}
-                  onDragOver={(e) => e.preventDefault()}
+                  className={ziehZielIndex === i ? "zieh-ziel" : undefined}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setZiehZielIndex(i);
+                  }}
                   onDrop={() => {
                     if (ziehIndex !== null) anNeuePositionVerschieben(ziehIndex, i);
                     setZiehIndex(null);
+                    setZiehZielIndex(null);
                   }}
                 >
                   <td>
@@ -134,7 +191,10 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                       className="ziehpunkt"
                       draggable={s.status === "geplant"}
                       onDragStart={() => setZiehIndex(i)}
-                      onDragEnd={() => setZiehIndex(null)}
+                      onDragEnd={() => {
+                        setZiehIndex(null);
+                        setZiehZielIndex(null);
+                      }}
                       aria-hidden="true"
                       title="Zum Verschieben ziehen"
                     >
@@ -172,56 +232,6 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
         </>
       ) : (
         <p>Noch kein Spielplan erzeugt.</p>
-      )}
-
-      <div className="feld">
-        <label htmlFor="wiederholungen">Modus</label>
-        <select
-          id="wiederholungen"
-          value={wiederholungen}
-          onChange={(e) => setWiederholungen(Number(e.target.value) === 2 ? 2 : 1)}
-        >
-          <option value={1}>Jeder gegen Jeden (einfach)</option>
-          <option value={2}>Jeder zweimal gegen Jeden (doppelt)</option>
-        </select>
-      </div>
-
-      <button type="button" onClick={vorschlagAnzeigen} disabled={mannschaften.length < 2}>
-        Vorschlag anzeigen
-      </button>{" "}
-      <button type="button" onClick={spielplanErzeugen} disabled={mannschaften.length < 2}>
-        {spiele.length > 0 ? "Spielplan neu erzeugen" : "Spielplan erzeugen"}
-      </button>
-
-      {vorschlag && (
-        <>
-          <h3>Vorschau (noch nicht gespeichert)</h3>
-          <table>
-            <caption className="sr-only">Berechneter Spielplan-Vorschlag</caption>
-            <thead>
-              <tr>
-                <th scope="col">Spiel</th>
-                <th scope="col">Feld</th>
-                <th scope="col">Startzeit</th>
-                <th scope="col">Mannschaft A</th>
-                <th scope="col">Mannschaft B</th>
-                <th scope="col">Hinweis</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vorschlagSortiert!.map((eintrag, i) => (
-                <tr key={i}>
-                  <td>{eintrag.slot + 1}</td>
-                  <td>{eintrag.feldId}</td>
-                  <td>{startzeitAnzeigen(eintrag.startzeitGeplant)}</td>
-                  <td>{nameVon(eintrag.mannschaftAId)}</td>
-                  <td>{nameVon(eintrag.mannschaftBId)}</td>
-                  <td>{eintrag.warnung ?? ""}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
       )}
     </div>
   );

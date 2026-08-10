@@ -4,6 +4,7 @@ import { TurnierAnlegenPage } from "./pages/TurnierAnlegenPage";
 import { MannschaftenErfassenPage } from "./pages/MannschaftenErfassenPage";
 import { SpielplanErstellenPage } from "./pages/SpielplanErstellenPage";
 import { TurnierVerwaltenPage } from "./pages/TurnierVerwaltenPage";
+import { ThemeUmschalter } from "./components/ThemeUmschalter";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
             <img className="logo logo-dunkel" src="/images/torball-logo-dark.svg" alt="" width="32" height="32" />
             Torball-Turniere
           </Link>
+          <ThemeUmschalter />
         </nav>
       </header>
       <main>

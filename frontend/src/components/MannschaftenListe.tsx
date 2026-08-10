@@ -25,6 +25,7 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
 
   const [bearbeitung, setBearbeitung] = useState<Record<string, { name: string; bundesland: string }>>({});
   const [ziehIndex, setZiehIndex] = useState<number | null>(null);
+  const [ziehZielIndex, setZiehZielIndex] = useState<number | null>(null);
 
   const laden = useCallback(async () => {
     try {
@@ -126,10 +127,15 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
             {mannschaftenSortiert.map((m, i) => (
               <tr
                 key={m._id}
-                onDragOver={(e) => e.preventDefault()}
+                className={ziehZielIndex === i ? "zieh-ziel" : undefined}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setZiehZielIndex(i);
+                }}
                 onDrop={() => {
                   if (ziehIndex !== null) anNeuePositionVerschieben(ziehIndex, i);
                   setZiehIndex(null);
+                  setZiehZielIndex(null);
                 }}
               >
                 <td>
@@ -137,7 +143,10 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
                     className="ziehpunkt"
                     draggable
                     onDragStart={() => setZiehIndex(i)}
-                    onDragEnd={() => setZiehIndex(null)}
+                    onDragEnd={() => {
+                      setZiehIndex(null);
+                      setZiehZielIndex(null);
+                    }}
                     aria-hidden="true"
                     title="Zum Verschieben ziehen"
                   >
