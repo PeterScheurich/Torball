@@ -3,12 +3,22 @@ import type { MannschaftImTurnier, Spiel, Spielfeld, Turnier } from "@torball/sh
 const BASIS = "/api";
 
 async function anfrage<T>(pfad: string, init?: RequestInit): Promise<T> {
-  const antwort = await fetch(`${BASIS}${pfad}`, {
-    ...init,
-    headers: init?.body ? { "Content-Type": "application/json" } : undefined,
-  });
+  let antwort: Response;
+  try {
+    antwort = await fetch(`${BASIS}${pfad}`, {
+      ...init,
+      headers: init?.body ? { "Content-Type": "application/json" } : undefined,
+    });
+  } catch {
+    // fetch() wirft nur, wenn die Verbindung gar nicht erst zustande kommt
+    // (Backend nicht gestartet, Netzwerk weg) - klar von einer HTTP-Fehlerantwort unterscheiden.
+    throw new Error("Server nicht erreichbar. Läuft das Backend?");
+  }
 
   if (!antwort.ok) {
+    if (antwort.status === 502 || antwort.status === 503 || antwort.status === 504) {
+      throw new Error(`Backend antwortet nicht (Status ${antwort.status}). Läuft der Server?`);
+    }
     const body = await antwort.json().catch(() => ({}) as { error?: string });
     throw new Error(body.error ?? `Anfrage fehlgeschlagen (Status ${antwort.status})`);
   }
@@ -128,6 +138,17 @@ export function reihenfolgeAendern(turnierId: string, spielIds: string[]): Promi
     method: "PUT",
     body: JSON.stringify({ spielIds }),
   });
+}
+
+export interface SpielAnpassung {
+  runde?: string;
+  feldId?: string;
+  startzeitGeplant?: string;
+}
+
+/** Gezielte Einzelanpassung (z.B. nur runde+Startzeit tauschen), ohne wie reihenfolgeAendern alle Spiele neu durchzunummerieren. */
+export function spielAnpassen(spielId: string, daten: SpielAnpassung): Promise<Spiel> {
+  return anfrage(`/spiele/${spielId}`, { method: "PUT", body: JSON.stringify(daten) });
 }
 
 /** Verschiebt dieses Spiel auf die neue Startzeit; alle nachfolgenden geplanten Spiele wandern um dasselbe Delta mit. */

@@ -20,6 +20,28 @@ interface SpielplanPersistierenBody {
   eintraege?: SpielplanEintrag[];
 }
 
+/** Ordnungs-/feld-unabhaengiger Vergleichsschluessel: gleiche Paarung im gleichen Slot auf demselben Feld. */
+function kanonischerSchluessel(s: {
+  runde?: string;
+  feldId?: string;
+  mannschaftAId: string;
+  mannschaftBId: string;
+}): string {
+  const teams = [s.mannschaftAId, s.mannschaftBId].sort().join("|");
+  return `${s.runde ?? ""}#${s.feldId ?? ""}#${teams}`;
+}
+
+/** Vergleicht als Multiset (Reihenfolge egal), damit z.B. zwei zeitgleiche Spiele auf verschiedenen Feldern nicht faelschlich als "unterschiedlich" gelten. */
+function inhaltlichGleich(
+  bestehende: Spiel[],
+  neu: { runde?: string; feldId?: string; mannschaftAId: string; mannschaftBId: string }[],
+): boolean {
+  if (bestehende.length !== neu.length) return false;
+  const bestehendeSchluessel = bestehende.map(kanonischerSchluessel).sort();
+  const neueSchluessel = neu.map(kanonischerSchluessel).sort();
+  return bestehendeSchluessel.every((k, i) => k === neueSchluessel[i]);
+}
+
 interface VorschlagErgebnis {
   turnier: Turnier;
   vorschlag: SpielplanEintrag[];
@@ -106,6 +128,19 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
       if (gesperrt) {
         return reply.code(409).send({
           error: "Spielplan kann nicht neu erzeugt werden: es gibt bereits laufende oder abgeschlossene Spiele",
+        });
+      }
+
+      // Keine neue Version anlegen, wenn sich inhaltlich nichts geaendert hat (z.B. mehrfaches
+      // Klicken auf "Spielplan neu erzeugen" ohne zwischenzeitliche Aenderung an Mannschaften
+      // oder Reihenfolge) - sonst waechst die Versionsnummer ohne echten Grund.
+      if (bestehende.length > 0 && inhaltlichGleich(bestehende, vorschlag.map((e) => ({ ...e, runde: String(e.slot + 1) })))) {
+        return reply.code(200).send({
+          turnierId: turnier._id,
+          spielplanVersion: turnier.spielplanVersion,
+          anzahlSpiele: bestehende.length,
+          spiele: bestehende,
+          unveraendert: true,
         });
       }
 

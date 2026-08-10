@@ -5,7 +5,13 @@
  */
 export function formatiereDatum(datumIso: string): string {
   const [jahr, monat, tag] = datumIso.split("-").map(Number);
-  return new Date(jahr, monat - 1, tag).toLocaleDateString();
+  // Explizit 2-stellig statt dem Locale-Default (das laesst bei manchen Systemeinstellungen
+  // fuehrende Nullen weg, z.B. "5.1.2026") - Reihenfolge/Trennzeichen bleiben systemabhaengig.
+  return new Date(jahr, monat - 1, tag).toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
 export function formatiereUhrzeit(zeitstempelIso: string | undefined): string {
