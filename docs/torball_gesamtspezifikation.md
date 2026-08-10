@@ -1,7 +1,7 @@
 # Torball-Turniersoftware
 ## Gesamtspezifikation (Fachlich + Technisch)
 
-**Version:** 1.3
+**Version:** 1.4
 **Datum:** 10.08.2026
 **Status:** Konsolidierter Entwurf – fachlich vollständig geklärt
 
@@ -17,6 +17,7 @@
 | Klärungsrunde offene Fragen | 10.08.2026 | Beantwortung der verbliebenen 8 offenen fachlichen Fragen (Abschnitt 27); Protest als neues Ereignis (7.6, 22.2/22.3) |
 | Erkenntnisse aus der Umsetzung (Spielplan) | 10.08.2026 | Abschnitt 8 präzisiert: Turniermodus-Vereinfachung auf Turnier-Ebene, Grenzen der Back-to-Back-Vermeidung bei mehreren Feldern, Ablehnung überschneidender manueller Zeitänderungen. Details siehe `docs/Protokolle/2026-08-10-spielplan-algorithmus.md`. |
 | Erkenntnisse aus der Umsetzung (Anmeldung) | 10.08.2026 | Abschnitt 25.4 präzisiert: Umsetzungsstand der Selbst-Service-E-Mail-Änderung (aktuell ohne Bestätigungslink/Benachrichtigung) dokumentiert. Details siehe `docs/Protokolle/2026-08-10-anmeldung-benutzerverwaltung.md`. |
+| Erkenntnisse aus der Umsetzung (UI-Verfeinerung) | 10.08.2026 | Abschnitt 24.3 präzisiert: Zwei-Ebenen-Modell für Anzeige-Voreinstellungen (kontogebunden + geräteslokal), neue Zeilenabstand-Einstellung. Abschnitt 5.1 ergänzt: Geo-Referenz wird über Verlinkung zu Google Maps/OpenStreetMap erfasst, nicht über eine eingebettete Karte. Details siehe `docs/Protokolle/2026-08-10-ui-verfeinerung-stammdaten.md`. |
 
 Dieses Dokument ersetzt die einzelnen Vorgängerdokumente inhaltlich (führt sie zusammen). Sie bleiben als Historie im Projekt erhalten.
 
@@ -128,6 +129,8 @@ Modi sollen möglichst frei über eine Admin-Funktion pflegbar sein, nicht fest 
 - Anzahl und Name der Spielfelder (z. B. Halle A, Halle B)
 - Turnierleitung und Ansprechpartner (Name, Kontakt)
 - Zusatzinformationen (Anreise, Hotel etc.) – siehe auch Dokumenten-Anhänge, Abschnitt 5.1 unten
+
+**Erkenntnisse aus der Umsetzung (Geo-Referenz):** Keine eingebettete Karte, sondern zwei Links neben dem Geo-Feld zu Google Maps/OpenStreetMap (vorausgefüllt mit Spielort-Name/-Adresse als Suche). Enthält das Geo-Feld bereits ein „Breite, Länge"-Koordinatenpaar, springen beide Dienste direkt an diese Position. Bewusste Einschränkung: Eine auf der fremden Kartenseite markierte Position kann nicht automatisch zurück ins Formular übernommen werden (kein Datenkanal zwischen fremder Seite und eigener App ohne eingebettete Karte) – Koordinaten müssen dort abgelesen und hier von Hand eingetragen werden.
 
 **Protokollierungsart** (neu, siehe Abschnitt 14):
 - `digital`: vollständige Ereignisprotokollierung
@@ -899,6 +902,8 @@ Funktioniert auf Desktop, Tablet und Smartphone; Touch-optimiert für mobile Ger
 
 Hell/Dunkel, Default nach Systemeinstellung (`prefers-color-scheme`). Phase 1: nur Admin definiert Themes; Phase 2: je Benutzer. Theme-Einstellung wird je Benutzer gespeichert und überschreibt die Systemeinstellung.
 
+**Erkenntnisse aus der Umsetzung:** Anzeige-Voreinstellungen (Theme, dazu praktisch ergänzt: Zeilenabstand „Standard"/„Schmal" für Tabellen und Eingabefelder) laufen zweistufig: Eine rein geräte-/browserlokale Einstellung (`localStorage`, Seite „Einstellungen" – bewusst ohne Login erreichbar, da der geplante Offline/LAN-Betrieb, Abschnitt 21.3, keine angemeldeten Benutzer kennt) hat immer Vorrang. Ist auf einem Gerät noch keine lokale Wahl getroffen, greift – nur bei angemeldeten Benutzern – ein kontogebundener Standardwert aus dem Profil (`standardTheme`/`standardDichte` am Benutzer-Dokument) als Startwert; ist auch der nicht gesetzt, gilt „Systemeinstellung folgen" bzw. „Standard". Eine bereits getroffene lokale Wahl wird beim Login nie überschrieben.
+
 ### 24.4 Tastatur-Konfiguration (Protokollierung)
 
 Konfigurierbar pro Turnier. Standardbelegung:
@@ -1002,6 +1007,7 @@ Damit sind keine fachlichen Fragen mehr offen. Verbleibende offene Punkte sind a
 - Abweichende Logos für einzelne Teams desselben Vereins (Abschnitt 15)
 - Nachträgliche manuelle Zuordnung lokal erfasster Mannschaften zu Stammdaten (Abschnitt 15/23.4)
 - E-Mail-Benachrichtigung bei Turnieraktualisierungen (Abschnitt 13)
+- Dokument-Anhänge fürs Turnier (Abschnitt 5.1/20.13): Datentyp vorhanden (`shared/src/types/dokumentAnhang.ts`), aber keine Backend-Route und keine UI. Zurückgestellt, bis der übrige Rahmen (UI/Stammdaten/Einstellungen) steht; vor Umsetzung zu klären: Speicherort der Dateien (lokal vs. CouchDB-Attachment), Limits für Dateigröße/-typ.
 - Einschränkung von Ergebniskorrekturen ausschließlich auf die Turnierleitung (Abschnitt 14)
 - Selfservice-Registrierung für Benutzer (Abschnitt 10.2)
 - Automatische Archivierung nach Zeitablauf ohne Einspruch (Abschnitt 26.4)

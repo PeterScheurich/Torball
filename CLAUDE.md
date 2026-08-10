@@ -122,6 +122,17 @@ oder `"digital"` (vollständiges Live-Ereignisprotokoll je Wurf/Foul/Tor). Nur
 der `manuell`-Pfad existiert bisher – der `digital`-Pfad ist in der
 Spezifikation (Abschnitt 22) beschrieben, aber noch nicht gebaut.
 
+**Optionale Textfelder leeren: `null` senden, nicht `undefined`.**
+`JSON.stringify` entfernt Felder mit Wert `undefined` komplett aus dem
+Request-Body; die Backend-Routen mergen PUT-Bodies typischerweise per
+`{ ...bestehend, ...req.body }` (z. B. `turnier.ts`, `verein.ts`, `team.ts`)
+– ein fehlender Schlüssel lässt den alten Wert dann unverändert stehen,
+ein leeres Feld lässt sich so **nie** wirklich zurücksetzen. Erst in
+`TurnierVerwaltenPage.tsx`/`api.ts` (`updateTurnier`) darauf umgestellt,
+explizit `null` zu senden statt `wert || undefined`; dasselbe Muster
+(`|| undefined`) steckt vermutlich noch in `VereineVerwaltung.tsx`/
+`TeamsVerwaltung.tsx` und wurde dort noch nicht angefasst.
+
 **Fachliche Referenz:** `docs/torball_gesamtspezifikation.md` ist die
 verbindliche Spezifikation für Geschäftsregeln; bei Unklarheiten dort
 nachschlagen statt zu raten. `docs/Protokolle/` enthält datierte
@@ -149,7 +160,21 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   Maus-Interaktion (z. B. ▲/▼-Buttons als Alternative zu Drag & Drop).
 - Farbschema folgt standardmäßig der Systemeinstellung
   (`prefers-color-scheme`), mit manuellem Umschalter (`[data-theme]`) als
-  Override.
+  Override. Zusätzlich Tabellendichte/Zeilenabstand (`[data-dichte]`,
+  „Standard"/„Schmal") nach demselben Muster.
+- **Zwei-Ebenen-Modell für beide Einstellungen** (`frontend/src/theme.ts`,
+  `frontend/src/dichte.ts`): geräte-/browserlokal (`localStorage`, Seite
+  `/einstellungen`, auch ohne Login erreichbar) hat immer Vorrang vor dem
+  kontogebundenen Standardwert (`Benutzer.standardTheme`/`standardDichte`,
+  wird beim Login nur übernommen, wenn auf dem Gerät noch keine eigene Wahl
+  existiert - siehe `seedeVoreinstellungen()` in `frontend/src/auth.tsx`).
+- **Initialisierung gehört nach `main.tsx`, nicht in eine Komponente:**
+  `themeInitialisieren()`/`dichteInitialisieren()` werden dort vor dem
+  ersten Render aufgerufen (rein lesend, kein `localStorage`-Schreiben).
+  Würde man das stattdessen nur beim Mounten von `ThemeUmschalter`/
+  `DichteUmschalter` setzen, fehlt das `data-*`-Attribut nach einem Reload
+  auf jeder Seite, auf der diese Komponenten nicht eingebunden sind (schon
+  einmal genau so live erlebt).
 
 ## Datum/Uhrzeit
 
