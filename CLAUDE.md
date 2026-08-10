@@ -47,6 +47,14 @@ Aufzählung ergänzen, oder eine neue Überschrift für ein neues Thema anlegen.
   den Spielplan-Vorschlag als auch für den bereits gespeicherten, manuell
   änderbaren Spielplan gelten – nicht nur für die Erst-Erzeugung.
 
+## Benutzer-Fachregeln
+
+- Kein Benutzer-Löschen-Endpunkt: „Sperren" (`gesperrt: true`) ist der laut
+  Spezifikation (Abschnitt 25.3) vorgesehene Mechanismus, kein Hard-Delete.
+- Sensible Felder (Passwort-Hash, 2FA-Secret, Einladungs-/Reset-Token-Hashes)
+  dürfen nie über die API zurückgegeben werden - immer über
+  `oeffentlichesProfil()` (`backend/src/auth/benutzerProfil.ts`) filtern.
+
 ## Dokumentation
 
 - Größere fachliche oder technische Entscheidungen als Protokoll unter
