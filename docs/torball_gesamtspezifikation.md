@@ -1,7 +1,7 @@
 # Torball-Turniersoftware
 ## Gesamtspezifikation (Fachlich + Technisch)
 
-**Version:** 1.1
+**Version:** 1.2
 **Datum:** 10.08.2026
 **Status:** Konsolidierter Entwurf – fachlich vollständig geklärt
 
@@ -15,6 +15,7 @@
 | Technische Spezifikation | 0.1, Juli 2026 | Technologie-Stack, Infrastruktur, Datenmodell v0.1 |
 | Klärungsrunde Datenmodell | 09.08.2026 | 5 vertiefte Modellierungsentscheidungen (Konfiguration, Events, Verein/Team, Token) |
 | Klärungsrunde offene Fragen | 10.08.2026 | Beantwortung der verbliebenen 8 offenen fachlichen Fragen (Abschnitt 27); Protest als neues Ereignis (7.6, 22.2/22.3) |
+| Erkenntnisse aus der Umsetzung (Spielplan) | 10.08.2026 | Abschnitt 8 präzisiert: Turniermodus-Vereinfachung auf Turnier-Ebene, Grenzen der Back-to-Back-Vermeidung bei mehreren Feldern, Ablehnung überschneidender manueller Zeitänderungen. Details siehe `docs/Protokolle/2026-08-10-spielplan-algorithmus.md`. |
 
 Dieses Dokument ersetzt die einzelnen Vorgängerdokumente inhaltlich (führt sie zusammen). Sie bleiben als Historie im Projekt erhalten.
 
@@ -134,6 +135,7 @@ Modi sollen möglichst frei über eine Admin-Funktion pflegbar sein, nicht fest 
 
 **Spielregeln (konfigurierbar, Vorgabewerte aus der Systemkonfiguration, siehe Abschnitt 20.1):**
 - Turniermodus, Spielzeit je Halbzeit (Standard 5 Min.), Anzahl Halbzeiten (Standard 2), Pause (Standard 2 Min.), Seitenwechsel ja/nein
+  - **Klarstellung aus der Umsetzung:** Auf Ebene eines einzelnen Turnier-Dokuments (= ein Spieltag) reduziert sich der Turniermodus für die Spielplan-Erzeugung auf zwei Grundfälle: „Jeder gegen Jeden" (einfach) oder „Jeder zweimal gegen Jeden" (doppelt, v. a. für kleine Ligen mit 4–5 Mannschaften). Der Modus wird bei der Turnier-Anlage festgelegt und ist auf der Turnier-Übersicht jederzeit einsehbar und änderbar. Mehrtägige Wettbewerbsformen (z. B. Hin-/Rückrunde) ergeben sich aus der Verknüpfung mehrerer Turnier-Dokumente über den `Wettbewerb` (Abschnitt 20.3), nicht aus einem komplexeren Modus-Wert je Turnier.
 - Timeouts je Halbzeit/Mannschaft (Standard 1), Timeout-Dauer (30 Sek.)
 - Maximale Auswechslungen je Halbzeit (Standard 3), unbegrenzt in der Halbzeitpause
 - Tordifferenz-Abbruch (Standard aktiv, 10 Tore) – Schiedsrichter entscheidet, Software zeigt nur Hinweis
@@ -265,12 +267,14 @@ Ein Protest gegen eine Schiedsrichterentscheidung oder das Spielergebnis muss la
 
 ## 8. Spielplan-Generierung
 
-Aus Turnierdefinition und Spielregeln wird ein Spielplan-**Vorschlag** erstellt (Modul „Turnierplanung"). Die endgültige Version wird im Modul „Turnier" gepflegt; die Turnierleitung darf Reihenfolge, Spielfeld und Startzeiten nachträglich anpassen.
+Aus Turnierdefinition und Spielregeln wird ein Spielplan-**Vorschlag** erstellt (Modul „Turnierplanung"). Die endgültige Version wird im Modul „Turnier" gepflegt; die Turnierleitung darf Reihenfolge, Spielfeld und Startzeiten nachträglich anpassen. Manuelle Anpassungen dürfen keine der harten Regeln unterlaufen: Würde eine geänderte Startzeit zu einer zeitlichen Überschneidung mit einem anderen Spiel auf demselben Feld führen, wird die Änderung abgelehnt statt kommentarlos übernommen. Die letzten Änderungen am gespeicherten Spielplan lassen sich rückgängig machen.
 
 **Harte Regeln (werden immer eingehalten):**
 - Eine Mannschaft spielt nicht gleichzeitig auf zwei Feldern
-- Eine Mannschaft hat keine zwei Spiele hintereinander (feldübergreifend)
+- Eine Mannschaft hat keine zwei Spiele hintereinander (feldübergreifend) – diese Prüfung gilt sowohl für den Vorschlag als auch für den bereits gespeicherten, manuell veränderbaren Spielplan
 - Ein Schiedsrichter leitet nicht das Spiel seiner eigenen Mannschaft (Warnung, kein Blocker – siehe 5.4)
+
+**Praktische Grenze bei mehreren Feldern:** „Keine zwei Spiele hintereinander" und „Felder spielen möglichst parallel" stehen in Konflikt, sobald genug Felder für volle Parallelität vorhanden sind (Felder ≥ Mannschaften/2) – dann spielt zwangsläufig jede Mannschaft jede Runde, eine Pause ist nur durch bewusst ungenutzte Feldkapazität möglich. Bei der üblichen Konfiguration (1 Feld, ausnahmsweise 2) tritt dieser Konflikt in der Praxis kaum auf: Ab 5 Mannschaften mit einem Feld ist eine vollständig kollisionsfreie Runde immer möglich, bei genau 3 oder 4 Mannschaften mit einem Feld ist dagegen mindestens ein Back-to-Back-Fall unvermeidbar. Bei sehr kleinen Ligen (4–5 Mannschaften) mit 2 Feldern sind unvermeidbare Back-to-Back-Fälle zu erwarten und werden als Warnung, nicht als Fehler, angezeigt.
 
 **Bevorzugte Reihenfolge (Bundesliga):** 1. Mannschaften desselben Vereins zuerst, 2. dann desselben Bundeslandes (frühestmöglich, ohne Back-to-Back-Verstoß), 3. dann alle anderen.
 
