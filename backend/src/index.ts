@@ -3,6 +3,8 @@ import { ensureIndexes } from "./db";
 import { vereinRoutes } from "./routes/verein";
 import { teamRoutes } from "./routes/team";
 import { turnierRoutes } from "./routes/turnier";
+import { mannschaftRoutes } from "./routes/mannschaft";
+import { spielplanRoutes } from "./routes/spielplan";
 
 const server = Fastify({ logger: true });
 
@@ -13,6 +15,8 @@ server.get("/health", async () => {
 server.register(vereinRoutes);
 server.register(teamRoutes);
 server.register(turnierRoutes);
+server.register(mannschaftRoutes);
+server.register(spielplanRoutes);
 
 const start = async () => {
   try {
