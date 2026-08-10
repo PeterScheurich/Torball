@@ -112,6 +112,22 @@ header nav a {
   text-decoration: none;
 }
 
+/* Eigene (kleinere) Links in der Kopfzeile neben der Marke - mit klar erkennbarem
+   Zustand fuer die aktuell aktive Seite, analog zum Tab-Aktiv-Zustand. */
+.kopfzeile-link {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.kopfzeile-link-aktiv {
+  background: var(--bg-subtle);
+  color: var(--accent);
+}
+
 .marke {
   display: inline-flex;
   align-items: center;
@@ -221,6 +237,14 @@ form {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+/* Fuer ein Formular INNERHALB einer Tabellenzelle (z.B. E-Mail-Aenderung im Profil) -
+   Eingabe und Speichern-Button nebeneinander statt der Standard-Formular-Spalte. */
+.inline-form {
+  flex-direction: row;
+  max-width: none;
+  margin-bottom: 0;
 }
 
 label {

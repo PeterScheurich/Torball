@@ -1,9 +1,23 @@
 import { useState } from "react";
-import { totpBestaetigen, totpDeaktivieren, totpEinrichten, type TotpEinrichtung } from "../api";
+import type { GlobaleRolle } from "@torball/shared";
+import {
+  eigenesProfilAktualisieren,
+  totpBestaetigen,
+  totpDeaktivieren,
+  totpEinrichten,
+  type TotpEinrichtung,
+} from "../api";
 import { useAuth } from "../auth";
+
+const ROLLEN_LABEL: Record<GlobaleRolle, string> = {
+  admin: "Admin",
+  manager: "Manager",
+  benutzer: "Benutzer",
+};
 
 export function ProfilPage() {
   const { benutzer, aktualisiereBenutzer } = useAuth();
+  const [email, setEmail] = useState(benutzer?.email ?? "");
   const [einrichtung, setEinrichtung] = useState<TotpEinrichtung | undefined>();
   const [code, setCode] = useState("");
   const [deaktivierenPasswort, setDeaktivierenPasswort] = useState("");
@@ -11,6 +25,19 @@ export function ProfilPage() {
   const [hinweis, setHinweis] = useState<string | undefined>();
 
   if (!benutzer) return null;
+
+  async function emailSpeichern(event: React.FormEvent) {
+    event.preventDefault();
+    setFehler(undefined);
+    setHinweis(undefined);
+    try {
+      const aktualisiert = await eigenesProfilAktualisieren({ email });
+      aktualisiereBenutzer(aktualisiert);
+      setHinweis("E-Mail-Adresse wurde geändert.");
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der E-Mail-Adresse");
+    }
+  }
 
   async function einrichtungStarten() {
     setFehler(undefined);
@@ -51,12 +78,45 @@ export function ProfilPage() {
   return (
     <>
       <h1>Mein Profil</h1>
-      <p>
-        {benutzer.name} · {benutzer.email} · Rolle: {benutzer.globaleRolle}
-      </p>
 
       {fehler && <p role="alert">{fehler}</p>}
       {hinweis && <p>{hinweis}</p>}
+
+      <div className="tabellen-wrapper">
+        <table>
+          <caption className="sr-only">Eigene Profildaten</caption>
+          <tbody>
+            <tr>
+              <th scope="row">Name</th>
+              <td>{benutzer.name}</td>
+            </tr>
+            <tr>
+              <th scope="row">
+                <label htmlFor="email">E-Mail</label>
+              </th>
+              <td>
+                <form onSubmit={emailSpeichern} className="inline-form">
+                  <input
+                    id="email"
+                    type="email"
+                    autoComplete="username"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <button type="submit" disabled={email === benutzer.email}>
+                    Speichern
+                  </button>
+                </form>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Rolle</th>
+              <td>{ROLLEN_LABEL[benutzer.globaleRolle]}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <h2>Zwei-Faktor-Authentifizierung (2FA)</h2>
       {benutzer.zweiFaAktiv ? (

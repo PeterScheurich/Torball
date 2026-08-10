@@ -229,6 +229,11 @@ export function benutzerAktualisieren(
   return anfrage(`/benutzer/${id}`, { method: "PUT", body: JSON.stringify(daten) });
 }
 
+/** Selbst-Service fuers eigene Profil - kann anders als benutzerAktualisieren() weder Rolle noch Sperrung aendern. */
+export function eigenesProfilAktualisieren(daten: { name?: string; email?: string }): Promise<BenutzerProfil> {
+  return anfrage("/benutzer/mich", { method: "PUT", body: JSON.stringify(daten) });
+}
+
 export function getEinladung(token: string): Promise<{ email: string; name: string }> {
   return anfrage(`/benutzer/einladung/${token}`);
 }

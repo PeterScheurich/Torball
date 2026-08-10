@@ -1,4 +1,4 @@
-import { Link, Route, Routes, useNavigate } from "react-router-dom";
+import { Link, NavLink, Route, Routes, useNavigate } from "react-router-dom";
 import { TurnierListePage } from "./pages/TurnierListePage";
 import { TurnierAnlegenPage } from "./pages/TurnierAnlegenPage";
 import { MannschaftenErfassenPage } from "./pages/MannschaftenErfassenPage";
@@ -36,10 +36,22 @@ function Kopfzeile() {
         <div className="marke">
           {benutzer && (
             <>
-              {darfBenutzerVerwalten && <Link to="/benutzerverwaltung">Benutzerverwaltung</Link>}
-              <Link to="/profil">{benutzer.name}</Link>
-              <button type="button" onClick={abmelden}>
-                Abmelden
+              {darfBenutzerVerwalten && (
+                <NavLink
+                  to="/benutzerverwaltung"
+                  className={({ isActive }) => (isActive ? "kopfzeile-link kopfzeile-link-aktiv" : "kopfzeile-link")}
+                >
+                  Benutzerverwaltung
+                </NavLink>
+              )}
+              <NavLink
+                to="/profil"
+                className={({ isActive }) => (isActive ? "kopfzeile-link kopfzeile-link-aktiv" : "kopfzeile-link")}
+              >
+                {benutzer.name}
+              </NavLink>
+              <button type="button" className="symbol-button" onClick={abmelden} aria-label="Abmelden" title="Abmelden">
+                🚪
               </button>
             </>
           )}
