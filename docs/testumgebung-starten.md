@@ -50,3 +50,23 @@ Get-NetTCPConnection -LocalPort 3000 -State Listen | Select-Object -ExpandProper
 Stop-Process -Id <gefundene PID> -Force
 ```
 Danach `npm run dev:backend` erneut ausführen.
+
+## Konsolen-Befehle ("torball")
+
+Für administrative Aufgaben, die keinen Web-Login voraussetzen (Haupt-
+Anwendungsfall: der einzige Admin-Account ist gesperrt), gibt es
+`backend/src/cli/torball.ts`. Aufruf aus dem Projektordner:
+
+```bash
+npm run torball --workspace=backend -- <befehl> [--option="wert" ...]
+```
+
+Ohne Befehl oder mit `--hilfe` zeigt es die verfügbaren Befehle. Aktuell:
+
+- `benutzer:liste` – listet alle Benutzer mit E-Mail, Rolle und Sperr-Status.
+- `benutzer:entsperren --email="admin@example.com"` – entsperrt einen Benutzer.
+
+Läuft unabhängig vom Backend-Server (keine laufende `npm run dev:backend`-
+Instanz nötig), verbindet sich aber direkt mit derselben CouchDB (braucht also
+ebenfalls `backend/.env`). Weitere Befehle werden im `BEFEHLE`-Objekt in
+dieser Datei ergänzt.

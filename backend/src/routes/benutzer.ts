@@ -101,6 +101,57 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  /**
+   * Selbst-Service fuer das eigene Profil (jede Rolle) - bewusst getrennt von
+   * PUT /benutzer/:id (admin/manager-gated), das zusaetzlich Rolle/Sperrung
+   * aendern darf. globaleRolle/gesperrt sind hier nicht aenderbar: sonst
+   * koennte sich jeder Benutzer selbst zum Admin machen.
+   *
+   * E-Mail-Aenderung laeuft aktuell OHNE Bestaetigungslink/Benachrichtigung
+   * (Abschnitt 25.4 saehe beides vor) - dieselbe Einschraenkung wie bei
+   * Einladung/Passwort-Reset, solange kein E-Mail-Versand angebunden ist.
+   */
+  app.put<{ Body: { name?: string; email?: string } }>(
+    "/benutzer/mich",
+    {
+      schema: {
+        body: {
+          type: "object",
+          properties: {
+            name: { type: "string", minLength: 1 },
+            email: { type: "string", minLength: 1 },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!requireAuth(req, reply)) return;
+      const aenderungen: Partial<Pick<Benutzer, "name" | "email">> = {};
+
+      if (req.body.name) {
+        aenderungen.name = req.body.name;
+      }
+
+      if (req.body.email) {
+        const neueEmail = req.body.email.trim().toLowerCase();
+        if (neueEmail !== req.benutzer!.email) {
+          const alle = await findAllByType<Benutzer>("benutzer");
+          const vergeben = alle.some(
+            (b) => b._id !== req.benutzer!._id && b.email.toLowerCase() === neueEmail,
+          );
+          if (vergeben) {
+            return reply.code(409).send({ error: "Diese E-Mail-Adresse wird bereits verwendet." });
+          }
+          app.log.info(`E-Mail-Aenderung: ${req.benutzer!.email} -> ${neueEmail}`);
+          aenderungen.email = neueEmail;
+        }
+      }
+
+      const aktualisiert = await insertDoc({ ...req.benutzer!, ...aenderungen });
+      return oeffentlichesProfil(aktualisiert);
+    },
+  );
+
   app.put<{ Params: { id: string }; Body: BenutzerAktualisierenBody }>(
     "/benutzer/:id",
     { schema: { body: benutzerAktualisierenSchema } },

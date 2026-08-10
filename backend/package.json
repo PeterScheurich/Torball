@@ -7,7 +7,8 @@
     "build": "tsc",
     "dev": "tsx watch --env-file=.env src/index.ts",
     "start": "node --env-file=.env dist/index.js",
-    "test": "tsx --test src/**/*.test.ts"
+    "test": "tsx --test src/**/*.test.ts",
+    "torball": "tsx --env-file=.env src/cli/torball.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
