@@ -35,10 +35,12 @@ async function ladeUndBerechneVorschlag(
 
   const wiederholungen = query.wiederholungen === "2" ? 2 : 1;
 
-  const mannschaften = await findAllBySelector<MannschaftImTurnier>({
-    docType: "mannschaftImTurnier",
-    turnierId: turnier._id,
-  });
+  const mannschaften = (
+    await findAllBySelector<MannschaftImTurnier>({
+      docType: "mannschaftImTurnier",
+      turnierId: turnier._id,
+    })
+  ).sort((a, b) => (a.reihenfolge ?? 0) - (b.reihenfolge ?? 0));
 
   if (mannschaften.length < 2) {
     reply.code(400).send({ error: "Mindestens zwei Mannschaften erforderlich, um einen Spielplan zu erstellen" });

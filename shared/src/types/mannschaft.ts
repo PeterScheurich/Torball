@@ -18,4 +18,12 @@ export interface MannschaftImTurnier extends CouchMeta {
   ansprechpartnerTelefon?: string;
   ansprechpartnerEmail?: string;
   importiertAusTurnierId?: TurnierId;
+  /**
+   * Manuelle Sortierposition innerhalb des Turniers (nicht Teil der
+   * Gesamtspezifikation, praktische Ergaenzung): steuert sowohl die
+   * Anzeige-Reihenfolge der Mannschaften als auch - da erzeugePaarungen
+   * die Mannschaften in dieser Reihenfolge durchlaeuft - die Reihenfolge
+   * neu generierter Spielplan-Vorschlaege.
+   */
+  reihenfolge: number;
 }

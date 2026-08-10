@@ -56,6 +56,18 @@ const mannschaftAktualisierungSchema = {
   },
 } as const;
 
+interface ReihenfolgeBody {
+  mannschaftIds: string[];
+}
+
+const reihenfolgeSchema = {
+  type: "object",
+  required: ["mannschaftIds"],
+  properties: {
+    mannschaftIds: { type: "array", items: { type: "string" }, minItems: 1 },
+  },
+} as const;
+
 export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { turnierId: string } }>("/turniere/:turnierId/mannschaften", async (req) => {
     return findAllBySelector<MannschaftImTurnier>({
@@ -79,11 +91,19 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(400).send({ error: "Referenziertes Turnier existiert nicht" });
       }
 
+      // Neue Mannschaft wird immer ans Ende der bisherigen Reihenfolge angehaengt.
+      const bestehende = await findAllBySelector<MannschaftImTurnier>({
+        docType: "mannschaftImTurnier",
+        turnierId: req.body.turnierId,
+      });
+      const naechsteReihenfolge = bestehende.reduce((max, m) => Math.max(max, m.reihenfolge ?? 0), -1) + 1;
+
       const id = newId("mannschaftImTurnier");
       const mannschaft: MannschaftImTurnier = {
         _id: id,
         docType: "mannschaftImTurnier",
         mannschaftId: id,
+        reihenfolge: naechsteReihenfolge,
         ...req.body,
       };
       const gespeichert = await insertDoc(mannschaft);
@@ -99,6 +119,37 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
       if (!bestehend) return reply.code(404).send({ error: "Mannschaft nicht gefunden" });
       const aktualisiert: MannschaftImTurnier = { ...bestehend, ...req.body };
       return insertDoc(aktualisiert);
+    },
+  );
+
+  /** Reihenfolge der Mannschaften aendern - wirkt sich auf kuenftig erzeugte Spielplan-Vorschlaege aus. */
+  app.put<{ Params: { turnierId: string }; Body: ReihenfolgeBody }>(
+    "/turniere/:turnierId/mannschaften/reihenfolge",
+    { schema: { body: reihenfolgeSchema } },
+    async (req, reply) => {
+      const bestehende = await findAllBySelector<MannschaftImTurnier>({
+        docType: "mannschaftImTurnier",
+        turnierId: req.params.turnierId,
+      });
+
+      const bestehendeIds = new Set(bestehende.map((m) => m._id));
+      const { mannschaftIds } = req.body;
+      const passtZusammen =
+        mannschaftIds.length === bestehende.length && mannschaftIds.every((id) => bestehendeIds.has(id));
+      if (!passtZusammen) {
+        return reply
+          .code(400)
+          .send({ error: "mannschaftIds muss exakt alle Mannschaften dieses Turniers enthalten, je einmal" });
+      }
+
+      const mannschaftenNachId = new Map(bestehende.map((m) => [m._id, m]));
+      const aktualisiert: MannschaftImTurnier[] = [];
+      for (const [index, id] of mannschaftIds.entries()) {
+        const mannschaft = mannschaftenNachId.get(id)!;
+        aktualisiert.push(await insertDoc({ ...mannschaft, reihenfolge: index }));
+      }
+
+      return aktualisiert;
     },
   );
 

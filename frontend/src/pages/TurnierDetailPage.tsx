@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { MannschaftImTurnier, Spiel, Turnier } from "@torball/shared";
 import {
@@ -9,10 +9,19 @@ import {
   getSpiele,
   getSpielplanVorschlag,
   getTurnier,
+  mannschaftReihenfolgeAendern,
   reihenfolgeAendern,
   updateMannschaft,
   type SpielplanVorschlagEintrag,
 } from "../api";
+
+/** Verschiebt ein Element von einer Position an eine andere, Rest ruckt entsprechend nach. */
+function verschobeneListe<T>(liste: T[], vonIndex: number, nachIndex: number): T[] {
+  const kopie = [...liste];
+  const [element] = kopie.splice(vonIndex, 1);
+  kopie.splice(nachIndex, 0, element);
+  return kopie;
+}
 
 export function TurnierDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,8 +36,12 @@ export function TurnierDetailPage() {
 
   const [neueMannschaft, setNeueMannschaft] = useState("");
   const [neuesBundesland, setNeuesBundesland] = useState("");
+  const mannschaftsnameRef = useRef<HTMLInputElement>(null);
 
   const [bearbeitung, setBearbeitung] = useState<Record<string, { name: string; bundesland: string }>>({});
+
+  const [ziehIndexMannschaft, setZiehIndexMannschaft] = useState<number | null>(null);
+  const [ziehIndexSpiel, setZiehIndexSpiel] = useState<number | null>(null);
 
   useEffect(() => {
     setBearbeitung((bisherig) => {
@@ -64,8 +77,11 @@ export function TurnierDetailPage() {
     mannschaften.find((m) => m._id === mannschaftId)?.name ?? mannschaftId;
 
   const startzeitAnzeigen = (startzeitGeplant: string | undefined) =>
-    startzeitGeplant ? new Date(startzeitGeplant).toLocaleTimeString("de-DE") : "–";
+    startzeitGeplant
+      ? new Date(startzeitGeplant).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+      : "–";
 
+  const mannschaftenSortiert = [...mannschaften].sort((a, b) => (a.reihenfolge ?? 0) - (b.reihenfolge ?? 0));
   const spieleSortiert = [...spiele].sort((a, b) => Number(a.runde) - Number(b.runde));
   const vorschlagSortiert = vorschlag ? [...vorschlag].sort((a, b) => a.slot - b.slot) : undefined;
 
@@ -82,6 +98,8 @@ export function TurnierDetailPage() {
       await ladeAlles();
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Anlegen der Mannschaft");
+    } finally {
+      mannschaftsnameRef.current?.focus();
     }
   }
 
@@ -107,14 +125,20 @@ export function TurnierDetailPage() {
     }
   }
 
-  async function spielVerschieben(spielId: string, richtung: -1 | 1) {
-    const index = spieleSortiert.findIndex((s) => s._id === spielId);
-    const zielIndex = index + richtung;
-    if (index < 0 || zielIndex < 0 || zielIndex >= spieleSortiert.length) return;
+  async function mannschaftAnNeuePositionVerschieben(vonIndex: number, nachIndex: number) {
+    if (vonIndex === nachIndex || vonIndex < 0 || nachIndex < 0 || nachIndex >= mannschaftenSortiert.length) return;
+    const neueReihenfolge = verschobeneListe(mannschaftenSortiert, vonIndex, nachIndex).map((m) => m._id);
+    try {
+      await mannschaftReihenfolgeAendern(turnierId, neueReihenfolge);
+      await ladeAlles();
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Mannschafts-Reihenfolge");
+    }
+  }
 
-    const neueReihenfolge = spieleSortiert.map((s) => s._id);
-    [neueReihenfolge[index], neueReihenfolge[zielIndex]] = [neueReihenfolge[zielIndex], neueReihenfolge[index]];
-
+  async function spielAnNeuePositionVerschieben(vonIndex: number, nachIndex: number) {
+    if (vonIndex === nachIndex || vonIndex < 0 || nachIndex < 0 || nachIndex >= spieleSortiert.length) return;
+    const neueReihenfolge = verschobeneListe(spieleSortiert, vonIndex, nachIndex).map((s) => s._id);
     try {
       await reihenfolgeAendern(turnierId, neueReihenfolge);
       await ladeAlles();
@@ -166,17 +190,60 @@ export function TurnierDetailPage() {
         <p>Noch keine Mannschaften angelegt.</p>
       ) : (
         <table>
-          <caption className="sr-only">Angemeldete Mannschaften, Name und Bundesland bearbeitbar</caption>
+          <caption className="sr-only">
+            Angemeldete Mannschaften, Name und Bundesland bearbeitbar, Reihenfolge per Ziehpunkt oder Pfeiltasten
+            änderbar
+          </caption>
           <thead>
             <tr>
+              <th scope="col">
+                <span className="sr-only">Reihenfolge</span>
+              </th>
               <th scope="col">Name</th>
               <th scope="col">Bundesland</th>
               <th scope="col">Aktionen</th>
             </tr>
           </thead>
           <tbody>
-            {mannschaften.map((m) => (
-              <tr key={m._id}>
+            {mannschaftenSortiert.map((m, i) => (
+              <tr
+                key={m._id}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
+                  if (ziehIndexMannschaft !== null) mannschaftAnNeuePositionVerschieben(ziehIndexMannschaft, i);
+                  setZiehIndexMannschaft(null);
+                }}
+              >
+                <td>
+                  <span
+                    className="ziehpunkt"
+                    draggable
+                    onDragStart={() => setZiehIndexMannschaft(i)}
+                    onDragEnd={() => setZiehIndexMannschaft(null)}
+                    aria-hidden="true"
+                    title="Zum Verschieben ziehen"
+                  >
+                    ⠿
+                  </span>
+                  <button
+                    type="button"
+                    className="symbol-button"
+                    onClick={() => mannschaftAnNeuePositionVerschieben(i, i - 1)}
+                    disabled={i === 0}
+                    aria-label={`${m.name} nach oben verschieben`}
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    className="symbol-button"
+                    onClick={() => mannschaftAnNeuePositionVerschieben(i, i + 1)}
+                    disabled={i === mannschaftenSortiert.length - 1}
+                    aria-label={`${m.name} nach unten verschieben`}
+                  >
+                    ▼
+                  </button>
+                </td>
                 <td>
                   <label className="sr-only" htmlFor={`name-${m._id}`}>
                     Name von {m.name}
@@ -202,11 +269,23 @@ export function TurnierDetailPage() {
                   />
                 </td>
                 <td>
-                  <button type="button" onClick={() => mannschaftSpeichern(m._id)}>
-                    Speichern
-                  </button>{" "}
-                  <button type="button" onClick={() => mannschaftLoeschen(m._id)}>
-                    Löschen
+                  <button
+                    type="button"
+                    className="symbol-button"
+                    onClick={() => mannschaftSpeichern(m._id)}
+                    aria-label={`${m.name} speichern`}
+                    title="Speichern"
+                  >
+                    💾
+                  </button>
+                  <button
+                    type="button"
+                    className="symbol-button"
+                    onClick={() => mannschaftLoeschen(m._id)}
+                    aria-label={`${m.name} löschen`}
+                    title="Löschen"
+                  >
+                    ✕
                   </button>
                 </td>
               </tr>
@@ -220,6 +299,7 @@ export function TurnierDetailPage() {
           <label htmlFor="mannschaftName">Mannschaftsname</label>
           <input
             id="mannschaftName"
+            ref={mannschaftsnameRef}
             required
             value={neueMannschaft}
             onChange={(e) => setNeueMannschaft(e.target.value)}
@@ -242,45 +322,68 @@ export function TurnierDetailPage() {
         <>
           <p>Spielplan ist bereits erzeugt (Version {turnier.spielplanVersion}).</p>
           <table>
-            <caption className="sr-only">Erzeugter Spielplan</caption>
+            <caption className="sr-only">
+              Erzeugter Spielplan, Reihenfolge per Ziehpunkt oder Pfeiltasten änderbar
+            </caption>
             <thead>
               <tr>
+                <th scope="col">
+                  <span className="sr-only">Reihenfolge</span>
+                </th>
                 <th scope="col">Spiel</th>
                 <th scope="col">Feld</th>
                 <th scope="col">Startzeit</th>
                 <th scope="col">Mannschaft A</th>
                 <th scope="col">Mannschaft B</th>
                 <th scope="col">Status</th>
-                <th scope="col">Reihenfolge</th>
               </tr>
             </thead>
             <tbody>
               {spieleSortiert.map((s, i) => (
-                <tr key={s._id}>
-                  <td>{s.runde}</td>
-                  <td>{s.feldId}</td>
-                  <td>{startzeitAnzeigen(s.startzeitGeplant)}</td>
-                  <td>{nameVon(s.mannschaftAId)}</td>
-                  <td>{nameVon(s.mannschaftBId)}</td>
-                  <td>{s.status}</td>
+                <tr
+                  key={s._id}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => {
+                    if (ziehIndexSpiel !== null) spielAnNeuePositionVerschieben(ziehIndexSpiel, i);
+                    setZiehIndexSpiel(null);
+                  }}
+                >
                   <td>
+                    <span
+                      className="ziehpunkt"
+                      draggable={s.status === "geplant"}
+                      onDragStart={() => setZiehIndexSpiel(i)}
+                      onDragEnd={() => setZiehIndexSpiel(null)}
+                      aria-hidden="true"
+                      title="Zum Verschieben ziehen"
+                    >
+                      ⠿
+                    </span>
                     <button
                       type="button"
-                      onClick={() => spielVerschieben(s._id, -1)}
+                      className="symbol-button"
+                      onClick={() => spielAnNeuePositionVerschieben(i, i - 1)}
                       disabled={i === 0 || s.status !== "geplant"}
                       aria-label={`Spiel ${s.runde} nach vorne verschieben`}
                     >
                       ▲
-                    </button>{" "}
+                    </button>
                     <button
                       type="button"
-                      onClick={() => spielVerschieben(s._id, 1)}
+                      className="symbol-button"
+                      onClick={() => spielAnNeuePositionVerschieben(i, i + 1)}
                       disabled={i === spieleSortiert.length - 1 || s.status !== "geplant"}
                       aria-label={`Spiel ${s.runde} nach hinten verschieben`}
                     >
                       ▼
                     </button>
                   </td>
+                  <td>{s.runde}</td>
+                  <td>{s.feldId}</td>
+                  <td>{startzeitAnzeigen(s.startzeitGeplant)}</td>
+                  <td>{nameVon(s.mannschaftAId)}</td>
+                  <td>{nameVon(s.mannschaftBId)}</td>
+                  <td>{s.status}</td>
                 </tr>
               ))}
             </tbody>

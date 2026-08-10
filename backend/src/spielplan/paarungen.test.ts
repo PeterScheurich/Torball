@@ -12,6 +12,7 @@ function mannschaft(id: string, vereinId?: string, bundesland?: string): Mannsch
     name: id,
     vereinId,
     bundesland,
+    reihenfolge: 0,
   };
 }
 

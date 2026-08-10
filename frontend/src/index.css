@@ -187,6 +187,27 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.symbol-button {
+  padding: 4px 8px;
+  font-size: 1rem;
+  line-height: 1;
+  margin-right: 4px;
+}
+
+.ziehpunkt {
+  display: inline-block;
+  padding: 4px 6px;
+  margin-right: 6px;
+  cursor: grab;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  user-select: none;
+}
+
+.ziehpunkt:active {
+  cursor: grabbing;
+}
+
 button:hover:not(:disabled) {
   filter: brightness(1.1);
 }

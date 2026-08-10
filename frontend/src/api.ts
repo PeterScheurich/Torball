@@ -72,6 +72,16 @@ export function deleteMannschaft(id: string): Promise<void> {
   return anfrage(`/mannschaften/${id}`, { method: "DELETE" });
 }
 
+export function mannschaftReihenfolgeAendern(
+  turnierId: string,
+  mannschaftIds: string[],
+): Promise<MannschaftImTurnier[]> {
+  return anfrage(`/turniere/${turnierId}/mannschaften/reihenfolge`, {
+    method: "PUT",
+    body: JSON.stringify({ mannschaftIds }),
+  });
+}
+
 export interface SpielplanVorschlagEintrag {
   mannschaftAId: string;
   mannschaftBId: string;
