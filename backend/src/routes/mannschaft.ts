@@ -14,6 +14,8 @@ interface MannschaftBody {
   ansprechpartnerName?: string;
   ansprechpartnerTelefon?: string;
   ansprechpartnerEmail?: string;
+  betreuer1Name?: string;
+  betreuer2Name?: string;
 }
 
 const mannschaftBodySchema = {
@@ -29,6 +31,8 @@ const mannschaftBodySchema = {
     ansprechpartnerName: { type: "string" },
     ansprechpartnerTelefon: { type: "string" },
     ansprechpartnerEmail: { type: "string" },
+    betreuer1Name: { type: "string" },
+    betreuer2Name: { type: "string" },
   },
 } as const;
 
@@ -41,6 +45,8 @@ interface MannschaftAktualisierungBody {
   ansprechpartnerName?: string;
   ansprechpartnerTelefon?: string;
   ansprechpartnerEmail?: string;
+  betreuer1Name?: string;
+  betreuer2Name?: string;
 }
 
 // Optionale Freitextfelder akzeptieren beim Aktualisieren bewusst auch null, damit ein
@@ -58,6 +64,8 @@ const mannschaftAktualisierungSchema = {
     ansprechpartnerName: { type: ["string", "null"] },
     ansprechpartnerTelefon: { type: ["string", "null"] },
     ansprechpartnerEmail: { type: ["string", "null"] },
+    betreuer1Name: { type: ["string", "null"] },
+    betreuer2Name: { type: ["string", "null"] },
   },
 } as const;
 
