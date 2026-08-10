@@ -59,7 +59,7 @@ export function TurnierListePage() {
                   <Link to={`/turniere/${encodeURIComponent(turnier._id)}`}>{turnier.name}</Link>
                 </td>
                 <td>{formatiereDatum(turnier.datum)}</td>
-                <td>{turnier.status}</td>
+                <td className="status-zelle">{turnier.status}</td>
                 <td>
                   <button
                     type="button"

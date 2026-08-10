@@ -32,6 +32,7 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
   const [eingaben, setEingaben] = useState<Record<string, Eingabe>>({});
   const [tokenWert, setTokenWert] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | undefined>();
+  const [linkHinweis, setLinkHinweis] = useState<string | undefined>();
 
   const laden = useCallback(async () => {
     try {
@@ -129,8 +130,18 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
     try {
       await widerrufeErgebnisToken(turnierId);
       setTokenWert(null);
+      setLinkHinweis(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Widerrufen des Links");
+    }
+  }
+
+  async function linkKopieren(link: string) {
+    try {
+      await navigator.clipboard.writeText(link);
+      setLinkHinweis("Link kopiert.");
+    } catch {
+      setFehler("Link konnte nicht kopiert werden.");
     }
   }
 
@@ -208,10 +219,6 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
                             setEingaben((bisherig) => ({ ...bisherig, [spiel._id]: { ...eingabe, b: e.target.value } }))
                           }
                         />
-                        {" "}
-                        <button type="button" onClick={() => ergebnisSpeichern(spiel)} disabled={spiel.ergebnisAbgeschlossen}>
-                          Speichern
-                        </button>
                       </td>
                       <td>{nameVon(spiel.mannschaftBId)}</td>
                       <td>
@@ -224,6 +231,15 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
                       <td>
                         {!spiel.ergebnisAbgeschlossen && (
                           <>
+                            <button
+                              type="button"
+                              className="symbol-button"
+                              onClick={() => ergebnisSpeichern(spiel)}
+                              aria-label="Speichern"
+                              title="Speichern"
+                            >
+                              💾
+                            </button>{" "}
                             <button
                               type="button"
                               onClick={() => nichtAngetreten(spiel, "a")}
@@ -240,10 +256,13 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
                             </button>{" "}
                             <button
                               type="button"
+                              className="symbol-button"
                               onClick={() => abschliessenEinzeln(spiel)}
                               disabled={spiel.ergebnisA == null}
+                              aria-label="Abschließen"
+                              title="Abschließen"
                             >
-                              Abschließen
+                              ✓
                             </button>
                           </>
                         )}
@@ -310,9 +329,13 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
         <p>
           <input type="text" readOnly value={erfassungsLink} onFocus={(e) => e.target.select()} />
           <br />
+          <button type="button" onClick={() => linkKopieren(erfassungsLink)}>
+            Link kopieren
+          </button>{" "}
           <button type="button" onClick={linkWiderrufen}>
             Link widerrufen
           </button>
+          {linkHinweis && <> {linkHinweis}</>}
         </p>
       ) : (
         <button type="button" onClick={linkErzeugen}>

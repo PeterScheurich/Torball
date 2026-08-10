@@ -90,6 +90,17 @@ async function ladeMitLesezugriff(
   return mannschaft;
 }
 
+/** Ein Team darf in einem Turnier nur einmal als Mannschaft auftreten - ausgenommenId beim
+ * Aendern einer bestehenden Mannschaft mitgeben, damit sie sich nicht selbst blockiert. */
+async function teamBereitsVerwendet(turnierId: string, teamId: string, ausgenommenId?: string): Promise<boolean> {
+  const bestehende = await findAllBySelector<MannschaftImTurnier>({
+    docType: "mannschaftImTurnier",
+    turnierId,
+    teamId,
+  });
+  return bestehende.some((m) => m._id !== ausgenommenId);
+}
+
 /** Wie ladeMitLesezugriff, aber verlangt Schreibzugriff (fuer Aendern/Loeschen). */
 async function ladeMitSchreibzugriff(
   id: string,
@@ -146,6 +157,13 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
         docType: "mannschaftImTurnier",
         turnierId: req.body.turnierId,
       });
+
+      if (req.body.teamId && bestehende.some((m) => m.teamId === req.body.teamId)) {
+        return reply
+          .code(409)
+          .send({ error: "Dieses Team ist in diesem Turnier bereits als Mannschaft angemeldet" });
+      }
+
       const naechsteReihenfolge = bestehende.reduce((max, m) => Math.max(max, m.reihenfolge ?? 0), -1) + 1;
 
       const id = newId("mannschaftImTurnier");
@@ -167,6 +185,13 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
     async (req, reply) => {
       const bestehend = await ladeMitSchreibzugriff(req.params.id, req, reply);
       if (!bestehend) return;
+
+      if (req.body.teamId && (await teamBereitsVerwendet(bestehend.turnierId, req.body.teamId, bestehend._id))) {
+        return reply
+          .code(409)
+          .send({ error: "Dieses Team ist in diesem Turnier bereits als Mannschaft angemeldet" });
+      }
+
       const aktualisiert: MannschaftImTurnier = { ...bestehend, ...req.body };
       return insertDoc(aktualisiert);
     },

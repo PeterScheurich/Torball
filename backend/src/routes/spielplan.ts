@@ -73,6 +73,19 @@ async function ladeUndBerechneVorschlag(
     return undefined;
   }
 
+  // "Spielplan neu generieren" (Abschnitt 8) ist vorgesehen, darf aber keine bereits
+  // laufenden/abgeschlossenen Spiele verwerfen - diese Sperre gilt bereits fuer den
+  // Vorschlag (GET), nicht erst beim Persistieren: sonst kann eine Vorschau angezeigt
+  // werden, die beim Uebernehmen ohnehin abgelehnt wuerde.
+  const bestehendeSpiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id });
+  const gesperrt = bestehendeSpiele.some((spiel) => spiel.status !== "geplant" || spiel.ergebnisAbgeschlossen);
+  if (gesperrt) {
+    reply.code(409).send({
+      error: "Spielplan kann nicht neu erzeugt werden: es gibt bereits laufende oder abgeschlossene Spiele",
+    });
+    return undefined;
+  }
+
   const wiederholungen = query.wiederholungen === "2" ? 2 : 1;
 
   const mannschaften = (

@@ -117,7 +117,7 @@ export function TurnierVerwaltenPage() {
               )}
               <tr>
                 <th scope="row">Status</th>
-                <td>{turnier.status}</td>
+                <td className="status-zelle">{turnier.status}</td>
               </tr>
               <tr>
                 <th scope="row">Spielfelder</th>

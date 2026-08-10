@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { MannschaftImTurnier } from "@torball/shared";
-import { createMannschaft, deleteMannschaft, getMannschaften, mannschaftReihenfolgeAendern, updateMannschaft } from "../api";
+import type { MannschaftImTurnier, Team, Verein } from "@torball/shared";
+import {
+  createMannschaft,
+  deleteMannschaft,
+  getMannschaften,
+  getTeams,
+  getVereine,
+  mannschaftReihenfolgeAendern,
+  updateMannschaft,
+} from "../api";
 import { BUNDESLAENDER } from "../bundeslaender";
 
 function verschobeneListe<T>(liste: T[], vonIndex: number, nachIndex: number): T[] {
@@ -21,6 +29,9 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
   const [fehler, setFehler] = useState<string | undefined>();
   const [neueMannschaft, setNeueMannschaft] = useState("");
   const [neuesBundesland, setNeuesBundesland] = useState("");
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [vereine, setVereine] = useState<Verein[]>([]);
+  const [ausgewaehltesTeamId, setAusgewaehltesTeamId] = useState("");
   const mannschaftsnameRef = useRef<HTMLInputElement>(null);
 
   const [bearbeitung, setBearbeitung] = useState<Record<string, { name: string; bundesland: string }>>({});
@@ -46,6 +57,15 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
   }, [laden]);
 
   useEffect(() => {
+    Promise.all([getTeams(), getVereine()])
+      .then(([geladeneTeams, geladeneVereine]) => {
+        setTeams(geladeneTeams);
+        setVereine(geladeneVereine);
+      })
+      .catch((err) => setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden der Stammdaten"));
+  }, []);
+
+  useEffect(() => {
     setBearbeitung((bisherig) => {
       const naechster: Record<string, { name: string; bundesland: string }> = {};
       for (const m of mannschaften) {
@@ -57,12 +77,44 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
 
   const mannschaftenSortiert = [...mannschaften].sort((a, b) => (a.reihenfolge ?? 0) - (b.reihenfolge ?? 0));
 
+  // Ein Team darf in einem Turnier nur einmal als Mannschaft auftreten - bereits
+  // verwendete Teams verschwinden daher aus der Auswahl (nicht nur eine Warnung).
+  const verwendeteTeamIds = new Set(mannschaften.map((m) => m.teamId).filter((id): id is string => !!id));
+  const teamsSortiert = [...teams]
+    .filter((t) => !verwendeteTeamIds.has(t._id))
+    .sort((a, b) => {
+      const vereinA = vereine.find((v) => v._id === a.vereinId)?.name ?? "";
+      const vereinB = vereine.find((v) => v._id === b.vereinId)?.name ?? "";
+      return vereinA.localeCompare(vereinB) || a.name.localeCompare(b.name);
+    });
+
+  /** Team aus den Stammdaten ausgewaehlt: Name+Bundesland als Vorschlag uebernehmen (kopiert,
+   * nicht verknuepft - siehe Gesamtspezifikation Abschnitt 15), danach frei weiter bearbeitbar.
+   * "Manuell eingeben" (leerer Wert) loest nur die Verknuepfung, laesst bereits Eingegebenes stehen. */
+  function teamAusgewaehlt(teamId: string) {
+    setAusgewaehltesTeamId(teamId);
+    if (!teamId) return;
+    const team = teams.find((t) => t._id === teamId);
+    if (!team) return;
+    const verein = vereine.find((v) => v._id === team.vereinId);
+    setNeueMannschaft(verein ? `${verein.name} ${team.name}` : team.name);
+    setNeuesBundesland(verein?.bundesland ?? "");
+  }
+
   async function anlegen(event: React.FormEvent) {
     event.preventDefault();
+    const team = teams.find((t) => t._id === ausgewaehltesTeamId);
     try {
-      await createMannschaft({ turnierId, name: neueMannschaft, bundesland: neuesBundesland || undefined });
+      await createMannschaft({
+        turnierId,
+        name: neueMannschaft,
+        bundesland: neuesBundesland || undefined,
+        teamId: team?._id,
+        vereinId: team?.vereinId,
+      });
       setNeueMannschaft("");
       setNeuesBundesland("");
+      setAusgewaehltesTeamId("");
       await laden();
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Anlegen der Mannschaft");
@@ -242,6 +294,26 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
       </datalist>
 
       <form onSubmit={anlegen}>
+        {teamsSortiert.length > 0 && (
+          <div className="feld">
+            <label htmlFor="mannschaftTeam">Aus Stammdaten übernehmen (optional)</label>
+            <select
+              id="mannschaftTeam"
+              value={ausgewaehltesTeamId}
+              onChange={(e) => teamAusgewaehlt(e.target.value)}
+            >
+              <option value="">— manuell eingeben —</option>
+              {teamsSortiert.map((t) => {
+                const verein = vereine.find((v) => v._id === t.vereinId);
+                return (
+                  <option key={t._id} value={t._id}>
+                    {verein ? `${verein.name} ${t.name}` : t.name}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
         <div className="feld">
           <label htmlFor="mannschaftName">Mannschaftsname</label>
           <input

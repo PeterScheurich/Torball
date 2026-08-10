@@ -134,6 +134,7 @@ export function ErgebnisErfassungPage() {
               <th scope="col">Ergebnis</th>
               <th scope="col">Mannschaft B</th>
               <th scope="col">Status</th>
+              <th scope="col">Aktion</th>
             </tr>
           </thead>
           <tbody>
@@ -174,18 +175,23 @@ export function ErgebnisErfassungPage() {
                       onChange={(e) =>
                         setEingaben((bisherig) => ({ ...bisherig, [spiel._id]: { ...eingabe, b: e.target.value } }))
                       }
-                    />{" "}
-                    <button
-                      type="button"
-                      onClick={() => ergebnisSpeichern(spiel._id)}
-                      disabled={spiel.ergebnisAbgeschlossen}
-                    >
-                      Speichern
-                    </button>
+                    />
                   </td>
                   <td>{nameVon(spiel.mannschaftBId)}</td>
                   <td>
                     {spiel.ergebnisAbgeschlossen ? "Abgeschlossen" : spiel.ergebnisA != null ? "Erfasst" : "Offen"}
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="symbol-button"
+                      onClick={() => ergebnisSpeichern(spiel._id)}
+                      disabled={spiel.ergebnisAbgeschlossen}
+                      aria-label="Speichern"
+                      title="Speichern"
+                    >
+                      💾
+                    </button>
                   </td>
                 </tr>
               );

@@ -151,6 +151,10 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
 
   const spieleSortiert = [...spiele].sort((a, b) => Number(a.runde) - Number(b.runde));
   const spielWarnungen = slotWarnungen(spieleSortiert.map((s) => ({ ...s, slot: Number(s.runde) })));
+  // Sobald irgendein Spiel bereits laeuft/ein Ergebnis hat, darf kein neuer Spielplan
+  // (auch kein Vorschlag) mehr erzeugt werden - sonst wuerden bereits erfasste Ergebnisse
+  // beim Uebernehmen verworfen. Muss zum Backend-Check in spielplan.ts passen.
+  const spielplanGesperrt = spiele.some((s) => s.status !== "geplant" || s.ergebnisAbgeschlossen);
 
   const vorschlagSortiert = vorschlag ? [...vorschlag].sort((a, b) => a.slot - b.slot) : undefined;
 
@@ -376,7 +380,17 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
     <div>
       {fehler && <p role="alert">{fehler}</p>}
 
-      <button type="button" onClick={neuerVorschlag} disabled={mannschaften.length < 2}>
+      {spielplanGesperrt && (
+        <p>
+          Es sind bereits Ergebnisse erfasst - der Spielplan kann daher nicht neu erzeugt werden.
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={neuerVorschlag}
+        disabled={mannschaften.length < 2 || spielplanGesperrt}
+        title={spielplanGesperrt ? "Es sind bereits Ergebnisse erfasst - kein neuer Vorschlag möglich." : undefined}
+      >
         Neuer Vorschlag
       </button>
 
@@ -624,7 +638,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                         </td>
                         <td>{nameVon(s.mannschaftAId)}</td>
                         <td>{nameVon(s.mannschaftBId)}</td>
-                        <td>{s.status}</td>
+                        <td className="status-zelle">{s.status}</td>
                         <td>{spielWarnungen[vollIndex] ?? ""}</td>
                       </tr>
                     );

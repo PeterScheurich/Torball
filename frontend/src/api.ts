@@ -6,9 +6,11 @@ import type {
   Spiel,
   Spielfeld,
   Spielmodus,
+  Team,
   Turnier,
   TurnierBerechtigung,
   TurnierRolle,
+  Verein,
 } from "@torball/shared";
 
 const BASIS = "/api";
@@ -83,6 +85,7 @@ export function updateTurnier(
 export interface NeueMannschaft {
   turnierId: string;
   name: string;
+  teamId?: string;
   vereinId?: string;
   bundesland?: string;
 }
@@ -184,6 +187,54 @@ export function spielStartzeitAendern(spielId: string, startzeitGeplant: string)
     method: "PUT",
     body: JSON.stringify({ startzeitGeplant }),
   });
+}
+
+// --- Stammdaten (Vereine und Teams, Abschnitt 15) ---
+
+export interface VereinAktualisierung {
+  name: string;
+  logo?: string;
+  bundesland?: string;
+  ansprechpartnerName?: string;
+  ansprechpartnerTelefon?: string;
+  ansprechpartnerEmail?: string;
+}
+
+export function getVereine(): Promise<Verein[]> {
+  return anfrage("/vereine");
+}
+
+export function createVerein(daten: VereinAktualisierung): Promise<Verein> {
+  return anfrage("/vereine", { method: "POST", body: JSON.stringify(daten) });
+}
+
+export function updateVerein(id: string, daten: VereinAktualisierung): Promise<Verein> {
+  return anfrage(`/vereine/${id}`, { method: "PUT", body: JSON.stringify(daten) });
+}
+
+export function deleteVerein(id: string): Promise<void> {
+  return anfrage(`/vereine/${id}`, { method: "DELETE" });
+}
+
+export interface TeamAktualisierung {
+  vereinId: string;
+  name: string;
+}
+
+export function getTeams(): Promise<Team[]> {
+  return anfrage("/teams");
+}
+
+export function createTeam(daten: TeamAktualisierung): Promise<Team> {
+  return anfrage("/teams", { method: "POST", body: JSON.stringify(daten) });
+}
+
+export function updateTeam(id: string, daten: TeamAktualisierung): Promise<Team> {
+  return anfrage(`/teams/${id}`, { method: "PUT", body: JSON.stringify(daten) });
+}
+
+export function deleteTeam(id: string): Promise<void> {
+  return anfrage(`/teams/${id}`, { method: "DELETE" });
 }
 
 // --- Authentifizierung ---

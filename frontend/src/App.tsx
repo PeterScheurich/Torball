@@ -12,6 +12,7 @@ import { PasswortResetPage } from "./pages/PasswortResetPage";
 import { ErgebnisErfassungPage } from "./pages/ErgebnisErfassungPage";
 import { ProfilPage } from "./pages/ProfilPage";
 import { BenutzerverwaltungPage } from "./pages/BenutzerverwaltungPage";
+import { StammdatenPage } from "./pages/StammdatenPage";
 import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
 import { ThemeUmschalter } from "./components/ThemeUmschalter";
 import { useAuth } from "./auth";
@@ -45,6 +46,12 @@ function Kopfzeile() {
                   Benutzerverwaltung
                 </NavLink>
               )}
+              <NavLink
+                to="/stammdaten"
+                className={({ isActive }) => (isActive ? "kopfzeile-link kopfzeile-link-aktiv" : "kopfzeile-link")}
+              >
+                Vereine &amp; Teams
+              </NavLink>
               <NavLink
                 to="/profil"
                 className={({ isActive }) => (isActive ? "kopfzeile-link kopfzeile-link-aktiv" : "kopfzeile-link")}
@@ -80,6 +87,7 @@ function App() {
             <Route path="/" element={<TurnierListePage />} />
             <Route path="/profil" element={<ProfilPage />} />
             <Route path="/benutzerverwaltung" element={<BenutzerverwaltungPage />} />
+            <Route path="/stammdaten" element={<StammdatenPage />} />
             <Route path="/turniere/neu" element={<TurnierAnlegenPage />} />
             <Route path="/turniere/:id/mannschaften-erfassen" element={<MannschaftenErfassenPage />} />
             <Route path="/turniere/:id/spielplan-erstellen" element={<SpielplanErstellenPage />} />
