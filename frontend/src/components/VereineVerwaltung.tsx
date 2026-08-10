@@ -59,14 +59,17 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
     });
   }, [vereine]);
 
+  // Leere optionale Felder als null senden (nicht undefined), damit ein zuvor gesetzter Wert
+  // beim Speichern wirklich zurueckgesetzt wird - undefined fiele via JSON.stringify aus dem
+  // Body und das Backend behielte den alten Wert bei.
   function bereinigt(daten: VereinAktualisierung): VereinAktualisierung {
     return {
       name: daten.name.trim(),
-      logo: daten.logo?.trim() || undefined,
-      bundesland: daten.bundesland?.trim() || undefined,
-      ansprechpartnerName: daten.ansprechpartnerName?.trim() || undefined,
-      ansprechpartnerTelefon: daten.ansprechpartnerTelefon?.trim() || undefined,
-      ansprechpartnerEmail: daten.ansprechpartnerEmail?.trim() || undefined,
+      logo: daten.logo?.trim() || null,
+      bundesland: daten.bundesland?.trim() || null,
+      ansprechpartnerName: daten.ansprechpartnerName?.trim() || null,
+      ansprechpartnerTelefon: daten.ansprechpartnerTelefon?.trim() || null,
+      ansprechpartnerEmail: daten.ansprechpartnerEmail?.trim() || null,
     };
   }
 
@@ -295,7 +298,7 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
           <input
             id="vereinBundesland"
             list="bundeslaender-liste"
-            value={neu.bundesland}
+            value={neu.bundesland ?? ""}
             onChange={(e) => setNeu((n) => ({ ...n, bundesland: e.target.value }))}
           />
         </div>
@@ -303,7 +306,7 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
           <label htmlFor="vereinAnsprechpartner">Ansprechpartner (optional)</label>
           <input
             id="vereinAnsprechpartner"
-            value={neu.ansprechpartnerName}
+            value={neu.ansprechpartnerName ?? ""}
             onChange={(e) => setNeu((n) => ({ ...n, ansprechpartnerName: e.target.value }))}
           />
         </div>
@@ -312,7 +315,7 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
           <input
             id="vereinTelefon"
             type="tel"
-            value={neu.ansprechpartnerTelefon}
+            value={neu.ansprechpartnerTelefon ?? ""}
             onChange={(e) => setNeu((n) => ({ ...n, ansprechpartnerTelefon: e.target.value }))}
           />
         </div>
@@ -321,7 +324,7 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
           <input
             id="vereinEmail"
             type="email"
-            value={neu.ansprechpartnerEmail}
+            value={neu.ansprechpartnerEmail ?? ""}
             onChange={(e) => setNeu((n) => ({ ...n, ansprechpartnerEmail: e.target.value }))}
           />
         </div>
@@ -330,7 +333,7 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
           <input
             id="vereinLogo"
             type="url"
-            value={neu.logo}
+            value={neu.logo ?? ""}
             onChange={(e) => setNeu((n) => ({ ...n, logo: e.target.value }))}
           />
         </div>

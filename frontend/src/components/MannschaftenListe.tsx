@@ -145,8 +145,10 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
       return;
     }
 
-    const bundeslandNeu = werte.bundesland || undefined;
-    const unveraendert = werte.name === m.name && bundeslandNeu === (m.bundesland ?? undefined);
+    // Leeres Bundesland als null senden (nicht undefined), sonst liesse der Backend-Merge ein
+    // zuvor gesetztes Bundesland beim Leeren unveraendert stehen (undefined faellt aus dem Body).
+    const bundeslandNeu = werte.bundesland || null;
+    const unveraendert = werte.name === m.name && bundeslandNeu === (m.bundesland ?? null);
     if (unveraendert) return;
 
     try {

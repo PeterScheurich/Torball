@@ -125,8 +125,9 @@ export function createMannschaft(daten: NeueMannschaft): Promise<MannschaftImTur
 
 export interface MannschaftAktualisierung {
   name: string;
-  vereinId?: string;
-  bundesland?: string;
+  vereinId?: string | null;
+  /** null sendet, um ein gesetztes Bundesland gezielt zu leeren (siehe VereinAktualisierung). */
+  bundesland?: string | null;
 }
 
 export function updateMannschaft(id: string, daten: MannschaftAktualisierung): Promise<MannschaftImTurnier> {
@@ -216,13 +217,16 @@ export function spielStartzeitAendern(spielId: string, startzeitGeplant: string)
 
 // --- Stammdaten (Vereine und Teams, Abschnitt 15) ---
 
+/** Optionale Felder duerfen explizit null sein, um sie zu leeren - JSON.stringify(undefined)
+ * liesse den Schluessel aus dem Body fallen, das Backend behielte den alten Wert dann bei
+ * (gleiches Muster wie bei updateTurnier). */
 export interface VereinAktualisierung {
   name: string;
-  logo?: string;
-  bundesland?: string;
-  ansprechpartnerName?: string;
-  ansprechpartnerTelefon?: string;
-  ansprechpartnerEmail?: string;
+  logo?: string | null;
+  bundesland?: string | null;
+  ansprechpartnerName?: string | null;
+  ansprechpartnerTelefon?: string | null;
+  ansprechpartnerEmail?: string | null;
 }
 
 export function getVereine(): Promise<Verein[]> {

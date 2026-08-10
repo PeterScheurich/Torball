@@ -125,13 +125,18 @@ Spezifikation (Abschnitt 22) beschrieben, aber noch nicht gebaut.
 **Optionale Textfelder leeren: `null` senden, nicht `undefined`.**
 `JSON.stringify` entfernt Felder mit Wert `undefined` komplett aus dem
 Request-Body; die Backend-Routen mergen PUT-Bodies typischerweise per
-`{ ...bestehend, ...req.body }` (z. B. `turnier.ts`, `verein.ts`, `team.ts`)
-– ein fehlender Schlüssel lässt den alten Wert dann unverändert stehen,
-ein leeres Feld lässt sich so **nie** wirklich zurücksetzen. Erst in
-`TurnierVerwaltenPage.tsx`/`api.ts` (`updateTurnier`) darauf umgestellt,
-explizit `null` zu senden statt `wert || undefined`; dasselbe Muster
-(`|| undefined`) steckt vermutlich noch in `VereineVerwaltung.tsx`/
-`TeamsVerwaltung.tsx` und wurde dort noch nicht angefasst.
+`{ ...bestehend, ...req.body }` (z. B. `turnier.ts`, `verein.ts`,
+`mannschaft.ts`) – ein fehlender Schlüssel lässt den alten Wert dann
+unverändert stehen, ein leeres Feld lässt sich so **nie** wirklich
+zurücksetzen. Umgesetzt in `updateTurnier` (`TurnierVerwaltenPage.tsx`),
+`VereineVerwaltung.tsx` (`bereinigt()`) und `MannschaftenListe.tsx`
+(`feldVerlassen`): leere optionale Felder senden explizit `null` statt
+`wert || undefined`. **Wichtig:** Wo die Route ein Fastify-`body`-Schema hat
+(`verein.ts`, `mannschaft.ts`), muss das betroffene Feld dort `type:
+["string", "null"]` erlauben – sonst weist die Schema-Validierung das `null`
+mit 400 ab (`turnier.ts`s PUT hat gar kein Schema, deshalb fiel das dort
+nicht auf). `TeamsVerwaltung.tsx` ist bewusst nicht betroffen: `Team` hat
+nur Pflichtfelder (`vereinId`, `name`), nichts zu leeren.
 
 **Öffentliche Turnierseite ohne Login** (`backend/src/routes/oeffentlich.ts`,
 `frontend/src/pages/OeffentlicheTurnierseitePage.tsx`, Route

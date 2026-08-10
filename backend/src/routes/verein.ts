@@ -12,16 +12,20 @@ interface VereinBody {
   ansprechpartnerEmail?: string;
 }
 
+// Optionale Freitextfelder akzeptieren bewusst auch null: so kann der Client ein bereits
+// gesetztes Feld gezielt leeren (PUT). Wuerde er stattdessen undefined senden, fiele der
+// Schluessel via JSON.stringify komplett aus dem Body und der {...bestehend, ...req.body}-
+// Merge liesse den alten Wert faelschlich stehen (gleiches Muster wie beim Turnier-Update).
 const vereinBodySchema = {
   type: "object",
   required: ["name"],
   properties: {
     name: { type: "string", minLength: 1 },
-    logo: { type: "string" },
-    bundesland: { type: "string" },
-    ansprechpartnerName: { type: "string" },
-    ansprechpartnerTelefon: { type: "string" },
-    ansprechpartnerEmail: { type: "string" },
+    logo: { type: ["string", "null"] },
+    bundesland: { type: ["string", "null"] },
+    ansprechpartnerName: { type: ["string", "null"] },
+    ansprechpartnerTelefon: { type: ["string", "null"] },
+    ansprechpartnerEmail: { type: ["string", "null"] },
   },
 } as const;
 

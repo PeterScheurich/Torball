@@ -43,18 +43,21 @@ interface MannschaftAktualisierungBody {
   ansprechpartnerEmail?: string;
 }
 
+// Optionale Freitextfelder akzeptieren beim Aktualisieren bewusst auch null, damit ein
+// bereits gesetztes Feld (z.B. Bundesland) gezielt geleert werden kann - undefined wuerde
+// via JSON.stringify aus dem Body fallen und der Merge liesse den alten Wert stehen.
 const mannschaftAktualisierungSchema = {
   type: "object",
   required: ["name"],
   properties: {
-    teamId: { type: "string" },
-    vereinId: { type: "string" },
+    teamId: { type: ["string", "null"] },
+    vereinId: { type: ["string", "null"] },
     name: { type: "string", minLength: 1 },
-    logo: { type: "string" },
-    bundesland: { type: "string" },
-    ansprechpartnerName: { type: "string" },
-    ansprechpartnerTelefon: { type: "string" },
-    ansprechpartnerEmail: { type: "string" },
+    logo: { type: ["string", "null"] },
+    bundesland: { type: ["string", "null"] },
+    ansprechpartnerName: { type: ["string", "null"] },
+    ansprechpartnerTelefon: { type: ["string", "null"] },
+    ansprechpartnerEmail: { type: ["string", "null"] },
   },
 } as const;
 
