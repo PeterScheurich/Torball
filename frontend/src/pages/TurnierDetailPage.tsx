@@ -49,6 +49,12 @@ export function TurnierDetailPage() {
   const nameVon = (mannschaftId: string) =>
     mannschaften.find((m) => m._id === mannschaftId)?.name ?? mannschaftId;
 
+  const startzeitAnzeigen = (startzeitGeplant: string | undefined) =>
+    startzeitGeplant ? new Date(startzeitGeplant).toLocaleTimeString("de-DE") : "–";
+
+  const spieleSortiert = [...spiele].sort((a, b) => Number(a.runde) - Number(b.runde));
+  const vorschlagSortiert = vorschlag ? [...vorschlag].sort((a, b) => a.slot - b.slot) : undefined;
+
   async function mannschaftAnlegen(event: React.FormEvent) {
     event.preventDefault();
     try {
@@ -171,7 +177,7 @@ export function TurnierDetailPage() {
             <caption className="sr-only">Erzeugter Spielplan</caption>
             <thead>
               <tr>
-                <th scope="col">Runde</th>
+                <th scope="col">Spiel</th>
                 <th scope="col">Feld</th>
                 <th scope="col">Startzeit</th>
                 <th scope="col">Mannschaft A</th>
@@ -180,11 +186,11 @@ export function TurnierDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {spiele.map((s) => (
+              {spieleSortiert.map((s) => (
                 <tr key={s._id}>
                   <td>{s.runde}</td>
                   <td>{s.feldId}</td>
-                  <td>{s.startzeitGeplant ? new Date(s.startzeitGeplant).toLocaleTimeString("de-DE") : "–"}</td>
+                  <td>{startzeitAnzeigen(s.startzeitGeplant)}</td>
                   <td>{nameVon(s.mannschaftAId)}</td>
                   <td>{nameVon(s.mannschaftBId)}</td>
                   <td>{s.status}</td>
@@ -223,18 +229,20 @@ export function TurnierDetailPage() {
             <caption className="sr-only">Berechneter Spielplan-Vorschlag</caption>
             <thead>
               <tr>
-                <th scope="col">Runde</th>
+                <th scope="col">Spiel</th>
                 <th scope="col">Feld</th>
+                <th scope="col">Startzeit</th>
                 <th scope="col">Mannschaft A</th>
                 <th scope="col">Mannschaft B</th>
                 <th scope="col">Hinweis</th>
               </tr>
             </thead>
             <tbody>
-              {vorschlag.map((eintrag, i) => (
+              {vorschlagSortiert!.map((eintrag, i) => (
                 <tr key={i}>
                   <td>{eintrag.slot + 1}</td>
                   <td>{eintrag.feldId}</td>
+                  <td>{startzeitAnzeigen(eintrag.startzeitGeplant)}</td>
                   <td>{nameVon(eintrag.mannschaftAId)}</td>
                   <td>{nameVon(eintrag.mannschaftBId)}</td>
                   <td>{eintrag.warnung ?? ""}</td>

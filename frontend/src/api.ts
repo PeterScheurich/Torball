@@ -68,6 +68,7 @@ export interface SpielplanVorschlagEintrag {
   feldId: string;
   slot: number;
   warnung?: string;
+  startzeitGeplant?: string;
 }
 
 export interface SpielplanVorschlag {

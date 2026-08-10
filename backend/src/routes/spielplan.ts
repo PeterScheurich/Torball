@@ -57,7 +57,12 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
     async (req, reply) => {
       const ergebnis = await ladeUndBerechneVorschlag(req.params.id, req.query, reply);
       if (!ergebnis) return;
-      return { turnierId: ergebnis.turnier._id, wiederholungen: ergebnis.wiederholungen, spiele: ergebnis.vorschlag };
+      const { turnier, vorschlag, wiederholungen } = ergebnis;
+      const spiele = vorschlag.map((eintrag) => ({
+        ...eintrag,
+        startzeitGeplant: berechneStartzeit(turnier, eintrag.slot),
+      }));
+      return { turnierId: turnier._id, wiederholungen, spiele };
     },
   );
 
