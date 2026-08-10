@@ -82,7 +82,18 @@ export function deleteTurnier(id: string): Promise<void> {
  * das Backend wuerde den bisherigen Wert dann faelschlich unveraendert stehen lassen. */
 export function updateTurnier(
   id: string,
-  daten: Partial<Pick<Turnier, "spielplanModus" | "protokollierungsart" | "name">> & {
+  daten: Partial<
+    Pick<
+      Turnier,
+      | "spielplanModus"
+      | "protokollierungsart"
+      | "name"
+      | "oeffentlichTurnierinfos"
+      | "oeffentlichAnfahrtDokumente"
+      | "oeffentlichSpielplan"
+      | "oeffentlichErgebnisse"
+    >
+  > & {
     spielortName?: string | null;
     spielortAdresse?: string | null;
     spielortGeo?: string | null;
@@ -455,4 +466,55 @@ export function ergebnisPerTokenSetzen(
     method: "PUT",
     body: JSON.stringify(daten),
   });
+}
+
+// --- Oeffentliche Turnierseite (Abschnitt 13, kein Login) ---
+
+export interface OeffentlichesSpiel {
+  _id: string;
+  runde?: string;
+  feldId?: string;
+  startzeitGeplant?: string;
+  mannschaftAId: string;
+  mannschaftBId: string;
+  status: string;
+  ergebnisA?: number;
+  ergebnisB?: number;
+  istForfait: boolean;
+  ergebnisAbgeschlossen: boolean;
+}
+
+export interface OeffentlicheTurnierseite {
+  turnierId: string;
+  name: string;
+  mannschaften: { _id: string; name: string; bundesland?: string }[];
+  felder: Spielfeld[];
+  turnierinfos: {
+    datum: string;
+    startzeit?: string;
+    status: string;
+    turnierleitungName?: string;
+    turnierleitungKontakt?: string;
+    ansprechpartnerName?: string;
+    ansprechpartnerKontakt?: string;
+    zusatzinfo?: string;
+  } | null;
+  anfahrt: {
+    spielortName?: string;
+    spielortAdresse?: string;
+    spielortGeo?: string;
+  } | null;
+  spielplan: {
+    version: number;
+    geaendertAm?: string;
+    spiele: OeffentlichesSpiel[];
+  } | null;
+  ergebnisse: {
+    tabelle: TabellenZeile[];
+    spiele: OeffentlichesSpiel[];
+  } | null;
+}
+
+export function getOeffentlicheTurnierseite(turnierId: string): Promise<OeffentlicheTurnierseite> {
+  return anfrage(`/oeffentlich/turniere/${turnierId}`);
 }

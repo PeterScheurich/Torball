@@ -62,6 +62,19 @@ function kartenSucheUrl(dienst: "google" | "osm", allgemein: AllgemeinBearbeitun
     : "https://www.openstreetmap.org";
 }
 
+type SichtbarkeitsFeld =
+  | "oeffentlichTurnierinfos"
+  | "oeffentlichAnfahrtDokumente"
+  | "oeffentlichSpielplan"
+  | "oeffentlichErgebnisse";
+
+const SICHTBARKEITS_FELDER: { feld: SichtbarkeitsFeld; label: string }[] = [
+  { feld: "oeffentlichTurnierinfos", label: "Turnierinfos" },
+  { feld: "oeffentlichAnfahrtDokumente", label: "Anfahrt & Dokumente" },
+  { feld: "oeffentlichSpielplan", label: "Spielplan" },
+  { feld: "oeffentlichErgebnisse", label: "Ergebnisse" },
+];
+
 function allgemeinAusTurnier(turnier: Turnier): AllgemeinBearbeitung {
   return {
     name: turnier.name,
@@ -83,6 +96,7 @@ export function TurnierVerwaltenPage() {
   const [turnier, setTurnier] = useState<Turnier | undefined>();
   const [allgemein, setAllgemein] = useState<AllgemeinBearbeitung | undefined>();
   const [fehler, setFehler] = useState<string | undefined>();
+  const [linkHinweis, setLinkHinweis] = useState<string | undefined>();
   // Aktiver Reiter steckt in der URL (?tab=...), nicht nur im lokalen State - sonst
   // springt ein Reload (F5) immer zurueck auf "Uebersicht", egal auf welchem Reiter
   // man gerade war.
@@ -150,6 +164,24 @@ export function TurnierVerwaltenPage() {
     }
   }
 
+  async function sichtbarkeitAendern(feld: SichtbarkeitsFeld, sichtbar: boolean) {
+    try {
+      setTurnier(await updateTurnier(turnierId, { [feld]: sichtbar }));
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Freigabe");
+    }
+  }
+
+  async function oeffentlicherLinkKopieren() {
+    try {
+      await navigator.clipboard.writeText(oeffentlicheSeiteUrl);
+      setLinkHinweis("Link kopiert.");
+    } catch {
+      setFehler("Link konnte nicht kopiert werden.");
+    }
+  }
+
   function tabSetzen(tab: Tab) {
     setSearchParams(
       (bisherig) => {
@@ -177,6 +209,8 @@ export function TurnierVerwaltenPage() {
   if (!turnier) {
     return fehler ? <p role="alert">{fehler}</p> : <p>Lädt…</p>;
   }
+
+  const oeffentlicheSeiteUrl = `${window.location.origin}/turniere/${turnierId}/oeffentlich`;
 
   return (
     <>
@@ -377,6 +411,37 @@ export function TurnierVerwaltenPage() {
             </tbody>
           </table>
         </div>
+
+        <h2>Öffentliche Turnierseite</h2>
+        <p>
+          Wer diesen Link hat, sieht die unten freigeschalteten Bereiche - ohne Anmeldung. Jeder Bereich ist einzeln
+          schaltbar (Abschnitt 13); ohne freigeschalteten Bereich zeigt der Link nur den Turniernamen.
+        </p>
+        <ul>
+          {SICHTBARKEITS_FELDER.map(({ feld, label }) => (
+            <li key={feld}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={turnier[feld]}
+                  onChange={(e) => sichtbarkeitAendern(feld, e.target.checked)}
+                />{" "}
+                {label}
+              </label>
+            </li>
+          ))}
+        </ul>
+        <p>
+          <input type="text" readOnly value={oeffentlicheSeiteUrl} onFocus={(e) => e.target.select()} />
+          <br />
+          <button type="button" onClick={oeffentlicherLinkKopieren}>
+            Link kopieren
+          </button>{" "}
+          <a className="button-link" href={oeffentlicheSeiteUrl} target="_blank" rel="noopener noreferrer">
+            Öffnen
+          </a>
+          {linkHinweis && <> {linkHinweis}</>}
+        </p>
       </div>
 
       <div

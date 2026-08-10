@@ -284,7 +284,7 @@ td {
   padding: 2px 10px;
 }
 
-:root[data-dichte='schmal'] input,
+:root[data-dichte='schmal'] input:not([type="checkbox"]):not([type="radio"]),
 :root[data-dichte='schmal'] select,
 :root[data-dichte='schmal'] textarea {
   padding: 4px 8px;
@@ -371,7 +371,9 @@ label {
   font-size: 0.9rem;
 }
 
-input,
+/* Checkbox/Radio bewusst ausgenommen - Padding/Rahmen wuerden sie zu grossen
+   Kaestchen statt kleiner nativer Steuerelemente verformen. */
+input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
   font: inherit;

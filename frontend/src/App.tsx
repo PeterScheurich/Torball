@@ -10,6 +10,7 @@ import { EinladungAnnehmenPage } from "./pages/EinladungAnnehmenPage";
 import { PasswortVergessenPage } from "./pages/PasswortVergessenPage";
 import { PasswortResetPage } from "./pages/PasswortResetPage";
 import { ErgebnisErfassungPage } from "./pages/ErgebnisErfassungPage";
+import { OeffentlicheTurnierseitePage } from "./pages/OeffentlicheTurnierseitePage";
 import { ProfilPage } from "./pages/ProfilPage";
 import { BenutzerverwaltungPage } from "./pages/BenutzerverwaltungPage";
 import { StammdatenPage } from "./pages/StammdatenPage";
@@ -91,6 +92,7 @@ function App() {
           <Route path="/passwort-vergessen" element={<PasswortVergessenPage />} />
           <Route path="/passwort-reset/:token" element={<PasswortResetPage />} />
           <Route path="/ergebnis-erfassung/:tokenWert" element={<ErgebnisErfassungPage />} />
+          <Route path="/turniere/:id/oeffentlich" element={<OeffentlicheTurnierseitePage />} />
           <Route path="/einstellungen" element={<EinstellungenPage />} />
 
           <Route element={<GeschuetzteRoute />}>
