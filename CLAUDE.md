@@ -86,12 +86,18 @@ bereits korrekt per `bookmark` durch.
 CommonJS) kann daraus problemlos Funktionen importieren, Vite/das Frontend
 (ESM/Bundler-Modus) dagegen nur **Typen** (die beim Kompilieren wegfallen).
 Ein Import einer echten Funktion aus `@torball/shared` im Frontend schlägt
-fehl bzw. wird zur Laufzeit zu `undefined`. Deshalb existiert z. B. die
-Spieldauer-/Startzeit-Berechnung bewusst doppelt: einmal in
-`backend/src/spielplan/zeitplanung.ts`, einmal identisch in
-`frontend/src/zeitplanung.ts`. Jede künftige Geschäftslogik, die beide Seiten
-brauchen, muss demselben Muster folgen (kleine, bewusste Duplizierung statt
-Shared-Import) oder erfordert eine Umstellung von `shared` auf ESM.
+fehl bzw. wird zur Laufzeit zu `undefined`. Jede Geschäftslogik, die beide
+Seiten brauchen, wird deshalb bewusst dupliziert (kleine, identische Kopie
+statt Shared-Import) oder erfordert eine Umstellung von `shared` auf ESM.
+Bestehende Duplikate (Frontend-Kopie ↔ Backend-Original, bei Änderung **beide**
+anpassen):
+
+- Spieldauer/Startzeit: `frontend/src/zeitplanung.ts` ↔
+  `backend/src/spielplan/zeitplanung.ts`
+- Schiedsrichter-Konflikte: `frontend/src/schiedsrichterKonflikt.ts` ↔
+  `backend/src/spielplan/schiedsrichterZuordnung.ts`
+- Passwort-Regeln: `frontend/src/passwortAnforderungen.ts` ↔
+  `backend/src/auth/passwort.ts` (`passwortRegelVerstoss`)
 
 **Auth: Server-seitige Sessions per Cookie, kein JWT.** Beim Login wird ein
 zufälliger Token erzeugt; nur der SHA-256-Hash davon wird als CouchDB-Doc-ID
@@ -128,15 +134,19 @@ Request-Body; die Backend-Routen mergen PUT-Bodies typischerweise per
 `{ ...bestehend, ...req.body }` (z. B. `turnier.ts`, `verein.ts`,
 `mannschaft.ts`) – ein fehlender Schlüssel lässt den alten Wert dann
 unverändert stehen, ein leeres Feld lässt sich so **nie** wirklich
-zurücksetzen. Umgesetzt in `updateTurnier` (`TurnierVerwaltenPage.tsx`),
-`VereineVerwaltung.tsx` (`bereinigt()`) und `MannschaftenListe.tsx`
-(`feldVerlassen`): leere optionale Felder senden explizit `null` statt
+zurücksetzen. Umgesetzt u. a. in `updateTurnier` (`TurnierVerwaltenPage.tsx`),
+`VereineVerwaltung.tsx`, `MannschaftenListe.tsx`, `SpielerKader.tsx`,
+`SchiedsrichterVerwaltung.tsx` und der Schiedsrichter-Zuordnung
+(`spielAnpassen`): leere optionale Felder senden explizit `null` statt
 `wert || undefined`. **Wichtig:** Wo die Route ein Fastify-`body`-Schema hat
-(`verein.ts`, `mannschaft.ts`), muss das betroffene Feld dort `type:
-["string", "null"]` erlauben – sonst weist die Schema-Validierung das `null`
-mit 400 ab (`turnier.ts`s PUT hat gar kein Schema, deshalb fiel das dort
-nicht auf). `TeamsVerwaltung.tsx` ist bewusst nicht betroffen: `Team` hat
-nur Pflichtfelder (`vereinId`, `name`), nichts zu leeren.
+(`verein.ts`, `mannschaft.ts`, `spieler.ts`, `schiedsrichter.ts`, `spiel.ts`),
+muss das betroffene Feld dort `type: ["string", "null"]` erlauben – sonst weist
+die Schema-Validierung das `null` mit 400 ab (`turnier.ts`s PUT hat gar kein
+Schema, deshalb fiel das dort nicht auf). Der Backend-Body-**TS-Typ** bleibt
+dabei bewusst `string` (nicht `string | null`), damit der `{ ...bestehend,
+...req.body }`-Merge das `null` nach dem `string | undefined`-Feld schreiben
+darf – TS kennt den Laufzeit-`null` nicht. `TeamsVerwaltung.tsx` ist bewusst
+nicht betroffen: `Team` hat nur Pflichtfelder (`vereinId`, `name`).
 
 **Öffentliche Turnierseite ohne Login** (`backend/src/routes/oeffentlich.ts`,
 `frontend/src/pages/OeffentlicheTurnierseitePage.tsx`, Route
@@ -162,6 +172,61 @@ CRUD):** die fachliche Sperre „Kaderänderung nur bis zum ersten Spiel der
 Mannschaft, danach nur Namen" (Spez. 5.3) und die Übernahme des Kaders aus
 einem früheren Turnier (`importiertAusTurnierId` existiert im Typ, wird aber
 noch nicht gesetzt).
+
+**Trainer/Betreuer an der Mannschaft:** bis zu drei (`betreuer1..3Name` an
+`MannschaftImTurnier`), jeder mit `betreuerNIstSchiedsrichter`-Flag – gepflegt
+im ausklappbaren Kader-Bereich (`MannschaftenListe.tsx`). Hintergrund: sie
+dürfen (Bundesliga) mit auf der Auswechselbank sitzen. Dieselbe Person kann bei
+mehreren Mannschaften eines Vereins stehen – für eine spätere Ableitung von
+Schiedsrichtern aus diesen Flags ist deshalb eine Dedup nötig (noch offen).
+
+**Schiedsrichter (turnierbezogen):** `SchiedsrichterImTurnier`
+(`docType: "schiedsrichterImTurnier"`) hängt direkt am `turnierId`, CRUD in
+`backend/src/routes/schiedsrichter.ts`, eigener Tab zwischen Mannschaften und
+Spielplan (`SchiedsrichterVerwaltung.tsx`). Genau eine Person je Turnier hat
+`istTurnierleitung` – das Frontend erzwingt das per Radio-Single-Select (die
+bisherige Turnierleitung wird beim Wechsel zurückgesetzt). Kaskaden: beim
+Turnier-Löschen mitlöschen; beim Mannschaft-Löschen nur die optionale
+`mannschaftId`-Referenz lösen (der Schiedsrichter bleibt bestehen). Der
+`turnier.ts`-Delete löscht damit `mannschaftImTurnier` + `spieler` +
+`schiedsrichterImTurnier` + `spiel` kaskadierend (Integrationstest deckt das
+ab, überspringt aber ohne `COUCHDB_*`).
+
+**Schiedsrichter-Zuordnung ist ein bewusster Schritt, kein Automatismus:** ein
+Button in der Spielplan-Sicht „Schiedsrichter-Einteilung" ruft
+`POST /turniere/:id/schiedsrichter-zuordnung` und erzeugt einen *Vorschlag* je
+Spiel (`backend/src/spielplan/schiedsrichterZuordnung.ts`), danach je Spiel per
+Dropdown änderbar (`schiedsrichterId` an `Spiel`, via `PUT /spiele/:id`, per
+`null` lösbar). Gewichtung (Nutzer-Vorgabe): **P1** (höchste Priorität) – ein
+Schiedsrichter pfeift nie das Spiel der eigenen Mannschaft (wird nicht
+vorgeschlagen); **P2** (nachrangig) – möglichst nicht pfeifen, während eine
+eigene Mannschaft gleichzeitig auf einem Parallelfeld spielt. Beide Konflikte
+werden im UI als Hinweis angezeigt (`schiedsrichterKonflikt.ts`).
+
+**Der Spielplan-Tab hat zwei Sichten** (Umschalter): „Spielplan" (Planung:
+Reihenfolge/Zeiten/Status/Hinweis) und die abgespeckte
+„Schiedsrichter-Einteilung". Die Spielplan-Tabellen nutzen
+`table-layout: fixed` mit festen Spaltenbreiten (`.spalte-*`) plus einer
+`min-width` – ohne die kollabieren die nicht bemessenen Mannschaftsspalten auf
+schmalen Schirmen; der `.tabellen-wrapper` scrollt dann horizontal.
+
+**Live-Aktualisierung per Polling (kein WebSocket):** Ergebnisverwaltung
+(`ErgebnisVerwaltung.tsx`), Token-Ergebniserfassung (`ErgebnisErfassungPage`)
+und die öffentliche Seite aktualisieren sich per `setInterval` (10–15 s), aber
+**nur** bei `document.visibilityState === "visible"`, plus sofort bei `focus`/
+`visibilitychange`. Für die Ergebnis-Eingabefelder kapselt
+`frontend/src/useErgebnisEingaben.ts` die Sync-Logik: Zeilen ohne offene
+Eigen-Eingabe übernehmen automatisch den Serverwert (so erscheinen Ergebnisse
+der jeweils anderen Erfassungs-Seite), offene Eingaben bleiben erhalten und
+werden bei zwischenzeitlicher Fremdänderung als Konflikt markiert. Wichtig: der
+Dirty-Vergleich läuft gegen den zuletzt gesyncten **Basiswert**, nicht gegen
+den aktuellen Server – sonst gälte eine unberührte Zeile fälschlich als
+„geändert", sobald der Server sich ändert.
+
+**QR-Codes komplett im Browser erzeugt** (`frontend/src/components/QrCode.tsx`,
+Abhängigkeit `qrcode`): für den Ergebnis-Erfassungslink und die öffentliche
+Turnierseite. Bewusst lokal – die URL bzw. das Token wird an keinen externen
+QR-Dienst geschickt. Download als SVG (skalierbar, für Aushang) und PNG.
 
 **Fachliche Referenz:** `docs/torball_gesamtspezifikation.md` ist die
 verbindliche Spezifikation für Geschäftsregeln; bei Unklarheiten dort
