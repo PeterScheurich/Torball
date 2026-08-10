@@ -18,12 +18,13 @@ export interface MannschaftImTurnier extends CouchMeta {
   ansprechpartnerTelefon?: string;
   ansprechpartnerEmail?: string;
   /**
-   * Bis zu zwei Trainer/Betreuer je Mannschaft (beide optional). Fachlicher Hintergrund
+   * Bis zu drei Trainer/Betreuer je Mannschaft (alle optional). Fachlicher Hintergrund
    * (Bundesliga): diese Personen dürfen mit auf der Auswechselbank sitzen – daher werden
    * sie an der Mannschaft und nicht als Spieler geführt.
    */
   betreuer1Name?: string;
   betreuer2Name?: string;
+  betreuer3Name?: string;
   importiertAusTurnierId?: TurnierId;
   /**
    * Manuelle Sortierposition innerhalb des Turniers (nicht Teil der

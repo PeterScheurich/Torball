@@ -118,6 +118,7 @@ export interface NeueMannschaft {
   bundesland?: string;
   betreuer1Name?: string;
   betreuer2Name?: string;
+  betreuer3Name?: string;
 }
 
 export function getMannschaften(turnierId: string): Promise<MannschaftImTurnier[]> {
@@ -133,9 +134,10 @@ export interface MannschaftAktualisierung {
   vereinId?: string | null;
   /** null sendet, um ein gesetztes Bundesland gezielt zu leeren (siehe VereinAktualisierung). */
   bundesland?: string | null;
-  /** Trainer/Betreuer (bis zu zwei) - null sendet, um einen Eintrag gezielt zu leeren. */
+  /** Trainer/Betreuer (bis zu drei) - null sendet, um einen Eintrag gezielt zu leeren. */
   betreuer1Name?: string | null;
   betreuer2Name?: string | null;
+  betreuer3Name?: string | null;
 }
 
 export function updateMannschaft(id: string, daten: MannschaftAktualisierung): Promise<MannschaftImTurnier> {

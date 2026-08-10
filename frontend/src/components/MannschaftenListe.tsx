@@ -18,6 +18,7 @@ interface MannschaftBearbeitung {
   bundesland: string;
   betreuer1Name: string;
   betreuer2Name: string;
+  betreuer3Name: string;
 }
 
 function verschobeneListe<T>(liste: T[], vonIndex: number, nachIndex: number): T[] {
@@ -97,6 +98,7 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
           bundesland: m.bundesland ?? "",
           betreuer1Name: m.betreuer1Name ?? "",
           betreuer2Name: m.betreuer2Name ?? "",
+          betreuer3Name: m.betreuer3Name ?? "",
         };
       }
       return naechster;
@@ -195,11 +197,13 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
     const bundeslandNeu = werte.bundesland || null;
     const betreuer1Neu = werte.betreuer1Name.trim() || null;
     const betreuer2Neu = werte.betreuer2Name.trim() || null;
+    const betreuer3Neu = werte.betreuer3Name.trim() || null;
     const unveraendert =
       werte.name === m.name &&
       bundeslandNeu === (m.bundesland ?? null) &&
       betreuer1Neu === (m.betreuer1Name ?? null) &&
-      betreuer2Neu === (m.betreuer2Name ?? null);
+      betreuer2Neu === (m.betreuer2Name ?? null) &&
+      betreuer3Neu === (m.betreuer3Name ?? null);
     if (unveraendert) return;
 
     try {
@@ -208,6 +212,7 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
         bundesland: bundeslandNeu,
         betreuer1Name: betreuer1Neu,
         betreuer2Name: betreuer2Neu,
+        betreuer3Name: betreuer3Neu,
       });
       await laden();
     } catch (err) {
@@ -383,6 +388,20 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
                           value={bearbeitung[m._id]?.betreuer2Name ?? ""}
                           onChange={(e) =>
                             setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], betreuer2Name: e.target.value } }))
+                          }
+                          onBlur={() => feldVerlassen(m)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") e.currentTarget.blur();
+                          }}
+                        />
+                      </div>
+                      <div className="feld">
+                        <label htmlFor={`betreuer3-${m._id}`}>Trainer/Betreuer 3</label>
+                        <input
+                          id={`betreuer3-${m._id}`}
+                          value={bearbeitung[m._id]?.betreuer3Name ?? ""}
+                          onChange={(e) =>
+                            setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], betreuer3Name: e.target.value } }))
                           }
                           onBlur={() => feldVerlassen(m)}
                           onKeyDown={(e) => {

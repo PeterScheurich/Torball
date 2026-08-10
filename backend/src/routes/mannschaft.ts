@@ -16,6 +16,7 @@ interface MannschaftBody {
   ansprechpartnerEmail?: string;
   betreuer1Name?: string;
   betreuer2Name?: string;
+  betreuer3Name?: string;
 }
 
 const mannschaftBodySchema = {
@@ -33,6 +34,7 @@ const mannschaftBodySchema = {
     ansprechpartnerEmail: { type: "string" },
     betreuer1Name: { type: "string" },
     betreuer2Name: { type: "string" },
+    betreuer3Name: { type: "string" },
   },
 } as const;
 
@@ -47,6 +49,7 @@ interface MannschaftAktualisierungBody {
   ansprechpartnerEmail?: string;
   betreuer1Name?: string;
   betreuer2Name?: string;
+  betreuer3Name?: string;
 }
 
 // Optionale Freitextfelder akzeptieren beim Aktualisieren bewusst auch null, damit ein
@@ -66,6 +69,7 @@ const mannschaftAktualisierungSchema = {
     ansprechpartnerEmail: { type: ["string", "null"] },
     betreuer1Name: { type: ["string", "null"] },
     betreuer2Name: { type: ["string", "null"] },
+    betreuer3Name: { type: ["string", "null"] },
   },
 } as const;
 

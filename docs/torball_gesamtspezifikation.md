@@ -627,9 +627,9 @@ Mannschaft-im-Turnier
   - verein_id (optional, Referenz)
   - name, logo, bundesland               ← kopiert bei Übernahme aus Team, sonst frei
   - ansprechpartner_name / _telefon / _email
-  - betreuer1_name, betreuer2_name (optional) ← bis zu zwei Trainer/Betreuer;
-    dürfen (Bundesliga) mit auf der Auswechselbank sitzen, daher an der
-    Mannschaft geführt, nicht als Spieler
+  - betreuer1_name, betreuer2_name, betreuer3_name (optional) ← bis zu drei
+    Trainer/Betreuer; dürfen (Bundesliga) mit auf der Auswechselbank sitzen,
+    daher an der Mannschaft geführt, nicht als Spieler
   - importiert_aus_turnier_id (optional)
 ```
 
