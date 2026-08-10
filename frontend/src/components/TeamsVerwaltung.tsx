@@ -48,6 +48,7 @@ export function TeamsVerwaltung({ vereine }: Props) {
   }, [vereine, neuerVereinId]);
 
   const nameVonVerein = (vereinId: string) => vereine.find((v) => v._id === vereinId)?.name ?? vereinId;
+  const teamsSortiert = [...teams].sort((a, b) => a.name.localeCompare(b.name));
 
   async function anlegen(event: React.FormEvent) {
     event.preventDefault();
@@ -127,7 +128,7 @@ export function TeamsVerwaltung({ vereine }: Props) {
               </tr>
             </thead>
             <tbody>
-              {teams.map((t) => (
+              {teamsSortiert.map((t) => (
                 <tr key={t._id}>
                   <td>
                     <label className="sr-only" htmlFor={`team-name-${t._id}`}>

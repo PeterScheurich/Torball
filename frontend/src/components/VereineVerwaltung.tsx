@@ -22,6 +22,8 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
   const [fehler, setFehler] = useState<string | undefined>();
   const [neu, setNeu] = useState<VereinAktualisierung>(LEERES_FORMULAR);
   const [bearbeitung, setBearbeitung] = useState<Record<string, VereinAktualisierung>>({});
+  const [formularOffen, setFormularOffen] = useState(true);
+  const autoZugeklappt = useRef(false);
   const nameRef = useRef<HTMLInputElement>(null);
 
   const laden = useCallback(async () => {
@@ -58,6 +60,19 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
       return naechste;
     });
   }, [vereine]);
+
+  // Anlege-Formular automatisch einklappen, sobald (beim ersten Laden) bereits Vereine
+  // existieren - dann ist die Vereins-Liste und die Team-Uebersicht darunter gleich sichtbar.
+  // Ohne Vereine bleibt es offen (Erst-Erfassung). Nur einmal automatisch; danach entscheidet
+  // der Nutzer per Umschalter.
+  useEffect(() => {
+    if (!autoZugeklappt.current && vereine.length > 0) {
+      autoZugeklappt.current = true;
+      setFormularOffen(false);
+    }
+  }, [vereine]);
+
+  const vereineSortiert = [...vereine].sort((a, b) => a.name.localeCompare(b.name));
 
   // Leere optionale Felder als null senden (nicht undefined), damit ein zuvor gesetzter Wert
   // beim Speichern wirklich zurueckgesetzt wird - undefined fiele via JSON.stringify aus dem
@@ -147,7 +162,7 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
               </tr>
             </thead>
             <tbody>
-              {vereine.map((v) => (
+              {vereineSortiert.map((v) => (
                 <tr key={v._id}>
                   <td>
                     <label className="sr-only" htmlFor={`verein-name-${v._id}`}>
@@ -282,7 +297,19 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
         ))}
       </datalist>
 
-      <form onSubmit={anlegen}>
+      <p>
+        <button
+          type="button"
+          className="button-link"
+          aria-expanded={formularOffen}
+          aria-controls="verein-anlegen"
+          onClick={() => setFormularOffen((o) => !o)}
+        >
+          Neuen Verein anlegen {formularOffen ? "▾" : "▸"}
+        </button>
+      </p>
+      {formularOffen && (
+      <form id="verein-anlegen" onSubmit={anlegen}>
         <div className="feld">
           <label htmlFor="vereinName">Vereinsname</label>
           <input
@@ -339,6 +366,7 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
         </div>
         <button type="submit">Verein anlegen</button>
       </form>
+      )}
     </div>
   );
 }
