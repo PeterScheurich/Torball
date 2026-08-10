@@ -1,6 +1,13 @@
 import type { FastifyInstance } from "fastify";
-import type { Turnier, TurnierStatus, Protokollierungsart, TabellenKriterium } from "@torball/shared";
-import { deleteDoc, findAllByType, findById, insertDoc, newId } from "../repository";
+import type {
+  MannschaftImTurnier,
+  Protokollierungsart,
+  Spiel,
+  TabellenKriterium,
+  Turnier,
+  TurnierStatus,
+} from "@torball/shared";
+import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
 
 /** Felder, die der Client beim Anlegen setzen kann; alles andere bekommt einen Default (Abschnitt 20.5). */
 type TurnierBody = Partial<Omit<Turnier, "_id" | "_rev" | "docType" | "turnierId">> &
@@ -109,6 +116,23 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   app.delete<{ Params: { id: string } }>("/turniere/:id", async (req, reply) => {
     const bestehend = await findById<Turnier>(req.params.id);
     if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+
+    // Turnier-Unterobjekte (Mannschaft-im-Turnier, Spiel) haben laut Datenmodell keine
+    // eigenstaendige Existenz ausserhalb ihres Turniers (ON DELETE CASCADE) - werden hier
+    // deshalb vor dem Turnier selbst mitgeloescht, sonst blieben verwaiste Dokumente zurueck.
+    const mannschaften = await findAllBySelector<MannschaftImTurnier>({
+      docType: "mannschaftImTurnier",
+      turnierId: bestehend._id,
+    });
+    for (const mannschaft of mannschaften) {
+      await deleteDoc(mannschaft._id, mannschaft._rev!);
+    }
+
+    const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: bestehend._id });
+    for (const spiel of spiele) {
+      await deleteDoc(spiel._id, spiel._rev!);
+    }
+
     await deleteDoc(bestehend._id, bestehend._rev!);
     return reply.code(204).send();
   });
