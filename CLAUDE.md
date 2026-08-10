@@ -220,6 +220,10 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   `npm run dev:backend`-Prozesses (`--env-file` wird nur beim Start
   gelesen) - anders als Quelltext-Änderungen, die automatisch neu geladen
   werden.
+- Die CouchDB-Entwicklungsinstanz läuft unter `192.168.188.96` (siehe
+  `docs/testumgebung-starten.md`) - der Rechner, auf dem `npm run
+  dev:backend` läuft, muss dieses Netzwerk erreichen können, sonst schlagen
+  alle DB-Zugriffe fehl.
 
 ## Dokumentation
 
@@ -228,6 +232,34 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   tatsächlich ausgeführten Befehle – nicht nur das Endergebnis.
 - `docs/torball_gesamtspezifikation.md` ist die fachliche Referenz; bei
   Unklarheiten dort nachschlagen oder direkt fragen statt zu raten.
+- Die Dateien direkt unter `docs/` (nicht `Archiv/`, nicht `Protokolle/`)
+  sind laut `docs/README.md` die führende Fassung und werden mit `node
+  scripts/bookstack-push.mjs` nach BookStack gespiegelt – Änderungen gehören
+  hier ins Repo, nicht direkt in BookStack.
+
+## Browser-Tests (Vorschau-Tools)
+
+Beim Verifizieren von Frontend-Änderungen über die Browser-Vorschau-Tools
+sind hier mehrfach dieselben Stolperfallen aufgetreten:
+
+- `computer`-Klicks (`left_click`/`type`) landen in dieser Umgebung nicht
+  zuverlässig auf dem Zielelement (Symptom: `screenshot` schlägt mit "the
+  Browser pane is not displayed" fehl) - nach einem Klick immer mit
+  `document.activeElement` (via `javascript_tool`) prüfen, ob wirklich das
+  erwartete Element fokussiert wurde, statt dem Klick blind zu vertrauen.
+- Für rein programmatisches Fokussieren müssen `.focus()` und `.blur()`
+  (via `javascript_tool`) in **getrennten** Tool-Aufrufen erfolgen, nicht im
+  selben Skript hintereinander - sonst hat React keine Zeit, den durch
+  `.focus()`/ein vorheriges `input`-Event ausgelösten State-Update zu
+  committen, bevor der (dann veraltete) `onBlur`-Handler feuert.
+- `read_console_messages` liefert die komplette Historie seit Sitzungsbeginn
+  zurück, nicht nur aktuelle/neue Meldungen - ein alt aussehender Fehler
+  kann von einer laengst behobenen HMR-Zwischenpanne stammen, nicht vom
+  aktuellen Code-Stand.
+- Für Wertevergleiche/Layout-Messungen `javascript_tool`
+  (`getBoundingClientRect()`, `getComputedStyle()`) und `fetch()` gegen die
+  eigene API zuverlässiger als Screenshots, die in dieser Umgebung öfter
+  fehlschlagen.
 
 ## Berechtigungsmodi (`.claude/settings.json`)
 
