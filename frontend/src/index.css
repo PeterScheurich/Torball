@@ -171,6 +171,11 @@ h3 {
 
 table {
   width: 100%;
+  /* fixed statt auto: Spaltenbreiten richten sich nach der Kopfzeile (die beim
+     Wechseln zwischen Feld-Tabs gleich bleibt) statt bei jedem Tab-Wechsel anhand
+     der jeweils sichtbaren Zeileninhalte (z.B. Mannschaftsnamen) neu berechnet zu
+     werden - sonst "springen" die Spalten beim Tab-Wechsel sichtbar. */
+  table-layout: fixed;
   border-collapse: collapse;
   margin-bottom: 16px;
 }
@@ -190,9 +195,17 @@ th {
 }
 
 /* Ziehpunkt + zwei Pfeil-Buttons muessen in einer Zeile bleiben, statt der zweite
-   Button in die naechste Tabellenzeile umzubrechen. */
+   Button in die naechste Tabellenzeile umzubrechen. width:1% haelt die Spalte bei
+   table-layout:fixed so schmal wie moeglich, damit die Mannschaftsnamen-Spalten
+   den restlichen Platz bekommen. */
 .reihenfolge-zelle {
   white-space: nowrap;
+  width: 1%;
+}
+
+.platzhalter-zeile {
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 form {

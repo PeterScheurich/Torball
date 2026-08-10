@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import type { Spielmodus } from "@torball/shared";
 import { createTurnier } from "../api";
 
 export function TurnierAnlegenPage() {
@@ -7,6 +8,7 @@ export function TurnierAnlegenPage() {
   const [datum, setDatum] = useState("");
   const [startzeit, setStartzeit] = useState("");
   const [anzahlFelder, setAnzahlFelder] = useState<1 | 2>(1);
+  const [spielplanModus, setSpielplanModus] = useState<Spielmodus>("einfach");
   const [fehler, setFehler] = useState<string | undefined>();
   const navigate = useNavigate();
 
@@ -20,7 +22,7 @@ export function TurnierAnlegenPage() {
     }));
 
     try {
-      const neu = await createTurnier({ name, datum, startzeit: startzeit || undefined, felder });
+      const neu = await createTurnier({ name, datum, startzeit: startzeit || undefined, felder, spielplanModus });
       navigate(`/turniere/${encodeURIComponent(neu._id)}/mannschaften-erfassen`);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Anlegen");
@@ -52,8 +54,19 @@ export function TurnierAnlegenPage() {
             value={anzahlFelder}
             onChange={(e) => setAnzahlFelder(Number(e.target.value) === 2 ? 2 : 1)}
           >
-            <option value={1}>1 (Normalfall)</option>
-            <option value={2}>2 (Ausnahmefall)</option>
+            <option value={1}>1</option>
+            <option value={2}>2</option>
+          </select>
+        </div>
+        <div className="feld">
+          <label htmlFor="spielplanModus">Spielmodus</label>
+          <select
+            id="spielplanModus"
+            value={spielplanModus}
+            onChange={(e) => setSpielplanModus(e.target.value === "doppelt" ? "doppelt" : "einfach")}
+          >
+            <option value="einfach">Jeder gegen Jeden (einfach)</option>
+            <option value="doppelt">Jeder zweimal gegen Jeden (doppelt)</option>
           </select>
         </div>
         {fehler && <p role="alert">{fehler}</p>}

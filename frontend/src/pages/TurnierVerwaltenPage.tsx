@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { Turnier } from "@torball/shared";
-import { getTurnier } from "../api";
+import type { Spielmodus, Turnier } from "@torball/shared";
+import { getTurnier, updateTurnier } from "../api";
 import { MannschaftenListe } from "../components/MannschaftenListe";
 import { SpielplanVerwaltung } from "../components/SpielplanVerwaltung";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
@@ -33,6 +33,15 @@ export function TurnierVerwaltenPage() {
       .catch((err) => setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden"));
   }, [turnierId]);
 
+  async function spielplanModusAendern(modus: Spielmodus) {
+    try {
+      setTurnier(await updateTurnier(turnierId, { spielplanModus: modus }));
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern des Spielmodus");
+    }
+  }
+
   function tabWechseln(index: number) {
     const naechster = TABS[(index + TABS.length) % TABS.length];
     setAktiverTab(naechster.id);
@@ -56,6 +65,7 @@ export function TurnierVerwaltenPage() {
         <Link to="/">&larr; Zurück zur Turnierliste</Link>
       </p>
       <h1>{turnier.name}</h1>
+      {fehler && <p role="alert">{fehler}</p>}
 
       <div role="tablist" aria-label="Turnierbereiche">
         {TABS.map((tab, index) => (
@@ -84,6 +94,17 @@ export function TurnierVerwaltenPage() {
           {turnier.startzeit ? `, ${formatiereUhrzeit(`${turnier.datum}T${turnier.startzeit}:00`)}` : ""} · Status:{" "}
           {turnier.status} · Felder: {turnier.felder.map((f) => f.name).join(", ") || "keine"}
         </p>
+        <div className="feld">
+          <label htmlFor="spielplanModus">Spielmodus (für die Spielplan-Erzeugung)</label>
+          <select
+            id="spielplanModus"
+            value={turnier.spielplanModus}
+            onChange={(e) => spielplanModusAendern(e.target.value === "doppelt" ? "doppelt" : "einfach")}
+          >
+            <option value="einfach">Jeder gegen Jeden (einfach)</option>
+            <option value="doppelt">Jeder zweimal gegen Jeden (doppelt)</option>
+          </select>
+        </div>
       </div>
 
       <div

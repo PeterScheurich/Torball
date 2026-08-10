@@ -4,6 +4,9 @@ export type TurnierStatus = "entwurf" | "aktiv" | "archiviert";
 
 export type Protokollierungsart = "digital" | "manuell";
 
+/** Rundenmodus für die automatische Spielplan-Erstellung (Abschnitt 8). */
+export type Spielmodus = "einfach" | "doppelt";
+
 /** Reihenfolge der Kriterien bestimmt die Tabellensortierung bei Gleichstand. */
 export type TabellenKriterium =
   | "punkte"
@@ -42,6 +45,8 @@ export interface Turnier extends CouchMeta {
   protokollierungsart: Protokollierungsart;
 
   modus?: string;
+  /** Jeder-gegen-Jeden einfach oder doppelt; steuert die Spielplan-Erzeugung (Abschnitt 8). */
+  spielplanModus: Spielmodus;
   spielzeitMinuten: number;
   anzahlHalbzeiten: number;
   pauseMinuten: number;

@@ -1,4 +1,4 @@
-import type { MannschaftImTurnier, Spiel, Spielfeld, Turnier } from "@torball/shared";
+import type { MannschaftImTurnier, Spiel, Spielfeld, Spielmodus, Turnier } from "@torball/shared";
 
 const BASIS = "/api";
 
@@ -35,6 +35,7 @@ export interface NeuesTurnier {
   datum: string;
   startzeit?: string;
   felder: Spielfeld[];
+  spielplanModus?: Spielmodus;
 }
 
 export function getTurniere(): Promise<Turnier[]> {
@@ -51,6 +52,10 @@ export function createTurnier(daten: NeuesTurnier): Promise<Turnier> {
 
 export function deleteTurnier(id: string): Promise<void> {
   return anfrage(`/turniere/${id}`, { method: "DELETE" });
+}
+
+export function updateTurnier(id: string, daten: Partial<Pick<Turnier, "spielplanModus">>): Promise<Turnier> {
+  return anfrage(`/turniere/${id}`, { method: "PUT", body: JSON.stringify(daten) });
 }
 
 export interface NeueMannschaft {

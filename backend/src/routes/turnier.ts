@@ -21,6 +21,7 @@ const turnierBodySchema = {
     datum: { type: "string", minLength: 1 },
     status: { type: "string", enum: ["entwurf", "aktiv", "archiviert"] },
     protokollierungsart: { type: "string", enum: ["digital", "manuell"] },
+    spielplanModus: { type: "string", enum: ["einfach", "doppelt"] },
   },
   // Weitere Turnier-Felder sind ueber die TypeScript-Typen abgedeckt; hier nur die
   // Pflichtfelder und die beiden Enum-Felder strikt validiert.
@@ -43,6 +44,7 @@ function turnierDefaults(): Omit<Turnier, "_id" | "docType" | "turnierId" | "nam
     status,
     felder: [],
     protokollierungsart,
+    spielplanModus: "einfach",
     spielzeitMinuten: 5,
     anzahlHalbzeiten: 2,
     pauseMinuten: 2,
@@ -70,15 +72,20 @@ function turnierDefaults(): Omit<Turnier, "_id" | "docType" | "turnierId" | "nam
   };
 }
 
+/** Fehlende Felder aelterer, vor deren Einfuehrung angelegter Turnier-Dokumente auffuellen. */
+function mitDefaults(turnier: Turnier): Turnier {
+  return { ...turnier, spielplanModus: turnier.spielplanModus ?? "einfach" };
+}
+
 export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   app.get("/turniere", async () => {
-    return findAllByType<Turnier>("turnier");
+    return (await findAllByType<Turnier>("turnier")).map(mitDefaults);
   });
 
   app.get<{ Params: { id: string } }>("/turniere/:id", async (req, reply) => {
     const turnier = await findById<Turnier>(req.params.id);
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-    return turnier;
+    return mitDefaults(turnier);
   });
 
   app.post<{ Body: TurnierBody }>(

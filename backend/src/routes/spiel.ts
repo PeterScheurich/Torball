@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { Spiel, Turnier } from "@torball/shared";
 import { findAllBySelector, findById, insertDoc } from "../repository";
-import { berechneStartzeit } from "../spielplan/zeitplanung";
+import { berechneStartzeit, spieldauerMinuten } from "../spielplan/zeitplanung";
 
 /** Nur diese Felder darf die Turnierleitung nachtraeglich anpassen (Abschnitt 8: "Reihenfolge, Spielfeld und Startzeiten"). */
 interface SpielAnpassungBody {
@@ -90,8 +90,30 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
       }
       const deltaMs = neueZeit - alteZeit;
 
+      const turnier = await findById<Turnier>(spiel.turnierId);
+      if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+
       const alleSpiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: spiel.turnierId });
       const eigeneRunde = Number(spiel.runde);
+
+      // Der Kaskaden-Verschub weiter unten haelt den Abstand zu SPAETEREN Spielen auf
+      // demselben Feld automatisch ein (die wandern um dasselbe Delta mit). Nur die
+      // Grenze zum VORHERIGEN, nicht mitverschobenen Spiel auf demselben Feld kann durch
+      // ein Zurueckdatieren neu ueberschnitten werden - das muss hier geprueft werden.
+      const vorheriges = alleSpiele
+        .filter(
+          (s) => s.feldId === spiel.feldId && s._id !== spiel._id && s.startzeitGeplant && Number(s.runde) < eigeneRunde,
+        )
+        .sort((a, b) => Number(b.runde) - Number(a.runde))[0];
+      if (vorheriges?.startzeitGeplant) {
+        const vorherigesEnde = new Date(vorheriges.startzeitGeplant).getTime() + spieldauerMinuten(turnier) * 60_000;
+        if (neueZeit < vorherigesEnde) {
+          return reply.code(409).send({
+            error: "Neue Startzeit überschneidet sich mit dem vorherigen Spiel auf diesem Feld",
+          });
+        }
+      }
+
       const zuVerschieben = alleSpiele.filter(
         (s) => s.status === "geplant" && s.startzeitGeplant && Number(s.runde) >= eigeneRunde,
       );

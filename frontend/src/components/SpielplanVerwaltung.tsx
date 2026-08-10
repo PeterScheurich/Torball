@@ -12,9 +12,11 @@ import {
   type SpielplanVorschlagEintrag,
 } from "../api";
 import { formatiereUhrzeit } from "../format";
-import { berechneStartzeit } from "../zeitplanung";
+import { berechneStartzeit, spieldauerMinuten } from "../zeitplanung";
 
 const BACK_TO_BACK_HINWEIS = "Direktes Folgespiel (Back-to-Back) konnte nicht vermieden werden";
+const UEBERSCHNEIDUNG_HINWEIS = "Neue Startzeit überschneidet sich mit dem vorherigen Spiel auf diesem Feld.";
+const MAX_VERLAUF = 10;
 
 function verschobeneListe<T>(liste: T[], vonIndex: number, nachIndex: number): T[] {
   const kopie = [...liste];
@@ -77,6 +79,35 @@ function nachbarImFeldIndex<T extends { feldId?: string }>(
   return null;
 }
 
+type FeldZeile<T> = { eintrag: T } | { platzhalter: true };
+
+/**
+ * Ergaenzt die Spiele eines Feldes um Platzhalter-Zeilen fuer Slots, in denen NICHT
+ * dieses, sondern nur ein anderes Feld spielt - sonst sieht es in der Feld-Tab-Ansicht
+ * so aus, als wuerde eine Mannschaft mehrfach ohne Pause hintereinander spielen, obwohl
+ * dazwischen tatsaechlich ein Spiel auf dem anderen Feld liegt (und damit echte Pause).
+ */
+function mitFeldPlatzhaltern<T>(
+  alle: T[],
+  feldId: string,
+  feldVon: (e: T) => string | undefined,
+  schluesselVon: (e: T) => number,
+): FeldZeile<T>[] {
+  const alleSchluessel = [...new Set(alle.map(schluesselVon))].sort((a, b) => a - b);
+  const aufFeld = new Map(alle.filter((e) => feldVon(e) === feldId).map((e) => [schluesselVon(e), e]));
+  return alleSchluessel.map((schluessel) => {
+    const eintrag = aufFeld.get(schluessel);
+    return eintrag ? { eintrag } : { platzhalter: true as const };
+  });
+}
+
+interface SpielSnapshot {
+  id: string;
+  runde?: string;
+  feldId?: string;
+  startzeitGeplant?: string;
+}
+
 interface Props {
   turnierId: string;
   /** Wird nach jedem Laden/Aendern mit der aktuellen Spieleliste aufgerufen. */
@@ -88,11 +119,11 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [spiele, setSpiele] = useState<Spiel[]>([]);
   const [vorschlag, setVorschlag] = useState<SpielplanVorschlagEintrag[] | undefined>();
-  const [wiederholungen, setWiederholungen] = useState<1 | 2>(1);
   const [fehler, setFehler] = useState<string | undefined>();
   const [ziehIndex, setZiehIndex] = useState<number | null>(null);
   const [ziehZielIndex, setZiehZielIndex] = useState<number | null>(null);
   const [aktuellesFeld, setAktuellesFeld] = useState<string | undefined>();
+  const [verlauf, setVerlauf] = useState<SpielSnapshot[][]>([]);
 
   const laden = useCallback(async () => {
     try {
@@ -116,20 +147,63 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
   const nameVon = (mannschaftId: string) => mannschaften.find((m) => m._id === mannschaftId)?.name ?? mannschaftId;
 
   const mehrereFelder = (turnier?.felder.length ?? 0) > 1;
+  const wiederholungen: 1 | 2 = turnier?.spielplanModus === "doppelt" ? 2 : 1;
 
   const spieleSortiert = [...spiele].sort((a, b) => Number(a.runde) - Number(b.runde));
   const spielWarnungen = slotWarnungen(spieleSortiert.map((s) => ({ ...s, slot: Number(s.runde) })));
 
   const vorschlagSortiert = vorschlag ? [...vorschlag].sort((a, b) => a.slot - b.slot) : undefined;
 
-  const angezeigteSpiele = mehrereFelder
-    ? spieleSortiert.filter((s) => s.feldId === aktuellesFeld)
-    : spieleSortiert;
-  const angezeigterVorschlag = vorschlagSortiert
+  const angezeigteSpiele: FeldZeile<Spiel>[] = mehrereFelder
+    ? aktuellesFeld
+      ? mitFeldPlatzhaltern(spieleSortiert, aktuellesFeld, (s) => s.feldId, (s) => Number(s.runde))
+      : []
+    : spieleSortiert.map((s) => ({ eintrag: s }));
+  const angezeigterVorschlag: FeldZeile<SpielplanVorschlagEintrag>[] | undefined = vorschlagSortiert
     ? mehrereFelder
-      ? vorschlagSortiert.filter((e) => e.feldId === aktuellesFeld)
-      : vorschlagSortiert
+      ? aktuellesFeld
+        ? mitFeldPlatzhaltern(vorschlagSortiert, aktuellesFeld, (e) => e.feldId, (e) => e.slot)
+        : []
+      : vorschlagSortiert.map((e) => ({ eintrag: e }))
     : undefined;
+
+  function snapshotJetzt(): SpielSnapshot[] {
+    return spiele.map((s) => ({ id: s._id, runde: s.runde, feldId: s.feldId, startzeitGeplant: s.startzeitGeplant }));
+  }
+
+  function verlaufSichern() {
+    setVerlauf((bisherig) => [...bisherig.slice(-(MAX_VERLAUF - 1)), snapshotJetzt()]);
+  }
+
+  function verlaufVerwerfen() {
+    setVerlauf((bisherig) => bisherig.slice(0, -1));
+  }
+
+  async function rueckgaengig() {
+    const letzter = verlauf.at(-1);
+    if (!letzter) return;
+    const aktuelleNachId = new Map(spiele.map((s) => [s._id, s]));
+    const zuWiederherstellen = letzter.filter((snap) => {
+      const aktuell = aktuelleNachId.get(snap.id);
+      return (
+        aktuell &&
+        (aktuell.runde !== snap.runde ||
+          aktuell.feldId !== snap.feldId ||
+          aktuell.startzeitGeplant !== snap.startzeitGeplant)
+      );
+    });
+    try {
+      await Promise.all(
+        zuWiederherstellen.map((snap) =>
+          spielAnpassen(snap.id, { runde: snap.runde, feldId: snap.feldId, startzeitGeplant: snap.startzeitGeplant }),
+        ),
+      );
+      setVerlauf((bisherig) => bisherig.slice(0, -1));
+      await laden();
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Rückgängig machen");
+    }
+  }
 
   function FeldTabs({ felder }: { felder: Spielfeld[] }) {
     if (felder.length <= 1) return null;
@@ -158,10 +232,12 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
       const nachIndex = vonVollIndex + richtung;
       if (nachIndex < 0 || nachIndex >= spieleSortiert.length) return;
       const neueReihenfolge = verschobeneListe(spieleSortiert, vonVollIndex, nachIndex).map((s) => s._id);
+      verlaufSichern();
       try {
         await reihenfolgeAendern(turnierId, neueReihenfolge);
         await laden();
       } catch (err) {
+        verlaufVerwerfen();
         setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Reihenfolge");
       }
       return;
@@ -174,6 +250,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
     if (nachbarIndex === null) return;
     const a = spieleSortiert[vonVollIndex];
     const b = spieleSortiert[nachbarIndex];
+    verlaufSichern();
     try {
       await Promise.all([
         spielAnpassen(a._id, { runde: b.runde, startzeitGeplant: b.startzeitGeplant }),
@@ -181,16 +258,19 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
       ]);
       await laden();
     } catch (err) {
+      verlaufVerwerfen();
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Reihenfolge");
     }
   }
 
   async function startzeitPersistiertAendern(spiel: Spiel, hhmm: string) {
     if (!spiel.startzeitGeplant) return;
+    verlaufSichern();
     try {
       await spielStartzeitAendern(spiel._id, mitNeuerUhrzeit(spiel.startzeitGeplant, hhmm));
       await laden();
     } catch (err) {
+      verlaufVerwerfen();
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Startzeit");
     }
   }
@@ -232,10 +312,26 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
 
   /** Verschiebt einen Eintrag im Vorschlag auf eine manuell gewaehlte Uhrzeit; alle nachfolgenden ruecken um dasselbe Delta mit. */
   function vorschlagZeitAendern(vollIndex: number, hhmm: string) {
-    if (!vorschlagSortiert) return;
+    if (!turnier || !vorschlagSortiert) return;
     const eintrag = vorschlagSortiert[vollIndex];
     if (!eintrag.startzeitGeplant) return;
     const neueZeit = mitNeuerUhrzeit(eintrag.startzeitGeplant, hhmm);
+
+    // Der Kaskaden-Verschub weiter unten haelt den Abstand zu SPAETEREN Spielen auf
+    // demselben Feld ein (die wandern um dasselbe Delta mit). Nur ein Zurueckdatieren
+    // vor das Ende des vorherigen, nicht mitverschobenen Spiels auf demselben Feld ist
+    // unzulaessig - das darf nicht kommentarlos zu einer Ueberschneidung fuehren.
+    const vorherigenIndex = nachbarImFeldIndex(vorschlagSortiert, vollIndex, eintrag.feldId, -1);
+    const vorheriges = vorherigenIndex !== null ? vorschlagSortiert[vorherigenIndex] : undefined;
+    if (vorheriges?.startzeitGeplant) {
+      const vorherigesEnde = new Date(vorheriges.startzeitGeplant).getTime() + spieldauerMinuten(turnier) * 60_000;
+      if (new Date(neueZeit).getTime() < vorherigesEnde) {
+        setFehler(UEBERSCHNEIDUNG_HINWEIS);
+        return;
+      }
+    }
+
+    setFehler(undefined);
     const deltaMs = new Date(neueZeit).getTime() - new Date(eintrag.startzeitGeplant).getTime();
     const aktualisiert = vorschlagSortiert.map((e, i) => {
       if (i < vollIndex || !e.startzeitGeplant) return e;
@@ -265,6 +361,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
       }));
       await erzeugeSpielplan(turnierId, wiederholungen, eintraege);
       setVorschlag(undefined);
+      setVerlauf([]);
       await laden();
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Erzeugen des Spielplans");
@@ -278,18 +375,6 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
   return (
     <div>
       {fehler && <p role="alert">{fehler}</p>}
-
-      <div className="feld">
-        <label htmlFor="wiederholungen">Modus</label>
-        <select
-          id="wiederholungen"
-          value={wiederholungen}
-          onChange={(e) => setWiederholungen(Number(e.target.value) === 2 ? 2 : 1)}
-        >
-          <option value={1}>Jeder gegen Jeden (einfach)</option>
-          <option value={2}>Jeder zweimal gegen Jeden (doppelt)</option>
-        </select>
-      </div>
 
       <button type="button" onClick={neuerVorschlag} disabled={mannschaften.length < 2}>
         Neuer Vorschlag
@@ -317,7 +402,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
               </caption>
               <thead>
                 <tr>
-                  <th scope="col">
+                  <th scope="col" className="reihenfolge-zelle">
                     <span className="sr-only">Reihenfolge</span>
                   </th>
                   <th scope="col">Spiel</th>
@@ -329,81 +414,95 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {angezeigterVorschlag.map((eintrag, anzeigeIndex) => {
-                  const vollIndex = vorschlagSortiert.indexOf(eintrag);
-                  return (
-                    <tr
-                      key={vollIndex}
-                      className={ziehZielIndex === vollIndex ? "zieh-ziel" : undefined}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        setZiehZielIndex(vollIndex);
-                      }}
-                      onDrop={() => {
-                        if (ziehIndex !== null) {
-                          const richtung = ziehIndex < vollIndex ? 1 : -1;
-                          vorschlagVerschieben(ziehIndex, richtung);
-                        }
-                        setZiehIndex(null);
-                        setZiehZielIndex(null);
-                      }}
-                    >
-                      <td className="reihenfolge-zelle">
-                        <span
-                          className="ziehpunkt"
-                          draggable
-                          onDragStart={() => setZiehIndex(vollIndex)}
-                          onDragEnd={() => {
-                            setZiehIndex(null);
-                            setZiehZielIndex(null);
-                          }}
-                          aria-hidden="true"
-                          title="Zum Verschieben ziehen"
-                        >
-                          ⠿
-                        </span>
-                        <button
-                          type="button"
-                          className="symbol-button"
-                          onClick={() => vorschlagVerschieben(vollIndex, -1)}
-                          disabled={anzeigeIndex === 0}
-                          aria-label={`Spiel ${anzeigeIndex + 1} nach vorne verschieben`}
-                        >
-                          ▲
-                        </button>
-                        <button
-                          type="button"
-                          className="symbol-button"
-                          onClick={() => vorschlagVerschieben(vollIndex, 1)}
-                          disabled={anzeigeIndex === angezeigterVorschlag.length - 1}
-                          aria-label={`Spiel ${anzeigeIndex + 1} nach hinten verschieben`}
-                        >
-                          ▼
-                        </button>
-                      </td>
-                      <td>{anzeigeIndex + 1}</td>
-                      {!mehrereFelder && <td>{eintrag.feldId}</td>}
-                      <td>
-                        <label className="sr-only" htmlFor={`vorschau-zeit-${vollIndex}`}>
-                          Startzeit von Spiel {anzeigeIndex + 1}
-                        </label>
-                        {eintrag.startzeitGeplant ? (
-                          <input
-                            id={`vorschau-zeit-${vollIndex}`}
-                            type="time"
-                            value={zeitEingabeWert(eintrag.startzeitGeplant)}
-                            onChange={(e) => vorschlagZeitAendern(vollIndex, e.target.value)}
-                          />
-                        ) : (
-                          "–"
-                        )}
-                      </td>
-                      <td>{nameVon(eintrag.mannschaftAId)}</td>
-                      <td>{nameVon(eintrag.mannschaftBId)}</td>
-                      <td>{eintrag.warnung ?? ""}</td>
-                    </tr>
-                  );
-                })}
+                {(() => {
+                  const echteAnzahl = angezeigterVorschlag.filter((z) => !("platzhalter" in z)).length;
+                  let anzeigeZaehler = 0;
+                  return angezeigterVorschlag.map((zeile, zeilenIndex) => {
+                    if ("platzhalter" in zeile) {
+                      return (
+                        <tr key={`platzhalter-${zeilenIndex}`} className="platzhalter-zeile">
+                          <td className="reihenfolge-zelle">–</td>
+                          <td colSpan={5}>Spielpause (anderes Feld spielt)</td>
+                        </tr>
+                      );
+                    }
+                    const eintrag = zeile.eintrag;
+                    const anzeigeIndex = anzeigeZaehler++;
+                    const vollIndex = vorschlagSortiert.indexOf(eintrag);
+                    return (
+                      <tr
+                        key={vollIndex}
+                        className={ziehZielIndex === vollIndex ? "zieh-ziel" : undefined}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setZiehZielIndex(vollIndex);
+                        }}
+                        onDrop={() => {
+                          if (ziehIndex !== null) {
+                            const richtung = ziehIndex < vollIndex ? 1 : -1;
+                            vorschlagVerschieben(ziehIndex, richtung);
+                          }
+                          setZiehIndex(null);
+                          setZiehZielIndex(null);
+                        }}
+                      >
+                        <td className="reihenfolge-zelle">
+                          <span
+                            className="ziehpunkt"
+                            draggable
+                            onDragStart={() => setZiehIndex(vollIndex)}
+                            onDragEnd={() => {
+                              setZiehIndex(null);
+                              setZiehZielIndex(null);
+                            }}
+                            aria-hidden="true"
+                            title="Zum Verschieben ziehen"
+                          >
+                            ⠿
+                          </span>
+                          <button
+                            type="button"
+                            className="symbol-button"
+                            onClick={() => vorschlagVerschieben(vollIndex, -1)}
+                            disabled={anzeigeIndex === 0}
+                            aria-label={`Spiel ${anzeigeIndex + 1} nach vorne verschieben`}
+                          >
+                            ▲
+                          </button>
+                          <button
+                            type="button"
+                            className="symbol-button"
+                            onClick={() => vorschlagVerschieben(vollIndex, 1)}
+                            disabled={anzeigeIndex === echteAnzahl - 1}
+                            aria-label={`Spiel ${anzeigeIndex + 1} nach hinten verschieben`}
+                          >
+                            ▼
+                          </button>
+                        </td>
+                        <td>{anzeigeIndex + 1}</td>
+                        {!mehrereFelder && <td>{eintrag.feldId}</td>}
+                        <td>
+                          <label className="sr-only" htmlFor={`vorschau-zeit-${vollIndex}`}>
+                            Startzeit von Spiel {anzeigeIndex + 1}
+                          </label>
+                          {eintrag.startzeitGeplant ? (
+                            <input
+                              id={`vorschau-zeit-${vollIndex}`}
+                              type="time"
+                              value={zeitEingabeWert(eintrag.startzeitGeplant)}
+                              onChange={(e) => vorschlagZeitAendern(vollIndex, e.target.value)}
+                            />
+                          ) : (
+                            "–"
+                          )}
+                        </td>
+                        <td>{nameVon(eintrag.mannschaftAId)}</td>
+                        <td>{nameVon(eintrag.mannschaftBId)}</td>
+                        <td>{eintrag.warnung ?? ""}</td>
+                      </tr>
+                    );
+                  });
+                })()}
               </tbody>
             </table>
           </div>
@@ -417,6 +516,9 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
       ) : spiele.length > 0 ? (
         <>
           <p>Spielplan ist bereits erzeugt (Version {turnier.spielplanVersion}).</p>
+          <button type="button" onClick={rueckgaengig} disabled={verlauf.length === 0}>
+            Rückgängig{verlauf.length > 0 ? ` (${verlauf.length})` : ""}
+          </button>
           <div className="tabellen-wrapper">
             <table>
               <caption className="sr-only">
@@ -424,7 +526,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
               </caption>
               <thead>
                 <tr>
-                  <th scope="col">
+                  <th scope="col" className="reihenfolge-zelle">
                     <span className="sr-only">Reihenfolge</span>
                   </th>
                   <th scope="col">Spiel</th>
@@ -437,83 +539,97 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {angezeigteSpiele.map((s, anzeigeIndex) => {
-                  const vollIndex = spieleSortiert.indexOf(s);
-                  return (
-                    <tr
-                      key={s._id}
-                      className={ziehZielIndex === vollIndex ? "zieh-ziel" : undefined}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        setZiehZielIndex(vollIndex);
-                      }}
-                      onDrop={() => {
-                        if (ziehIndex !== null) {
-                          const richtung = ziehIndex < vollIndex ? 1 : -1;
-                          anNeuePositionVerschieben(ziehIndex, richtung);
-                        }
-                        setZiehIndex(null);
-                        setZiehZielIndex(null);
-                      }}
-                    >
-                      <td className="reihenfolge-zelle">
-                        <span
-                          className="ziehpunkt"
-                          draggable={s.status === "geplant"}
-                          onDragStart={() => setZiehIndex(vollIndex)}
-                          onDragEnd={() => {
-                            setZiehIndex(null);
-                            setZiehZielIndex(null);
-                          }}
-                          aria-hidden="true"
-                          title="Zum Verschieben ziehen"
-                        >
-                          ⠿
-                        </span>
-                        <button
-                          type="button"
-                          className="symbol-button"
-                          onClick={() => anNeuePositionVerschieben(vollIndex, -1)}
-                          disabled={anzeigeIndex === 0 || s.status !== "geplant"}
-                          aria-label={`Spiel ${anzeigeIndex + 1} nach vorne verschieben`}
-                        >
-                          ▲
-                        </button>
-                        <button
-                          type="button"
-                          className="symbol-button"
-                          onClick={() => anNeuePositionVerschieben(vollIndex, 1)}
-                          disabled={anzeigeIndex === angezeigteSpiele.length - 1 || s.status !== "geplant"}
-                          aria-label={`Spiel ${anzeigeIndex + 1} nach hinten verschieben`}
-                        >
-                          ▼
-                        </button>
-                      </td>
-                      <td>{anzeigeIndex + 1}</td>
-                      {!mehrereFelder && <td>{s.feldId}</td>}
-                      <td>
-                        <label className="sr-only" htmlFor={`spiel-zeit-${s._id}`}>
-                          Startzeit von Spiel {anzeigeIndex + 1}
-                        </label>
-                        {s.startzeitGeplant ? (
-                          <input
-                            id={`spiel-zeit-${s._id}`}
-                            type="time"
-                            value={zeitEingabeWert(s.startzeitGeplant)}
-                            disabled={s.status !== "geplant"}
-                            onChange={(e) => startzeitPersistiertAendern(s, e.target.value)}
-                          />
-                        ) : (
-                          formatiereUhrzeit(s.startzeitGeplant)
-                        )}
-                      </td>
-                      <td>{nameVon(s.mannschaftAId)}</td>
-                      <td>{nameVon(s.mannschaftBId)}</td>
-                      <td>{s.status}</td>
-                      <td>{spielWarnungen[vollIndex] ?? ""}</td>
-                    </tr>
-                  );
-                })}
+                {(() => {
+                  const echteAnzahl = angezeigteSpiele.filter((z) => !("platzhalter" in z)).length;
+                  let anzeigeZaehler = 0;
+                  return angezeigteSpiele.map((zeile, zeilenIndex) => {
+                    if ("platzhalter" in zeile) {
+                      return (
+                        <tr key={`platzhalter-${zeilenIndex}`} className="platzhalter-zeile">
+                          <td className="reihenfolge-zelle">–</td>
+                          <td colSpan={6}>Spielpause (anderes Feld spielt)</td>
+                        </tr>
+                      );
+                    }
+                    const s = zeile.eintrag;
+                    const anzeigeIndex = anzeigeZaehler++;
+                    const vollIndex = spieleSortiert.indexOf(s);
+                    return (
+                      <tr
+                        key={s._id}
+                        className={ziehZielIndex === vollIndex ? "zieh-ziel" : undefined}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setZiehZielIndex(vollIndex);
+                        }}
+                        onDrop={() => {
+                          if (ziehIndex !== null) {
+                            const richtung = ziehIndex < vollIndex ? 1 : -1;
+                            anNeuePositionVerschieben(ziehIndex, richtung);
+                          }
+                          setZiehIndex(null);
+                          setZiehZielIndex(null);
+                        }}
+                      >
+                        <td className="reihenfolge-zelle">
+                          <span
+                            className="ziehpunkt"
+                            draggable={s.status === "geplant"}
+                            onDragStart={() => setZiehIndex(vollIndex)}
+                            onDragEnd={() => {
+                              setZiehIndex(null);
+                              setZiehZielIndex(null);
+                            }}
+                            aria-hidden="true"
+                            title="Zum Verschieben ziehen"
+                          >
+                            ⠿
+                          </span>
+                          <button
+                            type="button"
+                            className="symbol-button"
+                            onClick={() => anNeuePositionVerschieben(vollIndex, -1)}
+                            disabled={anzeigeIndex === 0 || s.status !== "geplant"}
+                            aria-label={`Spiel ${anzeigeIndex + 1} nach vorne verschieben`}
+                          >
+                            ▲
+                          </button>
+                          <button
+                            type="button"
+                            className="symbol-button"
+                            onClick={() => anNeuePositionVerschieben(vollIndex, 1)}
+                            disabled={anzeigeIndex === echteAnzahl - 1 || s.status !== "geplant"}
+                            aria-label={`Spiel ${anzeigeIndex + 1} nach hinten verschieben`}
+                          >
+                            ▼
+                          </button>
+                        </td>
+                        <td>{anzeigeIndex + 1}</td>
+                        {!mehrereFelder && <td>{s.feldId}</td>}
+                        <td>
+                          <label className="sr-only" htmlFor={`spiel-zeit-${s._id}`}>
+                            Startzeit von Spiel {anzeigeIndex + 1}
+                          </label>
+                          {s.startzeitGeplant ? (
+                            <input
+                              id={`spiel-zeit-${s._id}`}
+                              type="time"
+                              value={zeitEingabeWert(s.startzeitGeplant)}
+                              disabled={s.status !== "geplant"}
+                              onChange={(e) => startzeitPersistiertAendern(s, e.target.value)}
+                            />
+                          ) : (
+                            formatiereUhrzeit(s.startzeitGeplant)
+                          )}
+                        </td>
+                        <td>{nameVon(s.mannschaftAId)}</td>
+                        <td>{nameVon(s.mannschaftBId)}</td>
+                        <td>{s.status}</td>
+                        <td>{spielWarnungen[vollIndex] ?? ""}</td>
+                      </tr>
+                    );
+                  });
+                })()}
               </tbody>
             </table>
           </div>
