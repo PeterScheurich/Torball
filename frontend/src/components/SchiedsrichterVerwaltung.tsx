@@ -247,6 +247,7 @@ export function SchiedsrichterVerwaltung({ turnierId }: Props) {
                     <input
                       id={`sr-email-${s._id}`}
                       type="email"
+                      className="sr-email-eingabe"
                       value={bearbeitung[s._id]?.email ?? ""}
                       onChange={(e) => textAendern(s._id, { email: e.target.value })}
                       onBlur={() => speichern(s)}
@@ -328,7 +329,13 @@ export function SchiedsrichterVerwaltung({ turnierId }: Props) {
         </div>
         <div className="feld">
           <label htmlFor="sr-neu-email">E-Mail (optional)</label>
-          <input id="sr-neu-email" type="email" value={neuEmail} onChange={(e) => setNeuEmail(e.target.value)} />
+          <input
+            id="sr-neu-email"
+            type="email"
+            className="sr-email-eingabe"
+            value={neuEmail}
+            onChange={(e) => setNeuEmail(e.target.value)}
+          />
         </div>
         <div className="feld">
           <label htmlFor="sr-neu-mannschaft">Mannschaft (optional)</label>
