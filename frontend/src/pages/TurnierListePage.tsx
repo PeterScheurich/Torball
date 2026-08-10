@@ -1,54 +1,31 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import type { Turnier } from "@torball/shared";
-import { createTurnier, deleteTurnier, getTurniere } from "../api";
+import { deleteTurnier, getTurniere } from "../api";
 
 export function TurnierListePage() {
   const [turniere, setTurniere] = useState<Turnier[]>([]);
-  const [ladeFehler, setLadeFehler] = useState<string | undefined>();
-  const [name, setName] = useState("");
-  const [datum, setDatum] = useState("");
-  const [startzeit, setStartzeit] = useState("");
-  const [anzahlFelder, setAnzahlFelder] = useState<1 | 2>(1);
-  const [speichernFehler, setSpeichernFehler] = useState<string | undefined>();
-  const navigate = useNavigate();
+  const [fehler, setFehler] = useState<string | undefined>();
 
   useEffect(() => {
-    ladeTurniere();
+    laden();
   }, []);
 
-  async function ladeTurniere() {
+  async function laden() {
     try {
       setTurniere(await getTurniere());
-      setLadeFehler(undefined);
+      setFehler(undefined);
     } catch (err) {
-      setLadeFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden");
-    }
-  }
-
-  async function anlegen(event: React.FormEvent) {
-    event.preventDefault();
-    setSpeichernFehler(undefined);
-
-    const felder = Array.from({ length: anzahlFelder }, (_, i) => ({
-      feldId: `feld:${i + 1}`,
-      name: `Feld ${i + 1}`,
-    }));
-
-    try {
-      const neu = await createTurnier({ name, datum, startzeit: startzeit || undefined, felder });
-      navigate(`/turniere/${encodeURIComponent(neu._id)}`);
-    } catch (err) {
-      setSpeichernFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Anlegen");
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden");
     }
   }
 
   async function loeschen(id: string) {
     try {
       await deleteTurnier(id);
-      await ladeTurniere();
+      await laden();
     } catch (err) {
-      setLadeFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Löschen");
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Löschen");
     }
   }
 
@@ -56,9 +33,9 @@ export function TurnierListePage() {
     <>
       <h1>Turniere</h1>
 
-      {ladeFehler && <p role="alert">{ladeFehler}</p>}
+      {fehler && <p role="alert">{fehler}</p>}
 
-      {turniere.length === 0 && !ladeFehler ? (
+      {turniere.length === 0 && !fehler ? (
         <p>Noch keine Turniere angelegt.</p>
       ) : (
         <table>
@@ -80,8 +57,14 @@ export function TurnierListePage() {
                 <td>{turnier.datum}</td>
                 <td>{turnier.status}</td>
                 <td>
-                  <button type="button" onClick={() => loeschen(turnier._id)}>
-                    Löschen
+                  <button
+                    type="button"
+                    className="symbol-button"
+                    onClick={() => loeschen(turnier._id)}
+                    aria-label={`${turnier.name} löschen`}
+                    title="Löschen"
+                  >
+                    ✕
                   </button>
                 </td>
               </tr>
@@ -90,34 +73,11 @@ export function TurnierListePage() {
         </table>
       )}
 
-      <h2>Neues Turnier anlegen</h2>
-      <form onSubmit={anlegen}>
-        <div className="feld">
-          <label htmlFor="name">Name</label>
-          <input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="datum">Datum</label>
-          <input id="datum" type="date" required value={datum} onChange={(e) => setDatum(e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="startzeit">Startzeit (optional)</label>
-          <input id="startzeit" type="time" value={startzeit} onChange={(e) => setStartzeit(e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="anzahlFelder">Anzahl Spielfelder</label>
-          <select
-            id="anzahlFelder"
-            value={anzahlFelder}
-            onChange={(e) => setAnzahlFelder(Number(e.target.value) === 2 ? 2 : 1)}
-          >
-            <option value={1}>1 (Normalfall)</option>
-            <option value={2}>2 (Ausnahmefall)</option>
-          </select>
-        </div>
-        {speichernFehler && <p role="alert">{speichernFehler}</p>}
-        <button type="submit">Turnier anlegen</button>
-      </form>
+      <p>
+        <Link to="/turniere/neu" className="button-link">
+          Neues Turnier anlegen
+        </Link>
+      </p>
     </>
   );
 }

@@ -46,6 +46,17 @@ export function erzeugePaarungen(
 
 function prioritaetVon(a: MannschaftImTurnier, b: MannschaftImTurnier): PaarungsPrioritaet {
   if (a.vereinId && a.vereinId === b.vereinId) return "verein";
-  if (a.bundesland && a.bundesland === b.bundesland) return "bundesland";
+  if (a.bundesland && normalisiert(a.bundesland) === normalisiert(b.bundesland)) return "bundesland";
   return "neutral";
+}
+
+/**
+ * Toleriert Groß-/Kleinschreibung und überflüssige Leerzeichen beim
+ * Bundesland-Abgleich, damit ein Tippfehler die Bundesland-Regel
+ * (Gesamtspezifikation Abschnitt 5.2) nicht stillschweigend aushebelt.
+ * Ersetzt keine Validierung beim Erfassen (siehe Datalist im Frontend) -
+ * nur ein zweites, robusteres Sicherheitsnetz an der Stelle, wo es zaehlt.
+ */
+function normalisiert(bundesland: string | undefined): string {
+  return (bundesland ?? "").trim().toLowerCase();
 }

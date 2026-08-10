@@ -1,6 +1,9 @@
 import { Link, Route, Routes } from "react-router-dom";
 import { TurnierListePage } from "./pages/TurnierListePage";
-import { TurnierDetailPage } from "./pages/TurnierDetailPage";
+import { TurnierAnlegenPage } from "./pages/TurnierAnlegenPage";
+import { MannschaftenErfassenPage } from "./pages/MannschaftenErfassenPage";
+import { SpielplanErstellenPage } from "./pages/SpielplanErstellenPage";
+import { TurnierVerwaltenPage } from "./pages/TurnierVerwaltenPage";
 
 function App() {
   return (
@@ -13,7 +16,10 @@ function App() {
       <main>
         <Routes>
           <Route path="/" element={<TurnierListePage />} />
-          <Route path="/turniere/:id" element={<TurnierDetailPage />} />
+          <Route path="/turniere/neu" element={<TurnierAnlegenPage />} />
+          <Route path="/turniere/:id/mannschaften-erfassen" element={<MannschaftenErfassenPage />} />
+          <Route path="/turniere/:id/spielplan-erstellen" element={<SpielplanErstellenPage />} />
+          <Route path="/turniere/:id" element={<TurnierVerwaltenPage />} />
         </Routes>
       </main>
     </>

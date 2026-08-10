@@ -53,6 +53,15 @@ test("Bundesland-Derby wird als 'bundesland' priorisiert, wenn Vereine unterschi
   assert.equal(paarung.prioritaet, "bundesland");
 });
 
+test("Bundesland-Abgleich tolerant gegenueber Gross-/Kleinschreibung und Leerzeichen", () => {
+  const teams = [
+    mannschaft("a", "verein:1", " bayern "),
+    mannschaft("b", "verein:2", "Bayern"),
+  ];
+  const [paarung] = erzeugePaarungen(teams, 1);
+  assert.equal(paarung.prioritaet, "bundesland");
+});
+
 test("Paarung ohne gemeinsamen Verein/Bundesland ist 'neutral'", () => {
   const teams = [
     mannschaft("a", "verein:1", "Bayern"),
