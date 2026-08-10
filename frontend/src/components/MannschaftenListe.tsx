@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import type { MannschaftImTurnier, Team, Verein } from "@torball/shared";
 import {
   createMannschaft,
@@ -10,6 +10,7 @@ import {
   updateMannschaft,
 } from "../api";
 import { BUNDESLAENDER } from "../bundeslaender";
+import { SpielerKader } from "./SpielerKader";
 
 function verschobeneListe<T>(liste: T[], vonIndex: number, nachIndex: number): T[] {
   const kopie = [...liste];
@@ -37,6 +38,17 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
   const [bearbeitung, setBearbeitung] = useState<Record<string, { name: string; bundesland: string }>>({});
   const [ziehIndex, setZiehIndex] = useState<number | null>(null);
   const [ziehZielIndex, setZiehZielIndex] = useState<number | null>(null);
+  // Mannschaften, deren Kader gerade aufgeklappt ist (mehrere gleichzeitig moeglich).
+  const [offeneKader, setOffeneKader] = useState<Set<string>>(new Set());
+
+  function kaderUmschalten(id: string) {
+    setOffeneKader((bisherig) => {
+      const naechste = new Set(bisherig);
+      if (naechste.has(id)) naechste.delete(id);
+      else naechste.add(id);
+      return naechste;
+    });
+  }
 
   const laden = useCallback(async () => {
     try {
@@ -195,8 +207,8 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
           </thead>
           <tbody>
             {mannschaftenSortiert.map((m, i) => (
+              <Fragment key={m._id}>
               <tr
-                key={m._id}
                 className={ziehZielIndex === i ? "zieh-ziel" : undefined}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -274,7 +286,16 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
                     }}
                   />
                 </td>
-                <td>
+                <td className="mannschaft-aktionen">
+                  <button
+                    type="button"
+                    className="button-link"
+                    onClick={() => kaderUmschalten(m._id)}
+                    aria-expanded={offeneKader.has(m._id)}
+                    aria-controls={`kader-${m._id}`}
+                  >
+                    Kader {offeneKader.has(m._id) ? "▾" : "▸"}
+                  </button>{" "}
                   <button
                     type="button"
                     className="symbol-button"
@@ -286,6 +307,15 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
                   </button>
                 </td>
               </tr>
+              {offeneKader.has(m._id) && (
+                <tr>
+                  <td colSpan={4} id={`kader-${m._id}`} className="kader-zelle">
+                    <h3 className="kader-titel">Kader – {m.name}</h3>
+                    <SpielerKader mannschaftId={m._id} />
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             ))}
           </tbody>
         </table>

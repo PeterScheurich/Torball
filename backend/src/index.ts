@@ -9,6 +9,7 @@ import { teamRoutes } from "./routes/team";
 import { turnierRoutes } from "./routes/turnier";
 import { turnierBerechtigungRoutes } from "./routes/turnierBerechtigung";
 import { mannschaftRoutes } from "./routes/mannschaft";
+import { spielerRoutes } from "./routes/spieler";
 import { spielplanRoutes } from "./routes/spielplan";
 import { spielRoutes } from "./routes/spiel";
 import { ergebnisRoutes } from "./routes/ergebnis";
@@ -37,6 +38,7 @@ const start = async () => {
     server.register(turnierRoutes);
     server.register(turnierBerechtigungRoutes);
     server.register(mannschaftRoutes);
+    server.register(spielerRoutes);
     server.register(spielplanRoutes);
     server.register(spielRoutes);
     server.register(ergebnisRoutes);

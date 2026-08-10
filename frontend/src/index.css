@@ -378,6 +378,36 @@ form {
   width: 3em;
 }
 
+/* Trikotnummer: normalerweise einstellig, daher bewusst schmal. */
+.trikot-eingabe {
+  width: 4em;
+}
+
+/* Kader-Bereich, aufgeklappt unterhalb einer Mannschaft: leicht abgesetzt, damit klar ist,
+   dass er zur Zeile darueber gehoert. */
+.kader-zelle {
+  background: var(--bg-subtle);
+}
+
+.kader-titel {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+/* Aktionen-Spalte (Kader-Umschalter + Loeschen) in einer Zeile halten. */
+.mannschaft-aktionen {
+  white-space: nowrap;
+}
+
+/* Hinzufuegen-Formular im Kader: horizontal statt der Standard-Formularspalte, damit
+   Nr./Name/Vorname/Klassifizierung nebeneinander stehen. */
+.kader-formular {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  max-width: none;
+}
+
 /* Fuer ein Formular INNERHALB einer Tabellenzelle (z.B. E-Mail-Aenderung im Profil) -
    Eingabe und Speichern-Button nebeneinander statt der Standard-Formular-Spalte. */
 .inline-form {

@@ -2,10 +2,13 @@ import type {
   Benutzer,
   Dichte,
   GlobaleRolle,
+  Klassifizierung,
   MannschaftImTurnier,
   Protokollierungsart,
   Spiel,
   Spielfeld,
+  Spieler,
+  SpielerStatus,
   Spielmodus,
   Team,
   Theme,
@@ -146,6 +149,42 @@ export function mannschaftReihenfolgeAendern(
     method: "PUT",
     body: JSON.stringify({ mannschaftIds }),
   });
+}
+
+// --- Spieler / Kader (turnierbezogen an der Mannschaft, Abschnitt 5.3 / 20.8) ---
+
+export interface NeuerSpieler {
+  mannschaftId: string;
+  name: string;
+  vorname?: string | null;
+  trikotnummer: string;
+  klassifizierung: Klassifizierung;
+  status?: SpielerStatus;
+}
+
+export interface SpielerAktualisierung {
+  name: string;
+  /** null sendet, um einen gesetzten Vornamen gezielt zu leeren (siehe VereinAktualisierung). */
+  vorname?: string | null;
+  trikotnummer: string;
+  klassifizierung: Klassifizierung;
+  status: SpielerStatus;
+}
+
+export function getSpieler(mannschaftId: string): Promise<Spieler[]> {
+  return anfrage(`/mannschaften/${mannschaftId}/spieler`);
+}
+
+export function createSpieler(daten: NeuerSpieler): Promise<Spieler> {
+  return anfrage("/spieler", { method: "POST", body: JSON.stringify(daten) });
+}
+
+export function updateSpieler(id: string, daten: SpielerAktualisierung): Promise<Spieler> {
+  return anfrage(`/spieler/${id}`, { method: "PUT", body: JSON.stringify(daten) });
+}
+
+export function deleteSpieler(id: string): Promise<void> {
+  return anfrage(`/spieler/${id}`, { method: "DELETE" });
 }
 
 export interface SpielplanVorschlagEintrag {

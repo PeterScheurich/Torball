@@ -16,7 +16,7 @@ const hatCouchDbKonfiguration =
   !!process.env.COUCHDB_PASSWORD;
 
 test(
-  "DELETE /turniere/:id loescht auch zugehoerige Mannschaften und Spiele (Kaskade)",
+  "DELETE /turniere/:id loescht auch zugehoerige Mannschaften, Spieler und Spiele (Kaskade)",
   { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
   async () => {
     const { findAllBySelector, findById, insertDoc, newId } = await import("../repository");
@@ -84,6 +84,18 @@ test(
       name: "Team B",
     } as unknown as Parameters<typeof insertDoc>[0]);
 
+    const spielerId = newId("spieler");
+    await insertDoc({
+      _id: spielerId,
+      docType: "spieler",
+      spielerId,
+      mannschaftId: mannschaftAId,
+      name: "Testspieler",
+      trikotnummer: "1",
+      klassifizierung: "B1",
+      status: "aktiv",
+    } as unknown as Parameters<typeof insertDoc>[0]);
+
     const spielId = newId("spiel");
     await insertDoc({
       _id: spielId,
@@ -118,9 +130,14 @@ test(
 
       const verbleibendeSpiele = await findAllBySelector({ docType: "spiel", turnierId });
       assert.equal(verbleibendeSpiele.length, 0, "Spiele haetten mit dem Turnier mitgeloescht werden muessen");
+
+      // Spieler haengen am mannschaftId (nicht am turnierId) - die Kaskade muss sie ueber
+      // die zugehoerigen Mannschaften ebenfalls mitgeloescht haben.
+      const verbleibendeSpieler = await findAllBySelector({ docType: "spieler", mannschaftId: mannschaftAId });
+      assert.equal(verbleibendeSpieler.length, 0, "Spieler haetten mit dem Turnier mitgeloescht werden muessen");
     } finally {
       // Aufraeumen falls der Test selbst fehlschlaegt, bevor die Kaskade greifen konnte.
-      for (const id of [turnierId, mannschaftAId, mannschaftBId, spielId]) {
+      for (const id of [turnierId, mannschaftAId, mannschaftBId, spielId, spielerId]) {
         const doc = await findById(id);
         if (doc) await import("../repository").then((r) => r.deleteDoc(id, (doc as { _rev: string })._rev));
       }

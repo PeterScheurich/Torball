@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { MannschaftImTurnier, Turnier } from "@torball/shared";
+import type { MannschaftImTurnier, Spieler, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth } from "../auth/plugin";
 import { hatMindestens } from "../auth/turnierZugriff";
@@ -241,6 +241,15 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
   app.delete<{ Params: { id: string } }>("/mannschaften/:id", async (req, reply) => {
     const bestehend = await ladeMitSchreibzugriff(req.params.id, req, reply);
     if (!bestehend) return;
+
+    // Kader haengt am mannschaftId und hat keine Existenz ausserhalb der Mannschaft
+    // (ON DELETE CASCADE) - vor der Mannschaft mitloeschen, sonst blieben verwaiste
+    // Spieler-Dokumente zurueck.
+    const spieler = await findAllBySelector<Spieler>({ docType: "spieler", mannschaftId: bestehend._id });
+    for (const s of spieler) {
+      await deleteDoc(s._id, s._rev!);
+    }
+
     await deleteDoc(bestehend._id, bestehend._rev!);
     return reply.code(204).send();
   });

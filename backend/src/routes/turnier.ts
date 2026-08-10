@@ -3,6 +3,7 @@ import type {
   MannschaftImTurnier,
   Protokollierungsart,
   Spiel,
+  Spieler,
   TabellenKriterium,
   Turnier,
   TurnierStatus,
@@ -151,6 +152,12 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       turnierId: bestehend._id,
     });
     for (const mannschaft of mannschaften) {
+      // Kader der Mannschaft (Spieler haengen am mannschaftId, nicht am turnierId) vor der
+      // Mannschaft selbst mitloeschen - sonst blieben verwaiste Spieler-Dokumente zurueck.
+      const spieler = await findAllBySelector<Spieler>({ docType: "spieler", mannschaftId: mannschaft._id });
+      for (const s of spieler) {
+        await deleteDoc(s._id, s._rev!);
+      }
       await deleteDoc(mannschaft._id, mannschaft._rev!);
     }
 

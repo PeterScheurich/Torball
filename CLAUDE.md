@@ -149,6 +149,20 @@ werden in der Response immer mitgeliefert, nicht hinter einem der vier
 Felder versteckt, weil Spielplan/Ergebnisse sonst die ID-Referenzen nicht
 auflösen könnten.
 
+**Spieler/Kader hängen an der Mannschaft, nicht am Turnier:** `Spieler`
+(`docType: "spieler"`) referenziert `mannschaftId` (turnierbezogen, da die
+Mannschaft turnierbezogen ist), CRUD in `backend/src/routes/spieler.ts`
+(Zugriff über das Turnier der Mannschaft, `turnierZugriff`). Weil Spieler nur
+das `mannschaftId` kennen, muss die Kaskaden-Löschung sie **pro Mannschaft**
+mitnehmen – umgesetzt sowohl beim Mannschaft-Löschen (`mannschaft.ts`) als
+auch beim Turnier-Löschen (`turnier.ts`, in der Mannschafts-Schleife). UI:
+ausklappbarer Kader je Mannschaft in `MannschaftenListe.tsx`
+(`SpielerKader.tsx`). **Bewusst zurückgestellt (erste Iteration = reines
+CRUD):** die fachliche Sperre „Kaderänderung nur bis zum ersten Spiel der
+Mannschaft, danach nur Namen" (Spez. 5.3) und die Übernahme des Kaders aus
+einem früheren Turnier (`importiertAusTurnierId` existiert im Typ, wird aber
+noch nicht gesetzt).
+
 **Fachliche Referenz:** `docs/torball_gesamtspezifikation.md` ist die
 verbindliche Spezifikation für Geschäftsregeln; bei Unklarheiten dort
 nachschlagen statt zu raten. `docs/Protokolle/` enthält datierte
