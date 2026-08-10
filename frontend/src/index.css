@@ -394,6 +394,15 @@ form {
   font-size: 1rem;
 }
 
+/* Trainer/Betreuer-Felder oberhalb des Kaders im aufgeklappten Bereich: nebeneinander,
+   umbrechend auf schmalen Schirmen. */
+.betreuer-bereich {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 /* Aktionen-Spalte (Kader-Umschalter + Loeschen) in einer Zeile halten. */
 .mannschaft-aktionen {
   white-space: nowrap;

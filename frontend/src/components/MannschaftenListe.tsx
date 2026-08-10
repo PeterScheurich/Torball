@@ -38,8 +38,6 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
   const [fehler, setFehler] = useState<string | undefined>();
   const [neueMannschaft, setNeueMannschaft] = useState("");
   const [neuesBundesland, setNeuesBundesland] = useState("");
-  const [neuBetreuer1, setNeuBetreuer1] = useState("");
-  const [neuBetreuer2, setNeuBetreuer2] = useState("");
   const [teams, setTeams] = useState<Team[]>([]);
   const [vereine, setVereine] = useState<Verein[]>([]);
   const [ausgewaehltesTeamId, setAusgewaehltesTeamId] = useState("");
@@ -161,13 +159,9 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
         bundesland: neuesBundesland || undefined,
         teamId: team?._id,
         vereinId: team?.vereinId,
-        betreuer1Name: neuBetreuer1.trim() || undefined,
-        betreuer2Name: neuBetreuer2.trim() || undefined,
       });
       setNeueMannschaft("");
       setNeuesBundesland("");
-      setNeuBetreuer1("");
-      setNeuBetreuer2("");
       setAusgewaehltesTeamId("");
       await laden();
     } catch (err) {
@@ -242,8 +236,8 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
         <div className="tabellen-wrapper">
         <table>
           <caption className="sr-only">
-            Angemeldete Mannschaften, Name, Bundesland und Trainer/Betreuer bearbeitbar, Reihenfolge per Ziehpunkt
-            oder Pfeiltasten änderbar
+            Angemeldete Mannschaften, Name und Bundesland bearbeitbar; Trainer/Betreuer und Kader je Mannschaft über
+            den Kader-Bereich; Reihenfolge per Ziehpunkt oder Pfeiltasten änderbar
           </caption>
           <thead>
             <tr>
@@ -252,8 +246,6 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
               </th>
               <th scope="col">Name</th>
               <th scope="col">Bundesland</th>
-              <th scope="col">Trainer/Betreuer 1</th>
-              <th scope="col">Trainer/Betreuer 2</th>
               <th scope="col">Aktionen</th>
             </tr>
           </thead>
@@ -338,38 +330,6 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
                     }}
                   />
                 </td>
-                <td>
-                  <label className="sr-only" htmlFor={`betreuer1-${m._id}`}>
-                    Trainer/Betreuer 1 von {m.name}
-                  </label>
-                  <input
-                    id={`betreuer1-${m._id}`}
-                    value={bearbeitung[m._id]?.betreuer1Name ?? ""}
-                    onChange={(e) =>
-                      setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], betreuer1Name: e.target.value } }))
-                    }
-                    onBlur={() => feldVerlassen(m)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") e.currentTarget.blur();
-                    }}
-                  />
-                </td>
-                <td>
-                  <label className="sr-only" htmlFor={`betreuer2-${m._id}`}>
-                    Trainer/Betreuer 2 von {m.name}
-                  </label>
-                  <input
-                    id={`betreuer2-${m._id}`}
-                    value={bearbeitung[m._id]?.betreuer2Name ?? ""}
-                    onChange={(e) =>
-                      setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], betreuer2Name: e.target.value } }))
-                    }
-                    onBlur={() => feldVerlassen(m)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") e.currentTarget.blur();
-                    }}
-                  />
-                </td>
                 <td className="mannschaft-aktionen">
                   <button
                     type="button"
@@ -400,7 +360,37 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
               </tr>
               {offeneKader.has(m._id) && (
                 <tr>
-                  <td colSpan={6} id={`kader-${m._id}`} className="kader-zelle">
+                  <td colSpan={4} id={`kader-${m._id}`} className="kader-zelle">
+                    <div className="betreuer-bereich">
+                      <div className="feld">
+                        <label htmlFor={`betreuer1-${m._id}`}>Trainer/Betreuer 1</label>
+                        <input
+                          id={`betreuer1-${m._id}`}
+                          value={bearbeitung[m._id]?.betreuer1Name ?? ""}
+                          onChange={(e) =>
+                            setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], betreuer1Name: e.target.value } }))
+                          }
+                          onBlur={() => feldVerlassen(m)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") e.currentTarget.blur();
+                          }}
+                        />
+                      </div>
+                      <div className="feld">
+                        <label htmlFor={`betreuer2-${m._id}`}>Trainer/Betreuer 2</label>
+                        <input
+                          id={`betreuer2-${m._id}`}
+                          value={bearbeitung[m._id]?.betreuer2Name ?? ""}
+                          onChange={(e) =>
+                            setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], betreuer2Name: e.target.value } }))
+                          }
+                          onBlur={() => feldVerlassen(m)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") e.currentTarget.blur();
+                          }}
+                        />
+                      </div>
+                    </div>
                     <h3 className="kader-titel">Kader – {m.name}</h3>
                     <SpielerKader
                       mannschaftId={m._id}
@@ -460,22 +450,6 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
             list="bundeslaender-liste"
             value={neuesBundesland}
             onChange={(e) => setNeuesBundesland(e.target.value)}
-          />
-        </div>
-        <div className="feld">
-          <label htmlFor="mannschaftBetreuer1">Trainer/Betreuer 1 (optional)</label>
-          <input
-            id="mannschaftBetreuer1"
-            value={neuBetreuer1}
-            onChange={(e) => setNeuBetreuer1(e.target.value)}
-          />
-        </div>
-        <div className="feld">
-          <label htmlFor="mannschaftBetreuer2">Trainer/Betreuer 2 (optional)</label>
-          <input
-            id="mannschaftBetreuer2"
-            value={neuBetreuer2}
-            onChange={(e) => setNeuBetreuer2(e.target.value)}
           />
         </div>
         <button type="submit">Mannschaft anlegen</button>
