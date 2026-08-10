@@ -304,9 +304,64 @@ separaten Session.
 
 ---
 
+## 10. Bugfix: Turnier-Löschung kaskadierte nicht auf Unterobjekte (Commit `9baed35`)
+
+**Wie entdeckt:** Beim manuellen Testen des Frontends fielen nach dem Löschen von
+Test-Turnieren verwaiste Dokumente auf, die von Hand in CouchDB aufgeräumt werden
+mussten.
+
+**Ursache:** `DELETE /turniere/:id` (`backend/src/routes/turnier.ts`) löschte bis
+dahin ausschließlich das `Turnier`-Dokument selbst. `MannschaftImTurnier`- und
+`Spiel`-Dokumente, die per `turnierId` auf das Turnier verweisen, blieben als
+Datenleichen zurück. Das widerspricht dem Datenmodell
+(`docs/torball_datenmodell_drawdb.sql`): Turnier-Unterobjekte „haben KEINE
+eigenständige Existenz außerhalb ihres Turniers“ (`ON DELETE CASCADE`) –
+dieselbe Regel, die schon für „Verein → Team“ als `RESTRICT` umgesetzt ist
+(siehe Abschnitt 6), gilt hier in der Gegenrichtung als `CASCADE`.
+
+**Fix:** Der DELETE-Handler lädt vor dem Löschen des Turniers zunächst alle
+zugehörigen `MannschaftImTurnier`- und `Spiel`-Dokumente über
+`findAllBySelector` (bestehender Helper aus `backend/src/repository.ts`,
+bereits genutzt in `mannschaft.ts`/`spiel.ts`/`spielplan.ts`) und löscht sie
+per `deleteDoc`, bevor das Turnier-Dokument selbst gelöscht wird.
+
+**Test:** Da es in diesem Projekt noch keine Mock-/Fake-DB-Infrastruktur gibt
+(alle bisherigen Tests unter `backend/src/spielplan/*.test.ts` sind reine
+Logik-Tests ohne DB-Zugriff), wurde ein Integrationstest gegen die echte
+CouchDB-Dev-Instanz ergänzt:
+[`backend/src/routes/turnier-delete.integration.test.ts`](../../backend/src/routes/turnier-delete.integration.test.ts).
+Er überspringt sich selbst (`node:test`-`skip`), wenn die `COUCHDB_*`-Umgebungsvariablen
+nicht gesetzt sind, damit `npm test` auch ohne Zugriff auf die Dev-DB nicht
+fehlschlägt – `db.ts` wirft sonst schon beim Modul-Import, nicht erst bei
+tatsächlicher Nutzung.
+
+**Verifikation:**
+```bash
+npm run build --workspace=backend
+npx tsx --env-file=.env --test src/routes/turnier-delete.integration.test.ts
+```
+Zusätzlich manuell per `curl` gegen die echte CouchDB-Dev-Instanz geprüft:
+Turnier mit einem Spielfeld, zwei Mannschaften und einem per Spielplan
+generierten Spiel angelegt, Turnier gelöscht (`204`) und anschließend
+verifiziert, dass Turnier, beide Mannschaften und das Spiel alle `404`
+liefern. Es blieben keine Testdokumente zurück (das Aufräumen erledigt der
+Fix selbst).
+
+```bash
+git add backend/src/routes/turnier.ts backend/src/routes/turnier-delete.integration.test.ts
+git commit -m "Turnier-Loeschung kaskadiert jetzt auf Mannschaft-im-Turnier und Spiel"
+git push
+```
+→ `acddaa6..9baed35 main -> main`
+
+---
+
 ## Offene Punkte für die nächste Sitzung
 
-- Weitere Entitäten (Spieler, Spiel, Spielprotokoll/Events, Benutzer, Berechtigungen)
+- Weitere Entitäten (Spieler, Spielprotokoll/Events, Benutzer, Berechtigungen)
   haben noch keine CRUD-Routen.
 - Der offene technische Punkt „Spielplan-Algorithmus" (Abschnitt 28 der
   Gesamtspezifikation) ist als Nächstes vorgesehen.
+- Es gibt noch keine Mock-/Fake-DB-Infrastruktur für Tests; DB-nahe Tests
+  laufen bislang als Integrationstests gegen die echte Dev-CouchDB und werden
+  ohne `COUCHDB_*`-Umgebungsvariablen übersprungen.
