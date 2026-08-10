@@ -14,6 +14,7 @@ import {
   type TabellenZeile,
 } from "../api";
 import { useErgebnisEingaben } from "../useErgebnisEingaben";
+import { QrCode } from "./QrCode";
 
 interface Props {
   turnierId: string;
@@ -354,7 +355,11 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
           </button>
           {linkHinweis && <> {linkHinweis}</>}
         </p>
-      ) : (
+      ) : null}
+      {erfassungsLink && (
+        <QrCode text={erfassungsLink} dateiname={`Ergebniserfassung ${turnier.name}`} />
+      )}
+      {!erfassungsLink && (
         <button type="button" onClick={linkErzeugen}>
           Link erzeugen
         </button>

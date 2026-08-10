@@ -407,6 +407,23 @@ form {
   color: var(--text-muted);
 }
 
+/* QR-Code (Ergebnis-Erfassungslink / oeffentliche Turnierseite): feste weisse Flaeche mit etwas
+   Rand, damit der Code unabhaengig vom Farbschema scannbar bleibt. */
+.qr-code {
+  margin-top: 8px;
+}
+.qr-code-bild {
+  display: inline-block;
+  background: #fff;
+  padding: 8px;
+  border-radius: 4px;
+}
+.qr-code-bild svg {
+  display: block;
+  width: 160px;
+  height: 160px;
+}
+
 /* Passwort-Anforderungen als Live-Checkliste: offene Bedingung rot, erfuellte gruen mit Haken. */
 .passwort-regeln {
   font-size: 0.9rem;

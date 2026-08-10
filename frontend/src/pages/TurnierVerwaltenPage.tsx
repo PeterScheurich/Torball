@@ -4,6 +4,7 @@ import type { Protokollierungsart, Spielmodus, Turnier } from "@torball/shared";
 import { getTurnier, updateTurnier } from "../api";
 import { ErgebnisVerwaltung } from "../components/ErgebnisVerwaltung";
 import { MannschaftenListe } from "../components/MannschaftenListe";
+import { QrCode } from "../components/QrCode";
 import { SchiedsrichterVerwaltung } from "../components/SchiedsrichterVerwaltung";
 import { SpielplanVerwaltung } from "../components/SpielplanVerwaltung";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
@@ -444,6 +445,10 @@ export function TurnierVerwaltenPage() {
             Öffnen
           </a>
           {linkHinweis && <> {linkHinweis}</>}
+        </p>
+        <QrCode text={oeffentlicheSeiteUrl} dateiname={`Turnierseite ${turnier.name}`} />
+        <p className="feld-hinweis">
+          QR-Code zum Aushängen – wer ihn scannt, kommt direkt auf die öffentliche Turnierseite.
         </p>
       </div>
 
