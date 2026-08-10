@@ -152,9 +152,97 @@ git push
 
 ---
 
+## 7. Bugfix: CouchDB-Abfragen ohne `limit` verzerrten die Diagnose (Commit `3323804`)
+
+**Ausgangslage:** Nutzer-Meldung, im Turnier „Test3" (7 Mannschaften, 2 Felder,
+Modus doppelt) spiele die Mannschaft „TB" auf Feld 2 dreimal hintereinander,
+ohne dass eine Warnung erscheint.
+
+**Direkter Abgleich gegen die echte CouchDB** (`curl` gegen
+`/turniere/:id/spiele`) zeigte scheinbar nur 25 Spiele mit 7 doppelt
+vorkommenden Paarungen – sah nach korrupten Daten aus.
+
+**Ursache:** `db.find({ selector })` in
+[`backend/src/repository.ts`](../../backend/src/repository.ts) wurde ohne
+`limit` aufgerufen – CouchDBs Mango-`_find` liefert dann nur die ersten **25**
+Treffer, unabhängig von der tatsächlichen Gesamtzahl. Das betraf sowohl
+`findAllByType` als auch `findAllBySelector`, also praktisch jede Liste
+(Mannschaften, Spiele) in Turnieren mit mehr als 25 Dokumenten. Beim
+Neu-Erzeugen eines Spielplans (`POST /turniere/:id/spielplan`) führte das
+sogar zu echter Datenkorruption: Beim Löschen der alten Spiele wurden nur die
+ersten 25 erfasst, die übrigen blieben stehen und mischten sich mit den neu
+erzeugten.
+
+**Fix:** `findeAlleSeiten()` blättert jetzt per `bookmark` über alle Seiten,
+bis eine leere Seite zurückkommt (die laut CouchDB-Doku einzig verlässliche
+Endekennung – nicht "Seite kleiner als Limit").
+
+**Verifikation:** Nach dem Fix zeigte „Test3" korrekt 42 Spiele (`C(7,2) × 2`).
+Die konkrete Nutzer-Beobachtung stellte sich dabei als **kein** Algorithmus-Fehler
+heraus: TBs drei Feld-2-Auftritte lagen bei den globalen Runden 19/21/23, mit
+jeweils einer echten Pause auf Feld 1 dazwischen (tatsächliche Startzeiten
+10:36/11:00/11:24 – 24 Minuten Abstand). Der Eindruck „dreimal hintereinander"
+entstand nur durch die reine Feld-Anzeigenummerierung (siehe Abschnitt 8, Punkt
+1 – das wurde daraufhin verbessert).
+
+---
+
+## 8. UX-Iteration nach Nutzer-Test (Commit `0277444`, Layout-Nachbesserung `57921a2`)
+
+Fünf konkrete Beobachtungen aus dem echten Testbetrieb, alle in
+[`frontend/src/components/SpielplanVerwaltung.tsx`](../../frontend/src/components/SpielplanVerwaltung.tsx)
+umgesetzt:
+
+1. **Feld-Pausen sichtbar machen:** Beim Filtern auf ein Feld fehlten bisher
+   die Slots, in denen nur das *andere* Feld spielt – dadurch wirkte es, als
+   spiele eine Mannschaft ohne Pause hintereinander (siehe Abschnitt 7).
+   Neue Hilfsfunktion `mitFeldPlatzhaltern()` ergänzt genau dort
+   Platzhalter-Zeilen („Spielpause (anderes Feld spielt)").
+2. **Rückgängig (bis 10 Schritte):** Client-seitiger Verlaufsstapel aus
+   Snapshots (`runde`/`feldId`/`startzeitGeplant` je Spiel). Beim Rückgängig
+   wird nur das tatsächlich Veränderte per `PUT /spiele/:id` zurückgeschrieben,
+   nicht der komplette Snapshot – robust auch gegenüber Kaskaden-Zeitverschub,
+   der viele Spiele gleichzeitig betrifft.
+3. **Zeit-Überschneidungsprüfung:** `PUT /spiele/:id/startzeit`
+   ([`backend/src/routes/spiel.ts`](../../backend/src/routes/spiel.ts)) prüft
+   jetzt vor dem Anwenden, ob die neue Zeit vor dem Ende des *vorherigen*,
+   nicht mitverschobenen Spiels auf demselben Feld liegt (`409` falls ja) –
+   der Kaskaden-Verschub selbst hält den Abstand zu *späteren* Spielen
+   automatisch ein, nur die Rückwärts-Grenze war ungeprüft. Dieselbe Prüfung
+   läuft client-seitig auch für die noch nicht gespeicherte Vorschau.
+4. **Spielmodus als Turnier-Feld:** Neues Pflichtfeld `spielplanModus`
+   (`"einfach" | "doppelt"`, [`shared/src/types/turnier.ts`](../../shared/src/types/turnier.ts))
+   statt einer bei jedem Aufruf des Spielplan-Reiters neu zu treffenden
+   Auswahl. Wählbar bei der Turnier-Anlage, einsehbar/änderbar auf der
+   Übersichtsseite. Ältere Turniere ohne dieses Feld (z. B. „Test2"/„Test3")
+   bekommen beim Lesen (`GET /turniere`, `GET /turniere/:id`) automatisch den
+   Default `"einfach"` zugewiesen (`mitDefaults()` in
+   [`backend/src/routes/turnier.ts`](../../backend/src/routes/turnier.ts)) –
+   für „Test3" wurde der tatsächliche Wert (`doppelt`) danach einmalig über die
+   neue Übersichtsseite nachgetragen.
+5. **Spaltenbreiten beim Feld-Tab-Wechsel:** `table-layout: fixed` verhindert,
+   dass sich Spaltenbreiten je nach den in der aktiven Tab-Ansicht sichtbaren
+   Mannschaftsnamen unterscheiden. **Nachbesserung** (separater Commit
+   `57921a2`, nach erneutem Nutzer-Test): Die erste Version kombinierte das mit
+   `width: 1%` auf der Button-Spalte, was bei `table-layout: fixed` dazu führte,
+   dass die Spalte kleiner als ihr Inhalt wurde – Ziehpunkt und Pfeil-Buttons
+   ragten sichtbar in die Spiel-Nummer-Spalte hinein. Behoben durch eine feste,
+   tatsächlich ausreichende Breite (`128px`) statt der Prozent-Schätzung.
+
+**Verifikation:** Build/Lint/Tests grün; funktional gegen die echte
+CouchDB-Testdaten geprüft (Feld-Tabs, Verschieben+Rückgängig, abgelehnte vs.
+akzeptierte Zeit-Überschneidung per direktem `curl`, Spaltenbreiten per
+`getBoundingClientRect()` nachgemessen). Kein visueller Screenshot-Vergleich
+möglich, da das Browser-Pane in der Ausführungsumgebung nicht dargestellt
+wurde – DOM-Messung war der Ersatz.
+
+---
+
 ## Offene Punkte für die nächste Sitzung
 
 - Endspiele (Finale/Platz 3) und Vor-/Hauptrunden-Gruppen im Spielplan-Algorithmus
 - Spielprotokoll/Event-Sourcing (Abschnitt 22) – noch keine CRUD-Routen
 - Der Endpunkt erzeugt aktuell nur einen Vorschlag; das tatsächliche Anlegen der
   `Spiel`-Dokumente (Übernahme in Modul „Turnier", Abschnitt 8) fehlt noch
+- Benutzerhandbuch/Hilfeseiten für die Anwendung selbst (Wunsch des Nutzers,
+  erst sinnvoll wenn das Projekt funktional weiter fortgeschritten ist)
