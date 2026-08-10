@@ -1,7 +1,7 @@
 # Torball-Turniersoftware
 ## Gesamtspezifikation (Fachlich + Technisch)
 
-**Version:** 1.4
+**Version:** 1.5
 **Datum:** 10.08.2026
 **Status:** Konsolidierter Entwurf – fachlich vollständig geklärt
 
@@ -18,6 +18,7 @@
 | Erkenntnisse aus der Umsetzung (Spielplan) | 10.08.2026 | Abschnitt 8 präzisiert: Turniermodus-Vereinfachung auf Turnier-Ebene, Grenzen der Back-to-Back-Vermeidung bei mehreren Feldern, Ablehnung überschneidender manueller Zeitänderungen. Details siehe `docs/Protokolle/2026-08-10-spielplan-algorithmus.md`. |
 | Erkenntnisse aus der Umsetzung (Anmeldung) | 10.08.2026 | Abschnitt 25.4 präzisiert: Umsetzungsstand der Selbst-Service-E-Mail-Änderung (aktuell ohne Bestätigungslink/Benachrichtigung) dokumentiert. Details siehe `docs/Protokolle/2026-08-10-anmeldung-benutzerverwaltung.md`. |
 | Erkenntnisse aus der Umsetzung (UI-Verfeinerung) | 10.08.2026 | Abschnitt 24.3 präzisiert: Zwei-Ebenen-Modell für Anzeige-Voreinstellungen (kontogebunden + geräteslokal), neue Zeilenabstand-Einstellung. Abschnitt 5.1 ergänzt: Geo-Referenz wird über Verlinkung zu Google Maps/OpenStreetMap erfasst, nicht über eine eingebettete Karte. Details siehe `docs/Protokolle/2026-08-10-ui-verfeinerung-stammdaten.md`. |
+| Erkenntnisse aus der Umsetzung (öffentliche Turnierseite) | 10.08.2026 | Abschnitt 13 umgesetzt und präzisiert: Turnier-ID selbst als Adresse (kein separater Token wie bei Abschnitt 14, da reiner Lesezugriff unkritisch ist); teilnehmende Mannschaften/Spielfelder werden unabhängig von den vier Sichtbarkeits-Schaltern immer mitgeliefert, da Spielplan/Ergebnisse ohne sie nicht lesbar wären. Details siehe `docs/Protokolle/2026-08-10-oeffentliche-turnierseite.md`. |
 
 Dieses Dokument ersetzt die einzelnen Vorgängerdokumente inhaltlich (führt sie zusammen). Sie bleiben als Historie im Projekt erhalten.
 
@@ -360,6 +361,8 @@ Je Turnier gibt es einen frei verteilbaren, öffentlich zugänglichen Link. Ziel
 **Gliederung:** Verteilung auf mehrere Unterseiten (Turnierinfos / Anfahrt und Dokumente / Spielplan / Ergebnisse), jeweils einzeln durch die Turnierleitung freischaltbar – bessere Lesbarkeit mit Screenreader, klare Überschriftenstruktur.
 
 **Spätere Erweiterung:** Registrierung per E-Mail je Turnier für Benachrichtigungen bei Spielplanänderungen und Abschlusstabelle (ausdrücklich nicht bei Zwischenständen), mit Double-Opt-in und Abmeldemöglichkeit.
+
+**Erkenntnisse aus der Umsetzung:** Der "frei verteilbare Link" ist `/turniere/:id/oeffentlich` - die Turnier-ID selbst dient als Adresse, ohne separaten Geheimwert wie beim Ergebnis-Token (Abschnitt 14): Lesezugriff ist unkritisch, die eigentliche Freigabe steuern die vier Sichtbarkeits-Felder je Sektion. Teilnehmende Mannschaften und Spielfelder werden unabhängig von den vier Schaltern immer ausgeliefert, da Spielplan/Ergebnisse ohne aufgelöste Namen nicht lesbar wären; Namen selbst gelten nicht als sensibel. Dokumenten-Anhänge (Abschnitt 5.1/20.13) sind noch nicht umgesetzt, der Anfahrt-Bereich zeigt daher bisher nur die Ortsangabe ohne Dateiliste.
 
 ## 14. Ergebniserfassung ohne digitale Protokollierung
 
