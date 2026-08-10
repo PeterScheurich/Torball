@@ -217,8 +217,10 @@ export interface NeuerBenutzer {
   globaleRolle: GlobaleRolle;
 }
 
-/** Solange kein E-Mail-Versand angebunden ist, kommt der Einladungslink direkt in der Antwort zurueck. */
-export function benutzerEinladen(daten: NeuerBenutzer): Promise<{ benutzer: BenutzerProfil; einladungsToken: string }> {
+/** Ist E-Mail-Versand konfiguriert, geht der Einladungslink direkt an die neue Adresse und einladungsToken fehlt in der Antwort; andernfalls kommt der Klartext-Link direkt zurueck. */
+export function benutzerEinladen(
+  daten: NeuerBenutzer,
+): Promise<{ benutzer: BenutzerProfil; einladungsToken?: string }> {
   return anfrage("/benutzer", { method: "POST", body: JSON.stringify(daten) });
 }
 

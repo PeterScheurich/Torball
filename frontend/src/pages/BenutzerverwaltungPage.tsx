@@ -16,6 +16,7 @@ export function BenutzerverwaltungPage() {
   const [email, setEmail] = useState("");
   const [rolle, setRolle] = useState<GlobaleRolle>("benutzer");
   const [einladungslink, setEinladungslink] = useState<string | undefined>();
+  const [einladungPerMail, setEinladungPerMail] = useState(false);
   const [fehler, setFehler] = useState<string | undefined>();
 
   const laden = useCallback(async () => {
@@ -38,9 +39,14 @@ export function BenutzerverwaltungPage() {
     event.preventDefault();
     setFehler(undefined);
     setEinladungslink(undefined);
+    setEinladungPerMail(false);
     try {
       const { einladungsToken } = await benutzerEinladen({ name, email, globaleRolle: rolle });
-      setEinladungslink(`${window.location.origin}/einladung/${einladungsToken}`);
+      if (einladungsToken) {
+        setEinladungslink(`${window.location.origin}/einladung/${einladungsToken}`);
+      } else {
+        setEinladungPerMail(true);
+      }
       setName("");
       setEmail("");
       setRolle("benutzer");
@@ -96,9 +102,10 @@ export function BenutzerverwaltungPage() {
         <button type="submit">Einladen</button>
       </form>
 
+      {einladungPerMail && <p>Einladung wurde per E-Mail verschickt.</p>}
       {einladungslink && (
         <p>
-          Einladungslink (solange kein E-Mail-Versand angebunden ist, bitte manuell weitergeben):
+          Kein E-Mail-Versand konfiguriert - Einladungslink bitte manuell weitergeben:
           <br />
           <input type="text" readOnly value={einladungslink} onFocus={(e) => e.target.select()} />
         </p>

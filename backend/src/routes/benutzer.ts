@@ -1,12 +1,15 @@
 import type { FastifyInstance } from "fastify";
 import type { Benutzer, GlobaleRolle } from "@torball/shared";
-import { findAllByType, findById, insertDoc, newId } from "../repository";
+import { deleteDoc, findAllByType, findById, insertDoc, newId } from "../repository";
 import { oeffentlichesProfil } from "../auth/benutzerProfil";
 import { hashePasswort, passwortRegelVerstoss, passwortStimmt } from "../auth/passwort";
 import { requireAuth, requireRolle } from "../auth/plugin";
 import { loescheAlleSessionenVonBenutzer, loescheAndereSessionenVonBenutzer } from "../auth/session";
 import { erzeugeOtpAuthUri, erzeugeQrCodeDataUri, erzeugeTotpSecret, totpCodeGueltig } from "../auth/totp";
 import { erzeugeToken, hashe } from "../auth/token";
+import { mailKonfiguriert, sendeMail } from "../mail/transport";
+
+const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
 
 const EINLADUNG_GUELTIG_MS = 7 * 24 * 60 * 60 * 1000; // 7 Tage
 const RESET_GUELTIG_MS = 24 * 60 * 60 * 1000; // Abschnitt 21.4: 24 Stunden
@@ -58,10 +61,11 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
 
   /**
    * Legt einen Benutzer OHNE Passwort an (Abschnitt 25.2: "Einmal-Link per E-Mail,
-   * Passwort-Setzung beim ersten Login"). Da noch kein E-Mail-Versand angebunden ist,
-   * wird der Klartext-Einladungslink direkt in der Antwort an die einladende Person
-   * zurueckgegeben - das ist hier bewusst so (nicht der Endnutzer selbst sieht diese
-   * Antwort, sondern Admin/Manager, die den Link dann manuell weitergeben muessen).
+   * Passwort-Setzung beim ersten Login"). Ist E-Mail-Versand konfiguriert, geht der
+   * Einladungslink direkt an die neue Adresse. Andernfalls (Fallback, z.B. lokale
+   * Entwicklung ohne SMTP-Konfiguration) kommt der Klartext-Link stattdessen direkt
+   * in der Antwort an die einladende Person zurueck, die ihn dann manuell weitergeben
+   * muss.
    */
   app.post<{ Body: BenutzerAnlegenBody }>(
     "/benutzer",
@@ -97,6 +101,29 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         einladungAblauf: new Date(Date.now() + EINLADUNG_GUELTIG_MS).toISOString(),
       };
       const gespeichert = await insertDoc(benutzer);
+
+      if (mailKonfiguriert()) {
+        try {
+          await sendeMail({
+            an: email,
+            betreff: "Einladung zu Torball-Turniere",
+            text:
+              `Hallo ${req.body.name},\n\n` +
+              `du wurdest zu Torball-Turniere eingeladen. Setze dein Passwort unter folgendem Link, ` +
+              `um deinen Account zu aktivieren:\n\n` +
+              `${FRONTEND_URL}/einladung/${token}\n\n` +
+              `Der Link ist 7 Tage gueltig.`,
+          });
+        } catch (err) {
+          // Ohne diesen Rollback bliebe ein Benutzer ohne Passwort und ohne abrufbaren
+          // Einladungslink zurueck, falls der Mailversand fehlschlaegt (z.B. SMTP-Ausfall).
+          await deleteDoc(gespeichert._id, gespeichert._rev!);
+          app.log.error(err, "Einladungsmail konnte nicht versendet werden, Anlage zurueckgerollt");
+          return reply.code(502).send({ error: "Einladung konnte nicht per E-Mail versendet werden." });
+        }
+        return reply.code(201).send({ benutzer: oeffentlichesProfil(gespeichert) });
+      }
+
       return reply.code(201).send({ benutzer: oeffentlichesProfil(gespeichert), einladungsToken: token });
     },
   );
@@ -261,9 +288,10 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
 
   /**
    * Antwortet IMMER gleich, unabhaengig davon, ob die E-Mail existiert - sonst liesse
-   * sich darueber ausprobieren, welche Adressen registriert sind. Solange kein
-   * E-Mail-Versand angebunden ist, landet der Reset-Link im Server-Log (nur auf der
-   * Konsole des Rechners sichtbar, der das Backend betreibt).
+   * sich darueber ausprobieren, welche Adressen registriert sind. Ist E-Mail-Versand
+   * konfiguriert, geht der Reset-Link per Mail an die Adresse. Andernfalls (Fallback)
+   * landet er im Server-Log (nur auf der Konsole des Rechners sichtbar, der das
+   * Backend betreibt).
    */
   app.post<{ Body: { email: string } }>(
     "/benutzer/passwort-vergessen",
@@ -280,7 +308,27 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
           resetTokenHash: hash,
           resetAblauf: new Date(Date.now() + RESET_GUELTIG_MS).toISOString(),
         });
-        app.log.info(`Passwort-Reset fuer ${benutzer.email}: /passwort-reset/${token} (24h gueltig)`);
+
+        if (mailKonfiguriert()) {
+          try {
+            await sendeMail({
+              an: benutzer.email,
+              betreff: "Passwort zurücksetzen - Torball-Turniere",
+              text:
+                `Hallo ${benutzer.name},\n\n` +
+                `für dein Konto wurde ein Passwort-Reset angefordert. Falls das nicht du warst, ` +
+                `kannst du diese E-Mail ignorieren.\n\n` +
+                `Neues Passwort setzen (Link 24 Stunden gültig):\n` +
+                `${FRONTEND_URL}/passwort-reset/${token}`,
+            });
+          } catch (err) {
+            // Antwort bleibt bewusst {ok:true} wie im Erfolgsfall - sonst liesse sich ueber
+            // einen abweichenden Fehlerstatus ausprobieren, welche Adressen registriert sind.
+            app.log.error(err, "Passwort-Reset-Mail konnte nicht versendet werden");
+          }
+        } else {
+          app.log.info(`Passwort-Reset fuer ${benutzer.email}: /passwort-reset/${token} (24h gueltig)`);
+        }
       }
 
       return reply.send({ ok: true });
