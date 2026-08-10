@@ -133,6 +133,17 @@ explizit `null` zu senden statt `wert || undefined`; dasselbe Muster
 (`|| undefined`) steckt vermutlich noch in `VereineVerwaltung.tsx`/
 `TeamsVerwaltung.tsx` und wurde dort noch nicht angefasst.
 
+**Öffentliche Turnierseite ohne Login** (`backend/src/routes/oeffentlich.ts`,
+`frontend/src/pages/OeffentlicheTurnierseitePage.tsx`, Route
+`/turniere/:id/oeffentlich`): Die Turnier-ID selbst ist die Adresse, anders
+als beim Ergebnis-Token (`ergebnisToken.ts`) gibt es keinen zweiten
+Geheimwert – reiner Lesezugriff ist unkritisch, die eigentliche Freigabe
+steuern vier `oeffentlich*`-Boolean-Felder am Turnier (je Sektion
+Turnierinfos/Anfahrt/Spielplan/Ergebnisse einzeln). Mannschafts-/Feldnamen
+werden in der Response immer mitgeliefert, nicht hinter einem der vier
+Felder versteckt, weil Spielplan/Ergebnisse sonst die ID-Referenzen nicht
+auflösen könnten.
+
 **Fachliche Referenz:** `docs/torball_gesamtspezifikation.md` ist die
 verbindliche Spezifikation für Geschäftsregeln; bei Unklarheiten dort
 nachschlagen statt zu raten. `docs/Protokolle/` enthält datierte
@@ -158,6 +169,14 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
 - Von Anfang an mitdenken, nicht als Nachrüstung: sichtbarer Fokus-Indikator,
   passende ARIA-Rollen (z. B. Tabs), Tastatur-Bedienbarkeit für jede
   Maus-Interaktion (z. B. ▲/▼-Buttons als Alternative zu Drag & Drop).
+- **CSS-Klassen, die sowohl auf `<a>`/`<Link>` als auch auf `<button>`
+  angewendet werden, brauchen `box-sizing: border-box` explizit**
+  (`.button-link`, `.kopfzeile-menue-eintrag`) – `<button>` ist im
+  Browser-UA-Stylesheet standardmäßig `border-box`, `<a>` dagegen
+  `content-box`; bei identischem Padding wird ein als Button gestyltes
+  `<a>` sonst sichtbar höher/breiter als ein echter `<button>` mit
+  demselben Text. Ist in dieser Codebase bereits zweimal unabhängig
+  aufgetreten – bei einer neuen gemeinsamen Klasse gleich mit einplanen.
 - Farbschema folgt standardmäßig der Systemeinstellung
   (`prefers-color-scheme`), mit manuellem Umschalter (`[data-theme]`) als
   Override. Zusätzlich Tabellendichte/Zeilenabstand (`[data-dichte]`,
