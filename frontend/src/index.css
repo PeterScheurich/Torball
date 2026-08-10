@@ -431,6 +431,10 @@ button:disabled {
 }
 
 .button-link {
+  /* <a> ist per Browser-Standard content-box, <button> border-box - ohne diese
+     Zeile wird ein .button-link bei gleichem Padding hoeher als ein echter
+     <button> (schon einmal genau so bei .kopfzeile-menue-eintrag erlebt). */
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   font-weight: 600;
