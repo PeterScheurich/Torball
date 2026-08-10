@@ -443,6 +443,23 @@ form {
   max-width: none;
 }
 
+/* Schiedsrichter-Hinzufuegen-Formular: ebenfalls horizontal, viele kurze Felder nebeneinander. */
+.schiedsrichter-formular {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  max-width: none;
+}
+
+/* "Lizenz vorhanden"-Kaestchen im Schiedsrichter-Formular: Checkbox + Text in einer Zeile,
+   normale Textstaerke. */
+.schiedsrichter-lizenz {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 400;
+}
+
 /* Fuer ein Formular INNERHALB einer Tabellenzelle (z.B. E-Mail-Aenderung im Profil) -
    Eingabe und Speichern-Button nebeneinander statt der Standard-Formular-Spalte. */
 .inline-form {

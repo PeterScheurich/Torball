@@ -4,14 +4,16 @@ import type { Protokollierungsart, Spielmodus, Turnier } from "@torball/shared";
 import { getTurnier, updateTurnier } from "../api";
 import { ErgebnisVerwaltung } from "../components/ErgebnisVerwaltung";
 import { MannschaftenListe } from "../components/MannschaftenListe";
+import { SchiedsrichterVerwaltung } from "../components/SchiedsrichterVerwaltung";
 import { SpielplanVerwaltung } from "../components/SpielplanVerwaltung";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 
-type Tab = "uebersicht" | "mannschaften" | "spielplan" | "ergebnisse";
+type Tab = "uebersicht" | "mannschaften" | "schiedsrichter" | "spielplan" | "ergebnisse";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "uebersicht", label: "Übersicht" },
   { id: "mannschaften", label: "Mannschaften" },
+  { id: "schiedsrichter", label: "Schiedsrichter" },
   { id: "spielplan", label: "Spielplan" },
   { id: "ergebnisse", label: "Ergebnisse" },
 ];
@@ -106,6 +108,7 @@ export function TurnierVerwaltenPage() {
   const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({
     uebersicht: null,
     mannschaften: null,
+    schiedsrichter: null,
     spielplan: null,
     ergebnisse: null,
   });
@@ -451,6 +454,15 @@ export function TurnierVerwaltenPage() {
         hidden={aktiverTab !== "mannschaften"}
       >
         <MannschaftenListe turnierId={turnierId} />
+      </div>
+
+      <div
+        role="tabpanel"
+        id="panel-schiedsrichter"
+        aria-labelledby="tab-schiedsrichter"
+        hidden={aktiverTab !== "schiedsrichter"}
+      >
+        <SchiedsrichterVerwaltung turnierId={turnierId} />
       </div>
 
       <div role="tabpanel" id="panel-spielplan" aria-labelledby="tab-spielplan" hidden={aktiverTab !== "spielplan"}>

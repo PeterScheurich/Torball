@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { MannschaftImTurnier, Spieler, Turnier } from "@torball/shared";
+import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spieler, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth } from "../auth/plugin";
 import { hatMindestens } from "../auth/turnierZugriff";
@@ -272,6 +272,18 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
     const spieler = await findAllBySelector<Spieler>({ docType: "spieler", mannschaftId: bestehend._id });
     for (const s of spieler) {
       await deleteDoc(s._id, s._rev!);
+    }
+
+    // Schiedsrichter existieren unabhaengig von der Mannschaft weiter (nur eine optionale
+    // Zugehoerigkeit) - daher nicht loeschen, sondern die Referenz loesen, damit sie nicht
+    // ins Leere zeigt (ON DELETE SET NULL).
+    const schiedsrichter = await findAllBySelector<SchiedsrichterImTurnier>({
+      docType: "schiedsrichterImTurnier",
+      mannschaftId: bestehend._id,
+    });
+    for (const s of schiedsrichter) {
+      // mannschaftId: undefined faellt beim JSON-Serialisieren aus dem Dokument (Referenz geloest).
+      await insertDoc({ ...s, mannschaftId: undefined });
     }
 
     await deleteDoc(bestehend._id, bestehend._rev!);

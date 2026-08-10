@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type {
   MannschaftImTurnier,
   Protokollierungsart,
+  SchiedsrichterImTurnier,
   Spiel,
   Spieler,
   TabellenKriterium,
@@ -164,6 +165,15 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: bestehend._id });
     for (const spiel of spiele) {
       await deleteDoc(spiel._id, spiel._rev!);
+    }
+
+    // Schiedsrichter-im-Turnier haengen direkt am turnierId (ON DELETE CASCADE).
+    const schiedsrichter = await findAllBySelector<SchiedsrichterImTurnier>({
+      docType: "schiedsrichterImTurnier",
+      turnierId: bestehend._id,
+    });
+    for (const s of schiedsrichter) {
+      await deleteDoc(s._id, s._rev!);
     }
 
     await deleteDoc(bestehend._id, bestehend._rev!);

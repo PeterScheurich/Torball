@@ -5,6 +5,7 @@ import type {
   Klassifizierung,
   MannschaftImTurnier,
   Protokollierungsart,
+  SchiedsrichterImTurnier,
   Spiel,
   Spielfeld,
   Spieler,
@@ -199,6 +200,50 @@ export function updateSpieler(id: string, daten: SpielerAktualisierung): Promise
 
 export function deleteSpieler(id: string): Promise<void> {
   return anfrage(`/spieler/${id}`, { method: "DELETE" });
+}
+
+// --- Schiedsrichter (turnierbezogen, Abschnitt 5.4 / 20.9) ---
+
+export interface NeuerSchiedsrichter {
+  turnierId: string;
+  name: string;
+  vorname?: string;
+  telefon?: string;
+  email?: string;
+  lizenzVorhanden?: boolean;
+  mannschaftId?: string;
+  istTurnierleitung?: boolean;
+}
+
+export interface SchiedsrichterAktualisierung {
+  name: string;
+  /** null sendet, um ein gesetztes optionales Feld gezielt zu leeren (siehe VereinAktualisierung). */
+  vorname?: string | null;
+  telefon?: string | null;
+  email?: string | null;
+  lizenzVorhanden: boolean;
+  /** null loest die Mannschaftszugehoerigkeit ("— keine —"). */
+  mannschaftId?: string | null;
+  istTurnierleitung: boolean;
+}
+
+export function getSchiedsrichter(turnierId: string): Promise<SchiedsrichterImTurnier[]> {
+  return anfrage(`/turniere/${turnierId}/schiedsrichter`);
+}
+
+export function createSchiedsrichter(daten: NeuerSchiedsrichter): Promise<SchiedsrichterImTurnier> {
+  return anfrage("/schiedsrichter", { method: "POST", body: JSON.stringify(daten) });
+}
+
+export function updateSchiedsrichter(
+  id: string,
+  daten: SchiedsrichterAktualisierung,
+): Promise<SchiedsrichterImTurnier> {
+  return anfrage(`/schiedsrichter/${id}`, { method: "PUT", body: JSON.stringify(daten) });
+}
+
+export function deleteSchiedsrichter(id: string): Promise<void> {
+  return anfrage(`/schiedsrichter/${id}`, { method: "DELETE" });
 }
 
 export interface SpielplanVorschlagEintrag {

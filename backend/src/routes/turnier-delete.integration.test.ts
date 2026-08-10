@@ -16,7 +16,7 @@ const hatCouchDbKonfiguration =
   !!process.env.COUCHDB_PASSWORD;
 
 test(
-  "DELETE /turniere/:id loescht auch zugehoerige Mannschaften, Spieler und Spiele (Kaskade)",
+  "DELETE /turniere/:id loescht auch zugehoerige Mannschaften, Spieler, Schiedsrichter und Spiele (Kaskade)",
   { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
   async () => {
     const { findAllBySelector, findById, insertDoc, newId } = await import("../repository");
@@ -96,6 +96,17 @@ test(
       status: "aktiv",
     } as unknown as Parameters<typeof insertDoc>[0]);
 
+    const schiedsrichterId = newId("schiedsrichterImTurnier");
+    await insertDoc({
+      _id: schiedsrichterId,
+      docType: "schiedsrichterImTurnier",
+      schiedsrichterId,
+      turnierId,
+      name: "Testschiedsrichter",
+      lizenzVorhanden: false,
+      istTurnierleitung: true,
+    } as unknown as Parameters<typeof insertDoc>[0]);
+
     const spielId = newId("spiel");
     await insertDoc({
       _id: spielId,
@@ -135,9 +146,16 @@ test(
       // die zugehoerigen Mannschaften ebenfalls mitgeloescht haben.
       const verbleibendeSpieler = await findAllBySelector({ docType: "spieler", mannschaftId: mannschaftAId });
       assert.equal(verbleibendeSpieler.length, 0, "Spieler haetten mit dem Turnier mitgeloescht werden muessen");
+
+      const verbleibendeSchiedsrichter = await findAllBySelector({ docType: "schiedsrichterImTurnier", turnierId });
+      assert.equal(
+        verbleibendeSchiedsrichter.length,
+        0,
+        "Schiedsrichter haetten mit dem Turnier mitgeloescht werden muessen",
+      );
     } finally {
       // Aufraeumen falls der Test selbst fehlschlaegt, bevor die Kaskade greifen konnte.
-      for (const id of [turnierId, mannschaftAId, mannschaftBId, spielId, spielerId]) {
+      for (const id of [turnierId, mannschaftAId, mannschaftBId, spielId, spielerId, schiedsrichterId]) {
         const doc = await findById(id);
         if (doc) await import("../repository").then((r) => r.deleteDoc(id, (doc as { _rev: string })._rev));
       }
