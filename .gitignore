@@ -138,3 +138,7 @@ dist
 
 # Scripte für Doku-Sync / sollen nicht mit übernommen werden.
 scripts/.env
+
+# Claude Code: lokale, maschinenspezifische Artefakte (launch.json bleibt bewusst getrackt).
+.claude/settings.local.json
+.claude/worktrees/

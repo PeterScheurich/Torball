@@ -10,9 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@torball/shared": "*",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "@torball/shared": "*"
+    "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",
