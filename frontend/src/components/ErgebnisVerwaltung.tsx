@@ -13,26 +13,24 @@ import {
   widerrufeErgebnisToken,
   type TabellenZeile,
 } from "../api";
+import { useErgebnisEingaben } from "../useErgebnisEingaben";
 
 interface Props {
   turnierId: string;
 }
 
-/** Lokaler Bearbeitungszustand der Ergebnis-Eingabefelder je Spiel, bevor gespeichert wird. */
-interface Eingabe {
-  a: string;
-  b: string;
-}
+/** Intervall fuers automatische Aktualisieren (damit zeitgleich per Token-Link erfasste Ergebnisse erscheinen). */
+const AKTUALISIER_INTERVALL_MS = 10_000;
 
 export function ErgebnisVerwaltung({ turnierId }: Props) {
   const [turnier, setTurnier] = useState<Turnier | undefined>();
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [spiele, setSpiele] = useState<Spiel[]>([]);
   const [tabelle, setTabelle] = useState<TabellenZeile[]>([]);
-  const [eingaben, setEingaben] = useState<Record<string, Eingabe>>({});
   const [tokenWert, setTokenWert] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | undefined>();
   const [linkHinweis, setLinkHinweis] = useState<string | undefined>();
+  const { eingaben, setFeld, konflikte } = useErgebnisEingaben(spiele);
 
   const laden = useCallback(async () => {
     try {
@@ -48,25 +46,44 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
       setSpiele(s);
       setTabelle(tab);
       setTokenWert(token.tokenWert);
-      setEingaben((bisherig) => {
-        const neu: Record<string, Eingabe> = {};
-        for (const spiel of s) {
-          neu[spiel._id] = bisherig[spiel._id] ?? {
-            a: spiel.ergebnisA?.toString() ?? "",
-            b: spiel.ergebnisB?.toString() ?? "",
-          };
-        }
-        return neu;
-      });
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden");
     }
   }, [turnierId]);
 
+  /** Leichtgewichtiges Aktualisieren fuers Polling: nur die Daten, die sich mit Ergebnissen aendern. */
+  const aktualisieren = useCallback(async () => {
+    try {
+      const [s, tab] = await Promise.all([getSpiele(turnierId), getTabelle(turnierId)]);
+      setSpiele(s);
+      setTabelle(tab);
+    } catch {
+      /* stiller Poll-Fehler - keine Seiten-Fehlermeldung, der naechste Versuch folgt automatisch */
+    }
+  }, [turnierId]);
+
   useEffect(() => {
     laden();
   }, [laden]);
+
+  // Automatisch aktualisieren, damit zeitgleich per Token-Link erfasste Ergebnisse hier erscheinen.
+  // Nur bei sichtbarer Seite (der Tab-Panel bleibt gemountet), plus sofort beim Zurueckkehren.
+  useEffect(() => {
+    const intervall = setInterval(() => {
+      if (document.visibilityState === "visible") aktualisieren();
+    }, AKTUALISIER_INTERVALL_MS);
+    const beiRueckkehr = () => {
+      if (document.visibilityState === "visible") aktualisieren();
+    };
+    window.addEventListener("focus", beiRueckkehr);
+    document.addEventListener("visibilitychange", beiRueckkehr);
+    return () => {
+      clearInterval(intervall);
+      window.removeEventListener("focus", beiRueckkehr);
+      document.removeEventListener("visibilitychange", beiRueckkehr);
+    };
+  }, [aktualisieren]);
 
   const nameVon = (mannschaftId: string) => mannschaften.find((m) => m._id === mannschaftId)?.name ?? mannschaftId;
   const spieleSortiert = [...spiele].sort((a, b) => Number(a.runde) - Number(b.runde));
@@ -88,10 +105,8 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
   }
 
   function nichtAngetreten(spiel: Spiel, forfaitSeite: "a" | "b") {
-    setEingaben((bisherig) => ({
-      ...bisherig,
-      [spiel._id]: forfaitSeite === "a" ? { a: "0", b: "3" } : { a: "3", b: "0" },
-    }));
+    setFeld(spiel._id, "a", forfaitSeite === "a" ? "0" : "3");
+    setFeld(spiel._id, "b", forfaitSeite === "a" ? "3" : "0");
     // Direkt mit den gesetzten Forfait-Werten speichern, nicht erst auf einen weiteren Klick warten.
     spielErgebnisSetzen(spiel._id, forfaitSeite === "a" ? { ergebnisA: 0, ergebnisB: 3, istForfait: true } : { ergebnisA: 3, ergebnisB: 0, istForfait: true })
       .then(laden)
@@ -199,9 +214,7 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
                           className="ergebnis-eingabe"
                           disabled={spiel.ergebnisAbgeschlossen}
                           value={eingabe.a}
-                          onChange={(e) =>
-                            setEingaben((bisherig) => ({ ...bisherig, [spiel._id]: { ...eingabe, a: e.target.value } }))
-                          }
+                          onChange={(e) => setFeld(spiel._id, "a", e.target.value)}
                         />
                         {" : "}
                         <label className="sr-only" htmlFor={`ergebnisB-${spiel._id}`}>
@@ -215,10 +228,14 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
                           className="ergebnis-eingabe"
                           disabled={spiel.ergebnisAbgeschlossen}
                           value={eingabe.b}
-                          onChange={(e) =>
-                            setEingaben((bisherig) => ({ ...bisherig, [spiel._id]: { ...eingabe, b: e.target.value } }))
-                          }
+                          onChange={(e) => setFeld(spiel._id, "b", e.target.value)}
                         />
+                        {konflikte.has(spiel._id) && (
+                          <div className="schiri-warnung" role="alert">
+                            ⚠ Wurde zwischenzeitlich anderweitig gespeichert (jetzt {spiel.ergebnisA ?? "–"} :{" "}
+                            {spiel.ergebnisB ?? "–"}). Speichern überschreibt diesen Wert.
+                          </div>
+                        )}
                       </td>
                       <td>{nameVon(spiel.mannschaftBId)}</td>
                       <td>

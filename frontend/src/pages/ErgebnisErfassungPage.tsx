@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ergebnisPerTokenSetzen, getErgebnisErfassung, type ErgebnisErfassungDaten } from "../api";
+import { useErgebnisEingaben } from "../useErgebnisEingaben";
+
+/** Intervall fuers automatische Aktualisieren (damit Ergebnisse der jeweils anderen Seite erscheinen). */
+const AKTUALISIER_INTERVALL_MS = 10_000;
 
 const NAME_SCHLUESSEL = "torball-erfasser-name";
 const GERAET_SCHLUESSEL = "torball-geraet-kennung";
@@ -18,35 +22,20 @@ function geladeneGeraetKennung(): string {
   return kennung;
 }
 
-interface Eingabe {
-  a: string;
-  b: string;
-}
-
 export function ErgebnisErfassungPage() {
   const { tokenWert } = useParams<{ tokenWert: string }>();
   const [name, setName] = useState(geladenerName);
   const [namenEingabe, setNamenEingabe] = useState("");
   const [daten, setDaten] = useState<ErgebnisErfassungDaten | undefined>();
-  const [eingaben, setEingaben] = useState<Record<string, Eingabe>>({});
   const [fehler, setFehler] = useState<string | undefined>();
   const [hinweis, setHinweis] = useState<string | undefined>();
+  const { eingaben, setFeld, konflikte } = useErgebnisEingaben(daten?.spiele);
 
   const laden = useCallback(async () => {
     if (!tokenWert) return;
     try {
       const ergebnis = await getErgebnisErfassung(tokenWert);
       setDaten(ergebnis);
-      setEingaben((bisherig) => {
-        const neu: Record<string, Eingabe> = {};
-        for (const spiel of ergebnis.spiele) {
-          neu[spiel._id] = bisherig[spiel._id] ?? {
-            a: spiel.ergebnisA?.toString() ?? "",
-            b: spiel.ergebnisB?.toString() ?? "",
-          };
-        }
-        return neu;
-      });
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden");
@@ -55,6 +44,25 @@ export function ErgebnisErfassungPage() {
 
   useEffect(() => {
     laden();
+  }, [laden]);
+
+  // Automatisch aktualisieren, damit auf dieser Seite Ergebnisse erscheinen, die zeitgleich in
+  // der internen Verwaltung eingetragen werden (und umgekehrt). Nur bei sichtbarer Seite, plus
+  // sofortige Aktualisierung beim Zurueckkehren zum Tab/Fenster.
+  useEffect(() => {
+    const intervall = setInterval(() => {
+      if (document.visibilityState === "visible") laden();
+    }, AKTUALISIER_INTERVALL_MS);
+    const beiRueckkehr = () => {
+      if (document.visibilityState === "visible") laden();
+    };
+    window.addEventListener("focus", beiRueckkehr);
+    document.addEventListener("visibilitychange", beiRueckkehr);
+    return () => {
+      clearInterval(intervall);
+      window.removeEventListener("focus", beiRueckkehr);
+      document.removeEventListener("visibilitychange", beiRueckkehr);
+    };
   }, [laden]);
 
   function namenSpeichern(event: React.FormEvent) {
@@ -156,9 +164,7 @@ export function ErgebnisErfassungPage() {
                       className="ergebnis-eingabe"
                       disabled={spiel.ergebnisAbgeschlossen}
                       value={eingabe.a}
-                      onChange={(e) =>
-                        setEingaben((bisherig) => ({ ...bisherig, [spiel._id]: { ...eingabe, a: e.target.value } }))
-                      }
+                      onChange={(e) => setFeld(spiel._id, "a", e.target.value)}
                     />
                     {" : "}
                     <label className="sr-only" htmlFor={`b-${spiel._id}`}>
@@ -172,10 +178,14 @@ export function ErgebnisErfassungPage() {
                       className="ergebnis-eingabe"
                       disabled={spiel.ergebnisAbgeschlossen}
                       value={eingabe.b}
-                      onChange={(e) =>
-                        setEingaben((bisherig) => ({ ...bisherig, [spiel._id]: { ...eingabe, b: e.target.value } }))
-                      }
+                      onChange={(e) => setFeld(spiel._id, "b", e.target.value)}
                     />
+                    {konflikte.has(spiel._id) && (
+                      <div className="schiri-warnung" role="alert">
+                        ⚠ Wurde zwischenzeitlich anderweitig gespeichert (jetzt {spiel.ergebnisA ?? "–"} :{" "}
+                        {spiel.ergebnisB ?? "–"}). Speichern überschreibt diesen Wert.
+                      </div>
+                    )}
                   </td>
                   <td>{nameVon(spiel.mannschaftBId)}</td>
                   <td>
