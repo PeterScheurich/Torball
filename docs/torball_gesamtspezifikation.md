@@ -170,7 +170,9 @@ Je Spieler: Name, Vorname, Trikotnummer (normalerweise einstellig), Klassifizier
 
 Je Schiedsrichter: Name, Vorname, Kontakt (optional), Lizenz vorhanden (ja/nein, relevant für Bundesliga), Zugehörigkeit zu einer Mannschaft, Ist-Turnierleitung-Flag (genau eine Person je Turnier).
 
-**Interessenkonflikt:** Ein Schiedsrichter darf grundsätzlich nicht das Spiel seiner eigenen Mannschaft leiten. Die Software **warnt bei der Spielplan-Generierung**, blockiert aber nicht – die Turnierleitung kann Ausnahmen genehmigen; die Entscheidung wird dokumentiert (Audit-Log, Abschnitt 20.13).
+**Interessenkonflikt:** Ein Schiedsrichter darf grundsätzlich nicht das Spiel seiner eigenen Mannschaft leiten. Die Software **warnt**, blockiert aber nicht – die Turnierleitung kann Ausnahmen genehmigen; die Entscheidung wird dokumentiert (Audit-Log, Abschnitt 20.13).
+
+**Zuordnung als bewusster Schritt (umgesetzt):** Die Schiedsrichter-Zuordnung geschieht **nicht automatisch** bei der Spielplan-Erzeugung, sondern über einen eigenen Button („Schiedsrichter automatisch zuordnen") und ist danach je Spiel frei anpassbar. Der Vorschlag gewichtet zwei Regeln: **(1, höchste Priorität)** ein Schiedsrichter pfeift nicht das Spiel seiner eigenen Mannschaft – ein solcher Fall wird gar nicht vorgeschlagen; **(2, nachrangig)** er soll möglichst nicht pfeifen, während eine seiner Mannschaften gleichzeitig (in einem parallelen Spiel desselben Slots) spielt. Beide Konflikte werden im Spielplan zusätzlich als Hinweis angezeigt, wenn sie – etwa durch manuelle Anpassung – bestehen. (Der Sonderfall „ein Schiedsrichter für einen ganzen Verein mit mehreren Mannschaften" ist noch offen, siehe Abschnitt 20.9-Hinweis.)
 
 **Turnierleitung als Schiedsrichter:** Es ist der Regelfall (nicht die Ausnahme), dass eine der Schiedsrichter-Personen zugleich die Turnierleitung innehat – ein Pflichtfeld oder ein besonderer Protokoll-Hinweis ist dafür nicht erforderlich.
 

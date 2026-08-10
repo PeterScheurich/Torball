@@ -1,15 +1,22 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { Spiel, Turnier } from "@torball/shared";
+import type { SchiedsrichterImTurnier, Spiel, Turnier } from "@torball/shared";
 import { findAllBySelector, findById, insertDoc } from "../repository";
 import { berechneStartzeit, spieldauerMinuten } from "../spielplan/zeitplanung";
+import { schlageSchiedsrichterVor } from "../spielplan/schiedsrichterZuordnung";
 import { requireAuth } from "../auth/plugin";
 import { hatMindestens } from "../auth/turnierZugriff";
 
-/** Nur diese Felder darf die Turnierleitung nachtraeglich anpassen (Abschnitt 8: "Reihenfolge, Spielfeld und Startzeiten"). */
+/** Nur diese Felder darf die Turnierleitung nachtraeglich anpassen (Abschnitt 8: "Reihenfolge,
+ * Spielfeld und Startzeiten") sowie die Schiedsrichter-Zuordnung (Abschnitt 5.4, manuell aenderbar). */
+// schiedsrichterId bewusst als string (nicht string|null) typisiert: das Schema erlaubt zur
+// Laufzeit null zum Loesen der Zuordnung, aber der Merge {...bestehend, ...req.body} soll null
+// nach Spiel.schiedsrichterId (string|undefined) schreiben duerfen (gleiches Muster wie verein/
+// mannschaft/spieler).
 interface SpielAnpassungBody {
   runde?: string;
   feldId?: string;
   startzeitGeplant?: string;
+  schiedsrichterId?: string;
 }
 
 const spielAnpassungSchema = {
@@ -18,6 +25,8 @@ const spielAnpassungSchema = {
     runde: { type: "string" },
     feldId: { type: "string" },
     startzeitGeplant: { type: "string" },
+    // null loest die Schiedsrichter-Zuordnung ("— keiner —").
+    schiedsrichterId: { type: ["string", "null"] },
   },
 } as const;
 
@@ -206,6 +215,39 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
             startzeitGeplant: berechneStartzeit(turnier, index),
           }),
         );
+      }
+
+      return aktualisiert;
+    },
+  );
+
+  /**
+   * Schiedsrichter-Zuordnung als Vorschlag ueber alle Spiele des Turniers (Abschnitt 5.4).
+   * Bewusst nur auf ausdrueckliche Anforderung (eigener Button), nicht automatisch bei der
+   * Spielplan-Erzeugung. Ueberschreibt bestehende Zuordnungen (es ist ein Neu-Vorschlag);
+   * einzelne Spiele bleiben danach ueber PUT /spiele/:id manuell anpassbar.
+   */
+  app.post<{ Params: { turnierId: string } }>(
+    "/turniere/:turnierId/schiedsrichter-zuordnung",
+    async (req, reply) => {
+      if (!requireAuth(req, reply)) return;
+      const turnier = await findById<Turnier>(req.params.turnierId);
+      if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+      if (!(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+        return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+      }
+
+      const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id });
+      const schiedsrichter = await findAllBySelector<SchiedsrichterImTurnier>({
+        docType: "schiedsrichterImTurnier",
+        turnierId: turnier._id,
+      });
+
+      const vorschlag = schlageSchiedsrichterVor(spiele, schiedsrichter);
+      const aktualisiert: Spiel[] = [];
+      for (const spiel of spiele) {
+        // undefined faellt beim JSON-Serialisieren aus dem Dokument (= Zuordnung geloest).
+        aktualisiert.push(await insertDoc({ ...spiel, schiedsrichterId: vorschlag.get(spiel._id) }));
       }
 
       return aktualisiert;

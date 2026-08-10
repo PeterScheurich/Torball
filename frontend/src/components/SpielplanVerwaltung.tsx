@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
-import type { MannschaftImTurnier, Spiel, Spielfeld, Turnier } from "@torball/shared";
+import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spiel, Spielfeld, Turnier } from "@torball/shared";
 import {
   erzeugeSpielplan,
   getMannschaften,
+  getSchiedsrichter,
   getSpiele,
   getSpielplanVorschlag,
   getTurnier,
   reihenfolgeAendern,
+  schiedsrichterZuordnen,
   spielAnpassen,
   spielStartzeitAendern,
   type SpielplanVorschlagEintrag,
 } from "../api";
 import { formatiereUhrzeit } from "../format";
+import { schiedsrichterKonflikt } from "../schiedsrichterKonflikt";
 import { berechneStartzeit, spieldauerMinuten } from "../zeitplanung";
 
 const BACK_TO_BACK_HINWEIS = "Direktes Folgespiel (Back-to-Back) konnte nicht vermieden werden";
@@ -129,6 +132,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
   const [turnier, setTurnier] = useState<Turnier | undefined>();
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [spiele, setSpiele] = useState<Spiel[]>([]);
+  const [schiedsrichter, setSchiedsrichter] = useState<SchiedsrichterImTurnier[]>([]);
   const [vorschlag, setVorschlag] = useState<SpielplanVorschlagEintrag[] | undefined>();
   const [fehler, setFehler] = useState<string | undefined>();
   const [ziehIndex, setZiehIndex] = useState<number | null>(null);
@@ -138,10 +142,16 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
 
   const laden = useCallback(async () => {
     try {
-      const [t, m, s] = await Promise.all([getTurnier(turnierId), getMannschaften(turnierId), getSpiele(turnierId)]);
+      const [t, m, s, sr] = await Promise.all([
+        getTurnier(turnierId),
+        getMannschaften(turnierId),
+        getSpiele(turnierId),
+        getSchiedsrichter(turnierId),
+      ]);
       setTurnier(t);
       setMannschaften(m);
       setSpiele(s);
+      setSchiedsrichter(sr);
       onGeaendert?.(s);
       setFehler(undefined);
       setAktuellesFeld((bisherig) => bisherig ?? t.felder[0]?.feldId);
@@ -156,6 +166,31 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
   }, [laden]);
 
   const nameVon = (mannschaftId: string) => mannschaften.find((m) => m._id === mannschaftId)?.name ?? mannschaftId;
+  const schiedsrichterNach = (id: string | undefined) => schiedsrichter.find((sr) => sr._id === id);
+  const schiedsrichterLabel = (sr: SchiedsrichterImTurnier) => (sr.vorname ? `${sr.name}, ${sr.vorname}` : sr.name);
+
+  /** Erzeugt (bewusst per Klick, nicht automatisch) einen Schiedsrichter-Vorschlag ueber alle
+   * Spiele und speichert ihn; danach je Spiel manuell anpassbar. */
+  async function schiedsrichterVorschlagen() {
+    try {
+      const aktualisiert = await schiedsrichterZuordnen(turnierId);
+      setSpiele(aktualisiert);
+      onGeaendert?.(aktualisiert);
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Zuordnen der Schiedsrichter");
+    }
+  }
+
+  async function schiedsrichterFuerSpielAendern(spielId: string, schiedsrichterId: string | null) {
+    try {
+      await spielAnpassen(spielId, { schiedsrichterId });
+      await laden();
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern des Schiedsrichters");
+    }
+  }
 
   const mehrereFelder = (turnier?.felder.length ?? 0) > 1;
   const wiederholungen: 1 | 2 = turnier?.spielplanModus === "doppelt" ? 2 : 1;
@@ -543,6 +578,18 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
           <p>Spielplan ist bereits erzeugt (Version {turnier.spielplanVersion}).</p>
           <button type="button" onClick={rueckgaengig} disabled={verlauf.length === 0}>
             Rückgängig{verlauf.length > 0 ? ` (${verlauf.length})` : ""}
+          </button>{" "}
+          <button
+            type="button"
+            onClick={schiedsrichterVorschlagen}
+            disabled={schiedsrichter.length === 0}
+            title={
+              schiedsrichter.length === 0
+                ? "Erst im Tab Schiedsrichter Personen anlegen."
+                : "Ordnet allen Spielen einen Schiedsrichter-Vorschlag zu (überschreibt bestehende Zuordnungen). Danach je Spiel manuell änderbar."
+            }
+          >
+            Schiedsrichter automatisch zuordnen
           </button>
           <div className="tabellen-wrapper">
             <table className="spielplan-tabelle">
@@ -559,6 +606,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                   <th scope="col" className="spalte-startzeit">Startzeit</th>
                   <th scope="col">Mannschaft A</th>
                   <th scope="col">Mannschaft B</th>
+                  <th scope="col" className="spalte-schiedsrichter">Schiedsrichter</th>
                   <th scope="col" className="spalte-status">Status</th>
                   <th scope="col" className="spalte-hinweis">Hinweis</th>
                 </tr>
@@ -572,7 +620,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                       return (
                         <tr key={`platzhalter-${zeilenIndex}`} className="platzhalter-zeile">
                           <td className="reihenfolge-zelle">–</td>
-                          <td colSpan={6}>Spielpause (anderes Feld spielt)</td>
+                          <td colSpan={7}>Spielpause (anderes Feld spielt)</td>
                         </tr>
                       );
                     }
@@ -649,6 +697,46 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                         </td>
                         <td>{nameVon(s.mannschaftAId)}</td>
                         <td>{nameVon(s.mannschaftBId)}</td>
+                        <td>
+                          <label className="sr-only" htmlFor={`spiel-sr-${s._id}`}>
+                            Schiedsrichter für Spiel {anzeigeIndex + 1}
+                          </label>
+                          <select
+                            id={`spiel-sr-${s._id}`}
+                            className="spiel-schiri-select"
+                            value={s.schiedsrichterId ?? ""}
+                            onChange={(e) => schiedsrichterFuerSpielAendern(s._id, e.target.value || null)}
+                          >
+                            <option value="">— keiner —</option>
+                            {schiedsrichter.map((sr) => (
+                              <option key={sr._id} value={sr._id}>
+                                {schiedsrichterLabel(sr)}
+                              </option>
+                            ))}
+                          </select>
+                          {(() => {
+                            const konflikt = schiedsrichterKonflikt(
+                              s,
+                              schiedsrichterNach(s.schiedsrichterId)?.mannschaftId,
+                              spiele,
+                            );
+                            if (konflikt.eigeneMannschaft) {
+                              return (
+                                <div className="schiri-warnung" title="Schiedsrichter pfeift die eigene Mannschaft">
+                                  ⚠ eigene Mannschaft
+                                </div>
+                              );
+                            }
+                            if (konflikt.gleichzeitig) {
+                              return (
+                                <div className="schiri-hinweis" title="Eine Mannschaft des Schiedsrichters spielt gleichzeitig">
+                                  ⚠ spielt gleichzeitig
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </td>
                         <td className="status-zelle">{s.status}</td>
                         <td title={spielWarnungen[vollIndex]}>{hinweisKurz(spielWarnungen[vollIndex])}</td>
                       </tr>

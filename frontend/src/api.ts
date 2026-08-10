@@ -298,6 +298,14 @@ export interface SpielAnpassung {
   runde?: string;
   feldId?: string;
   startzeitGeplant?: string;
+  /** null loest die Schiedsrichter-Zuordnung ("— keiner —"). */
+  schiedsrichterId?: string | null;
+}
+
+/** Schiedsrichter-Vorschlag ueber alle Spiele des Turniers erzeugen und speichern (Abschnitt 5.4).
+ * Bewusst eine ausdrueckliche Aktion, kein Automatismus bei der Spielplan-Erzeugung. */
+export function schiedsrichterZuordnen(turnierId: string): Promise<Spiel[]> {
+  return anfrage(`/turniere/${turnierId}/schiedsrichter-zuordnung`, { method: "POST" });
 }
 
 /** Gezielte Einzelanpassung (z.B. nur runde+Startzeit tauschen), ohne wie reihenfolgeAendern alle Spiele neu durchzunummerieren. */

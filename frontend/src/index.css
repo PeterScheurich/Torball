@@ -290,6 +290,28 @@ table {
 .spielplan-tabelle .spalte-hinweis {
   width: 6em;
 }
+.spielplan-tabelle .spalte-schiedsrichter {
+  width: 11em;
+}
+
+/* Schiedsrichter-Auswahl je Spiel: fuellt die (feste) Spaltenbreite aus. */
+.spiel-schiri-select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Konflikt-Kennzeichnung unter der Auswahl: P1 (eigene Mannschaft) in Warnfarbe,
+   P2 (spielt gleichzeitig) gedaempft als nachrangiger Hinweis. */
+.schiri-warnung {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--danger);
+}
+.schiri-hinweis {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
 
 th,
 td {
