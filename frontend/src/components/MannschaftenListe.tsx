@@ -4,6 +4,7 @@ import {
   createMannschaft,
   deleteMannschaft,
   getMannschaften,
+  getSpieler,
   getTeams,
   getVereine,
   mannschaftReihenfolgeAendern,
@@ -40,6 +41,9 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
   const [ziehZielIndex, setZiehZielIndex] = useState<number | null>(null);
   // Mannschaften, deren Kader gerade aufgeklappt ist (mehrere gleichzeitig moeglich).
   const [offeneKader, setOffeneKader] = useState<Set<string>>(new Set());
+  // Spielerzahl je Mannschaft - vorab geladen, damit schon im zugeklappten Zustand erkennbar
+  // ist, wo bereits Kaderdaten erfasst sind. Wird beim Bearbeiten eines Kaders live aktualisiert.
+  const [spielerAnzahl, setSpielerAnzahl] = useState<Record<string, number>>({});
 
   function kaderUmschalten(id: string) {
     setOffeneKader((bisherig) => {
@@ -85,6 +89,23 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
       }
       return naechster;
     });
+  }, [mannschaften]);
+
+  // Spielerzahlen aller Mannschaften vorab laden (fuer die Kader-Info im zugeklappten Zustand).
+  // Bewusst nur Zusatzinfo: schlaegt einer der Aufrufe fehl, wird die Zahl still weggelassen,
+  // nicht als Seitenfehler angezeigt.
+  useEffect(() => {
+    let abgebrochen = false;
+    Promise.all(mannschaften.map(async (m) => [m._id, (await getSpieler(m._id)).length] as const))
+      .then((eintraege) => {
+        if (!abgebrochen) setSpielerAnzahl(Object.fromEntries(eintraege));
+      })
+      .catch(() => {
+        /* Zaehler sind optional - Fehler hier nicht hochblasen. */
+      });
+    return () => {
+      abgebrochen = true;
+    };
   }, [mannschaften]);
 
   const mannschaftenSortiert = [...mannschaften].sort((a, b) => (a.reihenfolge ?? 0) - (b.reihenfolge ?? 0));
@@ -293,8 +314,15 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
                     onClick={() => kaderUmschalten(m._id)}
                     aria-expanded={offeneKader.has(m._id)}
                     aria-controls={`kader-${m._id}`}
+                    title={spielerAnzahl[m._id] ? `${spielerAnzahl[m._id]} Spieler erfasst` : undefined}
                   >
-                    Kader {offeneKader.has(m._id) ? "▾" : "▸"}
+                    Kader
+                    {spielerAnzahl[m._id] ? (
+                      <span className="kader-anzahl">{spielerAnzahl[m._id]}</span>
+                    ) : (
+                      ""
+                    )}{" "}
+                    {offeneKader.has(m._id) ? "▾" : "▸"}
                   </button>{" "}
                   <button
                     type="button"
@@ -311,7 +339,10 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
                 <tr>
                   <td colSpan={4} id={`kader-${m._id}`} className="kader-zelle">
                     <h3 className="kader-titel">Kader – {m.name}</h3>
-                    <SpielerKader mannschaftId={m._id} />
+                    <SpielerKader
+                      mannschaftId={m._id}
+                      onAnzahlGeaendert={(anzahl) => setSpielerAnzahl((b) => ({ ...b, [m._id]: anzahl }))}
+                    />
                   </td>
                 </tr>
               )}

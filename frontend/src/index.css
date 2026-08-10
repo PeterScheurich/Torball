@@ -399,6 +399,22 @@ form {
   white-space: nowrap;
 }
 
+/* Kleine Zahl-Plakette am Kader-Umschalter: zeigt schon im zugeklappten Zustand, dass fuer
+   diese Mannschaft bereits Spieler erfasst sind (und wie viele). */
+.kader-anzahl {
+  display: inline-block;
+  min-width: 1.5em;
+  margin-left: 0.4em;
+  padding: 0 0.4em;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 0.8em;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.5;
+}
+
 /* Hinzufuegen-Formular im Kader: horizontal statt der Standard-Formularspalte, damit
    Nr./Name/Vorname/Klassifizierung nebeneinander stehen. */
 .kader-formular {
