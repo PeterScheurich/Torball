@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { GlobaleRolle } from "@torball/shared";
 import {
+  eigenesPasswortAendern,
   eigenesProfilAktualisieren,
   totpBestaetigen,
   totpDeaktivieren,
@@ -18,6 +19,10 @@ const ROLLEN_LABEL: Record<GlobaleRolle, string> = {
 export function ProfilPage() {
   const { benutzer, aktualisiereBenutzer } = useAuth();
   const [email, setEmail] = useState(benutzer?.email ?? "");
+  const [emailPasswort, setEmailPasswort] = useState("");
+  const [aktuellesPasswort, setAktuellesPasswort] = useState("");
+  const [neuesPasswort, setNeuesPasswort] = useState("");
+  const [neuesPasswortWiederholung, setNeuesPasswortWiederholung] = useState("");
   const [einrichtung, setEinrichtung] = useState<TotpEinrichtung | undefined>();
   const [code, setCode] = useState("");
   const [deaktivierenPasswort, setDeaktivierenPasswort] = useState("");
@@ -31,11 +36,31 @@ export function ProfilPage() {
     setFehler(undefined);
     setHinweis(undefined);
     try {
-      const aktualisiert = await eigenesProfilAktualisieren({ email });
+      const aktualisiert = await eigenesProfilAktualisieren({ email, aktuellesPasswort: emailPasswort });
       aktualisiereBenutzer(aktualisiert);
+      setEmailPasswort("");
       setHinweis("E-Mail-Adresse wurde geändert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der E-Mail-Adresse");
+    }
+  }
+
+  async function passwortAendern(event: React.FormEvent) {
+    event.preventDefault();
+    setFehler(undefined);
+    setHinweis(undefined);
+    if (neuesPasswort !== neuesPasswortWiederholung) {
+      setFehler("Die beiden neuen Passwörter stimmen nicht überein.");
+      return;
+    }
+    try {
+      await eigenesPasswortAendern(aktuellesPasswort, neuesPasswort);
+      setAktuellesPasswort("");
+      setNeuesPasswort("");
+      setNeuesPasswortWiederholung("");
+      setHinweis("Passwort wurde geändert. Andere angemeldete Sitzungen wurden beendet.");
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern des Passworts");
     }
   }
 
@@ -104,9 +129,64 @@ export function ProfilPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
+                  <label className="sr-only" htmlFor="emailPasswort">
+                    Aktuelles Passwort zur Bestätigung der E-Mail-Änderung
+                  </label>
+                  <input
+                    id="emailPasswort"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="Aktuelles Passwort"
+                    required
+                    value={emailPasswort}
+                    onChange={(e) => setEmailPasswort(e.target.value)}
+                  />
                   <button type="submit" disabled={email === benutzer.email}>
                     Speichern
                   </button>
+                </form>
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">
+                <label htmlFor="neuesPasswort">Passwort</label>
+              </th>
+              <td>
+                <form onSubmit={passwortAendern} className="inline-form">
+                  <label className="sr-only" htmlFor="aktuellesPasswort">
+                    Aktuelles Passwort
+                  </label>
+                  <input
+                    id="aktuellesPasswort"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="Aktuelles Passwort"
+                    required
+                    value={aktuellesPasswort}
+                    onChange={(e) => setAktuellesPasswort(e.target.value)}
+                  />
+                  <input
+                    id="neuesPasswort"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Neues Passwort"
+                    required
+                    value={neuesPasswort}
+                    onChange={(e) => setNeuesPasswort(e.target.value)}
+                  />
+                  <label className="sr-only" htmlFor="neuesPasswortWiederholung">
+                    Neues Passwort wiederholen
+                  </label>
+                  <input
+                    id="neuesPasswortWiederholung"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Neues Passwort wiederholen"
+                    required
+                    value={neuesPasswortWiederholung}
+                    onChange={(e) => setNeuesPasswortWiederholung(e.target.value)}
+                  />
+                  <button type="submit">Ändern</button>
                 </form>
               </td>
             </tr>
@@ -117,6 +197,7 @@ export function ProfilPage() {
           </tbody>
         </table>
       </div>
+      <p>Für ein neues Passwort: mindestens 8 Zeichen, davon 1 Großbuchstabe, 1 Zahl, 1 Sonderzeichen.</p>
 
       <h2>Zwei-Faktor-Authentifizierung (2FA)</h2>
       {benutzer.zweiFaAktiv ? (

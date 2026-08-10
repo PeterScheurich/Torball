@@ -7,6 +7,8 @@ import { beruehreSession, findeSessionPerToken } from "./session";
 declare module "fastify" {
   interface FastifyRequest {
     benutzer?: Benutzer;
+    /** ID der aktuellen Session - z.B. damit eine Passwortaenderung alle ANDEREN Sessions beenden kann, ohne die gerade benutzte zu killen. */
+    sessionId?: string;
   }
 }
 
@@ -31,6 +33,7 @@ export async function authPreHandler(req: FastifyRequest): Promise<void> {
   if (!benutzer || benutzer.gesperrt) return;
 
   req.benutzer = benutzer;
+  req.sessionId = session._id;
   await beruehreSession(session);
 }
 

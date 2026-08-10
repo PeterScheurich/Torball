@@ -4,7 +4,7 @@ import { findAllByType, findById, insertDoc, newId } from "../repository";
 import { oeffentlichesProfil } from "../auth/benutzerProfil";
 import { hashePasswort, passwortRegelVerstoss, passwortStimmt } from "../auth/passwort";
 import { requireAuth, requireRolle } from "../auth/plugin";
-import { loescheAlleSessionenVonBenutzer } from "../auth/session";
+import { loescheAlleSessionenVonBenutzer, loescheAndereSessionenVonBenutzer } from "../auth/session";
 import { erzeugeOtpAuthUri, erzeugeQrCodeDataUri, erzeugeTotpSecret, totpCodeGueltig } from "../auth/totp";
 import { erzeugeToken, hashe } from "../auth/token";
 
@@ -107,11 +107,14 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
    * aendern darf. globaleRolle/gesperrt sind hier nicht aenderbar: sonst
    * koennte sich jeder Benutzer selbst zum Admin machen.
    *
-   * E-Mail-Aenderung laeuft aktuell OHNE Bestaetigungslink/Benachrichtigung
-   * (Abschnitt 25.4 saehe beides vor) - dieselbe Einschraenkung wie bei
-   * Einladung/Passwort-Reset, solange kein E-Mail-Versand angebunden ist.
+   * E-Mail ist der Benutzername (Abschnitt 25.1) - eine Aenderung verlangt
+   * deshalb wie bei der Passwortaenderung das aktuelle Passwort zur
+   * Bestaetigung. Laeuft aktuell OHNE Bestaetigungslink/Benachrichtigung an
+   * die alte Adresse (Abschnitt 25.4 saehe beides vor) - dieselbe
+   * Einschraenkung wie bei Einladung/Passwort-Reset, solange kein
+   * E-Mail-Versand angebunden ist.
    */
-  app.put<{ Body: { name?: string; email?: string } }>(
+  app.put<{ Body: { name?: string; email?: string; aktuellesPasswort?: string } }>(
     "/benutzer/mich",
     {
       schema: {
@@ -120,6 +123,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
           properties: {
             name: { type: "string", minLength: 1 },
             email: { type: "string", minLength: 1 },
+            aktuellesPasswort: { type: "string" },
           },
         },
       },
@@ -135,6 +139,14 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       if (req.body.email) {
         const neueEmail = req.body.email.trim().toLowerCase();
         if (neueEmail !== req.benutzer!.email) {
+          if (
+            !req.benutzer!.passwortHash ||
+            !req.body.aktuellesPasswort ||
+            !(await passwortStimmt(req.body.aktuellesPasswort, req.benutzer!.passwortHash))
+          ) {
+            return reply.code(401).send({ error: "Aktuelles Passwort ist falsch." });
+          }
+
           const alle = await findAllByType<Benutzer>("benutzer");
           const vergeben = alle.some(
             (b) => b._id !== req.benutzer!._id && b.email.toLowerCase() === neueEmail,
@@ -148,6 +160,46 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const aktualisiert = await insertDoc({ ...req.benutzer!, ...aenderungen });
+      return oeffentlichesProfil(aktualisiert);
+    },
+  );
+
+  /** Selbst-Service-Passwortaenderung - verlangt das aktuelle Passwort. Beendet danach alle ANDEREN Sessions (Abschnitt 21.4-Prinzip), laesst die gerade benutzte Session aber am Leben. */
+  app.put<{ Body: { aktuellesPasswort: string; neuesPasswort: string } }>(
+    "/benutzer/mich/passwort",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["aktuellesPasswort", "neuesPasswort"],
+          properties: {
+            aktuellesPasswort: { type: "string" },
+            neuesPasswort: { type: "string" },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!requireAuth(req, reply)) return;
+      if (
+        !req.benutzer!.passwortHash ||
+        !(await passwortStimmt(req.body.aktuellesPasswort, req.benutzer!.passwortHash))
+      ) {
+        return reply.code(401).send({ error: "Aktuelles Passwort ist falsch." });
+      }
+
+      const verstoss = passwortRegelVerstoss(req.body.neuesPasswort);
+      if (verstoss) return reply.code(400).send({ error: verstoss });
+
+      const aktualisiert = await insertDoc({
+        ...req.benutzer!,
+        passwortHash: await hashePasswort(req.body.neuesPasswort),
+      });
+
+      if (req.sessionId) {
+        await loescheAndereSessionenVonBenutzer(req.benutzer!._id, req.sessionId);
+      }
+
       return oeffentlichesProfil(aktualisiert);
     },
   );

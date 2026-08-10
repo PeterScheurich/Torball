@@ -187,13 +187,20 @@ h3 {
 
 table {
   width: 100%;
-  /* fixed statt auto: Spaltenbreiten richten sich nach der Kopfzeile (die beim
-     Wechseln zwischen Feld-Tabs gleich bleibt) statt bei jedem Tab-Wechsel anhand
-     der jeweils sichtbaren Zeileninhalte (z.B. Mannschaftsnamen) neu berechnet zu
-     werden - sonst "springen" die Spalten beim Tab-Wechsel sichtbar. */
-  table-layout: fixed;
   border-collapse: collapse;
   margin-bottom: 16px;
+}
+
+/* Nur fuer die Spielplan-Tabellen (Vorschau + erzeugter Plan): fixed statt auto,
+   damit sich Spaltenbreiten nach der Kopfzeile richten (die beim Wechseln
+   zwischen Feld-Tabs gleich bleibt) statt bei jedem Tab-Wechsel anhand der
+   jeweils sichtbaren Zeileninhalte (z.B. Mannschaftsnamen) neu berechnet zu
+   werden - sonst "springen" die Spalten beim Tab-Wechsel sichtbar. Andere
+   Tabellen (Profil, Benutzerverwaltung, Turnierliste) sollen dagegen mit
+   auto-Layout so schmal wie ihr Inhalt bleiben (z.B. die Feldnamen-Spalte im
+   Profil), deshalb nicht global auf <table> gesetzt. */
+.spielplan-tabelle {
+  table-layout: fixed;
 }
 
 th,
@@ -201,6 +208,13 @@ td {
   text-align: left;
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);
+}
+
+/* Feldname-Spalte in Label/Wert-Tabellen (Profil, Turnier-Uebersicht): nur so breit
+   wie ihr eigener Inhalt - width:1% zwingt sie auf die Mindestbreite, der Rest der
+   Tabellenbreite geht automatisch an die Wert-Spalte. */
+th[scope="row"] {
+  width: 1%;
 }
 
 th {
@@ -243,6 +257,8 @@ form {
    Eingabe und Speichern-Button nebeneinander statt der Standard-Formular-Spalte. */
 .inline-form {
   flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
   max-width: none;
   margin-bottom: 0;
 }

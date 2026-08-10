@@ -395,7 +395,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
             </p>
           )}
           <div className="tabellen-wrapper">
-            <table>
+            <table className="spielplan-tabelle">
               <caption className="sr-only">
                 Berechneter Spielplan-Vorschlag, Reihenfolge und Startzeit per Ziehpunkt, Pfeiltasten bzw. Zeitfeld
                 änderbar
@@ -520,7 +520,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
             Rückgängig{verlauf.length > 0 ? ` (${verlauf.length})` : ""}
           </button>
           <div className="tabellen-wrapper">
-            <table>
+            <table className="spielplan-tabelle">
               <caption className="sr-only">
                 Erzeugter Spielplan, Reihenfolge und Startzeit per Ziehpunkt, Pfeiltasten bzw. Zeitfeld änderbar
               </caption>

@@ -229,9 +229,20 @@ export function benutzerAktualisieren(
   return anfrage(`/benutzer/${id}`, { method: "PUT", body: JSON.stringify(daten) });
 }
 
-/** Selbst-Service fuers eigene Profil - kann anders als benutzerAktualisieren() weder Rolle noch Sperrung aendern. */
-export function eigenesProfilAktualisieren(daten: { name?: string; email?: string }): Promise<BenutzerProfil> {
+/** Selbst-Service fuers eigene Profil - kann anders als benutzerAktualisieren() weder Rolle noch Sperrung aendern. Bei E-Mail-Aenderung ist aktuellesPasswort Pflicht. */
+export function eigenesProfilAktualisieren(daten: {
+  name?: string;
+  email?: string;
+  aktuellesPasswort?: string;
+}): Promise<BenutzerProfil> {
   return anfrage("/benutzer/mich", { method: "PUT", body: JSON.stringify(daten) });
+}
+
+export function eigenesPasswortAendern(aktuellesPasswort: string, neuesPasswort: string): Promise<BenutzerProfil> {
+  return anfrage("/benutzer/mich/passwort", {
+    method: "PUT",
+    body: JSON.stringify({ aktuellesPasswort, neuesPasswort }),
+  });
 }
 
 export function getEinladung(token: string): Promise<{ email: string; name: string }> {

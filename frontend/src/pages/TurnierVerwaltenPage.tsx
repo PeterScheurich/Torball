@@ -89,21 +89,45 @@ export function TurnierVerwaltenPage() {
       </div>
 
       <div role="tabpanel" id="panel-uebersicht" aria-labelledby="tab-uebersicht" hidden={aktiverTab !== "uebersicht"}>
-        <p>
-          {formatiereDatum(turnier.datum)}
-          {turnier.startzeit ? `, ${formatiereUhrzeit(`${turnier.datum}T${turnier.startzeit}:00`)}` : ""} · Status:{" "}
-          {turnier.status} · Felder: {turnier.felder.map((f) => f.name).join(", ") || "keine"}
-        </p>
-        <div className="feld">
-          <label htmlFor="spielplanModus">Spielmodus (für die Spielplan-Erzeugung)</label>
-          <select
-            id="spielplanModus"
-            value={turnier.spielplanModus}
-            onChange={(e) => spielplanModusAendern(e.target.value === "doppelt" ? "doppelt" : "einfach")}
-          >
-            <option value="einfach">Jeder gegen Jeden (einfach)</option>
-            <option value="doppelt">Jeder zweimal gegen Jeden (doppelt)</option>
-          </select>
+        <div className="tabellen-wrapper">
+          <table>
+            <caption className="sr-only">Turnier-Übersicht</caption>
+            <tbody>
+              <tr>
+                <th scope="row">Datum</th>
+                <td>{formatiereDatum(turnier.datum)}</td>
+              </tr>
+              {turnier.startzeit && (
+                <tr>
+                  <th scope="row">Startzeit</th>
+                  <td>{formatiereUhrzeit(`${turnier.datum}T${turnier.startzeit}:00`)}</td>
+                </tr>
+              )}
+              <tr>
+                <th scope="row">Status</th>
+                <td>{turnier.status}</td>
+              </tr>
+              <tr>
+                <th scope="row">Spielfelder</th>
+                <td>{turnier.felder.map((f) => f.name).join(", ") || "keine"}</td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="spielplanModus">Spielmodus</label>
+                </th>
+                <td>
+                  <select
+                    id="spielplanModus"
+                    value={turnier.spielplanModus}
+                    onChange={(e) => spielplanModusAendern(e.target.value === "doppelt" ? "doppelt" : "einfach")}
+                  >
+                    <option value="einfach">Jeder gegen Jeden (einfach)</option>
+                    <option value="doppelt">Jeder zweimal gegen Jeden (doppelt)</option>
+                  </select>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

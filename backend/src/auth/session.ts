@@ -66,3 +66,13 @@ export async function loescheAlleSessionenVonBenutzer(benutzerId: string): Promi
     await deleteDoc(session._id, session._rev!);
   }
 }
+
+/** Fuer die Selbst-Service-Passwortaenderung (im Gegensatz zum Reset bleibt die eigene, aktuell benutzte Session erhalten). */
+export async function loescheAndereSessionenVonBenutzer(benutzerId: string, aktuelleSessionId: string): Promise<void> {
+  const sessions = await findAllBySelector<Session>({ docType: "session", benutzerId });
+  for (const session of sessions) {
+    if (session._id !== aktuelleSessionId) {
+      await deleteDoc(session._id, session._rev!);
+    }
+  }
+}
