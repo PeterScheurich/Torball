@@ -259,6 +259,28 @@ Eine Bestätigung durch die Turnierleitung vor Einfließen in die Tabelle ist zu
 
 Ob Korrekturen künftig grundsätzlich der Turnierleitung vorbehalten sein sollten, wird nach ersten Praxiserfahrungen entschieden.
 
+### B.10 Tastaturbelegung für die Protokollierung
+
+Die Tastenbelegung ist nicht fest vergeben. Es gibt eine Vorgabebelegung, die jede protokollierende Person für sich anpassen und speichern kann.
+
+**Ebenen:**
+
+- **Vorgabebelegung** – Teil der globalen Systemkonfiguration (siehe B.1), damit sie zentral gepflegt und über die Synchronisation aktualisiert werden kann
+- **Persönliche Belegung** – am Benutzer gespeichert, überschreibt die Vorgabe
+
+Die Belegung gehört bewusst **zur Person, nicht zum Turnier**. Ein Protokollant, der sich eine Belegung eingerichtet hat, soll sie auf jedem Turnier vorfinden. Da Protokollanten im Turnierverlauf wechseln, wäre eine turnierweite Belegung sogar hinderlich – der Nachfolger bekäme die Tasten seines Vorgängers.
+
+**Import und Export**
+
+Belegungen lassen sich exportieren und importieren. Damit kann eine Person ihre gewohnte Belegung mitbringen, auch ohne eigenen Benutzerzugang – Protokollanten haben nicht zwingend einen Account.
+
+Vorgefertigte Schemata können zum Download bereitgestellt werden, die als Ausgangspunkt dienen und bei Bedarf angepasst werden. Die inhaltliche Definition solcher Schemata ist kein Entwicklungsgegenstand.
+
+**Zu klären bei der Umsetzung**
+
+- Bleibt das Muster erhalten, dass beide Mannschaften dieselben Tasten nutzen und eine davon zusätzlich die Strg-Taste erfordert? Oder wird jede Aktion je Mannschaft einzeln belegt?
+- Die Konfigurationsoberfläche benötigt eine Kollisionsprüfung, damit nicht zwei Aktionen auf derselben Taste liegen.
+
 ---
 
 ## Teil C: Auswirkungen auf Architektur und Datenmodell
@@ -275,6 +297,7 @@ Aus den obigen Punkten ergeben sich folgende Anforderungen, die vor der Implemen
 | Öffentliche Turnierseite (B.6) | Eigene, unauthentifizierte Ansichten mit gestufter Freigabe |
 | Stammdaten (B.7) | Zwei neue Entitäten (Verein, Team), optionale Referenz aus Turnier-Mannschaft, Kopiersemantik |
 | Ergebniserfassung (B.9) | Neue Rolle, Token-Verwaltung, Änderungshistorie, Abschluss-Kennzeichnung je Spiel |
+| Tastaturbelegung (B.10) | Belegung als eigene Entität am Benutzer, Vorgabe aus Systemkonfiguration, Import und Export |
 
 ---
 
