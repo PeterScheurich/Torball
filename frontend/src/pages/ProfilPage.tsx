@@ -9,6 +9,7 @@ import {
   type TotpEinrichtung,
 } from "../api";
 import { useAuth } from "../auth";
+import { PasswortRegeln } from "../PasswortRegeln";
 import { themeAnwenden } from "../theme";
 import { dichteAnwenden } from "../dichte";
 
@@ -222,6 +223,7 @@ export function ProfilPage() {
                   />
                   <button type="submit">Ändern</button>
                 </form>
+                {neuesPasswort && <PasswortRegeln passwort={neuesPasswort} />}
               </td>
             </tr>
             <tr>
