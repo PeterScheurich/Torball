@@ -423,6 +423,10 @@ form {
   width: 160px;
   height: 160px;
 }
+.qr-code-download {
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
 
 /* Passwort-Anforderungen als Live-Checkliste: offene Bedingung rot, erfuellte gruen mit Haken. */
 .passwort-regeln {
@@ -557,6 +561,20 @@ form {
   margin-bottom: 0;
 }
 
+/* Passwort-Aendern-Formular: oben ausrichten, damit das (ggf. mehrzeilige) Regeln-Widget
+   unter dem Neu-Passwort-Feld haengen kann, ohne die uebrigen Felder mittig zu verschieben. */
+.passwort-aendern-form {
+  align-items: flex-start;
+}
+
+/* Neu-Passwort-Feld samt Anforderungen-Widget als eigene Spalte, damit das Widget direkt
+   UNTER dem neuen Passwort steht (nicht unter dem aktuellen Passwort). */
+.passwort-neu-spalte {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 label {
   font-weight: 600;
   font-size: 0.9rem;
@@ -661,10 +679,12 @@ button:disabled {
 .button-link {
   /* <a> ist per Browser-Standard content-box, <button> border-box - ohne diese
      Zeile wird ein .button-link bei gleichem Padding hoeher als ein echter
-     <button> (schon einmal genau so bei .kopfzeile-menue-eintrag erlebt). */
+     <button> (schon einmal genau so bei .kopfzeile-menue-eintrag erlebt).
+     display:inline-block (wie ein echter <button>, NICHT inline-flex) - sonst
+     rendert der Link je nach Browser minimal anders hoch als ein daneben
+     stehender <button> (z.B. "Öffnen" vs. "Link kopieren"). */
   box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
   font-weight: 600;
   padding: 4px 8px;
   line-height: 1;

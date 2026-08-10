@@ -47,6 +47,10 @@ export function QrCode({ text, dateiname }: Props) {
   if (fehler) return <p className="feld-hinweis">QR-Code konnte nicht erzeugt werden.</p>;
   if (!svg) return null;
 
+  const basis = dateinameBereinigt(dateiname);
+  // SVG als Daten-URL fuer den Download (skalierbar, ideal zum grossen Ausdrucken/Aushaengen).
+  const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+
   return (
     <div className="qr-code">
       <div
@@ -55,13 +59,17 @@ export function QrCode({ text, dateiname }: Props) {
         aria-label={`QR-Code für ${text}`}
         dangerouslySetInnerHTML={{ __html: svg }}
       />
-      {pngUrl && (
-        <div>
-          <a className="button-link" href={pngUrl} download={`${dateinameBereinigt(dateiname)}.png`}>
-            QR-Code herunterladen (PNG)
+      <div className="qr-code-download">
+        Herunterladen:{" "}
+        <a className="button-link" href={svgUrl} download={`${basis}.svg`}>
+          SVG (skalierbar)
+        </a>{" "}
+        {pngUrl && (
+          <a className="button-link" href={pngUrl} download={`${basis}.png`}>
+            PNG
           </a>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

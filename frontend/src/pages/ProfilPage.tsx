@@ -187,7 +187,7 @@ export function ProfilPage() {
                 <label htmlFor="neuesPasswort">Passwort</label>
               </th>
               <td>
-                <form onSubmit={passwortAendern} className="inline-form">
+                <form onSubmit={passwortAendern} className="inline-form passwort-aendern-form">
                   <label className="sr-only" htmlFor="aktuellesPasswort">
                     Aktuelles Passwort
                   </label>
@@ -200,15 +200,18 @@ export function ProfilPage() {
                     value={aktuellesPasswort}
                     onChange={(e) => setAktuellesPasswort(e.target.value)}
                   />
-                  <input
-                    id="neuesPasswort"
-                    type="password"
-                    autoComplete="new-password"
-                    placeholder="Neues Passwort"
-                    required
-                    value={neuesPasswort}
-                    onChange={(e) => setNeuesPasswort(e.target.value)}
-                  />
+                  <div className="passwort-neu-spalte">
+                    <input
+                      id="neuesPasswort"
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="Neues Passwort"
+                      required
+                      value={neuesPasswort}
+                      onChange={(e) => setNeuesPasswort(e.target.value)}
+                    />
+                    {neuesPasswort && <PasswortRegeln passwort={neuesPasswort} />}
+                  </div>
                   <label className="sr-only" htmlFor="neuesPasswortWiederholung">
                     Neues Passwort wiederholen
                   </label>
@@ -223,7 +226,6 @@ export function ProfilPage() {
                   />
                   <button type="submit">Ändern</button>
                 </form>
-                {neuesPasswort && <PasswortRegeln passwort={neuesPasswort} />}
               </td>
             </tr>
             <tr>
