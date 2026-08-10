@@ -28,6 +28,8 @@ fertiggestellt, bevor der Server wieder produktiv nutzbar sein sollte.
   welcher E-Mail-Versand (eigener SMTP, SendGrid, Postmark, …) angebunden
   werden soll - das ist eine Konto-/Kosten-Entscheidung, die nicht ohne
   Absprache getroffen werden sollte.
+  **Inzwischen erledigt** - der Nutzer hat sich für ein bestehendes Postfach
+  entschieden und die Zugangsdaten geliefert, siehe Abschnitt 11.
 - **Systemkonfiguration-Anbindung:** Die Passwort-Mindestlänge (Abschnitt
   21.4) ist aktuell im Code hartkodiert (`backend/src/auth/passwort.ts`)
   statt aus der `Systemkonfiguration` zu lesen - dieses Dokument hat noch
@@ -194,13 +196,125 @@ Dokuments selbst nötig gemacht hätte - die oben gelisteten Zurückstellungen
 Umsetzungslücken, keine fachlichen Klärungsbedarfe. Deshalb hier keine
 Änderung an `docs/torball_gesamtspezifikation.md` in dieser Sitzung.
 
+## 9. Konsolen-Tool "torball" (Commit `523af34`)
+
+Auf Wunsch des Nutzers: ein zentrales Skript für administrative Aufgaben, die
+keinen Web-Login voraussetzen - Hauptfall: der einzige Admin-Account ist
+gesperrt und niemand kommt mehr ins Backend. Aufbau bewusst wie bei `pihole`
+(ein Einstiegspunkt, Unterbefehle, Hilfetext bei fehlendem/unbekanntem
+Befehl):
+
+```bash
+npm run torball --workspace=backend -- benutzer:entsperren --email="admin@example.com"
+npm run torball --workspace=backend -- benutzer:liste
+npm run torball --workspace=backend -- --hilfe
+```
+
+Neue Befehle werden als Eintrag im `BEFEHLE`-Objekt in
+[`backend/src/cli/torball.ts`](../../backend/src/cli/torball.ts) ergänzt.
+
+**Bugfix beim Testen:** Ein erzwungenes `process.exit()` am Ende des Skripts
+kollidierte auf Windows mit einem noch nicht vollständig geschlossenen
+libuv-Handle (`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)`,
+Absturz). Der Prozess beendet sich jetzt natürlich, sobald das Event-Loop
+leer ist - kein manuelles `exit()` nötig, `nano` hält entgegen der ersten
+Annahme keine Verbindung offen, die das verhindern würde.
+
+Gegen die echte CouchDB verifiziert: gesperrten Testnutzer angelegt,
+`benutzer:entsperren` entsperrt ihn, wiederholter Aufruf meldet korrekt
+"war bereits nicht gesperrt", unbekannte E-Mail liefert Exit-Code 1.
+
+## 10. Profil-Erweiterungen (Commit `8f4f668`)
+
+Auf Wunsch des Nutzers ergänzt:
+
+- **Passwort ändern** (Selbst-Service, `PUT /benutzer/mich/passwort`):
+  verlangt das aktuelle Passwort. Beendet danach alle **anderen** aktiven
+  Sessions dieses Benutzers (gleiches Prinzip wie beim Passwort-Reset,
+  Abschnitt 21.4), lässt die gerade benutzte Session aber bewusst am Leben -
+  dafür trägt der Auth-Hook jetzt zusätzlich `req.sessionId`.
+- **E-Mail-Änderung verlangt jetzt ebenfalls das aktuelle Passwort** - E-Mail
+  ist der Benutzername (Abschnitt 25.1), eine Änderung ist damit fachlich
+  eine genauso sensible Aktion wie eine Passwortänderung.
+- **Profil- und Turnier-Übersicht** als Feld/Wert-Tabelle statt Fließtext
+  (`th[scope="row"]` + `td`), auf Wunsch des Nutzers.
+- **CSS-Bugfix:** `table-layout: fixed` war zuvor global auf `<table>`
+  gesetzt (für die Spielplan-Tabellen gedacht, siehe voriges Protokoll zum
+  Spielplan-Algorithmus) und hat dadurch auch diesen neuen Feld/Wert-Tabellen
+  gleich breite Spalten aufgezwungen, statt die Feldname-Spalte an ihren
+  Inhalt anzupassen. Jetzt nur noch über eine eigene `.spielplan-tabelle`-
+  Klasse aktiv; `th[scope="row"] { width: 1%; }` sorgt dafür, dass die
+  Feldname-Spalte überall sonst nur so breit wird wie ihr längster Inhalt.
+
+Gegen einen Testaccount in der echten CouchDB verifiziert: falsches/richtiges
+Passwort bei E-Mail-Änderung, Passwort-Änderung inkl. Sessions-Verhalten
+(alte Session weiterhin gültig, Login mit altem Passwort abgelehnt), Spalten-
+breiten per `getBoundingClientRect()` nachgemessen.
+
+## 11. E-Mail-Versand angebunden (Commit `249d45f`)
+
+Nutzer hat sich für ein bestehendes Postfach entschieden
+(`turniere@blindentorball.de`, IONOS SMTP). Neu:
+[`backend/src/mail/transport.ts`](../../backend/src/mail/transport.ts) -
+`nodemailer`-Transport aus `SMTP_*`-Umgebungsvariablen; `mailKonfiguriert()`
+prüft, ob sie vollständig gesetzt sind. Einladung und Passwort-vergessen
+nutzen jetzt echten Versand, wenn konfiguriert; ohne Konfiguration bleibt der
+bisherige Fallback (Token in der Antwort bzw. im Server-Log) erhalten -
+relevant z. B. für eine lokale Entwicklungsumgebung ohne SMTP-Zugang.
+
+**Bug beim Einrichten:** `SMTP_PASSWORD` enthielt ein `#`
+(`UnsereTurniere#2026`). Ohne Anführungszeichen in der `.env`-Datei
+interpretiert der Parser (Node `--env-file`, ebenso klassisches `dotenv`)
+alles ab dem `#` als Kommentar - das Passwort wurde dadurch stillschweigend
+auf `UnsereTurniere` abgeschnitten, was zu `535 Authentication credentials
+invalid` führte. Behoben durch Anführungszeichen um den Wert
+(`SMTP_PASSWORD="UnsereTurniere#2026"`). **Lehre:** `.env`-Werte mit
+Sonderzeichen immer in Anführungszeichen setzen, nicht nur wenn Leerzeichen
+enthalten sind.
+
+**Robustheits-Fix, beim Testen entdeckt:** Schlägt der Mailversand einer
+Einladung fehl (z. B. der oben beschriebene Auth-Fehler live erlebt), blieb
+vorher ein Benutzer-Dokument ohne Passwort und ohne abrufbaren
+Einladungslink zurück (die Anlage in der Datenbank erfolgt vor dem
+Mailversand). Jetzt wird die Anlage bei einem Mailversand-Fehler wieder
+zurückgerollt (`deleteDoc`), die Anfrage schlägt insgesamt fehl (`502`) statt
+einen halbfertigen Zustand zu hinterlassen. Beim Passwort-Reset-Mailversand
+wird ein Fehler dagegen nur geloggt, nicht an den Aufrufer durchgereicht - die
+Antwort bleibt bewusst einheitlich `{ok:true}` (Anti-Enumeration-Prinzip,
+Abschnitt "Fastify-Falle" oben gilt hier sinngemäß für Fehlerpfade).
+
+Gegen den echten IONOS-Server verifiziert: `transporter.verify()` (Login),
+eine echte Testmail an die eigene Adresse, und über die App ausgelöste
+Einladungs- sowie Passwort-Reset-Mail an die echte Zieladresse. Alle
+Testkonten danach wieder entfernt.
+
+**Offen:** Die E-Mail-Änderung im eigenen Profil (Abschnitt 10) läuft weiter
+ohne Bestätigungslink/Benachrichtigung, wie es Abschnitt 25.4 vorsähe - das
+war eine bewusste Vereinfachung unabhängig von der SMTP-Frage, nicht
+automatisch mit dieser Sitzung mitgelöst. Siehe Abgleich mit der
+Spezifikation unten.
+
+---
+
+## Spezifikations-Abgleich (Nachtrag)
+
+Im Gegensatz zur ursprünglichen Einschätzung in Abschnitt 8 (keine
+Abweichung, die eine Dokument-Änderung nötig macht) hat sich mit der
+E-Mail-Anbindung eine echte, dauerhafte Lücke zu Abschnitt 25.4 gezeigt: die
+Spezifikation sieht für die E-Mail-Änderung einen Bestätigungslink an die
+neue und eine Benachrichtigung an die alte Adresse vor, die aktuelle
+Umsetzung ändert die Adresse direkt (nur durch das aktuelle Passwort
+abgesichert). `docs/torball_gesamtspezifikation.md` wurde deshalb um einen
+Hinweis zum aktuellen Umsetzungsstand ergänzt (Abschnitt 25.4).
+
 ---
 
 ## Offene Punkte für die nächste Sitzung
 
-- **E-Mail-Versand anbinden** (Entscheidung nötig: welcher Anbieter) - erst
-  danach sind Einladung/Passwort-Reset wirklich nutzbar, ohne dass Links
-  manuell weitergegeben werden müssen.
+- **E-Mail-Änderung im Profil auf Bestätigungslink umstellen** (Abschnitt
+  25.4) - jetzt, wo SMTP steht, technisch keine Blockade mehr, aber ein
+  eigenständiges Stück Arbeit (neue Token-Felder, Bestätigungs-Route,
+  Benachrichtigung an die alte Adresse).
 - **Oberfläche für `TurnierBerechtigung`** (Zugriff auf ein Turnier
   gewähren/entziehen) - die API existiert, die UI fehlt noch.
 - **Öffentliche, unauthentifizierte Turnier-Ansicht** (Abschnitt 21.2) als

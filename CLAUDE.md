@@ -54,6 +54,26 @@ Aufzählung ergänzen, oder eine neue Überschrift für ein neues Thema anlegen.
 - Sensible Felder (Passwort-Hash, 2FA-Secret, Einladungs-/Reset-Token-Hashes)
   dürfen nie über die API zurückgegeben werden - immer über
   `oeffentlichesProfil()` (`backend/src/auth/benutzerProfil.ts`) filtern.
+- Sensible Selbst-Service-Änderungen am eigenen Account (E-Mail, Passwort,
+  2FA deaktivieren) verlangen das aktuelle Passwort zur Bestätigung -
+  gilt für jede künftige Erweiterung in diese Richtung, nicht nur die
+  bestehenden Felder.
+- Globale Rolle und Sperr-Status sind nie über die Selbst-Service-Route
+  (`PUT /benutzer/mich`) änderbar, nur über die admin/manager-gated
+  `PUT /benutzer/:id` - sonst könnte sich ein Benutzer selbst zum Admin
+  machen.
+
+## Betrieb / Infrastruktur
+
+- Werte in `backend/.env` mit Sonderzeichen (z. B. `#`) immer in
+  Anführungszeichen setzen - unquotiert wird alles ab einem `#` als
+  Kommentar abgeschnitten (schwer zu findender Bug, einmal live erlebt:
+  ein abgeschnittenes SMTP-Passwort führte zu "Authentication credentials
+  invalid").
+- Änderungen an `backend/.env` wirken erst nach einem Neustart des
+  `npm run dev:backend`-Prozesses (`--env-file` wird nur beim Start
+  gelesen) - anders als Quelltext-Änderungen, die automatisch neu geladen
+  werden.
 
 ## Dokumentation
 
@@ -79,7 +99,8 @@ der Modi, die Claude Code kennt:
 | `dontAsk` | Nichts außer explizit vorab Freigegebenem läuft; alles andere wird automatisch abgelehnt (z. B. für CI) |
 | `bypassPermissions` | Fragt gar nicht mehr nach (außer expliziten `deny`-Regeln) – nur in isolierten Containern/VMs sinnvoll, nicht hier |
 
-Aktuell eingestellt: `acceptEdits`, mit einer `allow`-Liste für die üblichen
-Entwicklungsbefehle (`npm run *`, `npm install *`, `git status/diff/log/add/
-commit/push`) und einer `deny`-Liste für riskante Befehle (Force-Push,
-`git reset --hard`, `git clean`, `rm -rf`), die unabhängig vom Modus greift.
+Aktuell eingestellt: `bypassPermissions` (für unbeaufsichtigtes Arbeiten),
+mit einer `allow`-Liste für die üblichen Entwicklungsbefehle (`npm run *`,
+`npm install *`, `git status/diff/log/add/commit/push`) und einer
+`deny`-Liste für riskante Befehle (Force-Push, `git reset --hard`,
+`git clean`, `rm -rf`), die unabhängig vom Modus greift.

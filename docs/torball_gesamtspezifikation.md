@@ -1,7 +1,7 @@
 # Torball-Turniersoftware
 ## Gesamtspezifikation (Fachlich + Technisch)
 
-**Version:** 1.2
+**Version:** 1.3
 **Datum:** 10.08.2026
 **Status:** Konsolidierter Entwurf – fachlich vollständig geklärt
 
@@ -16,6 +16,7 @@
 | Klärungsrunde Datenmodell | 09.08.2026 | 5 vertiefte Modellierungsentscheidungen (Konfiguration, Events, Verein/Team, Token) |
 | Klärungsrunde offene Fragen | 10.08.2026 | Beantwortung der verbliebenen 8 offenen fachlichen Fragen (Abschnitt 27); Protest als neues Ereignis (7.6, 22.2/22.3) |
 | Erkenntnisse aus der Umsetzung (Spielplan) | 10.08.2026 | Abschnitt 8 präzisiert: Turniermodus-Vereinfachung auf Turnier-Ebene, Grenzen der Back-to-Back-Vermeidung bei mehreren Feldern, Ablehnung überschneidender manueller Zeitänderungen. Details siehe `docs/Protokolle/2026-08-10-spielplan-algorithmus.md`. |
+| Erkenntnisse aus der Umsetzung (Anmeldung) | 10.08.2026 | Abschnitt 25.4 präzisiert: Umsetzungsstand der Selbst-Service-E-Mail-Änderung (aktuell ohne Bestätigungslink/Benachrichtigung) dokumentiert. Details siehe `docs/Protokolle/2026-08-10-anmeldung-benutzerverwaltung.md`. |
 
 Dieses Dokument ersetzt die einzelnen Vorgängerdokumente inhaltlich (führt sie zusammen). Sie bleiben als Historie im Projekt erhalten.
 
@@ -942,6 +943,8 @@ Gesperrte Benutzer können sich nicht anmelden; eine laufende Spielprotokollieru
 ### 25.4 E-Mail-Änderung
 
 Neue E-Mail eingeben → Bestätigungs-Link an neue Adresse → erst nach Bestätigung wird geändert → Benachrichtigung an alte Adresse. Admin kann E-Mail ohne Bestätigung ändern.
+
+**Umsetzungsstand:** Die Selbst-Service-Änderung im eigenen Profil ändert die Adresse aktuell direkt, nur durch Eingabe des aktuellen Passworts abgesichert – ohne Bestätigungslink an die neue und ohne Benachrichtigung an die alte Adresse. E-Mail-Versand ist inzwischen angebunden (siehe `docs/Protokolle/2026-08-10-anmeldung-benutzerverwaltung.md`), die Umstellung auf den hier beschriebenen vollen Ablauf steht als eigenständige Aufgabe noch aus.
 
 ## 26. Migration und Deployment
 
