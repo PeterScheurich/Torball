@@ -80,10 +80,22 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
     }
   }
 
-  async function speichern(id: string) {
-    const werte = bearbeitung[id];
+  /** Speichert automatisch beim Verlassen des Feldes - konsistent zu Loeschen/Verschieben, die auch sofort wirken. */
+  async function feldVerlassen(m: MannschaftImTurnier) {
+    const werte = bearbeitung[m._id];
+    if (!werte) return;
+
+    if (werte.name.trim() === "") {
+      setFehler("Mannschaftsname darf nicht leer sein");
+      return;
+    }
+
+    const bundeslandNeu = werte.bundesland || undefined;
+    const unveraendert = werte.name === m.name && bundeslandNeu === (m.bundesland ?? undefined);
+    if (unveraendert) return;
+
     try {
-      await updateMannschaft(id, { name: werte.name, bundesland: werte.bundesland || undefined });
+      await updateMannschaft(m._id, { name: werte.name, bundesland: bundeslandNeu });
       await laden();
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern der Mannschaft");
@@ -181,6 +193,10 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
                     onChange={(e) =>
                       setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], name: e.target.value } }))
                     }
+                    onBlur={() => feldVerlassen(m)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
                   />
                 </td>
                 <td>
@@ -194,18 +210,13 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
                     onChange={(e) =>
                       setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], bundesland: e.target.value } }))
                     }
+                    onBlur={() => feldVerlassen(m)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
                   />
                 </td>
                 <td>
-                  <button
-                    type="button"
-                    className="symbol-button"
-                    onClick={() => speichern(m._id)}
-                    aria-label={`${m.name} speichern`}
-                    title="Speichern"
-                  >
-                    💾
-                  </button>
                   <button
                     type="button"
                     className="symbol-button"
