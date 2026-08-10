@@ -430,12 +430,12 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                   <th scope="col" className="reihenfolge-zelle">
                     <span className="sr-only">Reihenfolge</span>
                   </th>
-                  <th scope="col">Spiel</th>
-                  {!mehrereFelder && <th scope="col">Feld</th>}
-                  <th scope="col">Startzeit</th>
+                  <th scope="col" className="spalte-spiel">Spiel</th>
+                  {!mehrereFelder && <th scope="col" className="spalte-feld">Feld</th>}
+                  <th scope="col" className="spalte-startzeit">Startzeit</th>
                   <th scope="col">Mannschaft A</th>
                   <th scope="col">Mannschaft B</th>
-                  <th scope="col">Hinweis</th>
+                  <th scope="col" className="spalte-hinweis">Hinweis</th>
                 </tr>
               </thead>
               <tbody>
@@ -554,13 +554,13 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                   <th scope="col" className="reihenfolge-zelle">
                     <span className="sr-only">Reihenfolge</span>
                   </th>
-                  <th scope="col">Spiel</th>
-                  {!mehrereFelder && <th scope="col">Feld</th>}
-                  <th scope="col">Startzeit</th>
+                  <th scope="col" className="spalte-spiel">Spiel</th>
+                  {!mehrereFelder && <th scope="col" className="spalte-feld">Feld</th>}
+                  <th scope="col" className="spalte-startzeit">Startzeit</th>
                   <th scope="col">Mannschaft A</th>
                   <th scope="col">Mannschaft B</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Hinweis</th>
+                  <th scope="col" className="spalte-status">Status</th>
+                  <th scope="col" className="spalte-hinweis">Hinweis</th>
                 </tr>
               </thead>
               <tbody>

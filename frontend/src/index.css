@@ -269,6 +269,28 @@ table {
   table-layout: fixed;
 }
 
+/* Spaltenbreiten der Spielplan-/Vorschlags-Tabellen bewusst verteilen: die Spalten mit
+   kurzem, vorhersehbarem Inhalt (Spielnummer max. 2-stellig, Feldname, Uhrzeit, Status,
+   Kurz-Hinweis) bekommen feste, knappe Breiten - bei table-layout:fixed geht der gesamte
+   restliche Platz dann automatisch an die beiden nicht bemessenen Mannschaftsspalten, die
+   die langen Namen tragen. Nur an den <th> noetig: im fixed-Layout bestimmt allein die
+   erste (Kopf-)Zeile die Spaltenbreiten. */
+.spielplan-tabelle .spalte-spiel {
+  width: 3.5em;
+}
+.spielplan-tabelle .spalte-feld {
+  width: 5em;
+}
+.spielplan-tabelle .spalte-startzeit {
+  width: 6.5em;
+}
+.spielplan-tabelle .spalte-status {
+  width: 6em;
+}
+.spielplan-tabelle .spalte-hinweis {
+  width: 6em;
+}
+
 th,
 td {
   text-align: left;
@@ -388,6 +410,16 @@ textarea {
   width: 100%;
   box-sizing: border-box;
   resize: vertical;
+}
+
+/* Turnier-Uebersicht: die editierbaren Eingabefelder/Auswahlen sollen die Wert-Spalte
+   ganz ausfuellen - genau wie die readOnly-Felder und das <textarea> in derselben
+   Tabelle (die bereits width:100% haben). Ohne das nehmen <input>/<select> nur ihre
+   native Standardbreite ein und wirken neben den vollbreiten Zeilen zu schmal. */
+.uebersicht-tabelle td input:not([type="checkbox"]):not([type="radio"]),
+.uebersicht-tabelle td select {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Nicht editierbare Werte in Label/Wert-Tabellen (Profil, Turnier-Uebersicht), die als

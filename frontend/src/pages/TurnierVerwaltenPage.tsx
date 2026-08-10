@@ -243,7 +243,7 @@ export function TurnierVerwaltenPage() {
 
       <div role="tabpanel" id="panel-uebersicht" aria-labelledby="tab-uebersicht" hidden={aktiverTab !== "uebersicht"}>
         <div className="tabellen-wrapper">
-          <table>
+          <table className="uebersicht-tabelle">
             <caption className="sr-only">Turnier-Übersicht</caption>
             <tbody>
               <tr>
