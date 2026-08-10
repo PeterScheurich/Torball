@@ -30,6 +30,32 @@ const mannschaftBodySchema = {
   },
 } as const;
 
+interface MannschaftAktualisierungBody {
+  teamId?: string;
+  vereinId?: string;
+  name: string;
+  logo?: string;
+  bundesland?: string;
+  ansprechpartnerName?: string;
+  ansprechpartnerTelefon?: string;
+  ansprechpartnerEmail?: string;
+}
+
+const mannschaftAktualisierungSchema = {
+  type: "object",
+  required: ["name"],
+  properties: {
+    teamId: { type: "string" },
+    vereinId: { type: "string" },
+    name: { type: "string", minLength: 1 },
+    logo: { type: "string" },
+    bundesland: { type: "string" },
+    ansprechpartnerName: { type: "string" },
+    ansprechpartnerTelefon: { type: "string" },
+    ansprechpartnerEmail: { type: "string" },
+  },
+} as const;
+
 export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { turnierId: string } }>("/turniere/:turnierId/mannschaften", async (req) => {
     return findAllBySelector<MannschaftImTurnier>({
@@ -62,6 +88,17 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
       };
       const gespeichert = await insertDoc(mannschaft);
       return reply.code(201).send(gespeichert);
+    },
+  );
+
+  app.put<{ Params: { id: string }; Body: MannschaftAktualisierungBody }>(
+    "/mannschaften/:id",
+    { schema: { body: mannschaftAktualisierungSchema } },
+    async (req, reply) => {
+      const bestehend = await findById<MannschaftImTurnier>(req.params.id);
+      if (!bestehend) return reply.code(404).send({ error: "Mannschaft nicht gefunden" });
+      const aktualisiert: MannschaftImTurnier = { ...bestehend, ...req.body };
+      return insertDoc(aktualisiert);
     },
   );
 

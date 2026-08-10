@@ -9,6 +9,8 @@ import {
   getSpiele,
   getSpielplanVorschlag,
   getTurnier,
+  reihenfolgeAendern,
+  updateMannschaft,
   type SpielplanVorschlagEintrag,
 } from "../api";
 
@@ -25,6 +27,18 @@ export function TurnierDetailPage() {
 
   const [neueMannschaft, setNeueMannschaft] = useState("");
   const [neuesBundesland, setNeuesBundesland] = useState("");
+
+  const [bearbeitung, setBearbeitung] = useState<Record<string, { name: string; bundesland: string }>>({});
+
+  useEffect(() => {
+    setBearbeitung((bisherig) => {
+      const naechster: Record<string, { name: string; bundesland: string }> = {};
+      for (const m of mannschaften) {
+        naechster[m._id] = bisherig[m._id] ?? { name: m.name, bundesland: m.bundesland ?? "" };
+      }
+      return naechster;
+    });
+  }, [mannschaften]);
 
   const ladeAlles = useCallback(async () => {
     try {
@@ -80,6 +94,35 @@ export function TurnierDetailPage() {
     }
   }
 
+  async function mannschaftSpeichern(mannschaftId: string) {
+    const werte = bearbeitung[mannschaftId];
+    try {
+      await updateMannschaft(mannschaftId, {
+        name: werte.name,
+        bundesland: werte.bundesland || undefined,
+      });
+      await ladeAlles();
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern der Mannschaft");
+    }
+  }
+
+  async function spielVerschieben(spielId: string, richtung: -1 | 1) {
+    const index = spieleSortiert.findIndex((s) => s._id === spielId);
+    const zielIndex = index + richtung;
+    if (index < 0 || zielIndex < 0 || zielIndex >= spieleSortiert.length) return;
+
+    const neueReihenfolge = spieleSortiert.map((s) => s._id);
+    [neueReihenfolge[index], neueReihenfolge[zielIndex]] = [neueReihenfolge[zielIndex], neueReihenfolge[index]];
+
+    try {
+      await reihenfolgeAendern(turnierId, neueReihenfolge);
+      await ladeAlles();
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Reihenfolge");
+    }
+  }
+
   async function vorschlagAnzeigen() {
     try {
       const ergebnis = await getSpielplanVorschlag(turnierId, wiederholungen);
@@ -123,7 +166,7 @@ export function TurnierDetailPage() {
         <p>Noch keine Mannschaften angelegt.</p>
       ) : (
         <table>
-          <caption className="sr-only">Angemeldete Mannschaften</caption>
+          <caption className="sr-only">Angemeldete Mannschaften, Name und Bundesland bearbeitbar</caption>
           <thead>
             <tr>
               <th scope="col">Name</th>
@@ -134,9 +177,34 @@ export function TurnierDetailPage() {
           <tbody>
             {mannschaften.map((m) => (
               <tr key={m._id}>
-                <td>{m.name}</td>
-                <td>{m.bundesland ?? "–"}</td>
                 <td>
+                  <label className="sr-only" htmlFor={`name-${m._id}`}>
+                    Name von {m.name}
+                  </label>
+                  <input
+                    id={`name-${m._id}`}
+                    value={bearbeitung[m._id]?.name ?? ""}
+                    onChange={(e) =>
+                      setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], name: e.target.value } }))
+                    }
+                  />
+                </td>
+                <td>
+                  <label className="sr-only" htmlFor={`bundesland-${m._id}`}>
+                    Bundesland von {m.name}
+                  </label>
+                  <input
+                    id={`bundesland-${m._id}`}
+                    value={bearbeitung[m._id]?.bundesland ?? ""}
+                    onChange={(e) =>
+                      setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], bundesland: e.target.value } }))
+                    }
+                  />
+                </td>
+                <td>
+                  <button type="button" onClick={() => mannschaftSpeichern(m._id)}>
+                    Speichern
+                  </button>{" "}
                   <button type="button" onClick={() => mannschaftLoeschen(m._id)}>
                     Löschen
                   </button>
@@ -183,10 +251,11 @@ export function TurnierDetailPage() {
                 <th scope="col">Mannschaft A</th>
                 <th scope="col">Mannschaft B</th>
                 <th scope="col">Status</th>
+                <th scope="col">Reihenfolge</th>
               </tr>
             </thead>
             <tbody>
-              {spieleSortiert.map((s) => (
+              {spieleSortiert.map((s, i) => (
                 <tr key={s._id}>
                   <td>{s.runde}</td>
                   <td>{s.feldId}</td>
@@ -194,6 +263,24 @@ export function TurnierDetailPage() {
                   <td>{nameVon(s.mannschaftAId)}</td>
                   <td>{nameVon(s.mannschaftBId)}</td>
                   <td>{s.status}</td>
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => spielVerschieben(s._id, -1)}
+                      disabled={i === 0 || s.status !== "geplant"}
+                      aria-label={`Spiel ${s.runde} nach vorne verschieben`}
+                    >
+                      ▲
+                    </button>{" "}
+                    <button
+                      type="button"
+                      onClick={() => spielVerschieben(s._id, 1)}
+                      disabled={i === spieleSortiert.length - 1 || s.status !== "geplant"}
+                      aria-label={`Spiel ${s.runde} nach hinten verschieben`}
+                    >
+                      ▼
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

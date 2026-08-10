@@ -58,6 +58,16 @@ export function createMannschaft(daten: NeueMannschaft): Promise<MannschaftImTur
   return anfrage("/mannschaften", { method: "POST", body: JSON.stringify(daten) });
 }
 
+export interface MannschaftAktualisierung {
+  name: string;
+  vereinId?: string;
+  bundesland?: string;
+}
+
+export function updateMannschaft(id: string, daten: MannschaftAktualisierung): Promise<MannschaftImTurnier> {
+  return anfrage(`/mannschaften/${id}`, { method: "PUT", body: JSON.stringify(daten) });
+}
+
 export function deleteMannschaft(id: string): Promise<void> {
   return anfrage(`/mannschaften/${id}`, { method: "DELETE" });
 }
@@ -94,4 +104,11 @@ export function erzeugeSpielplan(turnierId: string, wiederholungen: 1 | 2): Prom
 
 export function getSpiele(turnierId: string): Promise<Spiel[]> {
   return anfrage(`/turniere/${turnierId}/spiele`);
+}
+
+export function reihenfolgeAendern(turnierId: string, spielIds: string[]): Promise<Spiel[]> {
+  return anfrage(`/turniere/${turnierId}/spiele/reihenfolge`, {
+    method: "PUT",
+    body: JSON.stringify({ spielIds }),
+  });
 }

@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
-import type { Spiel } from "@torball/shared";
+import type { Spiel, Turnier } from "@torball/shared";
 import { findAllBySelector, findById, insertDoc } from "../repository";
+import { berechneStartzeit } from "../spielplan/zeitplanung";
 
 /** Nur diese Felder darf die Turnierleitung nachtraeglich anpassen (Abschnitt 8: "Reihenfolge, Spielfeld und Startzeiten"). */
 interface SpielAnpassungBody {
@@ -15,6 +16,19 @@ const spielAnpassungSchema = {
     runde: { type: "string" },
     feldId: { type: "string" },
     startzeitGeplant: { type: "string" },
+  },
+} as const;
+
+interface ReihenfolgeBody {
+  /** Alle Spiel-IDs des Turniers, in der gewuenschten neuen Reihenfolge. */
+  spielIds: string[];
+}
+
+const reihenfolgeSchema = {
+  type: "object",
+  required: ["spielIds"],
+  properties: {
+    spielIds: { type: "array", items: { type: "string" }, minItems: 1 },
   },
 } as const;
 
@@ -37,6 +51,57 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
       if (!bestehend) return reply.code(404).send({ error: "Spiel nicht gefunden" });
       const aktualisiert: Spiel = { ...bestehend, ...req.body };
       return insertDoc(aktualisiert);
+    },
+  );
+
+  /**
+   * Reihenfolge der Spiele aendern (Abschnitt 8: "Die Turnierleitung darf Reihenfolge...
+   * nachtraeglich anpassen"). Weist jedem Spiel an seiner neuen Position eine neue
+   * Spielnummer (runde) und die daraus berechnete Startzeit zu. Vereinfachung: Jedes
+   * Spiel bekommt eine eigene Zeitposition, unabhaengig vom Feld - im Normalfall (1 Feld)
+   * ist das exakt richtig; bei 2 Feldern kann das die urspruengliche Parallelitaet zweier
+   * Spiele aufheben, was ueber die bestehende Feld-Zuordnung (PUT /spiele/:id) von Hand
+   * nachjustierbar bleibt.
+   */
+  app.put<{ Params: { turnierId: string }; Body: ReihenfolgeBody }>(
+    "/turniere/:turnierId/spiele/reihenfolge",
+    { schema: { body: reihenfolgeSchema } },
+    async (req, reply) => {
+      const turnier = await findById<Turnier>(req.params.turnierId);
+      if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+
+      const bestehende = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id });
+      const gesperrt = bestehende.some((spiel) => spiel.status !== "geplant" || spiel.ergebnisAbgeschlossen);
+      if (gesperrt) {
+        return reply.code(409).send({
+          error: "Reihenfolge kann nicht geaendert werden: es gibt bereits laufende oder abgeschlossene Spiele",
+        });
+      }
+
+      const bestehendeIds = new Set(bestehende.map((s) => s._id));
+      const { spielIds } = req.body;
+      const passtZusammen =
+        spielIds.length === bestehende.length && spielIds.every((id) => bestehendeIds.has(id));
+      if (!passtZusammen) {
+        return reply
+          .code(400)
+          .send({ error: "spielIds muss exakt alle Spiele dieses Turniers enthalten, je einmal" });
+      }
+
+      const spieleNachId = new Map(bestehende.map((s) => [s._id, s]));
+      const aktualisiert: Spiel[] = [];
+      for (const [index, id] of spielIds.entries()) {
+        const spiel = spieleNachId.get(id)!;
+        aktualisiert.push(
+          await insertDoc({
+            ...spiel,
+            runde: String(index + 1),
+            startzeitGeplant: berechneStartzeit(turnier, index),
+          }),
+        );
+      }
+
+      return aktualisiert;
     },
   );
 }
