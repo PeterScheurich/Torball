@@ -139,6 +139,10 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
   const [ziehZielIndex, setZiehZielIndex] = useState<number | null>(null);
   const [aktuellesFeld, setAktuellesFeld] = useState<string | undefined>();
   const [verlauf, setVerlauf] = useState<SpielSnapshot[][]>([]);
+  // Zwei getrennte Sichten auf den gespeicherten Spielplan, damit keine ueberladen wirkt:
+  // "plan" = reiner Spielplan (Reihenfolge/Zeiten/Status), "einteilung" = abgespeckte
+  // Schiedsrichter-Einteilung (ohne Status/Hinweis/Reihenfolge).
+  const [spielplanSicht, setSpielplanSicht] = useState<"plan" | "einteilung">("plan");
 
   const laden = useCallback(async () => {
     try {
@@ -166,6 +170,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
   }, [laden]);
 
   const nameVon = (mannschaftId: string) => mannschaften.find((m) => m._id === mannschaftId)?.name ?? mannschaftId;
+  const feldName = (feldId: string | undefined) => turnier?.felder.find((f) => f.feldId === feldId)?.name ?? feldId ?? "";
   const schiedsrichterNach = (id: string | undefined) => schiedsrichter.find((sr) => sr._id === id);
   const schiedsrichterLabel = (sr: SchiedsrichterImTurnier) => (sr.vorname ? `${sr.name}, ${sr.vorname}` : sr.name);
 
@@ -465,7 +470,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                   <th scope="col" className="reihenfolge-zelle">
                     <span className="sr-only">Reihenfolge</span>
                   </th>
-                  <th scope="col" className="spalte-spiel">Spiel</th>
+                  <th scope="col" className="spalte-spiel">Nr.</th>
                   {!mehrereFelder && <th scope="col" className="spalte-feld">Feld</th>}
                   <th scope="col" className="spalte-startzeit">Startzeit</th>
                   <th scope="col">Mannschaft A</th>
@@ -540,7 +545,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                           </button>
                         </td>
                         <td>{anzeigeIndex + 1}</td>
-                        {!mehrereFelder && <td>{eintrag.feldId}</td>}
+                        {!mehrereFelder && <td>{feldName(eintrag.feldId)}</td>}
                         <td>
                           <label className="sr-only" htmlFor={`vorschau-zeit-${vollIndex}`}>
                             Startzeit von Spiel {anzeigeIndex + 1}
@@ -576,176 +581,237 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
       ) : spiele.length > 0 ? (
         <>
           <p>Spielplan ist bereits erzeugt (Version {turnier.spielplanVersion}).</p>
-          <button type="button" onClick={rueckgaengig} disabled={verlauf.length === 0}>
-            Rückgängig{verlauf.length > 0 ? ` (${verlauf.length})` : ""}
-          </button>{" "}
-          <button
-            type="button"
-            onClick={schiedsrichterVorschlagen}
-            disabled={schiedsrichter.length === 0}
-            title={
-              schiedsrichter.length === 0
-                ? "Erst im Tab Schiedsrichter Personen anlegen."
-                : "Ordnet allen Spielen einen Schiedsrichter-Vorschlag zu (überschreibt bestehende Zuordnungen). Danach je Spiel manuell änderbar."
-            }
-          >
-            Schiedsrichter automatisch zuordnen
-          </button>
-          <div className="tabellen-wrapper">
-            <table className="spielplan-tabelle">
-              <caption className="sr-only">
-                Erzeugter Spielplan, Reihenfolge und Startzeit per Ziehpunkt, Pfeiltasten bzw. Zeitfeld änderbar
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col" className="reihenfolge-zelle">
-                    <span className="sr-only">Reihenfolge</span>
-                  </th>
-                  <th scope="col" className="spalte-spiel">Spiel</th>
-                  {!mehrereFelder && <th scope="col" className="spalte-feld">Feld</th>}
-                  <th scope="col" className="spalte-startzeit">Startzeit</th>
-                  <th scope="col">Mannschaft A</th>
-                  <th scope="col">Mannschaft B</th>
-                  <th scope="col" className="spalte-schiedsrichter">Schiedsrichter</th>
-                  <th scope="col" className="spalte-status">Status</th>
-                  <th scope="col" className="spalte-hinweis">Hinweis</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(() => {
-                  const echteAnzahl = angezeigteSpiele.filter((z) => !("platzhalter" in z)).length;
-                  let anzeigeZaehler = 0;
-                  return angezeigteSpiele.map((zeile, zeilenIndex) => {
-                    if ("platzhalter" in zeile) {
-                      return (
-                        <tr key={`platzhalter-${zeilenIndex}`} className="platzhalter-zeile">
-                          <td className="reihenfolge-zelle">–</td>
-                          <td colSpan={7}>Spielpause (anderes Feld spielt)</td>
-                        </tr>
-                      );
-                    }
-                    const s = zeile.eintrag;
-                    const anzeigeIndex = anzeigeZaehler++;
-                    const vollIndex = spieleSortiert.indexOf(s);
-                    return (
-                      <tr
-                        key={s._id}
-                        className={ziehZielIndex === vollIndex ? "zieh-ziel" : undefined}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          setZiehZielIndex(vollIndex);
-                        }}
-                        onDrop={() => {
-                          if (ziehIndex !== null) {
-                            const richtung = ziehIndex < vollIndex ? 1 : -1;
-                            anNeuePositionVerschieben(ziehIndex, richtung);
-                          }
-                          setZiehIndex(null);
-                          setZiehZielIndex(null);
-                        }}
-                      >
-                        <td className="reihenfolge-zelle">
-                          <span
-                            className="ziehpunkt"
-                            draggable={s.status === "geplant"}
-                            onDragStart={() => setZiehIndex(vollIndex)}
-                            onDragEnd={() => {
+
+          <div role="tablist" aria-label="Spielplan-Sicht" className="feld-tabs">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={spielplanSicht === "plan"}
+              className={spielplanSicht === "plan" ? "tab tab-aktiv" : "tab"}
+              onClick={() => setSpielplanSicht("plan")}
+            >
+              Spielplan
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={spielplanSicht === "einteilung"}
+              className={spielplanSicht === "einteilung" ? "tab tab-aktiv" : "tab"}
+              onClick={() => setSpielplanSicht("einteilung")}
+            >
+              Schiedsrichter-Einteilung
+            </button>
+          </div>
+
+          {spielplanSicht === "plan" ? (
+            <>
+              <button type="button" onClick={rueckgaengig} disabled={verlauf.length === 0}>
+                Rückgängig{verlauf.length > 0 ? ` (${verlauf.length})` : ""}
+              </button>
+              <div className="tabellen-wrapper">
+                <table className="spielplan-tabelle">
+                  <caption className="sr-only">
+                    Erzeugter Spielplan, Reihenfolge und Startzeit per Ziehpunkt, Pfeiltasten bzw. Zeitfeld änderbar
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col" className="reihenfolge-zelle">
+                        <span className="sr-only">Reihenfolge</span>
+                      </th>
+                      <th scope="col" className="spalte-spiel">Nr.</th>
+                      {!mehrereFelder && <th scope="col" className="spalte-feld">Feld</th>}
+                      <th scope="col" className="spalte-startzeit">Startzeit</th>
+                      <th scope="col">Mannschaft A</th>
+                      <th scope="col">Mannschaft B</th>
+                      <th scope="col" className="spalte-status">Status</th>
+                      <th scope="col" className="spalte-hinweis">Hinweis</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const echteAnzahl = angezeigteSpiele.filter((z) => !("platzhalter" in z)).length;
+                      let anzeigeZaehler = 0;
+                      return angezeigteSpiele.map((zeile, zeilenIndex) => {
+                        if ("platzhalter" in zeile) {
+                          return (
+                            <tr key={`platzhalter-${zeilenIndex}`} className="platzhalter-zeile">
+                              <td className="reihenfolge-zelle">–</td>
+                              <td colSpan={6}>Spielpause (anderes Feld spielt)</td>
+                            </tr>
+                          );
+                        }
+                        const s = zeile.eintrag;
+                        const anzeigeIndex = anzeigeZaehler++;
+                        const vollIndex = spieleSortiert.indexOf(s);
+                        return (
+                          <tr
+                            key={s._id}
+                            className={ziehZielIndex === vollIndex ? "zieh-ziel" : undefined}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              setZiehZielIndex(vollIndex);
+                            }}
+                            onDrop={() => {
+                              if (ziehIndex !== null) {
+                                const richtung = ziehIndex < vollIndex ? 1 : -1;
+                                anNeuePositionVerschieben(ziehIndex, richtung);
+                              }
                               setZiehIndex(null);
                               setZiehZielIndex(null);
                             }}
-                            aria-hidden="true"
-                            title="Zum Verschieben ziehen"
                           >
-                            ⠿
-                          </span>
-                          <button
-                            type="button"
-                            className="symbol-button"
-                            onClick={() => anNeuePositionVerschieben(vollIndex, -1)}
-                            disabled={anzeigeIndex === 0 || s.status !== "geplant"}
-                            aria-label={`Spiel ${anzeigeIndex + 1} nach vorne verschieben`}
-                          >
-                            ▲
-                          </button>
-                          <button
-                            type="button"
-                            className="symbol-button"
-                            onClick={() => anNeuePositionVerschieben(vollIndex, 1)}
-                            disabled={anzeigeIndex === echteAnzahl - 1 || s.status !== "geplant"}
-                            aria-label={`Spiel ${anzeigeIndex + 1} nach hinten verschieben`}
-                          >
-                            ▼
-                          </button>
-                        </td>
-                        <td>{anzeigeIndex + 1}</td>
-                        {!mehrereFelder && <td>{s.feldId}</td>}
-                        <td>
-                          <label className="sr-only" htmlFor={`spiel-zeit-${s._id}`}>
-                            Startzeit von Spiel {anzeigeIndex + 1}
-                          </label>
-                          {s.startzeitGeplant ? (
-                            <input
-                              id={`spiel-zeit-${s._id}`}
-                              type="time"
-                              value={zeitEingabeWert(s.startzeitGeplant)}
-                              disabled={s.status !== "geplant"}
-                              onChange={(e) => startzeitPersistiertAendern(s, e.target.value)}
-                            />
-                          ) : (
-                            formatiereUhrzeit(s.startzeitGeplant)
-                          )}
-                        </td>
-                        <td>{nameVon(s.mannschaftAId)}</td>
-                        <td>{nameVon(s.mannschaftBId)}</td>
-                        <td>
-                          <label className="sr-only" htmlFor={`spiel-sr-${s._id}`}>
-                            Schiedsrichter für Spiel {anzeigeIndex + 1}
-                          </label>
-                          <select
-                            id={`spiel-sr-${s._id}`}
-                            className="spiel-schiri-select"
-                            value={s.schiedsrichterId ?? ""}
-                            onChange={(e) => schiedsrichterFuerSpielAendern(s._id, e.target.value || null)}
-                          >
-                            <option value="">— keiner —</option>
-                            {schiedsrichter.map((sr) => (
-                              <option key={sr._id} value={sr._id}>
-                                {schiedsrichterLabel(sr)}
-                              </option>
-                            ))}
-                          </select>
-                          {(() => {
-                            const konflikt = schiedsrichterKonflikt(
-                              s,
-                              schiedsrichterNach(s.schiedsrichterId)?.mannschaftId,
-                              spiele,
-                            );
-                            if (konflikt.eigeneMannschaft) {
-                              return (
+                            <td className="reihenfolge-zelle">
+                              <span
+                                className="ziehpunkt"
+                                draggable={s.status === "geplant"}
+                                onDragStart={() => setZiehIndex(vollIndex)}
+                                onDragEnd={() => {
+                                  setZiehIndex(null);
+                                  setZiehZielIndex(null);
+                                }}
+                                aria-hidden="true"
+                                title="Zum Verschieben ziehen"
+                              >
+                                ⠿
+                              </span>
+                              <button
+                                type="button"
+                                className="symbol-button"
+                                onClick={() => anNeuePositionVerschieben(vollIndex, -1)}
+                                disabled={anzeigeIndex === 0 || s.status !== "geplant"}
+                                aria-label={`Spiel ${anzeigeIndex + 1} nach vorne verschieben`}
+                              >
+                                ▲
+                              </button>
+                              <button
+                                type="button"
+                                className="symbol-button"
+                                onClick={() => anNeuePositionVerschieben(vollIndex, 1)}
+                                disabled={anzeigeIndex === echteAnzahl - 1 || s.status !== "geplant"}
+                                aria-label={`Spiel ${anzeigeIndex + 1} nach hinten verschieben`}
+                              >
+                                ▼
+                              </button>
+                            </td>
+                            <td>{anzeigeIndex + 1}</td>
+                            {!mehrereFelder && <td>{feldName(s.feldId)}</td>}
+                            <td>
+                              <label className="sr-only" htmlFor={`spiel-zeit-${s._id}`}>
+                                Startzeit von Spiel {anzeigeIndex + 1}
+                              </label>
+                              {s.startzeitGeplant ? (
+                                <input
+                                  id={`spiel-zeit-${s._id}`}
+                                  type="time"
+                                  value={zeitEingabeWert(s.startzeitGeplant)}
+                                  disabled={s.status !== "geplant"}
+                                  onChange={(e) => startzeitPersistiertAendern(s, e.target.value)}
+                                />
+                              ) : (
+                                formatiereUhrzeit(s.startzeitGeplant)
+                              )}
+                            </td>
+                            <td>{nameVon(s.mannschaftAId)}</td>
+                            <td>{nameVon(s.mannschaftBId)}</td>
+                            <td className="status-zelle">{s.status}</td>
+                            <td title={spielWarnungen[vollIndex]}>{hinweisKurz(spielWarnungen[vollIndex])}</td>
+                          </tr>
+                        );
+                      });
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={schiedsrichterVorschlagen}
+                disabled={schiedsrichter.length === 0}
+                title={
+                  schiedsrichter.length === 0
+                    ? "Erst im Tab Schiedsrichter Personen anlegen."
+                    : "Ordnet allen Spielen einen Schiedsrichter-Vorschlag zu (überschreibt bestehende Zuordnungen). Danach je Spiel manuell änderbar."
+                }
+              >
+                Schiedsrichter automatisch zuordnen
+              </button>
+              <div className="tabellen-wrapper">
+                <table className="spielplan-tabelle">
+                  <caption className="sr-only">Schiedsrichter-Einteilung je Spiel</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col" className="spalte-spiel">Nr.</th>
+                      {!mehrereFelder && <th scope="col" className="spalte-feld">Feld</th>}
+                      <th scope="col" className="spalte-startzeit">Startzeit</th>
+                      <th scope="col">Mannschaft A</th>
+                      <th scope="col">Mannschaft B</th>
+                      <th scope="col" className="spalte-schiedsrichter">Schiedsrichter</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      let anzeigeZaehler = 0;
+                      return angezeigteSpiele.map((zeile, zeilenIndex) => {
+                        if ("platzhalter" in zeile) {
+                          return (
+                            <tr key={`platzhalter-${zeilenIndex}`} className="platzhalter-zeile">
+                              <td colSpan={mehrereFelder ? 5 : 6}>Spielpause (anderes Feld spielt)</td>
+                            </tr>
+                          );
+                        }
+                        const s = zeile.eintrag;
+                        const anzeigeIndex = anzeigeZaehler++;
+                        const konflikt = schiedsrichterKonflikt(
+                          s,
+                          schiedsrichterNach(s.schiedsrichterId)?.mannschaftId,
+                          spiele,
+                        );
+                        return (
+                          <tr key={s._id}>
+                            <td>{anzeigeIndex + 1}</td>
+                            {!mehrereFelder && <td>{feldName(s.feldId)}</td>}
+                            <td>{formatiereUhrzeit(s.startzeitGeplant)}</td>
+                            <td>{nameVon(s.mannschaftAId)}</td>
+                            <td>{nameVon(s.mannschaftBId)}</td>
+                            <td>
+                              <label className="sr-only" htmlFor={`spiel-sr-${s._id}`}>
+                                Schiedsrichter für Spiel {anzeigeIndex + 1}
+                              </label>
+                              <select
+                                id={`spiel-sr-${s._id}`}
+                                className="spiel-schiri-select"
+                                value={s.schiedsrichterId ?? ""}
+                                onChange={(e) => schiedsrichterFuerSpielAendern(s._id, e.target.value || null)}
+                              >
+                                <option value="">— keiner —</option>
+                                {schiedsrichter.map((sr) => (
+                                  <option key={sr._id} value={sr._id}>
+                                    {schiedsrichterLabel(sr)}
+                                  </option>
+                                ))}
+                              </select>
+                              {konflikt.eigeneMannschaft && (
                                 <div className="schiri-warnung" title="Schiedsrichter pfeift die eigene Mannschaft">
                                   ⚠ eigene Mannschaft
                                 </div>
-                              );
-                            }
-                            if (konflikt.gleichzeitig) {
-                              return (
+                              )}
+                              {konflikt.gleichzeitig && (
                                 <div className="schiri-hinweis" title="Eine Mannschaft des Schiedsrichters spielt gleichzeitig">
                                   ⚠ spielt gleichzeitig
                                 </div>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </td>
-                        <td className="status-zelle">{s.status}</td>
-                        <td title={spielWarnungen[vollIndex]}>{hinweisKurz(spielWarnungen[vollIndex])}</td>
-                      </tr>
-                    );
-                  });
-                })()}
-              </tbody>
-            </table>
-          </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      });
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </>
       ) : (
         <p>Noch kein Spielplan erzeugt.</p>
