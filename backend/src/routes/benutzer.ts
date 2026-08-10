@@ -141,7 +141,15 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
    * Einschraenkung wie bei Einladung/Passwort-Reset, solange kein
    * E-Mail-Versand angebunden ist.
    */
-  app.put<{ Body: { name?: string; email?: string; aktuellesPasswort?: string } }>(
+  app.put<{
+    Body: {
+      name?: string;
+      email?: string;
+      aktuellesPasswort?: string;
+      standardTheme?: Benutzer["standardTheme"];
+      standardDichte?: Benutzer["standardDichte"];
+    };
+  }>(
     "/benutzer/mich",
     {
       schema: {
@@ -151,16 +159,29 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
             name: { type: "string", minLength: 1 },
             email: { type: "string", minLength: 1 },
             aktuellesPasswort: { type: "string" },
+            standardTheme: { type: "string", enum: ["system", "light", "dark"] },
+            standardDichte: { type: "string", enum: ["standard", "schmal"] },
           },
         },
       },
     },
     async (req, reply) => {
       if (!requireAuth(req, reply)) return;
-      const aenderungen: Partial<Pick<Benutzer, "name" | "email">> = {};
+      // standardTheme/standardDichte sind reine Anzeige-Voreinstellungen, keine
+      // sensiblen Felder (siehe CLAUDE.md) - anders als E-Mail/Passwort/2FA
+      // deshalb ohne Passwort-Bestaetigung aenderbar.
+      const aenderungen: Partial<Pick<Benutzer, "name" | "email" | "standardTheme" | "standardDichte">> = {};
 
       if (req.body.name) {
         aenderungen.name = req.body.name;
+      }
+
+      if (req.body.standardTheme) {
+        aenderungen.standardTheme = req.body.standardTheme;
+      }
+
+      if (req.body.standardDichte) {
+        aenderungen.standardDichte = req.body.standardDichte;
       }
 
       if (req.body.email) {

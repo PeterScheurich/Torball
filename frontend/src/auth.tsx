@@ -1,5 +1,22 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { getMe, login as apiLogin, logout as apiLogout, type BenutzerProfil, type LoginErgebnis } from "./api";
+import { themeAnwenden, themeLokalUeberschrieben } from "./theme";
+import { dichteAnwenden, dichteLokalUeberschrieben } from "./dichte";
+
+/**
+ * Wendet die kontogebundenen Standardwerte (Profil-Einstellungen) als Startwert auf
+ * DIESEM Geraet an - aber nur, solange hier noch keine eigene lokale Wahl getroffen
+ * wurde (siehe theme.ts/dichte.ts). Eine bereits getroffene lokale Wahl (z.B. auf einem
+ * gemeinsam genutzten Rechner) hat weiterhin Vorrang und wird nicht ueberschrieben.
+ */
+function seedeVoreinstellungen(profil: BenutzerProfil): void {
+  if (profil.standardTheme && !themeLokalUeberschrieben()) {
+    themeAnwenden(profil.standardTheme);
+  }
+  if (profil.standardDichte && !dichteLokalUeberschrieben()) {
+    dichteAnwenden(profil.standardDichte);
+  }
+}
 
 interface AuthContextWert {
   benutzer: BenutzerProfil | null;
@@ -18,7 +35,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     getMe()
-      .then(setBenutzer)
+      .then((profil) => {
+        seedeVoreinstellungen(profil);
+        setBenutzer(profil);
+      })
       .catch(() => setBenutzer(null))
       .finally(() => setLaedt(false));
   }, []);
@@ -26,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, passwort: string, totpCode?: string) => {
     const ergebnis = await apiLogin(email, passwort, totpCode);
     if (!("benoetigtTotp" in ergebnis)) {
+      seedeVoreinstellungen(ergebnis);
       setBenutzer(ergebnis);
     }
     return ergebnis;

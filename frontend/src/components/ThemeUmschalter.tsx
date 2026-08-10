@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { geladenesTheme, themeAnwenden, type Theme } from "../theme";
+import { geladenesTheme, themeAnwenden, THEME_GEAENDERT_EVENT, type Theme } from "../theme";
 
 const OPTIONEN: { wert: "light" | "dark"; icon: string; label: string }[] = [
   { wert: "light", icon: "☀", label: "Hell" },
@@ -12,6 +12,15 @@ export function ThemeUmschalter() {
   useEffect(() => {
     themeAnwenden(theme);
   }, [theme]);
+
+  // Andere gleichzeitig sichtbare Instanzen (Kopfzeile + Einstellungen-Seite) auf dem
+  // Laufenden halten, wenn dort geklickt wurde - sonst zeigt diese Instanz nach einem
+  // Klick in der anderen weiterhin den alten aktiven Zustand an.
+  useEffect(() => {
+    const aktualisieren = () => setTheme(geladenesTheme());
+    window.addEventListener(THEME_GEAENDERT_EVENT, aktualisieren);
+    return () => window.removeEventListener(THEME_GEAENDERT_EVENT, aktualisieren);
+  }, []);
 
   return (
     <div className="theme-umschalter" role="group" aria-label="Farbschema">

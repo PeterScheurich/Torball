@@ -128,6 +128,72 @@ header nav a {
   color: var(--accent);
 }
 
+/* Dropdown-Menue in der Kopfzeile (z.B. "Stammdaten", Benutzermenue) - der Ausloeser-Knopf
+   soll optisch wie ein .kopfzeile-link wirken, ist aber technisch ein <button> und braucht
+   deshalb eigene background/border/cursor-Regeln statt der globalen button-Optik. */
+.kopfzeile-menue {
+  position: relative;
+}
+
+.kopfzeile-menue-knopf {
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+  width: auto;
+}
+
+.kopfzeile-menue-knopf.kopfzeile-link-aktiv {
+  background: var(--bg-subtle);
+  color: var(--accent);
+}
+
+.kopfzeile-menue-liste {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  overflow: hidden;
+}
+
+/* Gilt sowohl fuer Link- als auch Button-Eintraege (z.B. "Abmelden") - beide sollen im
+   Menue gleich aussehen, keiner davon wie ein eigenstaendiger Button wirken. box-sizing
+   explizit setzen: <button> ist per Browser-Standard bereits border-box, <a> dagegen
+   content-box - ohne diese Zeile wird der Link-Eintrag durch das Padding breiter als
+   der Button-Eintrag und ragt ueber den per overflow:hidden begrenzten Menuerand hinaus. */
+.kopfzeile-menue-eintrag {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.kopfzeile-menue-eintrag:hover {
+  background: var(--bg-subtle);
+}
+
 .marke {
   display: inline-flex;
   align-items: center;
@@ -210,6 +276,32 @@ td {
   border-bottom: 1px solid var(--border);
 }
 
+/* Schmaler Zeilenabstand (Profil bzw. Einstellungen-Seite bei rein lokaler Nutzung):
+   weniger Zeilenhoehe fuer Tabellen UND normale Eingabefelder ausserhalb von Tabellen -
+   bewusst global auf input/select/button, nicht nur "td input" o.ae. */
+:root[data-dichte='schmal'] th,
+:root[data-dichte='schmal'] td {
+  padding: 2px 10px;
+}
+
+:root[data-dichte='schmal'] input,
+:root[data-dichte='schmal'] select,
+:root[data-dichte='schmal'] textarea {
+  padding: 4px 8px;
+}
+
+:root[data-dichte='schmal'] button {
+  padding: 2px 6px;
+}
+
+:root[data-dichte='schmal'] form {
+  gap: 6px;
+}
+
+:root[data-dichte='schmal'] .feld {
+  gap: 2px;
+}
+
 /* Feldname-Spalte in Label/Wert-Tabellen (Profil, Turnier-Uebersicht): nur so breit
    wie ihr eigener Inhalt - width:1% zwingt sie auf die Mindestbreite, der Rest der
    Tabellenbreite geht automatisch an die Wert-Spalte. */
@@ -259,12 +351,13 @@ form {
   gap: 4px;
 }
 
-/* Fuer ein Formular INNERHALB einer Tabellenzelle (z.B. E-Mail-Aenderung im Profil) -
-   Eingabe und Speichern-Button nebeneinander statt der Standard-Formular-Spalte. */
+/* Ergebnis-Eingabe (Tore je Mannschaft): maximal zweistellig, daher bewusst schmal. */
 .ergebnis-eingabe {
-  width: 4em;
+  width: 3em;
 }
 
+/* Fuer ein Formular INNERHALB einer Tabellenzelle (z.B. E-Mail-Aenderung im Profil) -
+   Eingabe und Speichern-Button nebeneinander statt der Standard-Formular-Spalte. */
 .inline-form {
   flex-direction: row;
   flex-wrap: wrap;
@@ -279,7 +372,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   font: inherit;
   padding: 8px 10px;
   border: 1px solid var(--border);
@@ -288,7 +382,35 @@ select {
   color: var(--text);
 }
 
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+/* Nicht editierbare Werte in Label/Wert-Tabellen (Profil, Turnier-Uebersicht), die als
+   readOnly-Input statt reinem Text ausgegeben werden: uebernehmen Rahmen/Padding eines
+   normalen Eingabefelds fuer den Zeilenumbruch mit echten Eingabefeldern in derselben
+   Tabelle (sonst wirkt die Spalte "verschoben"), aber gedaempft, damit weiterhin klar
+   erkennbar bleibt, dass hier nichts editierbar ist. */
+input[readonly] {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  cursor: default;
+}
+
 button {
+  /* Ohne dieses Reset kann der Browser (v.a. unter Windows, abhaengig vom
+     OS-/Browser-Theme) natives Button-"Chrome" beibehalten und zusaetzliches,
+     mit CSS nicht uebersteuerbares Innen-Padding/Mindesthoehe einbringen -
+     sichtbar z.B. als ueberhoehter <button> gegenueber einem <a> mit
+     identischem CSS (Kopfzeilen-Menue "Abmelden" vs. "Mein Profil"). */
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  min-height: 0;
   font: inherit;
   font-weight: 600;
   padding: 4px 8px;

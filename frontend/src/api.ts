@@ -1,5 +1,6 @@
 import type {
   Benutzer,
+  Dichte,
   GlobaleRolle,
   MannschaftImTurnier,
   Protokollierungsart,
@@ -7,6 +8,7 @@ import type {
   Spielfeld,
   Spielmodus,
   Team,
+  Theme,
   Turnier,
   TurnierBerechtigung,
   TurnierRolle,
@@ -75,9 +77,21 @@ export function deleteTurnier(id: string): Promise<void> {
   return anfrage(`/turniere/${id}`, { method: "DELETE" });
 }
 
+/** Optionale Freitextfelder duerfen explizit auf null gesetzt werden, um sie zu leeren -
+ * JSON.stringify(undefined) liesse den Schluessel im Request-Body komplett verschwinden,
+ * das Backend wuerde den bisherigen Wert dann faelschlich unveraendert stehen lassen. */
 export function updateTurnier(
   id: string,
-  daten: Partial<Pick<Turnier, "spielplanModus" | "protokollierungsart">>,
+  daten: Partial<Pick<Turnier, "spielplanModus" | "protokollierungsart" | "name">> & {
+    spielortName?: string | null;
+    spielortAdresse?: string | null;
+    spielortGeo?: string | null;
+    turnierleitungName?: string | null;
+    turnierleitungKontakt?: string | null;
+    ansprechpartnerName?: string | null;
+    ansprechpartnerKontakt?: string | null;
+    zusatzinfo?: string | null;
+  },
 ): Promise<Turnier> {
   return anfrage(`/turniere/${id}`, { method: "PUT", body: JSON.stringify(daten) });
 }
@@ -287,11 +301,13 @@ export function benutzerAktualisieren(
   return anfrage(`/benutzer/${id}`, { method: "PUT", body: JSON.stringify(daten) });
 }
 
-/** Selbst-Service fuers eigene Profil - kann anders als benutzerAktualisieren() weder Rolle noch Sperrung aendern. Bei E-Mail-Aenderung ist aktuellesPasswort Pflicht. */
+/** Selbst-Service fuers eigene Profil - kann anders als benutzerAktualisieren() weder Rolle noch Sperrung aendern. Bei E-Mail-Aenderung ist aktuellesPasswort Pflicht. standardTheme/standardDichte sind Anzeige-Voreinstellungen, kein Passwort noetig. */
 export function eigenesProfilAktualisieren(daten: {
   name?: string;
   email?: string;
   aktuellesPasswort?: string;
+  standardTheme?: Theme;
+  standardDichte?: Dichte;
 }): Promise<BenutzerProfil> {
   return anfrage("/benutzer/mich", { method: "PUT", body: JSON.stringify(daten) });
 }

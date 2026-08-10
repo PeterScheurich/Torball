@@ -5,6 +5,12 @@ export type GlobaleRolle = "admin" | "manager" | "benutzer";
 
 export type Sprache = "de" | "en" | "fr" | "it";
 
+/** Praktische Ergaenzung, nicht Teil der urspruenglichen Spezifikation (Abschnitt 24.3
+ * beschreibt nur das Farbschema-Prinzip). "system" folgt bei standardTheme unbesetzt
+ * automatisch der Systemeinstellung des jeweiligen Geraets. */
+export type Theme = "system" | "light" | "dark";
+export type Dichte = "standard" | "schmal";
+
 /** Siehe Gesamtspezifikation Abschnitt 20.15. */
 export interface Benutzer extends CouchMeta {
   docType: "benutzer";
@@ -22,6 +28,16 @@ export interface Benutzer extends CouchMeta {
   letzteAnmeldung?: Zeitstempel;
   erstelltVon?: BenutzerId;
   erstelltAm: Zeitstempel;
+
+  /**
+   * Persoenliche Anzeige-Voreinstellungen, kontogebunden (nicht geraetegebunden wie
+   * das gleichnamige Gegenstueck im Browser-localStorage): wirken als Startwert auf
+   * jedem Geraet, auf dem sich dieser Benutzer neu anmeldet, solange dort noch keine
+   * eigene lokale Wahl getroffen wurde (siehe seedeVoreinstellungen in auth.tsx).
+   * Unbesetzt = "system" (Theme folgt OS) bzw. "standard" (Dichte).
+   */
+  standardTheme?: Theme;
+  standardDichte?: Dichte;
 
   /**
    * Einladungs-Flow (Abschnitt 25.2): Admin/Manager legt Benutzer ohne
