@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { einladungAnnehmen, getEinladung } from "../api";
 import { useAuth } from "../auth";
+import { PasswortRegeln } from "../PasswortRegeln";
 
 export function EinladungAnnehmenPage() {
   const { token } = useParams<{ token: string }>();
@@ -70,7 +71,7 @@ export function EinladungAnnehmenPage() {
             onChange={(e) => setPasswortWiederholung(e.target.value)}
           />
         </div>
-        <p>Mindestens 8 Zeichen, davon 1 Großbuchstabe, 1 Zahl, 1 Sonderzeichen.</p>
+        <PasswortRegeln passwort={passwort} />
         {fehler && <p role="alert">{fehler}</p>}
         <button type="submit" disabled={sendet}>
           Account aktivieren

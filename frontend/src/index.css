@@ -407,6 +407,34 @@ form {
   color: var(--text-muted);
 }
 
+/* Passwort-Anforderungen als Live-Checkliste: offene Bedingung rot, erfuellte gruen mit Haken. */
+.passwort-regeln {
+  font-size: 0.9rem;
+}
+.passwort-regeln-titel {
+  margin: 0 0 4px;
+}
+.passwort-regeln ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.passwort-regeln li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.passwort-regeln .regel-marker {
+  width: 1em;
+  text-align: center;
+}
+.passwort-regeln .regel-offen {
+  color: var(--danger);
+}
+.passwort-regeln .regel-erfuellt {
+  color: var(--accent);
+}
+
 /* Ergebnis-Eingabe (Tore je Mannschaft): maximal zweistellig, daher bewusst schmal. */
 .ergebnis-eingabe {
   width: 3em;

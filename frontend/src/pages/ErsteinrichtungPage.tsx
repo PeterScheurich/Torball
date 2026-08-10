@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { bootstrapAdmin } from "../api";
 import { useAuth } from "../auth";
+import { PasswortRegeln } from "../PasswortRegeln";
 
 export function ErsteinrichtungPage() {
   const [name, setName] = useState("");
@@ -77,7 +78,7 @@ export function ErsteinrichtungPage() {
             onChange={(e) => setPasswortWiederholung(e.target.value)}
           />
         </div>
-        <p>Mindestens 8 Zeichen, davon 1 Großbuchstabe, 1 Zahl, 1 Sonderzeichen.</p>
+        <PasswortRegeln passwort={passwort} />
         {fehler && <p role="alert">{fehler}</p>}
         <button type="submit" disabled={sendet}>
           Admin-Account anlegen

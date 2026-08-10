@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { getOeffentlicheTurnierseite, type OeffentlicheTurnierseite, type OeffentlichesSpiel } from "../api";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
+
+/** Intervall fuers automatische Aktualisieren der oeffentlichen Seite (Live-Ergebnisse/-Spielplan fuer Zuschauer). */
+const AKTUALISIER_INTERVALL_MS = 15_000;
 
 type Tab = "turnierinfos" | "anfahrt" | "spielplan" | "ergebnisse";
 
@@ -98,11 +101,33 @@ export function OeffentlicheTurnierseitePage() {
   const [fehler, setFehler] = useState<string | undefined>();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  useEffect(() => {
+  const laden = useCallback(() => {
     getOeffentlicheTurnierseite(turnierId)
       .then(setDaten)
       .catch((err) => setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden"));
   }, [turnierId]);
+
+  useEffect(() => {
+    laden();
+  }, [laden]);
+
+  // Fuer Zuschauer automatisch aktualisieren, damit neue Ergebnisse/Spielplan-Aenderungen ohne
+  // manuelles Neuladen erscheinen. Nur bei sichtbarer Seite, plus sofort beim Zurueckkehren.
+  useEffect(() => {
+    const intervall = setInterval(() => {
+      if (document.visibilityState === "visible") laden();
+    }, AKTUALISIER_INTERVALL_MS);
+    const beiRueckkehr = () => {
+      if (document.visibilityState === "visible") laden();
+    };
+    window.addEventListener("focus", beiRueckkehr);
+    document.addEventListener("visibilitychange", beiRueckkehr);
+    return () => {
+      clearInterval(intervall);
+      window.removeEventListener("focus", beiRueckkehr);
+      document.removeEventListener("visibilitychange", beiRueckkehr);
+    };
+  }, [laden]);
 
   if (fehler) return <p role="alert">{fehler}</p>;
   if (!daten) return <p>Lädt…</p>;

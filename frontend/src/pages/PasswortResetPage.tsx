@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { passwortReset } from "../api";
+import { PasswortRegeln } from "../PasswortRegeln";
 
 export function PasswortResetPage() {
   const { token } = useParams<{ token: string }>();
@@ -63,7 +64,7 @@ export function PasswortResetPage() {
             onChange={(e) => setWiederholung(e.target.value)}
           />
         </div>
-        <p>Mindestens 8 Zeichen, davon 1 Großbuchstabe, 1 Zahl, 1 Sonderzeichen.</p>
+        <PasswortRegeln passwort={neuesPasswort} />
         {fehler && <p role="alert">{fehler}</p>}
         <button type="submit">Passwort ändern</button>
       </form>
