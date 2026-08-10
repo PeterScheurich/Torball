@@ -1,5 +1,9 @@
 import Fastify from "fastify";
+import fastifyCookie from "@fastify/cookie";
+import { authPreHandler } from "./auth/plugin";
 import { ensureIndexes } from "./db";
+import { authRoutes } from "./routes/auth";
+import { benutzerRoutes } from "./routes/benutzer";
 import { vereinRoutes } from "./routes/verein";
 import { teamRoutes } from "./routes/team";
 import { turnierRoutes } from "./routes/turnier";
@@ -13,15 +17,24 @@ server.get("/health", async () => {
   return { status: "ok" };
 });
 
-server.register(vereinRoutes);
-server.register(teamRoutes);
-server.register(turnierRoutes);
-server.register(mannschaftRoutes);
-server.register(spielplanRoutes);
-server.register(spielRoutes);
-
 const start = async () => {
   try {
+    // Cookie-Plugin und der Auth-Hook muessen VOR den Routen-Plugins auf der
+    // Root-Instanz registriert werden, damit Fastifys Verkapselung sie an
+    // alle nachfolgend registrierten Routen-Dateien vererbt (siehe Kommentar
+    // in auth/plugin.ts).
+    await server.register(fastifyCookie);
+    server.addHook("preHandler", authPreHandler);
+
+    server.register(authRoutes);
+    server.register(benutzerRoutes);
+    server.register(vereinRoutes);
+    server.register(teamRoutes);
+    server.register(turnierRoutes);
+    server.register(mannschaftRoutes);
+    server.register(spielplanRoutes);
+    server.register(spielRoutes);
+
     await ensureIndexes();
     await server.listen({ port: 3000, host: "0.0.0.0" });
   } catch (err) {

@@ -19,6 +19,7 @@ export type MannschaftId = string;
 export type SpielerId = string;
 export type SchiedsrichterId = string;
 export type SpielId = string;
+export type SessionId = string;
 export type SpielprotokollId = string;
 export type EventId = string;
 export type DokumentAnhangId = string;

@@ -1,5 +1,6 @@
 export * from "./common";
 export * from "./benutzer";
+export * from "./session";
 export * from "./konfiguration";
 export * from "./stammdaten";
 export * from "./wettbewerb";
@@ -17,6 +18,7 @@ export * from "./berechtigung";
 export * from "./auditLog";
 
 import type { Benutzer } from "./benutzer";
+import type { Session } from "./session";
 import type { Systemkonfiguration } from "./konfiguration";
 import type { Verein, Team } from "./stammdaten";
 import type { Wettbewerb } from "./wettbewerb";
@@ -39,6 +41,7 @@ import type { AuditLogEintrag } from "./auditLog";
  */
 export type TorballDokument =
   | Benutzer
+  | Session
   | Systemkonfiguration
   | Verein
   | Team
