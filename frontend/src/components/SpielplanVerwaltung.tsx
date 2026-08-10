@@ -18,6 +18,17 @@ const BACK_TO_BACK_HINWEIS = "Direktes Folgespiel (Back-to-Back) konnte nicht ve
 const UEBERSCHNEIDUNG_HINWEIS = "Neue Startzeit überschneidet sich mit dem vorherigen Spiel auf diesem Feld.";
 const MAX_VERLAUF = 10;
 
+/** Kurzform fuer die "Hinweis"-Spalte (Spielplan/Vorschlag) - voller Text steht als
+ * title-Tooltip zur Verfuegung (Maus drueber), damit die Tabelle nicht unnoetig breit wird. */
+const HINWEIS_KURZ: Record<string, string> = {
+  [BACK_TO_BACK_HINWEIS]: "Back-to-Back",
+};
+
+function hinweisKurz(hinweis: string | undefined): string {
+  if (!hinweis) return "";
+  return HINWEIS_KURZ[hinweis] ?? hinweis;
+}
+
 function verschobeneListe<T>(liste: T[], vonIndex: number, nachIndex: number): T[] {
   const kopie = [...liste];
   const [element] = kopie.splice(vonIndex, 1);
@@ -512,7 +523,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                         </td>
                         <td>{nameVon(eintrag.mannschaftAId)}</td>
                         <td>{nameVon(eintrag.mannschaftBId)}</td>
-                        <td>{eintrag.warnung ?? ""}</td>
+                        <td title={eintrag.warnung}>{hinweisKurz(eintrag.warnung)}</td>
                       </tr>
                     );
                   });
@@ -639,7 +650,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                         <td>{nameVon(s.mannschaftAId)}</td>
                         <td>{nameVon(s.mannschaftBId)}</td>
                         <td className="status-zelle">{s.status}</td>
-                        <td>{spielWarnungen[vollIndex] ?? ""}</td>
+                        <td title={spielWarnungen[vollIndex]}>{hinweisKurz(spielWarnungen[vollIndex])}</td>
                       </tr>
                     );
                   });

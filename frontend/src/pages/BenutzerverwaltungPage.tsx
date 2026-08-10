@@ -79,38 +79,6 @@ export function BenutzerverwaltungPage() {
       <h1>Benutzerverwaltung</h1>
       {fehler && <p role="alert">{fehler}</p>}
 
-      <h2>Neuen Benutzer einladen</h2>
-      <form onSubmit={einladen}>
-        <div className="feld">
-          <label htmlFor="name">Name</label>
-          <input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="email">E-Mail</label>
-          <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="rolle">Rolle</label>
-          <select id="rolle" value={rolle} onChange={(e) => setRolle(e.target.value as GlobaleRolle)}>
-            {vergebbareRollen.map((r) => (
-              <option key={r} value={r}>
-                {ROLLEN_LABEL[r]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button type="submit">Einladen</button>
-      </form>
-
-      {einladungPerMail && <p>Einladung wurde per E-Mail verschickt.</p>}
-      {einladungslink && (
-        <p>
-          Kein E-Mail-Versand konfiguriert - Einladungslink bitte manuell weitergeben:
-          <br />
-          <input type="text" readOnly value={einladungslink} onFocus={(e) => e.target.select()} />
-        </p>
-      )}
-
       <h2>Bestehende Benutzer</h2>
       <div className="tabellen-wrapper">
         <table>
@@ -163,6 +131,38 @@ export function BenutzerverwaltungPage() {
           </tbody>
         </table>
       </div>
+
+      <h2>Neuen Benutzer einladen</h2>
+      <form onSubmit={einladen}>
+        <div className="feld">
+          <label htmlFor="name">Name</label>
+          <input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div className="feld">
+          <label htmlFor="email">E-Mail</label>
+          <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
+        <div className="feld">
+          <label htmlFor="rolle">Rolle</label>
+          <select id="rolle" value={rolle} onChange={(e) => setRolle(e.target.value as GlobaleRolle)}>
+            {vergebbareRollen.map((r) => (
+              <option key={r} value={r}>
+                {ROLLEN_LABEL[r]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button type="submit">Einladen</button>
+      </form>
+
+      {einladungPerMail && <p>Einladung wurde per E-Mail verschickt.</p>}
+      {einladungslink && (
+        <p>
+          Kein E-Mail-Versand konfiguriert - Einladungslink bitte manuell weitergeben:
+          <br />
+          <input type="text" readOnly value={einladungslink} onFocus={(e) => e.target.select()} />
+        </p>
+      )}
     </>
   );
 }

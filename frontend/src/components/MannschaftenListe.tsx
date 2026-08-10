@@ -90,6 +90,9 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
 
   /** Team aus den Stammdaten ausgewaehlt: Name+Bundesland als Vorschlag uebernehmen (kopiert,
    * nicht verknuepft - siehe Gesamtspezifikation Abschnitt 15), danach frei weiter bearbeitbar.
+   * Mannschaftsname wird NUR aus dem Teamnamen uebernommen, ohne Vereinsnamen-Praefix
+   * (der Vereinsname dient in der Auswahlliste selbst nur zur Unterscheidung gleichnamiger
+   * Teams verschiedener Vereine, ist aber nicht Teil des uebernommenen Namens).
    * "Manuell eingeben" (leerer Wert) loest nur die Verknuepfung, laesst bereits Eingegebenes stehen. */
   function teamAusgewaehlt(teamId: string) {
     setAusgewaehltesTeamId(teamId);
@@ -97,7 +100,7 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
     const team = teams.find((t) => t._id === teamId);
     if (!team) return;
     const verein = vereine.find((v) => v._id === team.vereinId);
-    setNeueMannschaft(verein ? `${verein.name} ${team.name}` : team.name);
+    setNeueMannschaft(team.name);
     setNeuesBundesland(verein?.bundesland ?? "");
   }
 

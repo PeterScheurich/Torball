@@ -106,14 +106,6 @@ export function TeamsVerwaltung({ vereine }: Props) {
     speichernWerte(t, werte);
   }
 
-  /** Spart Tipparbeit bei Vereinen, deren einziges Team einfach den Vereinsnamen traegt. */
-  function vereinsnameAlsTeamnameUebernehmen(t: Team) {
-    const vereinId = bearbeitung[t._id]?.vereinId ?? t.vereinId;
-    const werte: Bearbeitung = { name: nameVonVerein(vereinId), vereinId };
-    setBearbeitung((b) => ({ ...b, [t._id]: werte }));
-    speichernWerte(t, werte);
-  }
-
   return (
     <div>
       <h2>Teams</h2>
@@ -151,16 +143,7 @@ export function TeamsVerwaltung({ vereine }: Props) {
                       onKeyDown={(e) => {
                         if (e.key === "Enter") e.currentTarget.blur();
                       }}
-                    />{" "}
-                    <button
-                      type="button"
-                      className="symbol-button"
-                      onClick={() => vereinsnameAlsTeamnameUebernehmen(t)}
-                      aria-label={`Vereinsname als Teamname für ${t.name} übernehmen`}
-                      title="Vereinsname als Teamname übernehmen"
-                    >
-                      📋
-                    </button>
+                    />
                   </td>
                   <td>
                     <label className="sr-only" htmlFor={`team-verein-${t._id}`}>
@@ -206,7 +189,14 @@ export function TeamsVerwaltung({ vereine }: Props) {
                   {v.name}
                 </option>
               ))}
-            </select>
+            </select>{" "}
+            <button
+              type="button"
+              onClick={() => setNeuerName(nameVonVerein(neuerVereinId))}
+              disabled={!neuerVereinId}
+            >
+              als Teamname übernehmen
+            </button>
           </div>
           <div className="feld">
             <label htmlFor="teamName">Teamname (z.B. „I", „II")</label>
@@ -216,17 +206,7 @@ export function TeamsVerwaltung({ vereine }: Props) {
               required
               value={neuerName}
               onChange={(e) => setNeuerName(e.target.value)}
-            />{" "}
-            <button
-              type="button"
-              className="symbol-button"
-              onClick={() => setNeuerName(nameVonVerein(neuerVereinId))}
-              disabled={!neuerVereinId}
-              aria-label="Vereinsname als Teamname übernehmen"
-              title="Vereinsname als Teamname übernehmen"
-            >
-              📋
-            </button>
+            />
           </div>
           <button type="submit">Team anlegen</button>
         </form>

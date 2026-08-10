@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import type { Protokollierungsart, Spielmodus, Turnier } from "@torball/shared";
 import { getTurnier, updateTurnier } from "../api";
 import { ErgebnisVerwaltung } from "../components/ErgebnisVerwaltung";
@@ -16,13 +16,79 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "ergebnisse", label: "Ergebnisse" },
 ];
 
+/** Freitextfelder aus Abschnitt 5.1 ("Allgemein"), die bisher nur beim Anlegen (Name)
+ * bzw. gar nicht erfasst werden konnten. Eigener Bearbeitungszustand mit Speichern beim
+ * Verlassen des Feldes, analog zu Mannschaften/Vereinen/Teams. */
+interface AllgemeinBearbeitung {
+  name: string;
+  spielortName: string;
+  spielortAdresse: string;
+  spielortGeo: string;
+  turnierleitungName: string;
+  turnierleitungKontakt: string;
+  ansprechpartnerName: string;
+  ansprechpartnerKontakt: string;
+  zusatzinfo: string;
+}
+
+/** Erkennt "Breite, Laenge" (z.B. "50.1109, 8.6821") im Geo-Feld. */
+const KOORDINATEN_MUSTER = /^(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/;
+
+/**
+ * Oeffnet einen Kartendienst in einem neuen Tab. Stehen im Geo-Feld bereits Koordinaten
+ * (z.B. von einem frueheren Kartenbesuch dort abgelesen und hier eingetragen), springt der
+ * Dienst direkt an diese Position - sonst wird mit Spielort-Name/-Adresse gesucht.
+ * Bewusst nur ein Link, keine eingebettete Karte: eine fremde Seite kann eine dort markierte
+ * Position nicht automatisch an unsere App zurueckmelden - der/die Nutzer:in muss die
+ * Koordinaten dort ablesen und selbst ins Geo-Feld eintragen.
+ */
+function kartenSucheUrl(dienst: "google" | "osm", allgemein: AllgemeinBearbeitung | undefined): string {
+  const koordinaten = allgemein?.spielortGeo?.trim().match(KOORDINATEN_MUSTER);
+  if (koordinaten) {
+    const [, breite, laenge] = koordinaten;
+    return dienst === "google"
+      ? `https://www.google.com/maps/search/?api=1&query=${breite},${laenge}`
+      : `https://www.openstreetmap.org/?mlat=${breite}&mlon=${laenge}#map=18/${breite}/${laenge}`;
+  }
+
+  const suchtext = [allgemein?.spielortName, allgemein?.spielortAdresse].filter(Boolean).join(", ");
+  if (dienst === "google") {
+    return suchtext
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(suchtext)}`
+      : "https://www.google.com/maps";
+  }
+  return suchtext
+    ? `https://www.openstreetmap.org/search?query=${encodeURIComponent(suchtext)}`
+    : "https://www.openstreetmap.org";
+}
+
+function allgemeinAusTurnier(turnier: Turnier): AllgemeinBearbeitung {
+  return {
+    name: turnier.name,
+    spielortName: turnier.spielortName ?? "",
+    spielortAdresse: turnier.spielortAdresse ?? "",
+    spielortGeo: turnier.spielortGeo ?? "",
+    turnierleitungName: turnier.turnierleitungName ?? "",
+    turnierleitungKontakt: turnier.turnierleitungKontakt ?? "",
+    ansprechpartnerName: turnier.ansprechpartnerName ?? "",
+    ansprechpartnerKontakt: turnier.ansprechpartnerKontakt ?? "",
+    zusatzinfo: turnier.zusatzinfo ?? "",
+  };
+}
+
 export function TurnierVerwaltenPage() {
   const { id } = useParams<{ id: string }>();
   const turnierId = id!;
 
   const [turnier, setTurnier] = useState<Turnier | undefined>();
+  const [allgemein, setAllgemein] = useState<AllgemeinBearbeitung | undefined>();
   const [fehler, setFehler] = useState<string | undefined>();
-  const [aktiverTab, setAktiverTab] = useState<Tab>("uebersicht");
+  // Aktiver Reiter steckt in der URL (?tab=...), nicht nur im lokalen State - sonst
+  // springt ein Reload (F5) immer zurueck auf "Uebersicht", egal auf welchem Reiter
+  // man gerade war.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const aktiverTab: Tab = TABS.some((t) => t.id === tabParam) ? (tabParam as Tab) : "uebersicht";
   const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({
     uebersicht: null,
     mannschaften: null,
@@ -35,6 +101,36 @@ export function TurnierVerwaltenPage() {
       .then(setTurnier)
       .catch((err) => setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden"));
   }, [turnierId]);
+
+  // Nur beim ersten Laden aus dem Turnier uebernehmen, nicht bei jeder Aktualisierung
+  // (z.B. nach Aendern des Spielmodus) - sonst wuerde ein noch ungespeicherter Entwurf
+  // in einem der Felder hier ueberschrieben.
+  useEffect(() => {
+    if (turnier && !allgemein) setAllgemein(allgemeinAusTurnier(turnier));
+  }, [turnier, allgemein]);
+
+  async function allgemeinFeldSpeichern(feld: keyof AllgemeinBearbeitung) {
+    if (!allgemein || !turnier) return;
+    const wert = allgemein[feld].trim();
+
+    if (feld === "name" && wert === "") {
+      setFehler("Turniername darf nicht leer sein");
+      setAllgemein((a) => (a ? { ...a, name: turnier.name } : a));
+      return;
+    }
+
+    const aktuell = ((turnier as unknown as Record<string, string | undefined>)[feld] ?? "").trim();
+    if (wert === aktuell) return;
+
+    try {
+      const aktualisiert = await updateTurnier(turnierId, { [feld]: feld === "name" ? wert : wert || null });
+      setTurnier(aktualisiert);
+      setAllgemein((a) => (a ? { ...a, [feld]: wert } : a));
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern");
+    }
+  }
 
   async function spielplanModusAendern(modus: Spielmodus) {
     try {
@@ -54,9 +150,20 @@ export function TurnierVerwaltenPage() {
     }
   }
 
+  function tabSetzen(tab: Tab) {
+    setSearchParams(
+      (bisherig) => {
+        const naechste = new URLSearchParams(bisherig);
+        naechste.set("tab", tab);
+        return naechste;
+      },
+      { replace: true },
+    );
+  }
+
   function tabWechseln(index: number) {
     const naechster = TABS[(index + TABS.length) % TABS.length];
-    setAktiverTab(naechster.id);
+    tabSetzen(naechster.id);
     tabRefs.current[naechster.id]?.focus();
   }
 
@@ -92,7 +199,7 @@ export function TurnierVerwaltenPage() {
             aria-controls={`panel-${tab.id}`}
             tabIndex={aktiverTab === tab.id ? 0 : -1}
             className={aktiverTab === tab.id ? "tab tab-aktiv" : "tab"}
-            onClick={() => setAktiverTab(tab.id)}
+            onClick={() => tabSetzen(tab.id)}
             onKeyDown={(e) => aufTastendruck(e, index)}
           >
             {tab.label}
@@ -106,22 +213,63 @@ export function TurnierVerwaltenPage() {
             <caption className="sr-only">Turnier-Übersicht</caption>
             <tbody>
               <tr>
-                <th scope="row">Datum</th>
-                <td>{formatiereDatum(turnier.datum)}</td>
+                <th scope="row">
+                  <label htmlFor="turnierName">Name</label>
+                </th>
+                <td>
+                  <input
+                    id="turnierName"
+                    required
+                    value={allgemein?.name ?? turnier.name}
+                    onChange={(e) => setAllgemein((a) => (a ? { ...a, name: e.target.value } : a))}
+                    onBlur={() => allgemeinFeldSpeichern("name")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="uebersichtDatum">Datum</label>
+                </th>
+                <td>
+                  <input id="uebersichtDatum" readOnly value={formatiereDatum(turnier.datum)} />
+                </td>
               </tr>
               {turnier.startzeit && (
                 <tr>
-                  <th scope="row">Startzeit</th>
-                  <td>{formatiereUhrzeit(`${turnier.datum}T${turnier.startzeit}:00`)}</td>
+                  <th scope="row">
+                    <label htmlFor="uebersichtStartzeit">Startzeit</label>
+                  </th>
+                  <td>
+                    <input
+                      id="uebersichtStartzeit"
+                      readOnly
+                      value={formatiereUhrzeit(`${turnier.datum}T${turnier.startzeit}:00`)}
+                    />
+                  </td>
                 </tr>
               )}
               <tr>
-                <th scope="row">Status</th>
-                <td className="status-zelle">{turnier.status}</td>
+                <th scope="row">
+                  <label htmlFor="uebersichtStatus">Status</label>
+                </th>
+                <td>
+                  <input id="uebersichtStatus" readOnly className="status-zelle" value={turnier.status} />
+                </td>
               </tr>
               <tr>
-                <th scope="row">Spielfelder</th>
-                <td>{turnier.felder.map((f) => f.name).join(", ") || "keine"}</td>
+                <th scope="row">
+                  <label htmlFor="uebersichtSpielfelder">Spielfelder</label>
+                </th>
+                <td>
+                  <input
+                    id="uebersichtSpielfelder"
+                    readOnly
+                    value={turnier.felder.map((f) => f.name).join(", ") || "keine"}
+                  />
+                </td>
               </tr>
               <tr>
                 <th scope="row">
@@ -159,6 +307,71 @@ export function TurnierVerwaltenPage() {
                       auf „Manuell" umstellen.
                     </p>
                   )}
+                </td>
+              </tr>
+              {(
+                [
+                  { feld: "spielortName", label: "Spielort (Name)" },
+                  { feld: "spielortAdresse", label: "Spielort (Adresse)" },
+                  { feld: "spielortGeo", label: "Spielort (Geo-Referenz, optional)" },
+                  { feld: "turnierleitungName", label: "Turnierleitung (Name)" },
+                  { feld: "turnierleitungKontakt", label: "Turnierleitung (Kontakt)" },
+                  { feld: "ansprechpartnerName", label: "Ansprechpartner (Name)" },
+                  { feld: "ansprechpartnerKontakt", label: "Ansprechpartner (Kontakt)" },
+                ] as { feld: keyof AllgemeinBearbeitung; label: string }[]
+              ).map(({ feld, label }) => (
+                <tr key={feld}>
+                  <th scope="row">
+                    <label htmlFor={feld}>{label}</label>
+                  </th>
+                  <td>
+                    <input
+                      id={feld}
+                      value={allgemein?.[feld] ?? (turnier[feld as keyof Turnier] as string | undefined) ?? ""}
+                      onChange={(e) => setAllgemein((a) => (a ? { ...a, [feld]: e.target.value } : a))}
+                      onBlur={() => allgemeinFeldSpeichern(feld)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") e.currentTarget.blur();
+                      }}
+                    />
+                    {feld === "spielortGeo" && (
+                      <>
+                        {" "}
+                        <a
+                          className="button-link"
+                          href={kartenSucheUrl("google", allgemein)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Standort in Google Maps suchen - Koordinaten dort ablesen und hier eintragen (kein automatischer Rückweg möglich)"
+                        >
+                          Google Maps
+                        </a>{" "}
+                        <a
+                          className="button-link"
+                          href={kartenSucheUrl("osm", allgemein)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Standort in OpenStreetMap suchen - Koordinaten dort ablesen und hier eintragen (kein automatischer Rückweg möglich)"
+                        >
+                          OpenStreetMap
+                        </a>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              <tr>
+                <th scope="row">
+                  <label htmlFor="zusatzinfo">Zusatzinformationen</label>
+                </th>
+                <td>
+                  <textarea
+                    id="zusatzinfo"
+                    rows={3}
+                    value={allgemein?.zusatzinfo ?? turnier.zusatzinfo ?? ""}
+                    onChange={(e) => setAllgemein((a) => (a ? { ...a, zusatzinfo: e.target.value } : a))}
+                    onBlur={() => allgemeinFeldSpeichern("zusatzinfo")}
+                  />
                 </td>
               </tr>
             </tbody>
