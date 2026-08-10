@@ -424,15 +424,42 @@ textarea {
 
 /* Nicht editierbare Werte in Label/Wert-Tabellen (Profil, Turnier-Uebersicht), die als
    readOnly-Input statt reinem Text ausgegeben werden: uebernehmen Rahmen/Padding eines
-   normalen Eingabefelds fuer den Zeilenumbruch mit echten Eingabefeldern in derselben
-   Tabelle (sonst wirkt die Spalte "verschoben"), aber gedaempft, damit weiterhin klar
-   erkennbar bleibt, dass hier nichts editierbar ist. */
+   normalen Eingabefelds, damit sie in derselben Tabellenspalte buendig mit echten
+   Eingabefeldern stehen (sonst wirkt die Spalte "verschoben"). */
 input[readonly] {
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Nicht editierbare Felder (readOnly ODER disabled) sofort als solche erkennbar machen:
+   gedaempfte Schrift/Flaeche PLUS ein gestrichelter statt durchgezogener Rahmen - das
+   signalisiert "kein echtes Eingabefeld", ohne die Box-Masse zu aendern (Rahmen bleibt
+   1px breit), sodass in einer gemischten Spalte (editierbare + nur-lesbare Zeilen) nichts
+   vertikal verspringt. Checkbox/Radio ausgenommen (haben kein Flaechen-/Rahmen-Chrome
+   dieser Art). Gilt bewusst auch fuer <select>/<textarea> und disabled-Felder, nicht nur
+   readOnly-<input> - z.B. die gesperrten Startzeit-/Ergebnis-Felder laufender Spiele. */
+input:not([type="checkbox"]):not([type="radio"])[readonly],
+input:not([type="checkbox"]):not([type="radio"]):disabled,
+select:disabled,
+textarea:disabled,
+textarea[readonly] {
   background: var(--bg-subtle);
   color: var(--text-muted);
+  /* Safari/iOS faerbt disabled-Text sonst eigenmaechtig heller und dimmt per opacity -
+     beides fixieren, damit der Kontrast berechenbar (WCAG) und themekonform bleibt. */
+  -webkit-text-fill-color: var(--text-muted);
+  opacity: 1;
+  border-style: dashed;
   cursor: default;
+}
+
+/* disabled zusaetzlich mit "nicht erlaubt"-Cursor. readOnly bleibt bewusst bei default,
+   weil solche Felder weiterhin fokussier-/markierbar sind (z.B. Link per Klick auswaehlen
+   und kopieren). */
+input:not([type="checkbox"]):not([type="radio"]):disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
 }
 
 button {
