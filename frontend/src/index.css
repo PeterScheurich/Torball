@@ -195,12 +195,13 @@ th {
 }
 
 /* Ziehpunkt + zwei Pfeil-Buttons muessen in einer Zeile bleiben, statt der zweite
-   Button in die naechste Tabellenzeile umzubrechen. width:1% haelt die Spalte bei
-   table-layout:fixed so schmal wie moeglich, damit die Mannschaftsnamen-Spalten
-   den restlichen Platz bekommen. */
+   Button in die naechste Tabellenzeile umzubrechen. Bei table-layout:fixed braucht
+   diese Spalte eine tatsaechlich ausreichende feste Breite (nicht nur "1%" o.ae.) -
+   sonst wird die Zelle kleiner als ihr Inhalt und Ziehpunkt/Buttons ragen sichtbar
+   in die naechste Spalte hinein, statt dass die Zelle mitwaechst. */
 .reihenfolge-zelle {
   white-space: nowrap;
-  width: 1%;
+  width: 128px;
 }
 
 .platzhalter-zeile {
