@@ -463,26 +463,42 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
       </datalist>
 
       <form onSubmit={anlegen}>
-        {teamsSortiert.length > 0 && (
-          <div className="feld">
-            <label htmlFor="mannschaftTeam">Aus Stammdaten übernehmen (optional)</label>
-            <select
-              id="mannschaftTeam"
-              value={ausgewaehltesTeamId}
-              onChange={(e) => teamAusgewaehlt(e.target.value)}
-            >
-              <option value="">— manuell eingeben —</option>
-              {teamsSortiert.map((t) => {
-                const verein = vereine.find((v) => v._id === t.vereinId);
-                return (
-                  <option key={t._id} value={t._id}>
-                    {verein ? `${verein.name} ${t.name}` : t.name}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-        )}
+        {/* Auswahl bewusst immer anzeigen (auch wenn leer), damit die Stammdaten-Uebernahme
+            auffindbar bleibt und ein leerer Stand erklaert wird - sonst wirkt es, als sei die
+            Funktion verschwunden. Ein Team darf je Turnier nur einmal auftreten, daher sind
+            bereits angemeldete Teams hier nicht mehr waehlbar. */}
+        <div className="feld">
+          <label htmlFor="mannschaftTeam">Aus Stammdaten übernehmen (optional)</label>
+          <select
+            id="mannschaftTeam"
+            value={ausgewaehltesTeamId}
+            onChange={(e) => teamAusgewaehlt(e.target.value)}
+          >
+            <option value="">— manuell eingeben —</option>
+            {teamsSortiert.map((t) => {
+              const verein = vereine.find((v) => v._id === t.vereinId);
+              return (
+                <option key={t._id} value={t._id}>
+                  {verein ? `${verein.name} ${t.name}` : t.name}
+                </option>
+              );
+            })}
+          </select>
+          {teams.length === 0 ? (
+            <span className="feld-hinweis">
+              Noch keine Teams in den Stammdaten. Ein Team gehört zu einem Verein (ein Verein kann mehrere Teams
+              stellen, z. B. „I"/„II") – zuerst unter „Stammdaten" ein Team anlegen, dann ist es hier wählbar.
+            </span>
+          ) : (
+            teamsSortiert.length === 0 && (
+              <span className="feld-hinweis">
+                Alle vorhandenen Teams sind in diesem Turnier bereits angemeldet. Für einen weiteren Verein (z. B.
+                neu angelegte) zuerst unter „Stammdaten" ein Team anlegen – dann erscheint es hier. Alternativ die
+                Mannschaft manuell erfassen.
+              </span>
+            )
+          )}
+        </div>
         <div className="feld">
           <label htmlFor="mannschaftName">Mannschaftsname</label>
           <input
