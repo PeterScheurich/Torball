@@ -53,4 +53,25 @@ Aufzählung ergänzen, oder eine neue Überschrift für ein neues Thema anlegen.
   `docs/Protokolle/` festhalten (Datum + Thema im Dateinamen), inklusive der
   tatsächlich ausgeführten Befehle – nicht nur das Endergebnis.
 - `docs/torball_gesamtspezifikation.md` ist die fachliche Referenz; bei
-  Unklarheiten dort nachschlagen statt zu raten.
+  Unklarheiten dort nachschlagen oder direkt fragen statt zu raten.
+
+## Berechtigungsmodi (`.claude/settings.json`)
+
+`.claude/settings.json` steuert, welche Aktionen ohne Rückfrage laufen dürfen
+(`permissions.defaultMode` + `allow`/`deny`-Listen). Die Datei selbst ist
+strenges JSON und erlaubt keine `//`-Kommentare – deshalb hier die Übersicht
+der Modi, die Claude Code kennt:
+
+| Modus | Verhalten |
+|---|---|
+| `default` | Fragt bei praktisch jeder Aktion außer reinen Lesebefehlen nach |
+| `acceptEdits` | Datei-Änderungen laufen automatisch durch; alles andere (Bash etc.) wird weiterhin abgefragt, außer explizit in `allow` gelistet |
+| `plan` | Nur Erkunden erlaubt, jede Änderung blockiert, bis sie freigegeben wird |
+| `auto` | Nichts Routinemäßiges wird abgefragt, ein Sicherheits-Check läuft im Hintergrund mit (braucht passenden Plan/Modell) |
+| `dontAsk` | Nichts außer explizit vorab Freigegebenem läuft; alles andere wird automatisch abgelehnt (z. B. für CI) |
+| `bypassPermissions` | Fragt gar nicht mehr nach (außer expliziten `deny`-Regeln) – nur in isolierten Containern/VMs sinnvoll, nicht hier |
+
+Aktuell eingestellt: `acceptEdits`, mit einer `allow`-Liste für die üblichen
+Entwicklungsbefehle (`npm run *`, `npm install *`, `git status/diff/log/add/
+commit/push`) und einer `deny`-Liste für riskante Befehle (Force-Push,
+`git reset --hard`, `git clean`, `rm -rf`), die unabhängig vom Modus greift.
