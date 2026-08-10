@@ -17,6 +17,9 @@ const PRIORITAETS_RANG: Record<PaarungsPrioritaet, number> = {
   neutral: 2,
 };
 
+/** Wie oft mit zufaellig unterschiedlicher Reihenfolge innerhalb gleicher Prioritaet neu versucht wird. */
+const MAX_VERSUCHE = 60;
+
 /**
  * Erstellt einen Spielplan-Vorschlag aus einer Paarungsliste (Gesamtspezifikation
  * Abschnitt 8). Modell: Zeit ist in fortlaufende Slots eingeteilt, pro Slot laeuft
@@ -34,20 +37,25 @@ const PRIORITAETS_RANG: Record<PaarungsPrioritaet, number> = {
  * "Kein direktes Folgespiel" und "moeglichst viele Felder parallel nutzen" stehen
  * in echtem Widerspruch, sobald genug Felder vorhanden sind, dass ohnehin ALLE
  * Mannschaften in jeder Runde spielen (Felder >= Mannschaften/2) - dann gibt es
- * schlicht keine ausgeruhte Mannschaft, die als Alternative einspringen koennte,
- * und "jede Runde spielt jeder direkt weiter" ist einfach der Normalfall eines
- * Rundenturniers, keine vermeidbare Verletzung. Laut Nutzer ist das Normalfeld-Setup
- * ohnehin 1 Feld, in Ausnahmefaellen 2 (mehr Felder erst mit Gruppenphasen, ein
- * spaeteres Thema) - genau in diesem Bereich (wenige Felder relativ zur
- * Mannschaftszahl) gibt es immer genug ausgeruhte Alternativen, und der Algorithmus
- * vermeidet Back-to-Back dort in der Praxis fast immer. Bei sehr kleinen Ligen
- * (4-5 Mannschaften) mit 2 Feldern ist "moeglichst parallel" dagegen bereits voll
- * ausgeschoepft, weshalb dort Back-to-Back-Warnungen haeufiger und erwartbar sind -
- * kein Bug, sondern Konsequenz der vollen Parallelitaet.
+ * schlicht keine ausgeruhte Mannschaft, die als Alternative einspringen koennte.
+ * Laut Nutzer ist das Normalfeld-Setup ohnehin 1 Feld, in Ausnahmefaellen 2.
  *
- * In jedem Fall, wenn Back-to-Back nicht vermeidbar ist, laesst der Algorithmus es
- * als letztes Mittel zu und markiert den betroffenen Eintrag ueber `warnung` -
- * analog zum Grundprinzip "die Software warnt, entscheidet nie selbst".
+ * Bei 1 Feld ist vollstaendige Vermeidung ("Hamiltonpfad" durch alle Paarungen ohne
+ * gemeinsames Team zwischen aufeinanderfolgenden Paarungen) graphentheoretisch fuer
+ * ab 5 Mannschaften IMMER moeglich (Kneser-Graph K(n,2) ist fuer n>=5 hamiltonsch),
+ * fuer genau 3 oder 4 Mannschaften dagegen mathematisch UNMOEGLICH: bei 3 Mannschaften
+ * teilen sich alle Paarungen zwangslaeufig ein Team, bei 4 Mannschaften bildet die
+ * einzige "kollisionsfreie" Alternativpaarung zu jeder Paarung stets eine bereits
+ * verplante Paarung (perfektes Matching ohne Restpfad). Ein einzelner Greedy-Durchlauf
+ * findet nicht zuverlaessig eine der (fuer n>=5) existierenden kollisionsfreien
+ * Reihenfolgen, deshalb mehrere Versuche mit unterschiedlicher Zufalls-Reihenfolge
+ * innerhalb gleicher Prioritaetsstufe; das beste Ergebnis (wenigste Warnungen, im
+ * Idealfall keine) wird verwendet.
+ *
+ * Wenn Back-to-Back trotz aller Versuche nicht vermeidbar ist (kleine Ligen, 2 Felder,
+ * oder mathematisch unmoeglicher Fall), laesst der Algorithmus es als letztes Mittel
+ * zu und markiert den betroffenen Eintrag ueber `warnung` - analog zum Grundprinzip
+ * "die Software warnt, entscheidet nie selbst".
  */
 export function erstelleSpielplanVorschlag(
   paarungen: Paarung[],
@@ -57,9 +65,42 @@ export function erstelleSpielplanVorschlag(
     throw new Error("Mindestens ein Spielfeld ist erforderlich, um einen Spielplan zu erstellen.");
   }
 
-  const offen = [...paarungen].sort(
-    (a, b) => PRIORITAETS_RANG[a.prioritaet] - PRIORITAETS_RANG[b.prioritaet],
-  );
+  let bestesErgebnis: SpielplanEintrag[] | undefined;
+  let wenigsteWarnungen = Infinity;
+
+  for (let versuch = 0; versuch < MAX_VERSUCHE; versuch++) {
+    const ergebnis = einZuteilungsversuch(paarungen, felder, versuch > 0);
+    const warnungen = ergebnis.filter((e) => e.warnung).length;
+
+    if (warnungen === 0) return ergebnis;
+
+    if (warnungen < wenigsteWarnungen) {
+      wenigsteWarnungen = warnungen;
+      bestesErgebnis = ergebnis;
+    }
+  }
+
+  return bestesErgebnis!;
+}
+
+function einZuteilungsversuch(
+  paarungen: Paarung[],
+  felder: Spielfeld[],
+  mischen: boolean,
+): SpielplanEintrag[] {
+  const nachPrioritaet = new Map<PaarungsPrioritaet, Paarung[]>([
+    ["verein", []],
+    ["bundesland", []],
+    ["neutral", []],
+  ]);
+  for (const paarung of paarungen) {
+    nachPrioritaet.get(paarung.prioritaet)!.push(paarung);
+  }
+
+  const offen = (["verein", "bundesland", "neutral"] as PaarungsPrioritaet[]).flatMap((prioritaet) => {
+    const gruppe = [...nachPrioritaet.get(prioritaet)!];
+    return mischen ? gemischt(gruppe) : gruppe;
+  });
 
   const ergebnis: SpielplanEintrag[] = [];
   const letzterSlotVonMannschaft = new Map<string, number>();
@@ -94,6 +135,15 @@ export function erstelleSpielplanVorschlag(
   }
 
   return ergebnis;
+}
+
+function gemischt<T>(liste: T[]): T[] {
+  const kopie = [...liste];
+  for (let i = kopie.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [kopie[i], kopie[j]] = [kopie[j], kopie[i]];
+  }
+  return kopie;
 }
 
 function fuelleSlot(

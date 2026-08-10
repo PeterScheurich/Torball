@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Turnier } from "@torball/shared";
 import { deleteTurnier, getTurniere } from "../api";
+import { formatiereDatum } from "../format";
 
 export function TurnierListePage() {
   const [turniere, setTurniere] = useState<Turnier[]>([]);
@@ -54,7 +55,7 @@ export function TurnierListePage() {
                 <td>
                   <Link to={`/turniere/${encodeURIComponent(turnier._id)}`}>{turnier.name}</Link>
                 </td>
-                <td>{turnier.datum}</td>
+                <td>{formatiereDatum(turnier.datum)}</td>
                 <td>{turnier.status}</td>
                 <td>
                   <button

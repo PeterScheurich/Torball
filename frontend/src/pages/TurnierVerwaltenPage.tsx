@@ -4,6 +4,7 @@ import type { Turnier } from "@torball/shared";
 import { getTurnier } from "../api";
 import { MannschaftenListe } from "../components/MannschaftenListe";
 import { SpielplanVerwaltung } from "../components/SpielplanVerwaltung";
+import { formatiereDatum, formatiereUhrzeit } from "../format";
 
 type Tab = "uebersicht" | "mannschaften" | "spielplan";
 
@@ -79,9 +80,9 @@ export function TurnierVerwaltenPage() {
 
       <div role="tabpanel" id="panel-uebersicht" aria-labelledby="tab-uebersicht" hidden={aktiverTab !== "uebersicht"}>
         <p>
-          {turnier.datum}
-          {turnier.startzeit ? `, ${turnier.startzeit} Uhr` : ""} · Status: {turnier.status} · Felder:{" "}
-          {turnier.felder.map((f) => f.name).join(", ") || "keine"}
+          {formatiereDatum(turnier.datum)}
+          {turnier.startzeit ? `, ${formatiereUhrzeit(`${turnier.datum}T${turnier.startzeit}:00`)}` : ""} · Status:{" "}
+          {turnier.status} · Felder: {turnier.felder.map((f) => f.name).join(", ") || "keine"}
         </p>
       </div>
 

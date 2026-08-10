@@ -34,10 +34,10 @@ test("kein Team spielt zweimal im selben Slot (harte Regel 1)", () => {
   }
 });
 
-test("Normalfall (1 Feld, viele Mannschaften): Back-to-Back wird fast durchgehend vermieden", () => {
-  // Bei nur 1 Feld gibt es immer reichlich ausgeruhte Alternativ-Paarungen -
-  // die Zahl der unvermeidbaren Faelle (nur ganz am Ende, wenn kaum noch
-  // Paarungen offen sind) bleibt empirisch sehr klein.
+test("Normalfall (1 Feld, 8 Mannschaften): komplett kollisionsfrei moeglich und wird gefunden", () => {
+  // Graphentheoretisch (Kneser-Graph K(n,2)) ist eine vollstaendig kollisionsfreie
+  // Reihenfolge ab 5 Mannschaften immer moeglich; der Algorithmus muss sie ueber
+  // mehrere Versuche mit zufaelliger Reihenfolge auch tatsaechlich finden.
   const teams = ["a", "b", "c", "d", "e", "f", "g", "h"];
   const paarungen: Paarung[] = [];
   for (let i = 0; i < teams.length; i++) {
@@ -50,7 +50,31 @@ test("Normalfall (1 Feld, viele Mannschaften): Back-to-Back wird fast durchgehen
 
   assert.equal(plan.length, 28); // C(8,2)
   const warnungen = plan.filter((e) => e.warnung !== undefined).length;
-  assert.ok(warnungen <= 2, `Erwartete <= 2 unvermeidbare Faelle, tatsaechlich: ${warnungen}`);
+  assert.equal(warnungen, 0, "Ab 5 Mannschaften sollte eine kollisionsfreie Reihenfolge existieren und gefunden werden");
+});
+
+test("Kleine Liga (5 Mannschaften, 1 Feld): ebenfalls kollisionsfrei", () => {
+  const teams = ["a", "b", "c", "d", "e"];
+  const paarungen: Paarung[] = [];
+  for (let i = 0; i < teams.length; i++) {
+    for (let j = i + 1; j < teams.length; j++) {
+      paarungen.push(paarung(teams[i], teams[j]));
+    }
+  }
+
+  const plan = erstelleSpielplanVorschlag(paarungen, felder(1));
+
+  assert.equal(plan.length, 10); // C(5,2)
+  const warnungen = plan.filter((e) => e.warnung !== undefined).length;
+  assert.equal(warnungen, 0);
+});
+
+test("Genau 3 oder 4 Mannschaften (1 Feld): Kollision bleibt mathematisch unvermeidbar", () => {
+  // Kneser-Graph K(3,2) ist kantenlos, K(4,2) ein perfektes Matching -
+  // in beiden Faellen existiert kein Hamiltonpfad, egal wie oft neu versucht wird.
+  const dreiTeams: Paarung[] = [paarung("a", "b"), paarung("a", "c"), paarung("b", "c")];
+  const planDrei = erstelleSpielplanVorschlag(dreiTeams, felder(1));
+  assert.ok(planDrei.some((e) => e.warnung !== undefined));
 });
 
 test("Kleine Liga mit 2 Feldern (Ausnahmefall): volle Parallelitaet macht Back-to-Back-Warnungen erwartbar", () => {

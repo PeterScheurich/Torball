@@ -10,6 +10,16 @@ interface SpielplanQuery {
   wiederholungen?: string;
 }
 
+interface SpielplanPersistierenBody {
+  /**
+   * Optional: die im Frontend ggf. manuell umsortierte Vorschau (aus
+   * GET .../spielplan-vorschlag). Wenn gesetzt, wird GENAU diese Reihenfolge
+   * gespeichert statt den Vorschlag neu zu berechnen - sonst wuerde eine
+   * manuelle Umsortierung beim Uebernehmen verworfen.
+   */
+  eintraege?: SpielplanEintrag[];
+}
+
 interface VorschlagErgebnis {
   turnier: Turnier;
   vorschlag: SpielplanEintrag[];
@@ -68,12 +78,26 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  app.post<{ Params: { id: string }; Querystring: SpielplanQuery }>(
+  app.post<{ Params: { id: string }; Querystring: SpielplanQuery; Body: SpielplanPersistierenBody }>(
     "/turniere/:id/spielplan",
     async (req, reply) => {
-      const ergebnis = await ladeUndBerechneVorschlag(req.params.id, req.query, reply);
-      if (!ergebnis) return;
-      const { turnier, vorschlag } = ergebnis;
+      let turnier: Turnier;
+      let vorschlag: SpielplanEintrag[];
+
+      if (req.body?.eintraege) {
+        // Frontend hat bereits eine (ggf. manuell umsortierte) Vorschau gezeigt - genau
+        // diese wird gespeichert, statt sie hier blind neu zu berechnen und die
+        // Umsortierung des Nutzers zu verwerfen.
+        const geladenesTurnier = await findById<Turnier>(req.params.id);
+        if (!geladenesTurnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+        turnier = geladenesTurnier;
+        vorschlag = req.body.eintraege;
+      } else {
+        const ergebnis = await ladeUndBerechneVorschlag(req.params.id, req.query, reply);
+        if (!ergebnis) return;
+        turnier = ergebnis.turnier;
+        vorschlag = ergebnis.vorschlag;
+      }
 
       // "Spielplan neu generieren" (Abschnitt 8) ist vorgesehen, darf aber keine bereits
       // laufenden/abgeschlossenen Spiele verwerfen.

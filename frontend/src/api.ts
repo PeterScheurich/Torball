@@ -108,8 +108,15 @@ export interface SpielplanErgebnis {
   spiele: Spiel[];
 }
 
-export function erzeugeSpielplan(turnierId: string, wiederholungen: 1 | 2): Promise<SpielplanErgebnis> {
-  return anfrage(`/turniere/${turnierId}/spielplan?wiederholungen=${wiederholungen}`, { method: "POST" });
+export function erzeugeSpielplan(
+  turnierId: string,
+  wiederholungen: 1 | 2,
+  eintraege?: SpielplanVorschlagEintrag[],
+): Promise<SpielplanErgebnis> {
+  return anfrage(`/turniere/${turnierId}/spielplan?wiederholungen=${wiederholungen}`, {
+    method: "POST",
+    body: eintraege ? JSON.stringify({ eintraege }) : undefined,
+  });
 }
 
 export function getSpiele(turnierId: string): Promise<Spiel[]> {
@@ -120,5 +127,13 @@ export function reihenfolgeAendern(turnierId: string, spielIds: string[]): Promi
   return anfrage(`/turniere/${turnierId}/spiele/reihenfolge`, {
     method: "PUT",
     body: JSON.stringify({ spielIds }),
+  });
+}
+
+/** Verschiebt dieses Spiel auf die neue Startzeit; alle nachfolgenden geplanten Spiele wandern um dasselbe Delta mit. */
+export function spielStartzeitAendern(spielId: string, startzeitGeplant: string): Promise<Spiel[]> {
+  return anfrage(`/spiele/${spielId}/startzeit`, {
+    method: "PUT",
+    body: JSON.stringify({ startzeitGeplant }),
   });
 }

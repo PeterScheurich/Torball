@@ -165,6 +165,10 @@ h3 {
   margin: 24px 0 8px;
 }
 
+.tabellen-wrapper {
+  overflow-x: auto;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -182,6 +186,13 @@ th {
   color: var(--text-muted);
   font-weight: 600;
   font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* Ziehpunkt + zwei Pfeil-Buttons muessen in einer Zeile bleiben, statt der zweite
+   Button in die naechste Tabellenzeile umzubrechen. */
+.reihenfolge-zelle {
+  white-space: nowrap;
 }
 
 form {

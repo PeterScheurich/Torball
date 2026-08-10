@@ -120,6 +120,7 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
       {mannschaften.length === 0 ? (
         <p>Noch keine Mannschaften angelegt.</p>
       ) : (
+        <div className="tabellen-wrapper">
         <table>
           <caption className="sr-only">
             Angemeldete Mannschaften, Name und Bundesland bearbeitbar, Reihenfolge per Ziehpunkt oder Pfeiltasten
@@ -150,7 +151,7 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
                   setZiehZielIndex(null);
                 }}
               >
-                <td>
+                <td className="reihenfolge-zelle">
                   <span
                     className="ziehpunkt"
                     draggable
@@ -231,6 +232,7 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       <datalist id="bundeslaender-liste">

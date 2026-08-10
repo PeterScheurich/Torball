@@ -19,6 +19,18 @@ const spielAnpassungSchema = {
   },
 } as const;
 
+interface StartzeitBody {
+  startzeitGeplant: string;
+}
+
+const startzeitSchema = {
+  type: "object",
+  required: ["startzeitGeplant"],
+  properties: {
+    startzeitGeplant: { type: "string" },
+  },
+} as const;
+
 interface ReihenfolgeBody {
   /** Alle Spiel-IDs des Turniers, in der gewuenschten neuen Reihenfolge. */
   spielIds: string[];
@@ -51,6 +63,46 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
       if (!bestehend) return reply.code(404).send({ error: "Spiel nicht gefunden" });
       const aktualisiert: Spiel = { ...bestehend, ...req.body };
       return insertDoc(aktualisiert);
+    },
+  );
+
+  /**
+   * Startzeit eines Spiels manuell verschieben - alle NACHFOLGENDEN, noch geplanten
+   * Spiele wandern um dieselbe Zeitspanne mit (Abschnitt 8: "Die Turnierleitung darf...
+   * Startzeiten nachtraeglich anpassen"). Verschiebung per Delta statt Neuberechnung
+   * aus der Spieldauer-Formel, damit bereits bestehende, ggf. abweichende Abstaende
+   * zwischen spaeteren Spielen erhalten bleiben.
+   */
+  app.put<{ Params: { id: string }; Body: StartzeitBody }>(
+    "/spiele/:id/startzeit",
+    { schema: { body: startzeitSchema } },
+    async (req, reply) => {
+      const spiel = await findById<Spiel>(req.params.id);
+      if (!spiel) return reply.code(404).send({ error: "Spiel nicht gefunden" });
+      if (!spiel.startzeitGeplant) {
+        return reply.code(400).send({ error: "Spiel hat noch keine geplante Startzeit, die verschoben werden koennte" });
+      }
+
+      const alteZeit = new Date(spiel.startzeitGeplant).getTime();
+      const neueZeit = new Date(req.body.startzeitGeplant).getTime();
+      if (Number.isNaN(neueZeit)) {
+        return reply.code(400).send({ error: "Ungueltige Startzeit" });
+      }
+      const deltaMs = neueZeit - alteZeit;
+
+      const alleSpiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: spiel.turnierId });
+      const eigeneRunde = Number(spiel.runde);
+      const zuVerschieben = alleSpiele.filter(
+        (s) => s.status === "geplant" && s.startzeitGeplant && Number(s.runde) >= eigeneRunde,
+      );
+
+      const aktualisiert: Spiel[] = [];
+      for (const s of zuVerschieben) {
+        const neueStartzeit = new Date(new Date(s.startzeitGeplant!).getTime() + deltaMs).toISOString();
+        aktualisiert.push(await insertDoc({ ...s, startzeitGeplant: neueStartzeit }));
+      }
+
+      return aktualisiert;
     },
   );
 
