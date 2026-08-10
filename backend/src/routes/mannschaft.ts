@@ -15,8 +15,11 @@ interface MannschaftBody {
   ansprechpartnerTelefon?: string;
   ansprechpartnerEmail?: string;
   betreuer1Name?: string;
+  betreuer1IstSchiedsrichter?: boolean;
   betreuer2Name?: string;
+  betreuer2IstSchiedsrichter?: boolean;
   betreuer3Name?: string;
+  betreuer3IstSchiedsrichter?: boolean;
 }
 
 const mannschaftBodySchema = {
@@ -33,8 +36,11 @@ const mannschaftBodySchema = {
     ansprechpartnerTelefon: { type: "string" },
     ansprechpartnerEmail: { type: "string" },
     betreuer1Name: { type: "string" },
+    betreuer1IstSchiedsrichter: { type: "boolean" },
     betreuer2Name: { type: "string" },
+    betreuer2IstSchiedsrichter: { type: "boolean" },
     betreuer3Name: { type: "string" },
+    betreuer3IstSchiedsrichter: { type: "boolean" },
   },
 } as const;
 
@@ -48,8 +54,11 @@ interface MannschaftAktualisierungBody {
   ansprechpartnerTelefon?: string;
   ansprechpartnerEmail?: string;
   betreuer1Name?: string;
+  betreuer1IstSchiedsrichter?: boolean;
   betreuer2Name?: string;
+  betreuer2IstSchiedsrichter?: boolean;
   betreuer3Name?: string;
+  betreuer3IstSchiedsrichter?: boolean;
 }
 
 // Optionale Freitextfelder akzeptieren beim Aktualisieren bewusst auch null, damit ein
@@ -68,8 +77,11 @@ const mannschaftAktualisierungSchema = {
     ansprechpartnerTelefon: { type: ["string", "null"] },
     ansprechpartnerEmail: { type: ["string", "null"] },
     betreuer1Name: { type: ["string", "null"] },
+    betreuer1IstSchiedsrichter: { type: "boolean" },
     betreuer2Name: { type: ["string", "null"] },
+    betreuer2IstSchiedsrichter: { type: "boolean" },
     betreuer3Name: { type: ["string", "null"] },
+    betreuer3IstSchiedsrichter: { type: "boolean" },
   },
 } as const;
 

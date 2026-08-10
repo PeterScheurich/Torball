@@ -630,6 +630,9 @@ Mannschaft-im-Turnier
   - betreuer1_name, betreuer2_name, betreuer3_name (optional) ← bis zu drei
     Trainer/Betreuer; dürfen (Bundesliga) mit auf der Auswechselbank sitzen,
     daher an der Mannschaft geführt, nicht als Spieler
+  - betreuer1_ist_schiedsrichter / _2_ / _3_ (boolean) ← markiert, dass die
+    jeweilige Person zugleich Schiedsrichter ist (Trainer sind oft beides);
+    Anknüpfungspunkt zur Schiedsrichter-Verwaltung
   - importiert_aus_turnier_id (optional)
 ```
 

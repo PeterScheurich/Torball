@@ -403,6 +403,16 @@ form {
   margin-bottom: 16px;
 }
 
+/* "Schiedsrichter"-Kaestchen unter dem jeweiligen Betreuer-Namen: normale Textstaerke
+   (nicht fett wie ein Feld-Label) und Checkbox + Text in einer Zeile. */
+.betreuer-schiri {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+
 /* Aktionen-Spalte (Kader-Umschalter + Loeschen) in einer Zeile halten. */
 .mannschaft-aktionen {
   white-space: nowrap;

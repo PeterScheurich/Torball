@@ -117,8 +117,11 @@ export interface NeueMannschaft {
   vereinId?: string;
   bundesland?: string;
   betreuer1Name?: string;
+  betreuer1IstSchiedsrichter?: boolean;
   betreuer2Name?: string;
+  betreuer2IstSchiedsrichter?: boolean;
   betreuer3Name?: string;
+  betreuer3IstSchiedsrichter?: boolean;
 }
 
 export function getMannschaften(turnierId: string): Promise<MannschaftImTurnier[]> {
@@ -134,10 +137,14 @@ export interface MannschaftAktualisierung {
   vereinId?: string | null;
   /** null sendet, um ein gesetztes Bundesland gezielt zu leeren (siehe VereinAktualisierung). */
   bundesland?: string | null;
-  /** Trainer/Betreuer (bis zu drei) - null sendet, um einen Eintrag gezielt zu leeren. */
+  /** Trainer/Betreuer (bis zu drei) - null sendet, um einen Eintrag gezielt zu leeren.
+   * Das jeweilige IstSchiedsrichter-Flag markiert, dass die Person zugleich Schiedsrichter ist. */
   betreuer1Name?: string | null;
+  betreuer1IstSchiedsrichter?: boolean;
   betreuer2Name?: string | null;
+  betreuer2IstSchiedsrichter?: boolean;
   betreuer3Name?: string | null;
+  betreuer3IstSchiedsrichter?: boolean;
 }
 
 export function updateMannschaft(id: string, daten: MannschaftAktualisierung): Promise<MannschaftImTurnier> {

@@ -17,9 +17,24 @@ interface MannschaftBearbeitung {
   name: string;
   bundesland: string;
   betreuer1Name: string;
+  betreuer1IstSchiedsrichter: boolean;
   betreuer2Name: string;
+  betreuer2IstSchiedsrichter: boolean;
   betreuer3Name: string;
+  betreuer3IstSchiedsrichter: boolean;
 }
+
+type BetreuerNameKey = "betreuer1Name" | "betreuer2Name" | "betreuer3Name";
+type BetreuerSchiriKey =
+  | "betreuer1IstSchiedsrichter"
+  | "betreuer2IstSchiedsrichter"
+  | "betreuer3IstSchiedsrichter";
+
+const BETREUER_FELDER: { nameKey: BetreuerNameKey; schiriKey: BetreuerSchiriKey; label: string }[] = [
+  { nameKey: "betreuer1Name", schiriKey: "betreuer1IstSchiedsrichter", label: "Trainer/Betreuer 1" },
+  { nameKey: "betreuer2Name", schiriKey: "betreuer2IstSchiedsrichter", label: "Trainer/Betreuer 2" },
+  { nameKey: "betreuer3Name", schiriKey: "betreuer3IstSchiedsrichter", label: "Trainer/Betreuer 3" },
+];
 
 function verschobeneListe<T>(liste: T[], vonIndex: number, nachIndex: number): T[] {
   const kopie = [...liste];
@@ -97,8 +112,11 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
           name: m.name,
           bundesland: m.bundesland ?? "",
           betreuer1Name: m.betreuer1Name ?? "",
+          betreuer1IstSchiedsrichter: m.betreuer1IstSchiedsrichter ?? false,
           betreuer2Name: m.betreuer2Name ?? "",
+          betreuer2IstSchiedsrichter: m.betreuer2IstSchiedsrichter ?? false,
           betreuer3Name: m.betreuer3Name ?? "",
+          betreuer3IstSchiedsrichter: m.betreuer3IstSchiedsrichter ?? false,
         };
       }
       return naechster;
@@ -182,10 +200,15 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
     }
   }
 
-  /** Speichert automatisch beim Verlassen des Feldes - konsistent zu Loeschen/Verschieben, die auch sofort wirken. */
-  async function feldVerlassen(m: MannschaftImTurnier) {
-    const werte = bearbeitung[m._id];
-    if (!werte) return;
+  /**
+   * Speichert automatisch beim Verlassen des Feldes bzw. beim Umschalten einer Checkbox.
+   * `override` erlaubt es, den frisch geaenderten Wert direkt mitzugeben (bei Checkboxen,
+   * deren State-Update sonst noch nicht committed ist, wenn onChange den Save ausloest).
+   */
+  async function feldVerlassen(m: MannschaftImTurnier, override: Partial<MannschaftBearbeitung> = {}) {
+    const basis = bearbeitung[m._id];
+    if (!basis) return;
+    const werte = { ...basis, ...override };
 
     if (werte.name.trim() === "") {
       setFehler("Mannschaftsname darf nicht leer sein");
@@ -198,12 +221,20 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
     const betreuer1Neu = werte.betreuer1Name.trim() || null;
     const betreuer2Neu = werte.betreuer2Name.trim() || null;
     const betreuer3Neu = werte.betreuer3Name.trim() || null;
+    // Ohne Namen ist das Schiedsrichter-Flag bedeutungslos - dann konsequent auf false setzen,
+    // damit kein "verwaistes" Flag ohne zugehoerige Person zurueckbleibt.
+    const betreuer1SchiriNeu = betreuer1Neu ? werte.betreuer1IstSchiedsrichter : false;
+    const betreuer2SchiriNeu = betreuer2Neu ? werte.betreuer2IstSchiedsrichter : false;
+    const betreuer3SchiriNeu = betreuer3Neu ? werte.betreuer3IstSchiedsrichter : false;
     const unveraendert =
       werte.name === m.name &&
       bundeslandNeu === (m.bundesland ?? null) &&
       betreuer1Neu === (m.betreuer1Name ?? null) &&
       betreuer2Neu === (m.betreuer2Name ?? null) &&
-      betreuer3Neu === (m.betreuer3Name ?? null);
+      betreuer3Neu === (m.betreuer3Name ?? null) &&
+      betreuer1SchiriNeu === (m.betreuer1IstSchiedsrichter ?? false) &&
+      betreuer2SchiriNeu === (m.betreuer2IstSchiedsrichter ?? false) &&
+      betreuer3SchiriNeu === (m.betreuer3IstSchiedsrichter ?? false);
     if (unveraendert) return;
 
     try {
@@ -211,8 +242,11 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
         name: werte.name,
         bundesland: bundeslandNeu,
         betreuer1Name: betreuer1Neu,
+        betreuer1IstSchiedsrichter: betreuer1SchiriNeu,
         betreuer2Name: betreuer2Neu,
+        betreuer2IstSchiedsrichter: betreuer2SchiriNeu,
         betreuer3Name: betreuer3Neu,
+        betreuer3IstSchiedsrichter: betreuer3SchiriNeu,
       });
       await laden();
     } catch (err) {
@@ -367,48 +401,45 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
                 <tr>
                   <td colSpan={4} id={`kader-${m._id}`} className="kader-zelle">
                     <div className="betreuer-bereich">
-                      <div className="feld">
-                        <label htmlFor={`betreuer1-${m._id}`}>Trainer/Betreuer 1</label>
-                        <input
-                          id={`betreuer1-${m._id}`}
-                          value={bearbeitung[m._id]?.betreuer1Name ?? ""}
-                          onChange={(e) =>
-                            setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], betreuer1Name: e.target.value } }))
-                          }
-                          onBlur={() => feldVerlassen(m)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") e.currentTarget.blur();
-                          }}
-                        />
-                      </div>
-                      <div className="feld">
-                        <label htmlFor={`betreuer2-${m._id}`}>Trainer/Betreuer 2</label>
-                        <input
-                          id={`betreuer2-${m._id}`}
-                          value={bearbeitung[m._id]?.betreuer2Name ?? ""}
-                          onChange={(e) =>
-                            setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], betreuer2Name: e.target.value } }))
-                          }
-                          onBlur={() => feldVerlassen(m)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") e.currentTarget.blur();
-                          }}
-                        />
-                      </div>
-                      <div className="feld">
-                        <label htmlFor={`betreuer3-${m._id}`}>Trainer/Betreuer 3</label>
-                        <input
-                          id={`betreuer3-${m._id}`}
-                          value={bearbeitung[m._id]?.betreuer3Name ?? ""}
-                          onChange={(e) =>
-                            setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], betreuer3Name: e.target.value } }))
-                          }
-                          onBlur={() => feldVerlassen(m)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") e.currentTarget.blur();
-                          }}
-                        />
-                      </div>
+                      {BETREUER_FELDER.map(({ nameKey, schiriKey, label }) => {
+                        const nameWert = bearbeitung[m._id]?.[nameKey] ?? "";
+                        const hatName = nameWert.trim() !== "";
+                        return (
+                          <div className="feld" key={nameKey}>
+                            <label htmlFor={`${nameKey}-${m._id}`}>{label}</label>
+                            <input
+                              id={`${nameKey}-${m._id}`}
+                              value={nameWert}
+                              onChange={(e) =>
+                                setBearbeitung((b) => ({
+                                  ...b,
+                                  [m._id]: { ...b[m._id], [nameKey]: e.target.value },
+                                }))
+                              }
+                              onBlur={() => feldVerlassen(m)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") e.currentTarget.blur();
+                              }}
+                            />
+                            <label className="betreuer-schiri">
+                              <input
+                                type="checkbox"
+                                checked={bearbeitung[m._id]?.[schiriKey] ?? false}
+                                disabled={!hatName}
+                                onChange={(e) => {
+                                  const istSchiedsrichter = e.target.checked;
+                                  setBearbeitung((b) => ({
+                                    ...b,
+                                    [m._id]: { ...b[m._id], [schiriKey]: istSchiedsrichter },
+                                  }));
+                                  feldVerlassen(m, { [schiriKey]: istSchiedsrichter });
+                                }}
+                              />{" "}
+                              Schiedsrichter
+                            </label>
+                          </div>
+                        );
+                      })}
                     </div>
                     <h3 className="kader-titel">Kader – {m.name}</h3>
                     <SpielerKader

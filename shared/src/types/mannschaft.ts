@@ -20,11 +20,17 @@ export interface MannschaftImTurnier extends CouchMeta {
   /**
    * Bis zu drei Trainer/Betreuer je Mannschaft (alle optional). Fachlicher Hintergrund
    * (Bundesliga): diese Personen dürfen mit auf der Auswechselbank sitzen – daher werden
-   * sie an der Mannschaft und nicht als Spieler geführt.
+   * sie an der Mannschaft und nicht als Spieler geführt. Das jeweilige
+   * `betreuerNIstSchiedsrichter`-Flag markiert, dass die Person zugleich als
+   * Schiedsrichter fungiert (Trainer sind häufig beides) – Anknüpfungspunkt zur
+   * Schiedsrichter-Verwaltung.
    */
   betreuer1Name?: string;
+  betreuer1IstSchiedsrichter?: boolean;
   betreuer2Name?: string;
+  betreuer2IstSchiedsrichter?: boolean;
   betreuer3Name?: string;
+  betreuer3IstSchiedsrichter?: boolean;
   importiertAusTurnierId?: TurnierId;
   /**
    * Manuelle Sortierposition innerhalb des Turniers (nicht Teil der
