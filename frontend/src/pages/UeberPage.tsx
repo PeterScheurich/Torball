@@ -11,7 +11,7 @@ import { APP_VERSION } from "../version";
 // Kontaktdaten des Entwicklers – vom Betreiber auszufüllen (bewusst nicht von der KI vorbelegt,
 // damit klar ist, welche Adresse hier steht). `email` leer lassen blendet den Mail-Link aus.
 const ENTWICKLER = {
-  name: "«Name der Entwicklerin / des Entwicklers»", // TODO: vom Betreiber bestätigen
+  name: "Peter Scheurich",
   email: "software@blindentorball.de",
 };
 
