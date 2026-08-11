@@ -8,6 +8,7 @@ import { QrCode } from "../components/QrCode";
 import { SchiedsrichterVerwaltung } from "../components/SchiedsrichterVerwaltung";
 import { SpielplanVerwaltung } from "../components/SpielplanVerwaltung";
 import { TurnierFreigabe } from "../components/TurnierFreigabe";
+import { TurnierPruefung } from "../components/TurnierPruefung";
 import { TurnierregelnFormular } from "../components/TurnierregelnFormular";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 
@@ -478,6 +479,8 @@ export function TurnierVerwaltenPage() {
         </p>
 
         <TurnierFreigabe turnierId={turnierId} />
+
+        <TurnierPruefung turnier={turnier} />
       </div>
 
       <div role="tabpanel" id="panel-regeln" aria-labelledby="tab-regeln" hidden={aktiverTab !== "regeln"}>

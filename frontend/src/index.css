@@ -917,6 +917,35 @@ button:hover:not(:disabled) {
   font-weight: 600;
 }
 
+/* Ergebnisliste von „Turnier prüfen": je Zeile ein Symbol + Text, Symbolfarbe nach Status. */
+.pruef-liste {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+}
+.pruef-liste li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 4px 0;
+}
+.pruef-symbol {
+  width: 1.2em;
+  text-align: center;
+  font-weight: 700;
+  flex: none;
+}
+.pruef-ok .pruef-symbol {
+  color: var(--accent);
+}
+.pruef-hinweis .pruef-symbol,
+.pruef-fehler .pruef-symbol {
+  color: var(--danger);
+}
+.pruef-info .pruef-symbol {
+  color: var(--text-muted);
+}
+
 /* Hinweis auf dem Spielplan, dass sich die Basiskonfiguration seit der Erzeugung geaendert hat
    (mit Aufzaehlung, was genau). Auffaellig, aber nicht als harter Fehler gestaltet. */
 .konfig-aenderung-hinweis {
