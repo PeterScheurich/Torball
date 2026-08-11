@@ -88,6 +88,25 @@ nach Art und grob priorisiert. Erledigte Hilfe-Textänderungen siehe Commit
 15. **[ERLEDIGT 2026-08-11]** `docs/README.md` auf die real vorhandenen Dateien
     aktualisiert.
 
+## G. Zweite Feedback-Runde (2026-08-11)
+
+16. **[ERLEDIGT]** Pflichtfelder auch in Datentabellen kennzeichnen: Die
+    Anlege-Formulare waren markiert, in den Tabellen (Übersicht-Name; Stammdaten
+    Vereine/Teams; Turnier Schiedsrichter/Mannschaften/Kader) fehlte das Sternchen.
+    Jetzt tragen die Pflicht-Spaltenköpfe bzw. das Übersicht-Namensfeld ein `*`.
+    (Profil-E-Mail/-Passwort bewusst nicht markiert – optionale Änderungsformulare.)
+17. **[ERLEDIGT]** Turnierregeln pflegbar (Spielzeit, Pausen, Timeouts, Wertung, …):
+    gemeinsamer Typ `Turnierregeln`; Bearbeitung je Turnier (neuer Reiter „Regeln")
+    UND zentrale Standardwerte (Systemkonfiguration, Admin-Seite „Standardregeln",
+    neue Turniere kopieren die aktuelle Version). Noch NICHT in der UI: die
+    Konfig-Felder `forfaitErgebnis`/`passwortMindestlaenge` (im Typ vorhanden, aber
+    noch nirgends wirksam) – bewusst weggelassen, bis sie tatsächlich verdrahtet sind.
+18. **[ERLEDIGT]** Basiskonfig-Änderung nach Spielplan-Erzeugung: Schnappschuss am
+    Turnier (`spielplanBasis`); auf dem Spielplan ein Hinweis, der konkret auflistet,
+    was sich geändert hat (Modus/Felder/Mannschaften/Spielzeit/Pause/Halbzeiten/
+    Startzeit); proaktive Rückfrage bei Modus- und Mannschafts-Änderung, solange ein
+    Spielplan existiert.
+
 ## Bereits geklärt
 
 - **Session-Cross-Browser:** endgültig als Fehlalarm bestätigt – ein geschützter
