@@ -112,6 +112,16 @@ nach Art und grob priorisiert. Erledigte Hilfe-Textänderungen siehe Commit
     Startzeit); proaktive Rückfrage bei Modus- und Mannschafts-Änderung, solange ein
     Spielplan existiert.
 
+19. **[ERLEDIGT]** Weiterer Feinschliff: Sicherheitsabfrage beim „Auf Standardwerte
+    zurücksetzen"; Ergebnis-Status „Abgeschlossen" → „Fertig"; nicht blockierender
+    Kader-Hinweis bei zu vielen sehenden Spielern (Klassifizierung kann sich noch
+    ändern → bewusst keine Sperre).
+20. **[ERLEDIGT]** Prüfroutine „Turnier prüfen" (Übersicht): sammelt Regelverstöße/
+    Auffälligkeiten in einer Liste, ohne zu blockieren (Spielfelder, Mannschaften,
+    sehende Spieler, Trikotnummern, Spielplan + Aktualität, Spiele-hintereinander,
+    Schiedsrichter/Turnierleitung – Schiedsrichter-Punkt **immer** sichtbar, bei
+    ausgeschalteter Planung als „nicht aktiviert"). Logik in `turnierPruefung.ts`.
+
 ## Bereits geklärt
 
 - **Session-Cross-Browser:** endgültig als Fehlalarm bestätigt – ein geschützter
