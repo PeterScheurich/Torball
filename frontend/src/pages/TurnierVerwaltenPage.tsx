@@ -7,6 +7,7 @@ import { MannschaftenListe } from "../components/MannschaftenListe";
 import { QrCode } from "../components/QrCode";
 import { SchiedsrichterVerwaltung } from "../components/SchiedsrichterVerwaltung";
 import { SpielplanVerwaltung } from "../components/SpielplanVerwaltung";
+import { TurnierFreigabe } from "../components/TurnierFreigabe";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 
 type Tab = "uebersicht" | "mannschaften" | "schiedsrichter" | "spielplan" | "ergebnisse";
@@ -450,6 +451,8 @@ export function TurnierVerwaltenPage() {
         <p className="feld-hinweis">
           QR-Code zum Aushängen – wer ihn scannt, kommt direkt auf die öffentliche Turnierseite.
         </p>
+
+        <TurnierFreigabe turnierId={turnierId} />
       </div>
 
       <div
