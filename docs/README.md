@@ -2,13 +2,20 @@
 
 Diese Dateien sind die führende Fassung der Projektdokumentation.
 Änderungen bitte hier vornehmen und anschließend mit
-`node scripts/bookstack-push.mjs` nach BookStack übertragen.
+`node scripts/bookstack-push.mjs` nach BookStack übertragen (das Skript
+überträgt die Markdown-Dateien direkt in diesem Ordner – ohne diese
+`README.md` und ohne Unterordner).
 
 ## Inhalt
 
-- [Installation / Konfiguration](01-installation-konfiguration.md)
-- [Neues Projekt erstellen](02-neues-projekt-erstellen.md)
-- [Torball – Fachliche Spezifikation](03-torball-fachliche-spezifikation.md)
-- [Torball – Technische Spezifikation](04-torball-technische-spezifikation.md)
-- [Torball-Turniere – Entwicklungsumgebung: Workflow](05-torball-turniere-entwicklungsumgebung-workflow.md)
-- [Spezifikationsergänzugen (20.07.2026)](06-spezifikationsergaenzugen-20-07-2026.md)
+- [Installation / Konfiguration](installation-konfiguration.md)
+- [Testumgebung starten](testumgebung-starten.md)
+- [Torball – Gesamtspezifikation (fachlich & technisch)](torball_gesamtspezifikation.md)
+
+## Weitere Ordner
+
+- [`Protokolle/`](Protokolle/) – datierte Sitzungsprotokolle zu größeren
+  Entscheidungen und dabei gefundenen Bugs (nicht nach BookStack übertragen).
+- `Archiv/` – ältere, ersetzte Fassungen (u. a. die frühere Aufteilung in
+  fachliche und technische Spezifikation) nur zur Nachschau. Der Ordner ist
+  **git-ignoriert** (nur lokal vorhanden).

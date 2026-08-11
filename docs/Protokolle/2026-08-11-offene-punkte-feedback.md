@@ -32,12 +32,13 @@ nach Art und grob priorisiert. Erledigte Hilfe-Textänderungen siehe Commit
 7. **Assistent um Schiedsrichter-Schritt erweitern:** Im Anlege-Assistenten
    abfragen, ob eine Schiedsrichter-Planung genutzt werden soll. Wenn ja, direkt
    nach den Mannschaften auch die Schiedsrichter im Assistenten erfassen.
-8. **Sofort-Speichern der Ergebnisse (Entscheidung offen):** Vorschlag, ein
-   Ergebnis unmittelbar zu speichern, sobald **beide** Werte (Tore A UND Tore B)
-   eingegeben sind – analog zu anderen Stellen der App – und den expliziten
-   Speichern-Button einzusparen. Nutzer „am Überlegen"; vor Umsetzung entscheiden.
-   Betrifft `ErgebnisVerwaltung.tsx`, `ErgebnisErfassungPage.tsx`,
-   `useErgebnisEingaben.ts`. Wechselwirkung mit Punkt 2 (Lösch-Button) beachten.
+8. **Ergebnis-Erfassung überarbeiten (vom Nutzer zurückgestellt – erst
+   besprechen):** Enthält das **Sofort-Speichern** (Richtung vom Nutzer bereits
+   bestätigt: speichern, sobald Tore A UND B stehen; expliziter Speichern-Button
+   entfällt), den **Lösch-/Korrigier-Button** (Punkt 2) und die
+   **„n. a."-Beschriftung** (Punkt 11). Der Umbau insgesamt wird vor der Umsetzung
+   noch einmal gemeinsam besprochen. Betrifft `ErgebnisVerwaltung.tsx`,
+   `ErgebnisErfassungPage.tsx`, `useErgebnisEingaben.ts`.
 
 ## C. Bugs / UX vor Veröffentlichung
 
@@ -59,18 +60,29 @@ nach Art und grob priorisiert. Erledigte Hilfe-Textänderungen siehe Commit
 11. **„A n. a." / „B n. a." Beschriftung:** In der Ergebnis-Erfassung sind diese
     Kürzel nicht selbsterklärend (die Hilfe erklärt sie jetzt). Vor dem Build den
     Nutzer fragen, ob ihm eine bessere Beschriftung/Lösung eingefallen ist.
-12. **Offline-/Lokal-Turnier:** Die Hilfe („Erste Schritte") sagt jetzt zu, dass
-    ein „schnelles" Turnier bei lokaler Installation ohne Serververbindung möglich
-    ist. Bestätigen, dass das eine tatsächlich verfügbare Funktion ist (nicht nur
-    geplant), sonst Text anpassen.
+12. **Offline-/Lokal-Betrieb (spezifiziertes Kernfeature, noch genauer zu
+    spezifizieren):** Vom Nutzer bestätigt als von Anfang an vorgesehener
+    Bestandteil mit drei Ausprägungen:
+    - **(a)** Turnier lokal ohne Internet/Server planen und später beim Anmelden
+      am zentralen Server dorthin übernehmen.
+    - **(b)** Reines Offline-Turnier, das bewusst **nicht** mit dem Server geteilt
+      wird (z. B. Hobbyturniere ohne Veröffentlichung).
+    - **(c)** **Host-Modus im lokalen Netz** (kein WLAN/Internet in der Halle):
+      einer der Rechner fungiert als Host; Turnier vorher lokal abgelegt oder neu
+      erstellt.
+    Umsetzungsstand/Spezifikation der drei Modi vor Umsetzung noch schärfen. Der
+    aktuelle Hilfe-Satz („bei lokaler Installation offline möglich") bleibt so, da
+    er nur die einfachste, zutreffende Aussage macht.
 
-## F. Doku-Aufgaben (in Arbeit / als Nächstes)
+## F. Doku-Aufgaben
 
-13. **README.md im Repo-Wurzelverzeichnis** neu/aktuell erstellen (sobald die Hilfe
-    inhaltlich steht).
-14. **`docs/Archiv/` aus der Git-Verwaltung nehmen** (`git rm -r --cached`, Dateien
-    auf der Platte behalten) und in `.gitignore` aufnehmen.
-15. **`docs/README.md` aktualisieren** (veraltet).
+13. **[ERLEDIGT 2026-08-11]** README.md im Repo-Wurzelverzeichnis als vollständige
+    Projektbeschreibung neu erstellt.
+14. **[ERLEDIGT 2026-08-11]** `docs/Archiv/` aus der Git-Verwaltung genommen
+    (`git rm -r --cached`, Dateien lokal behalten) und in `.gitignore` aufgenommen;
+    Hinweis in CLAUDE.md aktualisiert.
+15. **[ERLEDIGT 2026-08-11]** `docs/README.md` auf die real vorhandenen Dateien
+    aktualisiert.
 
 ## Bereits geklärt
 

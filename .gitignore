@@ -142,3 +142,6 @@ scripts/.env
 # Claude Code: lokale, maschinenspezifische Artefakte (launch.json bleibt bewusst getrackt).
 .claude/settings.local.json
 .claude/worktrees/
+
+# Doku-Archiv: nur lokal zur Versionierung/Nachschau, nicht im Repository verwalten.
+docs/Archiv/

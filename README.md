@@ -1,3 +1,97 @@
 # Torball-Turniere
 
-Ein Projekt, um Torball-Turniere planen und während des Turniers am Computer protokollieren zu können
+Eine Web-Anwendung, um **Torball-Turniere zu planen und während des Turniers am
+Computer zu protokollieren** – von den teilnehmenden Mannschaften über Spielplan
+und Schiedsrichter-Einteilung bis zu Ergebnissen, einer öffentlichen
+Turnierseite und einer barrierefreien Bedienung.
+
+## Funktionsüberblick
+
+- **Turnierplanung** per Assistent: Grunddaten, Mannschaften (mit Kader und
+  Trainer/Betreuern), Schiedsrichter, Spielplan.
+- **Stammdaten** für Vereine und Teams, turnierübergreifend wiederverwendbar.
+- **Spielplan-Vorschlag** mit Regel-Warnungen (z. B. zwei Spiele hintereinander)
+  und **Schiedsrichter-Zuordnung** als bewusster Schritt (kein Automatismus).
+- **Ergebniserfassung** direkt in der App oder über einen teilbaren
+  Erfassungslink (mit QR-Code) ohne Login – z. B. für Helfer an den Spielfeldern.
+- **Öffentliche Turnierseite** je Turnier (ohne Login), Bereiche einzeln
+  freischaltbar, mit QR-Code zum Öffnen auf dem Smartphone.
+- **Benutzerverwaltung** mit Rollen, Einladungs-Flow, Zwei-Faktor-Anmeldung.
+- **In-App-Hilfe** unter `/hilfe` sowie kontextbezogene Hilfe auf öffentlichen
+  Seiten.
+- **Barrierefreiheit & Theming** von Anfang an: Tastaturbedienung, sichtbarer
+  Fokus, Hell-/Dunkelmodus und Zeilenabstand einstellbar.
+
+## Technischer Aufbau
+
+Monorepo mit drei npm-Workspaces:
+
+| Workspace | Rolle | Stack |
+|---|---|---|
+| `shared` | gemeinsame Typen/Logik | TypeScript (CommonJS) |
+| `backend` | API | Fastify, CouchDB (via `nano`) |
+| `frontend` | Web-Oberfläche | React, Vite, React Router |
+
+Datenhaltung: eine einzige CouchDB-Datenbank, alle Entitäten über ein
+`docType`-Feld unterschieden. Authentifizierung: server-seitige Sessions per
+Cookie (kein JWT).
+
+## Voraussetzungen
+
+- Node.js (aktuelles LTS) und npm
+- Erreichbare CouchDB-Instanz (siehe `docs/installation-konfiguration.md` bzw.
+  `docs/testumgebung-starten.md`)
+
+## Schnellstart
+
+```bash
+# Abhängigkeiten installieren
+npm install
+
+# Backend-Konfiguration anlegen und ausfüllen (CouchDB-Zugang etc.)
+cp backend/.env.example backend/.env
+
+# shared IMMER zuerst bauen (backend/frontend lösen @torball/shared gegen shared/dist auf)
+npm run build --workspace=shared
+npm run build            # baut anschließend alle Workspaces
+```
+
+Entwicklungs-Server (in zwei Terminals):
+
+```bash
+npm run dev:backend      # Fastify auf Port 3000
+npm run dev:frontend     # Vite auf Port 5173 (proxied /api -> localhost:3000)
+```
+
+Beim allerersten Start (noch kein Benutzer vorhanden) weist die Anmeldeseite auf
+die einmalige Ersteinrichtung eines Admin-Kontos hin.
+
+## Tests & Lint
+
+```bash
+npm run test --workspace=backend      # node:test via tsx
+npm run lint --workspace=frontend     # oxlint
+```
+
+Eine einzelne Testdatei (im Ordner `backend/`):
+
+```bash
+npx tsx --test src/spielplan/planung.test.ts
+```
+
+## Konsolen-Tool
+
+Administrative Aufgaben ohne Web-Login (z. B. einen gesperrten Admin entsperren):
+
+```bash
+npm run torball --workspace=backend -- --hilfe
+```
+
+## Dokumentation
+
+Die führende Projektdokumentation liegt unter [`docs/`](docs/README.md); die
+verbindliche fachliche Referenz ist
+[`docs/torball_gesamtspezifikation.md`](docs/torball_gesamtspezifikation.md).
+Größere Entscheidungen sind als datierte Protokolle unter `docs/Protokolle/`
+festgehalten. Hinweise speziell für die Arbeit mit Claude Code stehen in
+[`CLAUDE.md`](CLAUDE.md).

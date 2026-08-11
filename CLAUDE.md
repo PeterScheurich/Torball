@@ -245,8 +245,9 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
 
 - Eigene Testdaten (Turniere, Mannschaften, Spiele) dürfen jederzeit frei
   gelöscht oder verändert werden, außer im Einzelfall anders angegeben.
-- `docs/Archiv/` ist nur für Versionierung gedacht – nicht bearbeiten, nicht
-  löschen.
+- `docs/Archiv/` ist nur für Versionierung/Nachschau gedacht – nicht bearbeiten,
+  nicht löschen. Der Ordner ist **git-ignoriert** (nur lokal vorhanden, siehe
+  `.gitignore`), taucht also nicht mehr im Repository auf.
 
 ## Barrierefreiheit & Theming
 
