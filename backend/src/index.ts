@@ -16,6 +16,7 @@ import { spielRoutes } from "./routes/spiel";
 import { ergebnisRoutes } from "./routes/ergebnis";
 import { ergebnisTokenRoutes } from "./routes/ergebnisToken";
 import { oeffentlichRoutes } from "./routes/oeffentlich";
+import { systemkonfigurationRoutes } from "./routes/systemkonfiguration";
 
 const server = Fastify({ logger: true });
 
@@ -46,6 +47,7 @@ const start = async () => {
     server.register(ergebnisRoutes);
     server.register(ergebnisTokenRoutes);
     server.register(oeffentlichRoutes);
+    server.register(systemkonfigurationRoutes);
 
     await ensureIndexes();
     await server.listen({ port: 3000, host: "0.0.0.0" });

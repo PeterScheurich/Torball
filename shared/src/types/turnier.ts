@@ -24,8 +24,35 @@ export interface Spielfeld {
   name: string;
 }
 
+/**
+ * Regel-/Wertungsparameter eines Turniers (Spielzeit, Pausen, Timeouts, Wertung, …). Als
+ * eigener Typ, damit die Systemkonfiguration (Standardwerte) und das Turnier (die beim Anlegen
+ * kopierten Werte) exakt dieselben Felder tragen und nicht auseinanderlaufen. Nicht enthalten
+ * sind bewusst die turnierindividuellen, nicht als "Standard" sinnvollen Felder wie Name,
+ * Datum, Spielfelder oder der Spielmodus.
+ */
+export interface Turnierregeln {
+  spielzeitMinuten: number;
+  anzahlHalbzeiten: number;
+  pauseMinuten: number;
+  seitenwechsel: boolean;
+  timeoutsJeHalbzeit: number;
+  timeoutDauerSekunden: number;
+  auswechslungenJeHalbzeit: number;
+  tordifferenzAbbruch: boolean;
+  tordifferenzLimit: number;
+  verlaengerungAktiv: boolean;
+  silbernesTor: boolean;
+  maxSehendeSpieler: number;
+  einstelligeTrikotnummern: boolean;
+  punkteSieg: number;
+  punkteUnentschieden: number;
+  punkteNiederlage: number;
+  tabellenKriterien: TabellenKriterium[];
+}
+
 /** Siehe Gesamtspezifikation Abschnitt 20.5. */
-export interface Turnier extends CouchMeta {
+export interface Turnier extends CouchMeta, Turnierregeln {
   docType: "turnier";
   turnierId: TurnierId;
   wettbewerbId?: WettbewerbId;
@@ -53,24 +80,6 @@ export interface Turnier extends CouchMeta {
    * Schiedsrichter-Verwaltung selbst bleibt jederzeit ueber den gleichnamigen Reiter erreichbar.
    */
   schiedsrichterPlanung?: boolean;
-  spielzeitMinuten: number;
-  anzahlHalbzeiten: number;
-  pauseMinuten: number;
-  seitenwechsel: boolean;
-  timeoutsJeHalbzeit: number;
-  timeoutDauerSekunden: number;
-  auswechslungenJeHalbzeit: number;
-  tordifferenzAbbruch: boolean;
-  tordifferenzLimit: number;
-  verlaengerungAktiv: boolean;
-  silbernesTor: boolean;
-  maxSehendeSpieler: number;
-  einstelligeTrikotnummern: boolean;
-
-  punkteSieg: number;
-  punkteUnentschieden: number;
-  punkteNiederlage: number;
-  tabellenKriterien: TabellenKriterium[];
 
   spielernamenOeffentlich: boolean;
 

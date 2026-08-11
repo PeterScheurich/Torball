@@ -5,13 +5,14 @@ import type {
   SchiedsrichterImTurnier,
   Spiel,
   Spieler,
-  TabellenKriterium,
   Turnier,
+  Turnierregeln,
   TurnierStatus,
 } from "@torball/shared";
 import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth, requireRolle } from "../auth/plugin";
 import { hatMindestens } from "../auth/turnierZugriff";
+import { aktuelleTurnierregeln } from "../konfiguration";
 
 /** Felder, die der Client beim Anlegen setzen kann; alles andere bekommt einen Default (Abschnitt 20.5). */
 type TurnierBody = Partial<Omit<Turnier, "_id" | "_rev" | "docType" | "turnierId">> &
@@ -32,40 +33,20 @@ const turnierBodySchema = {
   additionalProperties: true,
 } as const;
 
-/** Standardwerte laut Gesamtspezifikation Abschnitt 20.5. */
-function turnierDefaults(): Omit<Turnier, "_id" | "docType" | "turnierId" | "name" | "datum" | "erstelltAm"> {
+/** Standardwerte laut Gesamtspezifikation Abschnitt 20.5. Die Regelfelder kommen als `regeln`
+ * herein (aus der aktuellen Systemkonfiguration bzw. den fest verdrahteten Standardregeln). */
+function turnierDefaults(
+  regeln: Turnierregeln,
+): Omit<Turnier, "_id" | "docType" | "turnierId" | "name" | "datum" | "erstelltAm"> {
   const status: TurnierStatus = "entwurf";
   const protokollierungsart: Protokollierungsart = "digital";
-  const tabellenKriterien: TabellenKriterium[] = [
-    "punkte",
-    "tordifferenz",
-    "tore",
-    "direkter_vergleich",
-    "freiwuerfe",
-  ];
 
   return {
     status,
     felder: [],
     protokollierungsart,
     spielplanModus: "einfach",
-    spielzeitMinuten: 5,
-    anzahlHalbzeiten: 2,
-    pauseMinuten: 2,
-    seitenwechsel: true,
-    timeoutsJeHalbzeit: 1,
-    timeoutDauerSekunden: 30,
-    auswechslungenJeHalbzeit: 3,
-    tordifferenzAbbruch: true,
-    tordifferenzLimit: 10,
-    verlaengerungAktiv: true,
-    silbernesTor: true,
-    maxSehendeSpieler: 1,
-    einstelligeTrikotnummern: true,
-    punkteSieg: 2,
-    punkteUnentschieden: 1,
-    punkteNiederlage: 0,
-    tabellenKriterien,
+    ...regeln,
     spielernamenOeffentlich: false,
     spielplanFreigegeben: false,
     spielplanVersion: 0,
@@ -105,13 +86,15 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     async (req, reply) => {
       if (!requireRolle(req, reply, ["admin", "manager"])) return;
       const id = newId("turnier");
+      const { regeln, version } = await aktuelleTurnierregeln();
       const turnier: Turnier = {
         _id: id,
         docType: "turnier",
         turnierId: id,
         erstelltAm: new Date().toISOString(),
         erstelltVon: req.benutzer!._id,
-        ...turnierDefaults(),
+        erstelltMitKonfigVersion: version,
+        ...turnierDefaults(regeln),
         ...req.body,
       };
       const gespeichert = await insertDoc(turnier);
