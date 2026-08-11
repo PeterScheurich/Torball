@@ -779,15 +779,37 @@ button:disabled {
 .regeln-formular {
   max-width: none;
 }
+/* Optionen bewusst untereinander (nicht nebeneinander), damit sie sich klar abgrenzen. */
 .regeln-gruppe {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 16px;
-  margin-bottom: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 .regeln-gruppe .feld {
-  max-width: 16em;
+  max-width: 22em;
+}
+/* Von einer Option abhaengiges Feld leicht eingerueckt (z.B. Tordifferenz-Grenze unter dem
+   Abbruch-Schalter, silbernes Tor unter der Verlaengerung). */
+.regeln-abhaengig {
+  margin-left: 24px;
+}
+.forfait-eingabe {
+  width: 5em;
+}
+.regeln-knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+/* Sekundaerer Knopf (z.B. „Auf Standardwerte zuruecksetzen"): weniger dominant als der
+   primaere Speichern-Knopf. */
+.button-sekundaer {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
 }
 .kriterien-liste {
   max-width: 24em;

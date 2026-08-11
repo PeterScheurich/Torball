@@ -17,7 +17,7 @@ export function SpielplanErstellenPage() {
       .catch(() => {});
   }, [turnierId]);
 
-  const gesamtSchritte = schiedsrichterPlanung ? 4 : 3;
+  const gesamtSchritte = schiedsrichterPlanung ? 5 : 4;
   const zurueckPfad = schiedsrichterPlanung
     ? `/turniere/${encodeURIComponent(turnierId)}/schiedsrichter-erfassen`
     : `/turniere/${encodeURIComponent(turnierId)}/mannschaften-erfassen`;

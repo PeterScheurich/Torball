@@ -33,7 +33,7 @@ export function TurnierAnlegenPage() {
         protokollierungsart,
         schiedsrichterPlanung,
       });
-      navigate(`/turniere/${encodeURIComponent(neu._id)}/mannschaften-erfassen`);
+      navigate(`/turniere/${encodeURIComponent(neu._id)}/regeln-erfassen`);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Anlegen");
     }
@@ -41,7 +41,7 @@ export function TurnierAnlegenPage() {
 
   return (
     <>
-      <p>Schritt 1 von {schiedsrichterPlanung ? 4 : 3}: Turnier anlegen</p>
+      <p>Schritt 1 von {schiedsrichterPlanung ? 5 : 4}: Turnier anlegen</p>
       <h1>Neues Turnier</h1>
 
       <p className="pflicht-legende">
@@ -108,7 +108,7 @@ export function TurnierAnlegenPage() {
         </div>
 
         {fehler && <p role="alert">{fehler}</p>}
-        <button type="submit">Weiter zu Mannschaften</button>
+        <button type="submit">Weiter zu Regeln</button>
       </form>
     </>
   );

@@ -17,7 +17,7 @@ export function MannschaftenErfassenPage() {
       .catch(() => {});
   }, [turnierId]);
 
-  const gesamtSchritte = schiedsrichterPlanung ? 4 : 3;
+  const gesamtSchritte = schiedsrichterPlanung ? 5 : 4;
   const naechsterPfad = schiedsrichterPlanung
     ? `/turniere/${encodeURIComponent(turnierId)}/schiedsrichter-erfassen`
     : `/turniere/${encodeURIComponent(turnierId)}/spielplan-erstellen`;
@@ -26,7 +26,7 @@ export function MannschaftenErfassenPage() {
   return (
     <>
       <p>
-        Schritt 2 von {gesamtSchritte}: Mannschaften erfassen ·{" "}
+        Schritt 3 von {gesamtSchritte}: Mannschaften erfassen ·{" "}
         <Link to={`/turniere/${encodeURIComponent(turnierId)}`}>Später fortsetzen</Link>
       </p>
       <h1>Mannschaften</h1>

@@ -33,6 +33,7 @@ export const STANDARD_TURNIERREGELN: Turnierregeln = {
   punkteUnentschieden: 1,
   punkteNiederlage: 0,
   tabellenKriterien: STANDARD_TABELLEN_KRITERIEN,
+  forfaitErgebnis: "3:0",
 };
 
 /** Die Namen aller Regelfelder - fuer das Herauskopieren aus einem Turnier/einer Konfiguration. */

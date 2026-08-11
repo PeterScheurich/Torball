@@ -15,7 +15,7 @@ export function SchiedsrichterErfassenPage() {
   return (
     <>
       <p>
-        Schritt 3 von 4: Schiedsrichter erfassen ·{" "}
+        Schritt 4 von 5: Schiedsrichter erfassen ·{" "}
         <Link to={`/turniere/${encodeURIComponent(turnierId)}/mannschaften-erfassen`}>Zurück zu Mannschaften</Link>
       </p>
       <h1>Schiedsrichter</h1>

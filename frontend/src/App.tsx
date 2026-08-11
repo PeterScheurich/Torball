@@ -2,6 +2,7 @@ import { Link, NavLink, Route, Routes, useLocation, useNavigate } from "react-ro
 import { TurnierListePage } from "./pages/TurnierListePage";
 import { TurnierAnlegenPage } from "./pages/TurnierAnlegenPage";
 import { MannschaftenErfassenPage } from "./pages/MannschaftenErfassenPage";
+import { SpielregelnErfassenPage } from "./pages/SpielregelnErfassenPage";
 import { SchiedsrichterErfassenPage } from "./pages/SchiedsrichterErfassenPage";
 import { SpielplanErstellenPage } from "./pages/SpielplanErstellenPage";
 import { TurnierVerwaltenPage } from "./pages/TurnierVerwaltenPage";
@@ -138,6 +139,7 @@ function App() {
             <Route path="/stammdaten" element={<StammdatenPage />} />
             <Route path="/standardregeln" element={<StandardregelnPage />} />
             <Route path="/turniere/neu" element={<TurnierAnlegenPage />} />
+            <Route path="/turniere/:id/regeln-erfassen" element={<SpielregelnErfassenPage />} />
             <Route path="/turniere/:id/mannschaften-erfassen" element={<MannschaftenErfassenPage />} />
             <Route path="/turniere/:id/schiedsrichter-erfassen" element={<SchiedsrichterErfassenPage />} />
             <Route path="/turniere/:id/spielplan-erstellen" element={<SpielplanErstellenPage />} />

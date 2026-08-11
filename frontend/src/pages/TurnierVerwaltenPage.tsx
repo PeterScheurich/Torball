@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import type { Protokollierungsart, Spielmodus, Turnier, Turnierregeln } from "@torball/shared";
-import { getTurnier, updateTurnier } from "../api";
+import { getSystemkonfiguration, getTurnier, updateTurnier } from "../api";
 import { ErgebnisVerwaltung } from "../components/ErgebnisVerwaltung";
 import { MannschaftenListe } from "../components/MannschaftenListe";
 import { QrCode } from "../components/QrCode";
@@ -485,6 +485,7 @@ export function TurnierVerwaltenPage() {
         <TurnierregelnFormular
           werte={turnier}
           onSpeichern={regelnSpeichern}
+          standardWerte={getSystemkonfiguration}
           hinweis="Diese Regeln gelten nur für dieses Turnier. Die Standardwerte für neue Turniere legst du unter Stammdaten → Standardregeln fest."
         />
       </div>

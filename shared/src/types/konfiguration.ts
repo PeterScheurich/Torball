@@ -16,7 +16,6 @@ export interface Systemkonfiguration extends CouchMeta, Turnierregeln {
   version: number;
   istAktuell: boolean;
   gueltigAb: Zeitstempel;
-  forfaitErgebnis: string;
   passwortMindestlaenge: number;
   geaendertVon?: BenutzerId;
   geaendertAm?: Zeitstempel;

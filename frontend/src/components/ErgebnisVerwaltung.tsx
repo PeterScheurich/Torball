@@ -130,11 +130,22 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
     ergebnisSpeichern(spiel);
   }
 
+  /** Forfait-Wertung „Sieger:Verlierer" aus den Turnierregeln lesen (Fallback 3:0). */
+  function forfaitWerte(): { sieger: number; verlierer: number } {
+    const [s, v] = (turnier?.forfaitErgebnis ?? "3:0").split(":").map(Number);
+    if (!Number.isFinite(s) || !Number.isFinite(v)) return { sieger: 3, verlierer: 0 };
+    return { sieger: s, verlierer: v };
+  }
+
   function nichtAngetreten(spiel: Spiel, forfaitSeite: "a" | "b") {
-    setFeld(spiel._id, "a", forfaitSeite === "a" ? "0" : "3");
-    setFeld(spiel._id, "b", forfaitSeite === "a" ? "3" : "0");
+    const { sieger, verlierer } = forfaitWerte();
+    // Die nicht angetretene Seite ist der Verlierer, die andere der Sieger.
+    const ergebnisA = forfaitSeite === "a" ? verlierer : sieger;
+    const ergebnisB = forfaitSeite === "a" ? sieger : verlierer;
+    setFeld(spiel._id, "a", String(ergebnisA));
+    setFeld(spiel._id, "b", String(ergebnisB));
     // Direkt mit den gesetzten Forfait-Werten speichern, nicht erst auf einen weiteren Klick warten.
-    spielErgebnisSetzen(spiel._id, forfaitSeite === "a" ? { ergebnisA: 0, ergebnisB: 3, istForfait: true } : { ergebnisA: 3, ergebnisB: 0, istForfait: true })
+    spielErgebnisSetzen(spiel._id, { ergebnisA, ergebnisB, istForfait: true })
       .then(() => {
         markiereGespeichert(spiel._id);
         return laden();

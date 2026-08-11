@@ -64,6 +64,9 @@ export interface Turnierregeln {
   punkteUnentschieden: number;
   punkteNiederlage: number;
   tabellenKriterien: TabellenKriterium[];
+  /** Wertung bei Nichtantreten (Forfait), Format „Sieger:Verlierer" (z.B. „3:0"). Wird von den
+   *  „nicht angetreten"-Aktionen der Ergebniserfassung verwendet. */
+  forfaitErgebnis: string;
 }
 
 /** Siehe Gesamtspezifikation Abschnitt 20.5. */

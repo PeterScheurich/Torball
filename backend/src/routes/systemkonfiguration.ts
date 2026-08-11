@@ -4,11 +4,9 @@ import { findAllBySelector, insertDoc, newId } from "../repository";
 import { requireAuth, requireRolle } from "../auth/plugin";
 import { aktuelleSystemkonfiguration, nurRegeln, STANDARD_TURNIERREGELN } from "../konfiguration";
 
-const STANDARD_FORFAIT = "3:0";
 const STANDARD_PASSWORTLAENGE = 8;
 
 type SystemkonfigBody = Turnierregeln & {
-  forfaitErgebnis?: string;
   passwortMindestlaenge?: number;
   aenderungskommentar?: string;
 };
@@ -30,7 +28,6 @@ export async function systemkonfigurationRoutes(app: FastifyInstance): Promise<v
       istAktuell: true,
       gueltigAb: new Date().toISOString(),
       ...STANDARD_TURNIERREGELN,
-      forfaitErgebnis: STANDARD_FORFAIT,
       passwortMindestlaenge: STANDARD_PASSWORTLAENGE,
     };
   });
@@ -66,7 +63,6 @@ export async function systemkonfigurationRoutes(app: FastifyInstance): Promise<v
         istAktuell: true,
         gueltigAb: new Date().toISOString(),
         ...nurRegeln(req.body),
-        forfaitErgebnis: req.body.forfaitErgebnis ?? vorherige?.forfaitErgebnis ?? STANDARD_FORFAIT,
         passwortMindestlaenge:
           req.body.passwortMindestlaenge ?? vorherige?.passwortMindestlaenge ?? STANDARD_PASSWORTLAENGE,
         geaendertVon: req.benutzer!._id,
