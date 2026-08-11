@@ -15,6 +15,7 @@ import { ProfilPage } from "./pages/ProfilPage";
 import { BenutzerverwaltungPage } from "./pages/BenutzerverwaltungPage";
 import { StammdatenPage } from "./pages/StammdatenPage";
 import { EinstellungenPage } from "./pages/EinstellungenPage";
+import { HilfePage } from "./pages/HilfePage";
 import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
 import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { useAuth } from "./auth";
@@ -60,6 +61,12 @@ function Kopfzeile() {
           >
             Einstellungen
           </NavLink>
+          <NavLink
+            to="/hilfe"
+            className={({ isActive }) => (isActive ? "kopfzeile-link kopfzeile-link-aktiv" : "kopfzeile-link")}
+          >
+            Hilfe
+          </NavLink>
           {benutzer && (
             <KopfzeilenMenue
               label={<><span aria-hidden="true">👤</span> {benutzer.name}</>}
@@ -94,6 +101,7 @@ function App() {
           <Route path="/ergebnis-erfassung/:tokenWert" element={<ErgebnisErfassungPage />} />
           <Route path="/turniere/:id/oeffentlich" element={<OeffentlicheTurnierseitePage />} />
           <Route path="/einstellungen" element={<EinstellungenPage />} />
+          <Route path="/hilfe" element={<HilfePage />} />
 
           <Route element={<GeschuetzteRoute />}>
             <Route path="/" element={<TurnierListePage />} />

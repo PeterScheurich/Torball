@@ -774,3 +774,98 @@ button:hover:not(:disabled) {
   color: var(--danger);
   font-weight: 600;
 }
+
+/* --- In-App-Hilfe (/hilfe) --- */
+
+/* Themenuebersicht oben: kompakte Sprungmarken-Liste zu den einzelnen Themen. */
+.hilfe-inhalt {
+  margin: 16px 0 32px;
+  padding: 12px 16px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.hilfe-inhalt ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+}
+.hilfe-inhalt a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.hilfe-inhalt a:hover {
+  text-decoration: underline;
+}
+
+/* Ein Thema als abgesetzter Block, damit die Gliederung auf einen Blick erkennbar ist.
+   scroll-margin-top: beim Anspringen ueber die Sprungmarke bleibt die Ueberschrift frei
+   und rutscht nicht unter den oberen Seitenrand. */
+.hilfe-thema {
+  margin-bottom: 32px;
+  scroll-margin-top: 16px;
+}
+.hilfe-kurz {
+  color: var(--text-muted);
+  margin-top: 0;
+}
+
+/* Aufklappbarer Abschnitt (natives <details>): die Frage (summary) sieht anklickbar aus,
+   der Inhalt ist leicht eingerueckt und abgesetzt. */
+.hilfe-abschnitt {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  background: var(--bg);
+}
+.hilfe-abschnitt > summary {
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  list-style-position: inside;
+}
+.hilfe-abschnitt[open] > summary {
+  border-bottom: 1px solid var(--border);
+  border-radius: 6px 6px 0 0;
+}
+.hilfe-abschnitt > summary:hover {
+  background: var(--bg-subtle);
+}
+.hilfe-abschnitt-inhalt {
+  padding: 4px 16px 12px;
+}
+.hilfe-abschnitt-inhalt > p:first-child {
+  margin-top: 12px;
+}
+
+/* Hervorgehobener Hinweis innerhalb einer Antwort: farbige Kante links, damit er sich vom
+   normalen Fliesstext abhebt, ohne aufdringlich zu sein. */
+.hilfe-hinweis {
+  border-left: 3px solid var(--accent);
+  padding: 8px 12px;
+  background: var(--bg-subtle);
+  border-radius: 0 4px 4px 0;
+  color: var(--text);
+}
+
+/* Screenshot in einem Abschnitt: responsiv, mit dezentem Rahmen und optionaler Unterschrift. */
+.hilfe-bild {
+  margin: 12px 0 0;
+}
+.hilfe-bild img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.hilfe-bild figcaption {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
