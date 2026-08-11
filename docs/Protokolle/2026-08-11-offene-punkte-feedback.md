@@ -12,7 +12,8 @@ nach Art und grob priorisiert. Erledigte Hilfe-Textänderungen siehe Commit
 2. **Ergebnis-Erfassung – Lösch-/Zurücknehmen-Button:** Wenn der Hinweis kommt,
    dass bereits ein Ergebnis eingetragen ist, einen Button ergänzen, der das eben
    erfasste **eigene** Ergebnis wieder löscht. Sinnvolle Benennung statt „Reset".
-3. **Pflichtfelder in Eingabemasken kennzeichnen** (querschnittlich, alle Formulare).
+3. **[ERLEDIGT 2026-08-11]** Pflichtfelder in Eingabemasken kennzeichnen (rotes
+   Sternchen per CSS an Labels von .feld-Bloecken mit Pflicht-Eingabe, plus Legende).
 4. **[ERLEDIGT 2026-08-11]** Kontextbezogene Hilfe auf öffentlicher Seite und
    externer Ergebniserfassung (neue Komponente `KontextHilfe`); globale App-Nav
    inkl. „Hilfe" für nicht angemeldete Besucher auf diesen Seiten ausgeblendet
@@ -20,18 +21,16 @@ nach Art und grob priorisiert. Erledigte Hilfe-Textänderungen siehe Commit
 
 ## B. Größere Features (vor Beta einplanen)
 
-5. **Turnier-Freigabe-UI:** Ein selbst erstelltes Turnier für andere Benutzer
-   freigeben. Datenmodell/Route existieren teils (`TurnierBerechtigung`,
-   `routes/turnierBerechtigung.ts`), die Bedien-Oberfläche fehlt.
-6. **Admin kann 2FA eines Benutzers deaktivieren.** Hintergrund: Geht einem
-   Benutzer die Authenticator-App verloren, ist er ausgesperrt; „neu anlegen +
-   Turniere neu zuordnen" ist zu aufwändig. Daher soll ein Admin die 2FA eines
-   Benutzers deaktivieren können (die Selbst-Service-2FA-Deaktivierung verlangt
-   heute das eigene Passwort – die Admin-Variante ist ein separater Weg). Bis das
-   umgesetzt ist, weist die Hilfe („Anmelden") auf die aktuelle Einschränkung hin.
-7. **Assistent um Schiedsrichter-Schritt erweitern:** Im Anlege-Assistenten
-   abfragen, ob eine Schiedsrichter-Planung genutzt werden soll. Wenn ja, direkt
-   nach den Mannschaften auch die Schiedsrichter im Assistenten erfassen.
+5. **[ERLEDIGT 2026-08-11]** Turnier-Freigabe-UI (Komponente `TurnierFreigabe` im
+   Reiter „Übersicht"): Freigaben auflisten/vergeben/entziehen über die vorhandenen
+   `TurnierBerechtigung`-Routen.
+6. **[ERLEDIGT 2026-08-11]** Admin kann 2FA eines Benutzers deaktivieren (admin-only
+   Route `POST /benutzer/:id/2fa/deaktivieren` + Button in der Benutzerverwaltung;
+   eigenes Konto ausgenommen). Der Hilfe-Hinweis unter „Anmelden" beschreibt weiter
+   die Nutzersicht (Selbsthilfe nur über Passwort-Reset).
+7. **[ERLEDIGT 2026-08-11]** Assistent um optionalen Schiedsrichter-Schritt
+   erweitert (Feld `Turnier.schiedsrichterPlanung`, Default aus; 4-stufiger Ablauf
+   Grunddaten → Mannschaften → Schiedsrichter → Spielplan, sonst weiter 3-stufig).
 8. **Ergebnis-Erfassung überarbeiten (vom Nutzer zurückgestellt – erst
    besprechen):** Enthält das **Sofort-Speichern** (Richtung vom Nutzer bereits
    bestätigt: speichern, sobald Tore A UND B stehen; expliziter Speichern-Button
