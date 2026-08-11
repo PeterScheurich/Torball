@@ -44,6 +44,18 @@ export function turnierGesperrt(turnier: Turnier): boolean {
 export const TURNIER_GESPERRT_FEHLER =
   "Turnier ist abgeschlossen. Zum Bearbeiten zuerst wieder öffnen.";
 
+/** Ein aus einem Vorgaenger abgeleitetes Turnier (Datenuebernahme / zweiter Spieltag). Erkennbar
+ *  am gesetzten basisTurnierId. In so einem Turnier sind die Mannschaften hart gesperrt. */
+export function istAbgeleitet(turnier: Turnier): boolean {
+  return Boolean(turnier.basisTurnierId);
+}
+
+export const MANNSCHAFTEN_ABGELEITET_FEHLER =
+  "Die Mannschaften wurden aus dem vorherigen Spieltag übernommen und sind nicht änderbar.";
+
+export const REGELN_GESPERRT_FEHLER =
+  "Die Regeln wurden aus dem vorherigen Spieltag übernommen und sind gesperrt. Zum Ändern zuerst entsperren.";
+
 export async function hatMindestens(
   turnier: Turnier,
   benutzer: Benutzer | undefined,

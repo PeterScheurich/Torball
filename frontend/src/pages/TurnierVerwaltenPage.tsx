@@ -6,6 +6,7 @@ import {
   getSystemkonfiguration,
   getTurnier,
   turnierAbschliessen,
+  turnierRegelnEntsperren,
   turnierWiederOeffnen,
   updateTurnier,
 } from "../api";
@@ -252,6 +253,24 @@ export function TurnierVerwaltenPage() {
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Abschließen");
+    }
+  }
+
+  /** Regeln eines abgeleiteten Turniers entsperren (Escape-Hatch der Turnierleitung). */
+  async function regelnEntsperren() {
+    if (
+      !window.confirm(
+        "Regeln entsperren? Die Regeln wurden aus dem vorherigen Spieltag übernommen und sollten normalerweise " +
+          "über beide Spieltage gleich sein. Nur entsperren, wenn eine Abweichung wirklich beabsichtigt ist.",
+      )
+    ) {
+      return;
+    }
+    try {
+      setTurnier(await turnierRegelnEntsperren(turnierId));
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Entsperren der Regeln");
     }
   }
 
@@ -574,12 +593,25 @@ export function TurnierVerwaltenPage() {
 
       <div role="tabpanel" id="panel-regeln" aria-labelledby="tab-regeln" hidden={aktiverTab !== "regeln"}>
         <h2>Regeln für dieses Turnier</h2>
-        <TurnierregelnFormular
-          werte={turnier}
-          onSpeichern={regelnSpeichern}
-          standardWerte={getSystemkonfiguration}
-          hinweis="Diese Regeln gelten nur für dieses Turnier. Die Standardwerte für neue Turniere legst du unter Stammdaten → Standardregeln fest."
-        />
+        {turnier.regelnGesperrt && (
+          <p className="turnier-gesperrt-hinweis" role="status">
+            Diese Regeln wurden aus dem vorherigen Spieltag <strong>übernommen und gesperrt</strong> – beide Spieltage
+            sollen gleich gewertet werden.{" "}
+            <button type="button" onClick={regelnEntsperren}>
+              Regeln entsperren
+            </button>
+          </p>
+        )}
+        {/* Bei gesperrten Regeln werden alle Eingaben nativ über das disabled-<fieldset>
+            deaktiviert (inkl. Speichern-Knopf des Formulars); zum Ändern erst entsperren. */}
+        <fieldset className="blank-fieldset" disabled={!!turnier.regelnGesperrt}>
+          <TurnierregelnFormular
+            werte={turnier}
+            onSpeichern={regelnSpeichern}
+            standardWerte={getSystemkonfiguration}
+            hinweis="Diese Regeln gelten nur für dieses Turnier. Die Standardwerte für neue Turniere legst du unter Stammdaten → Standardregeln fest."
+          />
+        </fieldset>
       </div>
 
       <div
@@ -588,6 +620,12 @@ export function TurnierVerwaltenPage() {
         aria-labelledby="tab-mannschaften"
         hidden={aktiverTab !== "mannschaften"}
       >
+        {turnier.basisTurnierId && (
+          <p className="turnier-gesperrt-hinweis" role="status">
+            Die Mannschaften wurden aus dem vorherigen Spieltag <strong>übernommen und sind nicht änderbar</strong>{" "}
+            (gleiche Teams über beide Spieltage). Der <strong>Kader</strong> bleibt bearbeitbar.
+          </p>
+        )}
         <MannschaftenListe
           turnierId={turnierId}
           spielplanVersion={turnier.spielplanVersion}

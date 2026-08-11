@@ -2,7 +2,13 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spieler, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth } from "../auth/plugin";
-import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
+import {
+  hatMindestens,
+  istAbgeleitet,
+  MANNSCHAFTEN_ABGELEITET_FEHLER,
+  TURNIER_GESPERRT_FEHLER,
+  turnierGesperrt,
+} from "../auth/turnierZugriff";
 
 interface MannschaftBody {
   turnierId: string;
@@ -149,6 +155,12 @@ async function ladeMitSchreibzugriff(
     reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
     return undefined;
   }
+  // Mannschaften eines abgeleiteten Turniers (zweiter Spieltag) sind hart gesperrt - kein
+  // Aendern/Loeschen/Umsortieren, kein Entsperren (fachlich: gleiche Teams ueber beide Spieltage).
+  if (istAbgeleitet(turnier)) {
+    reply.code(409).send({ error: MANNSCHAFTEN_ABGELEITET_FEHLER });
+    return undefined;
+  }
   return mannschaft;
 }
 
@@ -184,6 +196,9 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
       }
       if (turnierGesperrt(turnier)) {
         return reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
+      }
+      if (istAbgeleitet(turnier)) {
+        return reply.code(409).send({ error: MANNSCHAFTEN_ABGELEITET_FEHLER });
       }
 
       // Neue Mannschaft wird immer ans Ende der bisherigen Reihenfolge angehaengt.

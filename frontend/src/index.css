@@ -458,6 +458,15 @@ form {
   margin: 0 0 16px;
 }
 
+/* Rahmenloses <fieldset> - nur als nativer Deaktivierungs-Container (disabled) genutzt, ohne
+   den Standard-Fieldset-Rahmen. min-width:0 verhindert das Sprengen von Flex-/Grid-Layouts. */
+.blank-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
 /* QR-Code (Ergebnis-Erfassungslink / oeffentliche Turnierseite): feste weisse Flaeche mit etwas
    Rand, damit der Code unabhaengig vom Farbschema scannbar bleibt. */
 .qr-code {

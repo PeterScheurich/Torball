@@ -111,6 +111,11 @@ export function turnierAbleiten(
   return anfrage(`/turniere/${basisId}/ableiten`, { method: "POST", body: JSON.stringify(daten) });
 }
 
+/** Entsperrt die (aus dem Vorgaenger uebernommenen) Regeln eines abgeleiteten Turniers. */
+export function turnierRegelnEntsperren(id: string): Promise<Turnier> {
+  return anfrage(`/turniere/${id}/regeln-entsperren`, { method: "POST" });
+}
+
 /** Optionale Freitextfelder duerfen explizit auf null gesetzt werden, um sie zu leeren -
  * JSON.stringify(undefined) liesse den Schluessel im Request-Body komplett verschwinden,
  * das Backend wuerde den bisherigen Wert dann faelschlich unveraendert stehen lassen. */

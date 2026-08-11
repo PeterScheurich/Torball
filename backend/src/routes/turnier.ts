@@ -13,7 +13,7 @@ import type {
 } from "@torball/shared";
 import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth, requireRolle } from "../auth/plugin";
-import { hatMindestens, turnierGesperrt } from "../auth/turnierZugriff";
+import { hatMindestens, REGELN_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
 import { aktuelleTurnierregeln } from "../konfiguration";
 import { berechneStartzeit } from "../spielplan/zeitplanung";
 
@@ -27,6 +27,29 @@ const BEI_ABSCHLUSS_ERLAUBTE_FELDER: ReadonlyArray<keyof Turnier> = [
   "oeffentlichErgebnisse",
   "oeffentlichRegeln",
   "spielernamenOeffentlich",
+];
+
+// Regel-/Wertungsfelder (Turnierregeln). Bei einem abgeleiteten Turnier mit regelnGesperrt=true
+// sind Aenderungen an diesen Feldern gesperrt, bis die Turnierleitung entsperrt.
+const REGEL_FELDER: ReadonlyArray<keyof Turnierregeln> = [
+  "spielzeitMinuten",
+  "anzahlHalbzeiten",
+  "pauseMinuten",
+  "seitenwechsel",
+  "timeoutsJeHalbzeit",
+  "timeoutDauerSekunden",
+  "auswechslungenJeHalbzeit",
+  "tordifferenzAbbruch",
+  "tordifferenzLimit",
+  "verlaengerungAktiv",
+  "silbernesTor",
+  "maxSehendeSpieler",
+  "einstelligeTrikotnummern",
+  "punkteSieg",
+  "punkteUnentschieden",
+  "punkteNiederlage",
+  "tabellenKriterien",
+  "forfaitErgebnis",
 ];
 
 /** Felder, die der Client beim Anlegen setzen kann; alles andere bekommt einen Default (Abschnitt 20.5). */
@@ -139,6 +162,11 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
           });
         }
       }
+      // Bei abgeleitetem Turnier mit gesperrten Regeln: Regel-Feld-Aenderungen ablehnen, bis
+      // ueber /regeln-entsperren entsperrt wurde.
+      if (bestehend.regelnGesperrt && Object.keys(req.body).some((k) => (REGEL_FELDER as string[]).includes(k))) {
+        return reply.code(409).send({ error: REGELN_GESPERRT_FEHLER });
+      }
       const aktualisiert: Turnier = {
         ...bestehend,
         ...req.body,
@@ -202,6 +230,19 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Params: { id: string } }>("/turniere/:id/wieder-oeffnen", (req, reply) =>
     statusUmschalten(req, reply, "aktiv"),
   );
+
+  // Regeln eines abgeleiteten Turniers entsperren (Escape-Hatch der Turnierleitung). Danach sind
+  // die Regel-Felder wieder aenderbar. Bewusst als eigenstaendige, spaeter leicht entfernbare
+  // Funktion angelegt (siehe Datenimport-Spec).
+  app.post<{ Params: { id: string } }>("/turniere/:id/regeln-entsperren", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    const bestehend = await findById<Turnier>(req.params.id);
+    if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+    if (!(await hatMindestens(bestehend, req.benutzer, "schreiben"))) {
+      return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+    }
+    return insertDoc({ ...bestehend, regelnGesperrt: false, geaendertAm: new Date().toISOString() });
+  });
 
   // Neuen Spieltag aus einem abgeschlossenen Vorgaenger-Turnier ableiten (Datenuebernahme,
   // Hin-/Rueckspieltag). Kopiert Mannschaften + Kader (mit Herkunftsverweisen), uebernimmt die
