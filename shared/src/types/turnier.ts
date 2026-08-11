@@ -25,6 +25,21 @@ export interface Spielfeld {
 }
 
 /**
+ * Schnappschuss der spielplan-relevanten Basiskonfiguration zum Zeitpunkt der letzten
+ * Spielplan-Erzeugung. Damit lässt sich später erkennen (und konkret anzeigen), ob und was
+ * sich seither geändert hat - der bestehende Spielplan passt dann evtl. nicht mehr zur Konfig.
+ */
+export interface SpielplanBasis {
+  spielplanModus: Spielmodus;
+  felder: Spielfeld[];
+  mannschaften: { id: string; name: string }[];
+  spielzeitMinuten: number;
+  pauseMinuten: number;
+  anzahlHalbzeiten: number;
+  startzeit?: string;
+}
+
+/**
  * Regel-/Wertungsparameter eines Turniers (Spielzeit, Pausen, Timeouts, Wertung, …). Als
  * eigener Typ, damit die Systemkonfiguration (Standardwerte) und das Turnier (die beim Anlegen
  * kopierten Werte) exakt dieselben Felder tragen und nicht auseinanderlaufen. Nicht enthalten
@@ -86,6 +101,8 @@ export interface Turnier extends CouchMeta, Turnierregeln {
   spielplanFreigegeben: boolean;
   spielplanVersion: number;
   spielplanGeaendertAm?: Zeitstempel;
+  /** Basiskonfiguration zum Zeitpunkt der letzten Spielplan-Erzeugung (fuer Aenderungs-Hinweis). */
+  spielplanBasis?: SpielplanBasis;
 
   oeffentlichTurnierinfos: boolean;
   oeffentlichAnfahrtDokumente: boolean;

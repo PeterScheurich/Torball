@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { MannschaftImTurnier, Spiel, Turnier } from "@torball/shared";
+import type { MannschaftImTurnier, Spiel, SpielplanBasis, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { erzeugePaarungen } from "../spielplan/paarungen";
 import { erstelleSpielplanVorschlag, type SpielplanEintrag } from "../spielplan/planung";
@@ -196,10 +196,29 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
         await insertDoc(spiel);
       }
 
+      // Schnappschuss der spielplan-relevanten Basiskonfiguration festhalten, damit spaeter
+      // konkret angezeigt werden kann, was sich seit dieser Erzeugung geaendert hat.
+      const mannschaftenBasis = await findAllBySelector<MannschaftImTurnier>({
+        docType: "mannschaftImTurnier",
+        turnierId: turnier._id,
+      });
+      const spielplanBasis: SpielplanBasis = {
+        spielplanModus: turnier.spielplanModus,
+        felder: turnier.felder,
+        mannschaften: mannschaftenBasis
+          .sort((a, b) => (a.reihenfolge ?? 0) - (b.reihenfolge ?? 0))
+          .map((m) => ({ id: m._id, name: m.name })),
+        spielzeitMinuten: turnier.spielzeitMinuten,
+        pauseMinuten: turnier.pauseMinuten,
+        anzahlHalbzeiten: turnier.anzahlHalbzeiten,
+        startzeit: turnier.startzeit,
+      };
+
       const aktualisiertesTurnier: Turnier = {
         ...turnier,
         spielplanVersion: turnier.spielplanVersion + 1,
         spielplanGeaendertAm: new Date().toISOString(),
+        spielplanBasis,
       };
       await insertDoc(aktualisiertesTurnier);
 

@@ -884,6 +884,19 @@ button:hover:not(:disabled) {
   font-weight: 600;
 }
 
+/* Hinweis auf dem Spielplan, dass sich die Basiskonfiguration seit der Erzeugung geaendert hat
+   (mit Aufzaehlung, was genau). Auffaellig, aber nicht als harter Fehler gestaltet. */
+.konfig-aenderung-hinweis {
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  background: var(--bg-subtle);
+}
+.konfig-aenderung-hinweis ul {
+  margin: 8px 0;
+}
+
 /* Aufklappbarer QR-Code-Bereich auf der oeffentlichen Seite ("Seite auf dem Smartphone oeffnen").
    Bewusst zugeklappt als Default: fuer Handy-Besucher unnoetig, fuer die Anzeige am Bildschirm
    (Beamer) klappt die Turnierleitung ihn einmalig auf. */

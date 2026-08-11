@@ -15,6 +15,7 @@ import {
 } from "../api";
 import { formatiereUhrzeit } from "../format";
 import { schiedsrichterKonflikt } from "../schiedsrichterKonflikt";
+import { spielplanBasisAenderungen } from "../spielplanBasisDiff";
 import { berechneStartzeit, spieldauerMinuten } from "../zeitplanung";
 
 const BACK_TO_BACK_HINWEIS = "Direktes Folgespiel (Back-to-Back) konnte nicht vermieden werden";
@@ -427,9 +428,24 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
     return fehler ? <p role="alert">{fehler}</p> : <p>Lädt…</p>;
   }
 
+  const basisAenderungen = spielplanBasisAenderungen(turnier, mannschaften);
+
   return (
     <div>
       {fehler && <p role="alert">{fehler}</p>}
+
+      {basisAenderungen.length > 0 && (
+        <div className="konfig-aenderung-hinweis" role="alert">
+          <strong>⚠ Basiskonfiguration seit der Spielplan-Erzeugung geändert.</strong> Der gespeicherte Spielplan
+          (Version {turnier.spielplanVersion}) passt eventuell nicht mehr. Geändert wurde:
+          <ul>
+            {basisAenderungen.map((a, i) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ul>
+          Erzeuge den Spielplan neu, um ihn an die geänderte Konfiguration anzupassen.
+        </div>
+      )}
 
       {spielplanGesperrt && (
         <p>

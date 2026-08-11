@@ -155,6 +155,18 @@ export function TurnierVerwaltenPage() {
   }
 
   async function spielplanModusAendern(modus: Spielmodus) {
+    // Warnung, wenn bereits ein Spielplan existiert: eine Modus-Aenderung macht ihn inkonsistent.
+    // Bei Abbruch bleibt das (controlled) Auswahlfeld auf dem bisherigen Wert.
+    if (
+      turnier &&
+      turnier.spielplanVersion > 0 &&
+      !window.confirm(
+        "Für dieses Turnier existiert bereits ein Spielplan. Ein geänderter Spielmodus passt nicht mehr dazu – " +
+          "du müsstest den Spielplan anschließend neu erzeugen. Modus trotzdem ändern?",
+      )
+    ) {
+      return;
+    }
     try {
       setTurnier(await updateTurnier(turnierId, { spielplanModus: modus }));
       setFehler(undefined);
@@ -483,7 +495,7 @@ export function TurnierVerwaltenPage() {
         aria-labelledby="tab-mannschaften"
         hidden={aktiverTab !== "mannschaften"}
       >
-        <MannschaftenListe turnierId={turnierId} />
+        <MannschaftenListe turnierId={turnierId} spielplanVersion={turnier.spielplanVersion} />
       </div>
 
       <div

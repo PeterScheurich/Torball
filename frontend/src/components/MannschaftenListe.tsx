@@ -47,9 +47,12 @@ interface Props {
   turnierId: string;
   /** Wird nach jedem Laden/Aendern mit der aktuellen Liste aufgerufen (z.B. um "Weiter" im Anlege-Assistenten freizuschalten). */
   onGeaendert?: (mannschaften: MannschaftImTurnier[]) => void;
+  /** Spielplan-Version des Turniers. Ist > 0 (Spielplan existiert), wird beim Hinzufuegen/Loeschen
+   *  einer Mannschaft gewarnt, weil das den bestehenden Spielplan inkonsistent macht. */
+  spielplanVersion?: number;
 }
 
-export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
+export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0 }: Props) {
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
   const [neueMannschaft, setNeueMannschaft] = useState("");
@@ -169,8 +172,19 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
     setNeuesBundesland(verein?.bundesland ?? "");
   }
 
+  const spielplanExistiert = spielplanVersion > 0;
+
   async function anlegen(event: React.FormEvent) {
     event.preventDefault();
+    if (
+      spielplanExistiert &&
+      !window.confirm(
+        "Für dieses Turnier existiert bereits ein Spielplan. Eine neue Mannschaft ist darin noch nicht enthalten – " +
+          "du müsstest den Spielplan anschließend neu erzeugen. Trotzdem hinzufügen?",
+      )
+    ) {
+      return;
+    }
     const team = teams.find((t) => t._id === ausgewaehltesTeamId);
     try {
       await createMannschaft({
@@ -192,6 +206,15 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
   }
 
   async function loeschen(id: string) {
+    if (
+      spielplanExistiert &&
+      !window.confirm(
+        "Für dieses Turnier existiert bereits ein Spielplan. Diese Mannschaft ist darin noch enthalten – " +
+          "du müsstest den Spielplan anschließend neu erzeugen. Mannschaft trotzdem entfernen?",
+      )
+    ) {
+      return;
+    }
     try {
       await deleteMannschaft(id);
       await laden();
