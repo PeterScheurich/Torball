@@ -9,9 +9,9 @@ nach Art und grob priorisiert. Erledigte Hilfe-Textänderungen siehe Commit
 
 1. **[ERLEDIGT 2026-08-11]** QR-Code auf der öffentlichen Turnierseite selbst
    anzeigen (aufklappbar „Seite auf dem Smartphone öffnen", ohne Download-Links).
-2. **Ergebnis-Erfassung – Lösch-/Zurücknehmen-Button:** Wenn der Hinweis kommt,
-   dass bereits ein Ergebnis eingetragen ist, einen Button ergänzen, der das eben
-   erfasste **eigene** Ergebnis wieder löscht. Sinnvolle Benennung statt „Reset".
+2. **[ERLEDIGT 2026-08-11]** Konfliktfall: statt „Reset" zwei klare Buttons
+   („Vorhandenes übernehmen" / „Mit meinem Wert überschreiben"). Umgesetzt im
+   Zuge des Ergebnis-Erfassung-Umbaus (siehe Punkt 8).
 3. **[ERLEDIGT 2026-08-11]** Pflichtfelder in Eingabemasken kennzeichnen (rotes
    Sternchen per CSS an Labels von .feld-Bloecken mit Pflicht-Eingabe, plus Legende).
 4. **[ERLEDIGT 2026-08-11]** Kontextbezogene Hilfe auf öffentlicher Seite und
@@ -31,13 +31,12 @@ nach Art und grob priorisiert. Erledigte Hilfe-Textänderungen siehe Commit
 7. **[ERLEDIGT 2026-08-11]** Assistent um optionalen Schiedsrichter-Schritt
    erweitert (Feld `Turnier.schiedsrichterPlanung`, Default aus; 4-stufiger Ablauf
    Grunddaten → Mannschaften → Schiedsrichter → Spielplan, sonst weiter 3-stufig).
-8. **Ergebnis-Erfassung überarbeiten (vom Nutzer zurückgestellt – erst
-   besprechen):** Enthält das **Sofort-Speichern** (Richtung vom Nutzer bereits
-   bestätigt: speichern, sobald Tore A UND B stehen; expliziter Speichern-Button
-   entfällt), den **Lösch-/Korrigier-Button** (Punkt 2) und die
-   **„n. a."-Beschriftung** (Punkt 11). Der Umbau insgesamt wird vor der Umsetzung
-   noch einmal gemeinsam besprochen. Betrifft `ErgebnisVerwaltung.tsx`,
-   `ErgebnisErfassungPage.tsx`, `useErgebnisEingaben.ts`.
+8. **[ERLEDIGT 2026-08-11]** Ergebnis-Erfassung überarbeitet (beide Oberflächen):
+   **Sofort-Speichern** onBlur (kein Speichern-Knopf mehr, kurze ✓-Bestätigung),
+   **Konflikt-Auflösung** mit zwei Buttons (Punkt 2), **„n. a."** als kompakter
+   Knopf direkt beim Team mit Tooltip (Punkt 11) – nur intern, extern ohne „n. a."
+   und ohne die nun leere „Aktion"-Spalte. `useErgebnisEingaben.ts` um
+   `uebernehmeServer` erweitert. Kein Backend-Umbau nötig.
 
 ## C. Bugs / UX vor Veröffentlichung
 
@@ -56,9 +55,9 @@ nach Art und grob priorisiert. Erledigte Hilfe-Textänderungen siehe Commit
 
 ## E. Offene Rückfragen (vor dem Versions-Build klären)
 
-11. **„A n. a." / „B n. a." Beschriftung:** In der Ergebnis-Erfassung sind diese
-    Kürzel nicht selbsterklärend (die Hilfe erklärt sie jetzt). Vor dem Build den
-    Nutzer fragen, ob ihm eine bessere Beschriftung/Lösung eingefallen ist.
+11. **[ERLEDIGT 2026-08-11]** „n. a." jetzt als kompakter Knopf **direkt beim
+    jeweiligen Team** (Tooltip „<Mannschaft> nicht angetreten") statt kryptisch am
+    Zeilenende – vom Nutzer so bevorzugt. Die Hilfe erklärt „n. a." zusätzlich.
 12. **Offline-/Lokal-Betrieb (spezifiziertes Kernfeature, noch genauer zu
     spezifizieren):** Vom Nutzer bestätigt als von Anfang an vorgesehener
     Bestandteil mit drei Ausprägungen:
