@@ -86,6 +86,29 @@ export async function oeffentlichRoutes(app: FastifyInstance): Promise<void> {
             spiele: spiele.map(oeffentlichesSpiel),
           }
         : null,
+
+      // Turnierregeln (Spielzeit, Wertung, Timeouts …) - nur wenn freigegeben. Die Werte liegen
+      // direkt am Turnier (Turnier extends Turnierregeln); nicht sensibel.
+      regeln: turnier.oeffentlichRegeln
+        ? {
+            spielzeitMinuten: turnier.spielzeitMinuten,
+            anzahlHalbzeiten: turnier.anzahlHalbzeiten,
+            pauseMinuten: turnier.pauseMinuten,
+            seitenwechsel: turnier.seitenwechsel,
+            timeoutsJeHalbzeit: turnier.timeoutsJeHalbzeit,
+            timeoutDauerSekunden: turnier.timeoutDauerSekunden,
+            auswechslungenJeHalbzeit: turnier.auswechslungenJeHalbzeit,
+            tordifferenzAbbruch: turnier.tordifferenzAbbruch,
+            tordifferenzLimit: turnier.tordifferenzLimit,
+            verlaengerungAktiv: turnier.verlaengerungAktiv,
+            silbernesTor: turnier.silbernesTor,
+            punkteSieg: turnier.punkteSieg,
+            punkteUnentschieden: turnier.punkteUnentschieden,
+            punkteNiederlage: turnier.punkteNiederlage,
+            tabellenKriterien: turnier.tabellenKriterien,
+            forfaitErgebnis: turnier.forfaitErgebnis,
+          }
+        : null,
     };
   });
 }

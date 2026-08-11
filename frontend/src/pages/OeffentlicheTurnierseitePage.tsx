@@ -8,13 +8,23 @@ import { KontextHilfe } from "../components/KontextHilfe";
 /** Intervall fuers automatische Aktualisieren der oeffentlichen Seite (Live-Ergebnisse/-Spielplan fuer Zuschauer). */
 const AKTUALISIER_INTERVALL_MS = 15_000;
 
-type Tab = "turnierinfos" | "anfahrt" | "spielplan" | "ergebnisse";
+type Tab = "turnierinfos" | "anfahrt" | "spielplan" | "ergebnisse" | "regeln";
 
 const TAB_LABEL: Record<Tab, string> = {
   turnierinfos: "Turnierinfos",
   anfahrt: "Anfahrt & Dokumente",
   spielplan: "Spielplan",
   ergebnisse: "Ergebnisse",
+  regeln: "Regeln",
+};
+
+/** Anzeige-Labels der Tabellen-Sortierkriterien (Reiter "Regeln"). */
+const KRITERIUM_LABEL: Record<string, string> = {
+  punkte: "Punkte",
+  tordifferenz: "Tordifferenz",
+  tore: "Erzielte Tore",
+  direkter_vergleich: "Direkter Vergleich",
+  freiwuerfe: "Freiwürfe",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -142,7 +152,7 @@ export function OeffentlicheTurnierseitePage() {
   if (fehler) return <p role="alert">{fehler}</p>;
   if (!daten) return <p>Lädt…</p>;
 
-  const verfuegbareTabs = (["turnierinfos", "anfahrt", "spielplan", "ergebnisse"] as Tab[]).filter(
+  const verfuegbareTabs = (["turnierinfos", "anfahrt", "spielplan", "ergebnisse", "regeln"] as Tab[]).filter(
     (tab) => daten[tab] !== null,
   );
 
@@ -381,6 +391,72 @@ export function OeffentlicheTurnierseitePage() {
               <h2>Spiele</h2>
               <SpieleTabelle spiele={daten.ergebnisse.spiele} daten={daten} zeigeErgebnis={true} />
             </div>
+          )}
+
+          {aktiverTab === "regeln" && daten.regeln && (
+            <details className="regeln-aufklappen" open>
+              <summary>Turnierregeln</summary>
+              <div className="tabellen-wrapper">
+                <table>
+                  <caption className="sr-only">Turnierregeln</caption>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Spielzeit</th>
+                      <td>
+                        {daten.regeln.spielzeitMinuten} Min. ({daten.regeln.anzahlHalbzeiten} Halbzeit
+                        {daten.regeln.anzahlHalbzeiten === 1 ? "" : "en"}
+                        {daten.regeln.seitenwechsel ? ", mit Seitenwechsel" : ""})
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Pause</th>
+                      <td>{daten.regeln.pauseMinuten} Min.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Timeouts</th>
+                      <td>
+                        {daten.regeln.timeoutsJeHalbzeit} je Halbzeit à {daten.regeln.timeoutDauerSekunden} s
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Auswechslungen</th>
+                      <td>{daten.regeln.auswechslungenJeHalbzeit} je Halbzeit</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Tordifferenz-Abbruch</th>
+                      <td>
+                        {daten.regeln.tordifferenzAbbruch
+                          ? `ab ${daten.regeln.tordifferenzLimit} Toren Differenz`
+                          : "nein"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Verlängerung</th>
+                      <td>
+                        {daten.regeln.verlaengerungAktiv
+                          ? `ja${daten.regeln.silbernesTor ? " (silbernes Tor)" : ""}`
+                          : "nein"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Wertung</th>
+                      <td>
+                        Sieg {daten.regeln.punkteSieg} · Unentschieden {daten.regeln.punkteUnentschieden} · Niederlage{" "}
+                        {daten.regeln.punkteNiederlage} Punkte
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Tabellenwertung</th>
+                      <td>{daten.regeln.tabellenKriterien.map((k) => KRITERIUM_LABEL[k] ?? k).join(" → ")}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Nichtantreten (Forfait)</th>
+                      <td>{daten.regeln.forfaitErgebnis}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
           )}
         </>
       )}

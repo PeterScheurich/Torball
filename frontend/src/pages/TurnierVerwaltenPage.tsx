@@ -88,13 +88,15 @@ type SichtbarkeitsFeld =
   | "oeffentlichTurnierinfos"
   | "oeffentlichAnfahrtDokumente"
   | "oeffentlichSpielplan"
-  | "oeffentlichErgebnisse";
+  | "oeffentlichErgebnisse"
+  | "oeffentlichRegeln";
 
 const SICHTBARKEITS_FELDER: { feld: SichtbarkeitsFeld; label: string }[] = [
   { feld: "oeffentlichTurnierinfos", label: "Turnierinfos" },
   { feld: "oeffentlichAnfahrtDokumente", label: "Anfahrt & Dokumente" },
   { feld: "oeffentlichSpielplan", label: "Spielplan" },
   { feld: "oeffentlichErgebnisse", label: "Ergebnisse" },
+  { feld: "oeffentlichRegeln", label: "Regeln" },
 ];
 
 function allgemeinAusTurnier(turnier: Turnier): AllgemeinBearbeitung {

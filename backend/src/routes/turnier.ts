@@ -22,6 +22,7 @@ const BEI_ABSCHLUSS_ERLAUBTE_FELDER: ReadonlyArray<keyof Turnier> = [
   "oeffentlichAnfahrtDokumente",
   "oeffentlichSpielplan",
   "oeffentlichErgebnisse",
+  "oeffentlichRegeln",
   "spielernamenOeffentlich",
 ];
 
@@ -65,6 +66,7 @@ function turnierDefaults(
     oeffentlichAnfahrtDokumente: false,
     oeffentlichSpielplan: false,
     oeffentlichErgebnisse: false,
+    oeffentlichRegeln: false,
   };
 }
 

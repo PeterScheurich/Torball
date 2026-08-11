@@ -117,6 +117,7 @@ export function updateTurnier(
       | "oeffentlichAnfahrtDokumente"
       | "oeffentlichSpielplan"
       | "oeffentlichErgebnisse"
+      | "oeffentlichRegeln"
     >
   > & {
     spielortName?: string | null;
@@ -660,6 +661,24 @@ export interface OeffentlicheTurnierseite {
   ergebnisse: {
     tabelle: TabellenZeile[];
     spiele: OeffentlichesSpiel[];
+  } | null;
+  regeln: {
+    spielzeitMinuten: number;
+    anzahlHalbzeiten: number;
+    pauseMinuten: number;
+    seitenwechsel: boolean;
+    timeoutsJeHalbzeit: number;
+    timeoutDauerSekunden: number;
+    auswechslungenJeHalbzeit: number;
+    tordifferenzAbbruch: boolean;
+    tordifferenzLimit: number;
+    verlaengerungAktiv: boolean;
+    silbernesTor: boolean;
+    punkteSieg: number;
+    punkteUnentschieden: number;
+    punkteNiederlage: number;
+    tabellenKriterien: string[];
+    forfaitErgebnis: string;
   } | null;
 }
 

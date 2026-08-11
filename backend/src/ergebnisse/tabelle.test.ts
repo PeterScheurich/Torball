@@ -39,6 +39,7 @@ function turnier(tabellenKriterien: TabellenKriterium[]): Turnier {
     oeffentlichAnfahrtDokumente: false,
     oeffentlichSpielplan: false,
     oeffentlichErgebnisse: false,
+    oeffentlichRegeln: false,
     erstelltAm: new Date().toISOString(),
   };
 }

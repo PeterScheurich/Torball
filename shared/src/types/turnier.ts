@@ -123,6 +123,8 @@ export interface Turnier extends CouchMeta, Turnierregeln {
   oeffentlichAnfahrtDokumente: boolean;
   oeffentlichSpielplan: boolean;
   oeffentlichErgebnisse: boolean;
+  /** Ob die Turnierregeln (Spielzeit, Wertung, Timeouts …) auf der oeffentlichen Seite sichtbar sind. */
+  oeffentlichRegeln: boolean;
 
   /**
    * Rein informativ, keine Fremdschlüssel-Semantik: Die Systemkonfiguration

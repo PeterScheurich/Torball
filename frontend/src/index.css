@@ -1011,6 +1011,15 @@ button:hover:not(:disabled) {
   cursor: pointer;
   font-weight: 600;
 }
+
+/* Ein-/ausklappbarer Regel-Block auf der oeffentlichen Turnierseite (Reiter "Regeln").
+   Die Zusammenfassung tritt wie eine Abschnittsueberschrift auf. */
+.regeln-aufklappen > summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1.2rem;
+  margin: 8px 0;
+}
 .qr-aufklappen-inhalt {
   padding-top: 8px;
 }
