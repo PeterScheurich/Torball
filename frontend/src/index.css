@@ -604,6 +604,17 @@ label {
   font-weight: 700;
 }
 
+/* Gleiche Kennzeichnung fuer die Turnier-Uebersicht, die ihre Felder als Label/Wert-Tabelle
+   (th/td) statt in .feld-Bloecken rendert: das th-Label einer Zeile mit Pflicht-Eingabe bekommt
+   ebenfalls das Sternchen. Bewusst auf .uebersicht-tabelle beschraenkt - andere Tabellen
+   (Profil, Benutzerverwaltung) haben teils "required"-Felder in optionalen Aenderungsformularen
+   (z.B. Passwort aendern), die NICHT als Pflicht der ganzen Seite gemeint sind. */
+.uebersicht-tabelle tr:has(td input:required, td select:required, td textarea:required) th[scope="row"] label::after {
+  content: " *";
+  color: var(--danger);
+  font-weight: 700;
+}
+
 /* Legende zur Sternchen-Bedeutung, die ein Formular bei Bedarf selbst einblenden kann. */
 .pflicht-legende {
   font-size: 0.85rem;
