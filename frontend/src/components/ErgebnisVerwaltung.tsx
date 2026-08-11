@@ -23,6 +23,13 @@ interface Props {
 /** Intervall fuers automatische Aktualisieren (damit zeitgleich per Token-Link erfasste Ergebnisse erscheinen). */
 const AKTUALISIER_INTERVALL_MS = 10_000;
 
+/**
+ * Ergebnis-Tab eines Turniers (interne Verwaltung): Endergebnisse je Spiel erfassen (speichert
+ * automatisch beim Verlassen des Feldes), Spiele/Runden/Turnier abschliessen, die Tabelle
+ * ansehen sowie den Erfassungslink (Token + QR-Code) fuer die login-freie externe Erfassung
+ * erzeugen/widerrufen. Aktualisiert sich per Polling, damit parallel per Link erfasste
+ * Ergebnisse erscheinen (Sync-Logik in useErgebnisEingaben.ts).
+ */
 export function ErgebnisVerwaltung({ turnierId }: Props) {
   const [turnier, setTurnier] = useState<Turnier | undefined>();
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);

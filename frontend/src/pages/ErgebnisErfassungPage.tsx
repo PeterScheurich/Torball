@@ -14,6 +14,8 @@ function geladenerName(): string {
   return localStorage.getItem(NAME_SCHLUESSEL) ?? "";
 }
 
+// Stabile, geraetelokale Kennung des Erfassungsgeraets (fuers Audit-Log: wer/welches Geraet hat
+// erfasst). Beim ersten Aufruf einmalig erzeugt und im localStorage gehalten.
 function geladeneGeraetKennung(): string {
   let kennung = localStorage.getItem(GERAET_SCHLUESSEL);
   if (!kennung) {
@@ -23,6 +25,12 @@ function geladeneGeraetKennung(): string {
   return kennung;
 }
 
+/**
+ * Externe Ergebnis-Erfassung ueber den Token-Link (ohne Login, Zielgruppe: Helfer an den
+ * Feldern). Der Token steht in der URL. Beim ersten Aufruf wird ein Erfasser-Name abgefragt und
+ * am Geraet gespeichert; jede Eingabe wird mit Name/Geraet protokolliert. Es gibt hier bewusst
+ * KEINE „n. a."-Aktion (die existiert nur in der internen Verwaltung). Aktualisiert per Polling.
+ */
 export function ErgebnisErfassungPage() {
   const { tokenWert } = useParams<{ tokenWert: string }>();
   const [name, setName] = useState(geladenerName);

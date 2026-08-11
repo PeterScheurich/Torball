@@ -6,6 +6,7 @@ const OPTIONEN: { wert: "light" | "dark"; icon: string; label: string }[] = [
   { wert: "dark", icon: "🌙", label: "Dunkel" },
 ];
 
+/** Umschalter Hell/Dunkel fuer das Farbschema (geraetelokale Wahl, siehe theme.ts). */
 export function ThemeUmschalter() {
   const [theme, setTheme] = useState<Theme>(geladenesTheme);
 

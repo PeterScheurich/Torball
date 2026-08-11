@@ -42,6 +42,12 @@ interface Props {
   maxSehendeSpieler?: number;
 }
 
+/**
+ * Kader einer Mannschaft (ausklappbar innerhalb der Mannschaftsliste): Spieler mit Nummer, Name,
+ * Vorname, Klassifizierung und Status - direkt editierbar (Textfelder onBlur, Auswahl sofort) plus
+ * Anlege-Formular. Meldet die Spielerzahl ueber onAnzahlGeaendert nach oben; bei zu vielen sehenden
+ * Spielern (maxSehendeSpieler) erscheint ein nicht blockierender Hinweis.
+ */
 export function SpielerKader({ mannschaftId, onAnzahlGeaendert, maxSehendeSpieler }: Props) {
   const [spieler, setSpieler] = useState<Spieler[]>([]);
   const [bearbeitung, setBearbeitung] = useState<Record<string, Bearbeitung>>({});

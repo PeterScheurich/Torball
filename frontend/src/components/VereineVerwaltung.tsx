@@ -17,6 +17,12 @@ interface Props {
   onGeaendert?: (vereine: Verein[]) => void;
 }
 
+/**
+ * Vereins-Stammdaten (oberer Teil der Stammdaten-Seite). Tabelle mit direkt editierbaren
+ * Feldern plus ein Anlege-Formular. Meldet die aktuelle Liste ueber onGeaendert nach oben
+ * (die Teams-Verwaltung braucht sie fuer ihre Verein-Auswahl). Ein Verein laesst sich erst
+ * loeschen, wenn kein Team mehr auf ihn verweist (das Backend antwortet sonst mit 409).
+ */
 export function VereineVerwaltung({ onGeaendert }: Props) {
   const [vereine, setVereine] = useState<Verein[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
