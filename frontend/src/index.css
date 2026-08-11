@@ -209,6 +209,23 @@ header nav span.marke {
   color: var(--text);
 }
 
+/* Kleines Versions-Badge neben der Marke (aktueller Build-Stand, z.B. "0.9 Beta"). Bewusst
+   dezent und klar vom Markennamen abgesetzt; text-decoration:none, damit es im Marken-<a>
+   nicht als Link-Unterstrich erscheint. */
+.marke-version {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  padding: 1px 7px;
+  border-radius: 999px;
+  align-self: center;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
 .logo {
   border-radius: 50%;
 }

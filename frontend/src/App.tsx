@@ -23,6 +23,7 @@ import { HilfePage } from "./pages/HilfePage";
 import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
 import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { useAuth } from "./auth";
+import { APP_VERSION } from "./version";
 
 // Wurzelkomponente: globale Kopfzeile (Navigation) plus das komplette Routing der App.
 // Oeffentliche Routen (Login, Einladung, Passwort-Reset, Ergebnis-Erfassung per Link,
@@ -57,6 +58,7 @@ function Kopfzeile() {
             <img className="logo logo-hell" src="/images/torball-logo.svg" alt="" width="32" height="32" />
             <img className="logo logo-dunkel" src="/images/torball-logo-dark.svg" alt="" width="32" height="32" />
             Torball-Turniere
+            <span className="marke-version">{APP_VERSION}</span>
           </span>
         </nav>
       </header>
@@ -70,6 +72,7 @@ function Kopfzeile() {
           <img className="logo logo-hell" src="/images/torball-logo.svg" alt="" width="32" height="32" />
           <img className="logo logo-dunkel" src="/images/torball-logo-dark.svg" alt="" width="32" height="32" />
           Torball-Turniere
+          <span className="marke-version">{APP_VERSION}</span>
         </Link>
         <div className="marke">
           {benutzer && (
