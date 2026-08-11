@@ -7,18 +7,16 @@ nach Art und grob priorisiert. Erledigte Hilfe-Textänderungen siehe Commit
 
 ## A. Bestätigt sofort behebbar / kleine Features (vor Beta)
 
-1. **QR-Code auf der öffentlichen Turnierseite selbst anzeigen** – damit man ihn
-   z. B. auf einem Bildschirm zeigt und mit dem Handy abscannt.
-   (`OeffentlicheTurnierseitePage.tsx`, `QrCode.tsx` existiert bereits.)
+1. **[ERLEDIGT 2026-08-11]** QR-Code auf der öffentlichen Turnierseite selbst
+   anzeigen (aufklappbar „Seite auf dem Smartphone öffnen", ohne Download-Links).
 2. **Ergebnis-Erfassung – Lösch-/Zurücknehmen-Button:** Wenn der Hinweis kommt,
    dass bereits ein Ergebnis eingetragen ist, einen Button ergänzen, der das eben
    erfasste **eigene** Ergebnis wieder löscht. Sinnvolle Benennung statt „Reset".
 3. **Pflichtfelder in Eingabemasken kennzeichnen** (querschnittlich, alle Formulare).
-4. **Kontextbezogene Hilfe** auf öffentlicher Seite und externer Ergebniserfassung:
-   dort NICHT die globale `/hilfe` anbieten, sondern nur kontextbezogene Hilfe.
-   Pragmatischer Ansatz (vom Nutzer freigestellt): „Hilfe"-Menüeintrag auf diesen
-   Seiten ausblenden (wie „Stammdaten" ohne Login) und stattdessen einen eigenen
-   kontextbezogenen Hilfe-Button anzeigen.
+4. **[ERLEDIGT 2026-08-11]** Kontextbezogene Hilfe auf öffentlicher Seite und
+   externer Ergebniserfassung (neue Komponente `KontextHilfe`); globale App-Nav
+   inkl. „Hilfe" für nicht angemeldete Besucher auf diesen Seiten ausgeblendet
+   (minimale Kopfzeile).
 
 ## B. Größere Features (vor Beta einplanen)
 
@@ -43,12 +41,12 @@ nach Art und grob priorisiert. Erledigte Hilfe-Textänderungen siehe Commit
 
 ## C. Bugs / UX vor Veröffentlichung
 
-9. **Marke „Torball Turniere" führt zur Anmeldung:** Auf der öffentlichen Seite
-   und der externen Ergebniserfassung führt ein Klick auf „Torball Turniere"
-   (Logo/Marke oben links) zur Anmeldemaske. Für nicht angemeldete Besucher
-   unerwünscht. Hängt am generellen Startseiten-/Header-Konzept – **Startseite
-   ohnehin vor Veröffentlichung überarbeiten.** Vom Nutzer ausdrücklich als
-   offener Punkt vor Veröffentlichung markiert.
+9. **[ERLEDIGT 2026-08-11] (für nicht angemeldete Besucher)** „Torball Turniere"
+   führte auf öffentlicher Seite / externer Erfassung zur Anmeldung. Behoben:
+   Marke ist dort für nicht angemeldete Besucher reiner Text (nicht klickbar).
+   **Offen bleibt** die generelle Startseiten-/Header-Überarbeitung vor
+   Veröffentlichung (z. B. sinnvolles Ziel der Marke für angemeldete Nutzer,
+   allgemeines Startseiten-Konzept).
 
 ## D. Spätere Verbesserungen (nach Beta ok)
 
