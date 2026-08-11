@@ -32,6 +32,10 @@ export interface MannschaftImTurnier extends CouchMeta {
   betreuer3Name?: string;
   betreuer3IstSchiedsrichter?: boolean;
   importiertAusTurnierId?: TurnierId;
+  /** Bei Datenuebernahme gesetzt: Verweis auf die Mannschaft im Vorgaenger-Turnier (dasselbe
+   *  Team am vorherigen Spieltag). Grundlage fuer die Zuordnung bei der Gesamttabellen-Aggregation
+   *  ueber beide Spieltage. */
+  importiertAusMannschaftId?: MannschaftId;
   /**
    * Manuelle Sortierposition innerhalb des Turniers (nicht Teil der
    * Gesamtspezifikation, praktische Ergaenzung): steuert sowohl die

@@ -85,7 +85,19 @@ export interface Turnierregeln {
 export interface Turnier extends CouchMeta, Turnierregeln {
   docType: "turnier";
   turnierId: TurnierId;
+  /** Gemeinsame Klammer mehrerer Spieltag-Turniere (Hin-/Rueckspieltag, spaeter Saison mit
+   *  mehreren Tagen). Turniere mit derselben wettbewerbId gehoeren zusammen und werden fuer
+   *  die Gesamttabelle aggregiert. */
   wettbewerbId?: WettbewerbId;
+  /** Gesetzt, wenn dieses Turnier per Datenuebernahme aus einem abgeschlossenen Vorgaenger-
+   *  Turnier (vorheriger Spieltag) abgeleitet wurde - zeigt auf dieses Vorgaenger-Turnier. */
+  basisTurnierId?: TurnierId;
+  /** Spieltag-Nummer innerhalb des Wettbewerbs (1 = erster Spieltag). Aktuell max. 2. */
+  spieltagNummer?: number;
+  /** Nur bei abgeleiteten Turnieren: Regeln sind aus dem Vorgaenger uebernommen und gesperrt
+   *  (sollten ueber beide Spieltage gleich sein). Die Turnierleitung kann bewusst entsperren
+   *  (Escape-Hatch) - dann wird dieses Flag false. */
+  regelnGesperrt?: boolean;
   name: string;
   /** Format YYYY-MM-DD. */
   datum: string;

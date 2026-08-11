@@ -20,4 +20,9 @@ export interface Spieler extends CouchMeta {
   klassifizierung: Klassifizierung;
   status: SpielerStatus;
   importiertAusTurnierId?: TurnierId;
+  /** Bei Kader-Uebernahme gesetzt: Verweis auf den Spieler im Vorgaenger-Turnier. Dient der
+   *  spaeteren "gleiche Person"-Erkennung fuer die Torschuetzen-Summe ueber beide Spieltage
+   *  (relevant erst mit der digitalen Protokollierung). Wird der uebernommene Spieler durch eine
+   *  andere Person ersetzt, ist der Verweis fachlich hinfaellig. */
+  importiertAusSpielerId?: SpielerId;
 }
