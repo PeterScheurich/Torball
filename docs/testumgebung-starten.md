@@ -25,6 +25,11 @@ zeichen wird alles ab einem `#` als Kommentar abgeschnitten, was zu
 schwer nachvollziehbaren Fehlern führt (z. B. „Authentication credentials
 invalid" bei einem eigentlich korrekten Passwort).
 
+**`COOKIE_SECURE` lokal auf `false` bzw. weglassen:** Lokal läuft alles über
+HTTP. Wäre `COOKIE_SECURE=true` gesetzt, würde der Browser das Session-Cookie
+verwerfen und der Login schlüge ohne erkennbaren Grund fehl. Das Flag gehört
+erst in Produktion (hinter HTTPS) auf `true`.
+
 ## Server starten
 
 Zwei Server laufen parallel, am einfachsten in zwei separaten Terminal-Fenstern

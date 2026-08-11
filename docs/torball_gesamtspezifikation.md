@@ -948,6 +948,8 @@ Konfigurierbar pro Turnier. Standardbelegung:
 
 E-Mail als Benutzername, Passwort-Hash (bcrypt oder Argon2), 2FA via TOTP, Session-Management mit sicheren Tokens, automatischer Logout nach konfigurierbarer Inaktivität.
 
+**Umsetzungsstand:** Session per HttpOnly-Cookie (nur der SHA-256-Hash des Tokens wird als CouchDB-Doc-ID gespeichert). Das `Secure`-Flag ist umgebungsgesteuert (`COOKIE_SECURE`) – lokal über HTTP aus, in Produktion hinter HTTPS zwingend `true`. Ein Admin kann die 2FA eines Benutzers deaktivieren (für den Fall einer verlorenen Authenticator-App); das eigene Konto ist davon ausgenommen (nur Selbst-Service mit Passwort).
+
 ### 25.2 Erstanmeldung
 
 Admin/Manager legt Benutzer an → Einmal-Link per E-Mail → Passwort-Setzung beim ersten Login → bei Admin direkt 2FA-Einrichtung.
@@ -1024,6 +1026,21 @@ Damit sind keine fachlichen Fragen mehr offen. Verbleibende offene Punkte sind a
 - Automatische Archivierung nach Zeitablauf ohne Einspruch (Abschnitt 26.4)
 
 **Leitgedanke für die erste Version:** So einfach wie möglich, da die Nutzenden nicht zwingend IT-affin sind.
+
+## 30. Umsetzungsstand (Stand 2026-08-11)
+
+Ergänzend zu den verteilten „Umsetzungsstand"-Notizen hier die wesentlichen zuletzt umgesetzten Funktionen und Festlegungen. Details in `docs/Protokolle/2026-08-11-*`.
+
+- **Turnierregeln pflegbar (Abschnitt 5.1, 20.2/20.5).** Spielzeit, Pausen, Timeouts, Wertung, Forfait-Ergebnis usw. liegen im gemeinsamen Typ `Turnierregeln` (getragen von `Turnier` **und** `Systemkonfiguration`). Bearbeitung je Turnier (Reiter „Regeln" und Assistenten-Schritt) sowie zentral als **versionierte Standardwerte** (`/systemkonfiguration`, Admin-Seite „Standardregeln"). Jede Standard-Änderung erzeugt eine neue Version; neue Turniere **kopieren** die aktuelle (`erstelltMitKonfigVersion`), bestehende bleiben unberührt (20.2). Das Forfait-Ergebnis („n. a.") ist Teil der Regeln (kein fester 3:0-Wert mehr).
+- **Anlage-Assistent (Abschnitt 5).** Mehrstufig: Grunddaten → Regeln → Mannschaften → *optional* Schiedsrichter → Spielplan. Der optionale Schiedsrichter-Schritt wird beim Anlegen gewählt (`schiedsrichterPlanung`).
+- **Ergebniserfassung (Abschnitt 14).** Sofort-Speichern beim Verlassen des Feldes statt Speichern-Knopf; bei zwischenzeitlicher Fremdänderung Konfliktauflösung mit zwei Optionen (Vorhandenes übernehmen / mit eigenem Wert überschreiben). „n. a." (Forfait) direkt beim jeweiligen Team, nur in der internen Verwaltung (nicht auf der Token-Seite).
+- **Basiskonfig-Änderungshinweis (Abschnitt 8).** Beim Erzeugen des Spielplans wird ein Schnappschuss der Basiskonfiguration gespeichert; ändert sich später Modus/Felder/Mannschaften/Zeiten, zeigt der Spielplan konkret an, was abweicht, und beim Ändern erscheint eine Rückfrage.
+- **Regel-Prüfroutine.** „Turnier prüfen" (Übersicht) sammelt Regelverstöße/Auffälligkeiten in einer Liste, blockiert aber nichts (Leitgedanke „warnen, nicht entscheiden", vgl. Abschnitt 6).
+- **Berechtigungen (Abschnitt 10/21).** Oberfläche zum Freigeben eigener Turniere an andere Benutzer (`TurnierBerechtigung`). Ein Admin kann die 2FA eines Benutzers deaktivieren (verlorene Authenticator-App; Ergänzung zu 25.1).
+- **In-App-Hilfe (neu).** `/hilfe` mit gegliederten, aufklappbaren Themen; auf öffentlichen/externen Seiten stattdessen kontextbezogene Hilfe.
+- **Barrierefreiheit (Abschnitt 24).** Pflichtfelder werden durchgängig gekennzeichnet (Formulare und Datentabellen).
+- **Sicherheit (Abschnitt 25.1).** Das Session-Cookie erhält das `Secure`-Flag umgebungsgesteuert über `COOKIE_SECURE` (in Produktion hinter HTTPS zwingend `true`).
+- **Fürs nächste Release vorgesehen.** `passwortMindestlaenge` und weitere reine Systemeinstellungen tatsächlich verdrahten und in die Oberfläche aufnehmen.
 
 ---
 
