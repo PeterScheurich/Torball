@@ -10,6 +10,7 @@ export function TurnierAnlegenPage() {
   const [anzahlFelder, setAnzahlFelder] = useState<1 | 2>(1);
   const [spielplanModus, setSpielplanModus] = useState<Spielmodus>("einfach");
   const [protokollierungsart, setProtokollierungsart] = useState<Protokollierungsart>("manuell");
+  const [schiedsrichterPlanung, setSchiedsrichterPlanung] = useState(false);
   const [fehler, setFehler] = useState<string | undefined>();
   const navigate = useNavigate();
 
@@ -30,6 +31,7 @@ export function TurnierAnlegenPage() {
         felder,
         spielplanModus,
         protokollierungsart,
+        schiedsrichterPlanung,
       });
       navigate(`/turniere/${encodeURIComponent(neu._id)}/mannschaften-erfassen`);
     } catch (err) {
@@ -39,7 +41,7 @@ export function TurnierAnlegenPage() {
 
   return (
     <>
-      <p>Schritt 1 von 3: Turnier anlegen</p>
+      <p>Schritt 1 von {schiedsrichterPlanung ? 4 : 3}: Turnier anlegen</p>
       <h1>Neues Turnier</h1>
 
       <p className="pflicht-legende">
@@ -92,6 +94,19 @@ export function TurnierAnlegenPage() {
             <option value="digital">Digital (Live-Ereignisprotokollierung - noch nicht umgesetzt)</option>
           </select>
         </div>
+        <div className="feld">
+          <label htmlFor="schiedsrichterPlanung">Schiedsrichter</label>
+          <label className="schiedsrichter-lizenz">
+            <input
+              id="schiedsrichterPlanung"
+              type="checkbox"
+              checked={schiedsrichterPlanung}
+              onChange={(e) => setSchiedsrichterPlanung(e.target.checked)}
+            />
+            Schiedsrichter-Planung nutzen (fügt vor dem Spielplan einen Schritt zum Erfassen der Schiedsrichter hinzu)
+          </label>
+        </div>
+
         {fehler && <p role="alert">{fehler}</p>}
         <button type="submit">Weiter zu Mannschaften</button>
       </form>

@@ -47,6 +47,12 @@ export interface Turnier extends CouchMeta {
   modus?: string;
   /** Jeder-gegen-Jeden einfach oder doppelt; steuert die Spielplan-Erzeugung (Abschnitt 8). */
   spielplanModus: Spielmodus;
+  /**
+   * Ob im Anlege-Assistenten ein eigener Schritt zum Erfassen der Schiedsrichter (vor dem
+   * Spielplan) durchlaufen wird. Rein den Assistenten-Ablauf steuernd - die
+   * Schiedsrichter-Verwaltung selbst bleibt jederzeit ueber den gleichnamigen Reiter erreichbar.
+   */
+  schiedsrichterPlanung?: boolean;
   spielzeitMinuten: number;
   anzahlHalbzeiten: number;
   pauseMinuten: number;

@@ -63,6 +63,7 @@ export interface NeuesTurnier {
   felder: Spielfeld[];
   spielplanModus?: Spielmodus;
   protokollierungsart?: Protokollierungsart;
+  schiedsrichterPlanung?: boolean;
 }
 
 export function getTurniere(): Promise<Turnier[]> {
