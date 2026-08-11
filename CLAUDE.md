@@ -312,6 +312,54 @@ nur markiert. Reine Logik + Tests in
 CouchDB-Replikation: `docs/kanban-board.md`. Löschungen syncen bewusst nicht
 (kein Tombstone).
 
+**Turnier-Lebenszyklus / Abschließen:** `TurnierStatus` ist
+`entwurf | aktiv | abgeschlossen | archiviert` (Spez 10.3 entsprechend
+aktualisiert). Die Turnierübersicht (`TurnierListePage`) trennt **geplant**
+(entwurf/aktiv, inkl. laufend) von **abgeschlossen** (abgeschlossen/archiviert);
+der „Neues Turnier anlegen"-Knopf steht oberhalb. Abschließen/Wiederöffnen sind
+eigene schreibgeschützte Endpunkte (`POST /turniere/:id/abschliessen` bzw.
+`/wieder-oeffnen`), nur mit Schreibzugriff (= Turnierleitung). **Vorbedingung
+fürs Abschließen:** jedes Spiel hat ein erfasstes Ergebnis; noch nicht
+finalisierte Ergebnisse werden dabei auf „Fertig" (`abgeschlossen`) gesetzt.
+**Ist ein Turnier abgeschlossen, sind Inhalte schreibgeschützt** (409 über
+`turnierGesperrt()` an den Schreib-Pfaden von turnier/mannschaft/spieler/
+schiedsrichter/spiel/spielplan/ergebnis) – bewusst NICHT gesperrt bleiben die
+Öffentlich-Freigabe (`oeffentlich*`/`spielernamenOeffentlich`, Whitelist im
+turnier-PUT) und das Teilen (`turnierBerechtigung`). Details:
+`docs/Protokolle/2026-08-11-turnier-abschliessen.md`.
+
+**Öffentliche Regeln:** fünftes `oeffentlich*`-Flag `oeffentlichRegeln` – zeigt
+die Turnierregeln auf der öffentlichen Seite in einem ein-/ausklappbaren Bereich
+(`<details>`, eigener Reiter „Regeln"). `forfaitErgebnis` fällt in der Anzeige
+auf „3:0" zurück, wenn ein (älteres) Turnier das Feld nicht gesetzt hat.
+
+**Über-/Kontaktseite (`/ueber`, nur intern):** kurze Info zu Idee/Entwicklung
+(mit KI) + Entwicklerkontakt. Nur für angemeldete Nutzer (hinter
+`GeschuetzteRoute`, Menülink nur bei Anmeldung – bewusst nicht öffentlich,
+Scam-/Spam-Schutz). Kontaktdaten stehen aktuell in der Konstante `ENTWICKLER`
+(`UeberPage.tsx`); sollen später aus der (noch nicht gebauten) Mail-/
+Betriebskonfiguration kommen.
+
+**App-Version:** menschenlesbarer Anzeigetext in `frontend/src/version.ts`
+(`APP_VERSION`, aktuell „0.9.0 Beta"), Badge neben der Marke in der Kopfzeile;
+die maschinelle semver-Version steht in den `package.json` (`0.9.0-beta`). Bei
+einem Versionswechsel **beide** Stellen anpassen.
+
+**Turnier-Datenimport (Spieltag-Ableitung, teilweise umgesetzt):** Ein neues
+Turnier lässt sich per `POST /turniere/:id/ableiten` aus einem **abgeschlossenen**
+Vorgänger ableiten (zweiter Spieltag, Bundesliga Hin-/Rückspiel): kopiert
+Mannschaften (hart gesperrt, `importiertAusMannschaftId`) + Kader (editierbar,
+`importiertAusSpielerId`), übernimmt Regeln gesperrt (`regelnGesperrt`,
+entsperrbar über `/regeln-entsperren`) und spiegelt den Spielplan (Heim/Auswärts
+getauscht). Gruppierung über `wettbewerbId` (+ `basisTurnierId`, `spieltagNummer`).
+Die Gesamttabelle über beide Spieltage rechnet `berechneGesamttabelle()` (Mapping
+über die Herkunfts-Wurzel auf die Mannschaften des Anzeige-Turniers);
+`GET /turniere/:id/tabelle` liefert sie bei gesetzter `wettbewerbId`. Angelegt
+über die Frage „Daten übernehmen?" in `TurnierAnlegenPage`. **Noch offen:** die
+öffentliche Gesamt-/Spieltag-Ansicht (Stufe 4) und die Torschützen-Summe (erst mit
+digitalem Protokoll; Herkunft ist bereits vorbereitet). Details:
+`docs/Protokolle/2026-08-12-turnier-datenimport.md`.
+
 **Fachliche Referenz:** `docs/torball_gesamtspezifikation.md` ist die
 verbindliche Spezifikation für Geschäftsregeln; bei Unklarheiten dort
 nachschlagen statt zu raten. `docs/Protokolle/` enthält datierte
