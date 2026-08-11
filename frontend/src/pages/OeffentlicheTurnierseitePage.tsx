@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { getOeffentlicheTurnierseite, type OeffentlicheTurnierseite, type OeffentlichesSpiel } from "../api";
+import {
+  getOeffentlicheTurnierseite,
+  type OeffentlicheTurnierseite,
+  type OeffentlichesSpiel,
+  type TabellenZeile,
+} from "../api";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 import { QrCode } from "../components/QrCode";
 import { KontextHilfe } from "../components/KontextHilfe";
@@ -55,18 +60,24 @@ function kartenUrl(dienst: "google" | "osm", geo?: string, name?: string, adress
     : "https://www.openstreetmap.org";
 }
 
+type Mannschaftsliste = OeffentlicheTurnierseite["mannschaften"];
+type Felderliste = OeffentlicheTurnierseite["felder"];
+
 interface SpieleTabelleProps {
   spiele: OeffentlichesSpiel[];
-  daten: OeffentlicheTurnierseite;
+  mannschaften: Mannschaftsliste;
+  felder: Felderliste;
   zeigeErgebnis: boolean;
 }
 
 /** Spielplan-/Ergebnis-Tabelle der oeffentlichen Seite. Die Feld-Spalte erscheint nur bei
- *  mehreren Feldern, die Ergebnis-Spalte nur, wenn die Ergebnisse freigegeben sind. */
-function SpieleTabelle({ spiele, daten, zeigeErgebnis }: SpieleTabelleProps) {
-  const mehrereFelder = daten.felder.length > 1;
-  const nameVonMannschaft = (id: string) => daten.mannschaften.find((m) => m._id === id)?.name ?? id;
-  const nameVonFeld = (feldId: string | undefined) => daten.felder.find((f) => f.feldId === feldId)?.name ?? feldId ?? "";
+ *  mehreren Feldern, die Ergebnis-Spalte nur, wenn die Ergebnisse freigegeben sind. Mannschaften/
+ *  Felder werden explizit uebergeben (nicht das ganze `daten`), damit die Tabelle auch je Spieltag
+ *  eines Wettbewerbs mit dessen eigenen Mannschaften/Feldern aufloesen kann (Datenimport Stufe 4). */
+function SpieleTabelle({ spiele, mannschaften, felder, zeigeErgebnis }: SpieleTabelleProps) {
+  const mehrereFelder = felder.length > 1;
+  const nameVonMannschaft = (id: string) => mannschaften.find((m) => m._id === id)?.name ?? id;
+  const nameVonFeld = (feldId: string | undefined) => felder.find((f) => f.feldId === feldId)?.name ?? feldId ?? "";
   const spieleSortiert = [...spiele].sort((a, b) => Number(a.runde) - Number(b.runde));
 
   if (spieleSortiert.length === 0) {
@@ -105,6 +116,139 @@ function SpieleTabelle({ spiele, daten, zeigeErgebnis }: SpieleTabelleProps) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+interface TabellenAnzeigeProps {
+  tabelle: TabellenZeile[];
+  mannschaften: Mannschaftsliste;
+}
+
+/** Platzierungstabelle der oeffentlichen Seite (Platz, Mannschaft, Sp/S/U/N, Tore, Diff, Punkte).
+ *  Wird sowohl fuer die Einzel-Tabelle eines Turniers als auch fuer die Gesamt-/Spieltag-Tabellen
+ *  eines Wettbewerbs verwendet (Datenimport Stufe 4). */
+function TabellenAnzeige({ tabelle, mannschaften }: TabellenAnzeigeProps) {
+  if (tabelle.length === 0) {
+    return <p>Noch keine Ergebnisse erfasst.</p>;
+  }
+  return (
+    <div className="tabellen-wrapper">
+      <table>
+        <caption className="sr-only">Turniertabelle</caption>
+        <thead>
+          <tr>
+            <th scope="col">Platz</th>
+            <th scope="col">Mannschaft</th>
+            <th scope="col">Sp</th>
+            <th scope="col">S</th>
+            <th scope="col">U</th>
+            <th scope="col">N</th>
+            <th scope="col">Tore</th>
+            <th scope="col">Diff</th>
+            <th scope="col">Punkte</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tabelle.map((zeile, index) => (
+            <tr key={zeile.mannschaftId}>
+              <td>{index + 1}</td>
+              <td>{mannschaften.find((m) => m._id === zeile.mannschaftId)?.name ?? zeile.mannschaftId}</td>
+              <td>{zeile.spiele}</td>
+              <td>{zeile.siege}</td>
+              <td>{zeile.unentschieden}</td>
+              <td>{zeile.niederlagen}</td>
+              <td>
+                {zeile.toreFuer}:{zeile.toreGegen}
+              </td>
+              <td>{zeile.tordifferenz}</td>
+              <td>{zeile.punkte}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+interface WettbewerbErgebnisseProps {
+  wettbewerb: NonNullable<OeffentlicheTurnierseite["wettbewerb"]>;
+  aktuelleSpiele: OeffentlichesSpiel[];
+  aktuelleMannschaften: Mannschaftsliste;
+  aktuelleFelder: Felderliste;
+}
+
+/**
+ * Ergebnis-Ansicht fuer einen Wettbewerb mit mehreren Spieltagen (Datenimport Stufe 4):
+ * Unter-Navigation "Gesamt | Spieltag 1 | Spieltag 2". "Gesamt" zeigt die Summentabelle ueber alle
+ * (freigegebenen) Spieltage plus die Spiele des aktuell aufgerufenen Spieltags; jeder Spieltag-Reiter
+ * zeigt dessen eigene Tabelle und Spiele. Der Unter-Reiter-Zustand ist rein lokal (kein URL-Parameter).
+ */
+function WettbewerbErgebnisse({
+  wettbewerb,
+  aktuelleSpiele,
+  aktuelleMannschaften,
+  aktuelleFelder,
+}: WettbewerbErgebnisseProps) {
+  // "gesamt" oder eine turnierId eines Spieltags.
+  const [unterTab, setUnterTab] = useState<string>("gesamt");
+  const aktiverSpieltag = wettbewerb.spieltage.find((s) => s.turnierId === unterTab);
+  // Faellt auf "gesamt" zurueck, falls der gewaehlte Spieltag verschwindet (z. B. Freigabe zurueckgezogen).
+  const gewaehlt = unterTab === "gesamt" || aktiverSpieltag ? unterTab : "gesamt";
+
+  return (
+    <>
+      <div role="tablist" aria-label="Spieltage" className="unter-tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={gewaehlt === "gesamt"}
+          className={gewaehlt === "gesamt" ? "tab tab-aktiv" : "tab"}
+          onClick={() => setUnterTab("gesamt")}
+        >
+          Gesamt
+        </button>
+        {wettbewerb.spieltage.map((s) => (
+          <button
+            key={s.turnierId}
+            type="button"
+            role="tab"
+            aria-selected={gewaehlt === s.turnierId}
+            className={gewaehlt === s.turnierId ? "tab tab-aktiv" : "tab"}
+            onClick={() => setUnterTab(s.turnierId)}
+          >
+            Spieltag {s.spieltagNummer}
+          </button>
+        ))}
+      </div>
+
+      {gewaehlt === "gesamt" ? (
+        <>
+          <h2>Gesamttabelle</h2>
+          <TabellenAnzeige tabelle={wettbewerb.gesamttabelle} mannschaften={aktuelleMannschaften} />
+          <h2>Spiele Spieltag {wettbewerb.aktuellerSpieltagNummer}</h2>
+          <SpieleTabelle
+            spiele={aktuelleSpiele}
+            mannschaften={aktuelleMannschaften}
+            felder={aktuelleFelder}
+            zeigeErgebnis={true}
+          />
+        </>
+      ) : (
+        aktiverSpieltag && (
+          <>
+            <h2>Tabelle Spieltag {aktiverSpieltag.spieltagNummer}</h2>
+            <TabellenAnzeige tabelle={aktiverSpieltag.tabelle} mannschaften={aktiverSpieltag.mannschaften} />
+            <h2>Spiele</h2>
+            <SpieleTabelle
+              spiele={aktiverSpieltag.spiele}
+              mannschaften={aktiverSpieltag.mannschaften}
+              felder={aktiverSpieltag.felder}
+              zeigeErgebnis={true}
+            />
+          </>
+        )
+      )}
+    </>
   );
 }
 
@@ -341,55 +485,37 @@ export function OeffentlicheTurnierseitePage() {
                 {daten.spielplan.geaendertAm &&
                   `, zuletzt geändert am ${formatiereDatum(daten.spielplan.geaendertAm.slice(0, 10))} um ${formatiereUhrzeit(daten.spielplan.geaendertAm)}`}
               </p>
-              <SpieleTabelle spiele={daten.spielplan.spiele} daten={daten} zeigeErgebnis={false} />
+              <SpieleTabelle
+                spiele={daten.spielplan.spiele}
+                mannschaften={daten.mannschaften}
+                felder={daten.felder}
+                zeigeErgebnis={false}
+              />
             </div>
           )}
 
           {aktiverTab === "ergebnisse" && daten.ergebnisse && (
             <div>
-              <h2>Tabelle</h2>
-              {daten.ergebnisse.tabelle.length === 0 ? (
-                <p>Noch keine Ergebnisse erfasst.</p>
+              {daten.wettbewerb ? (
+                <WettbewerbErgebnisse
+                  wettbewerb={daten.wettbewerb}
+                  aktuelleSpiele={daten.ergebnisse.spiele}
+                  aktuelleMannschaften={daten.mannschaften}
+                  aktuelleFelder={daten.felder}
+                />
               ) : (
-                <div className="tabellen-wrapper">
-                  <table>
-                    <caption className="sr-only">Turniertabelle</caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Platz</th>
-                        <th scope="col">Mannschaft</th>
-                        <th scope="col">Sp</th>
-                        <th scope="col">S</th>
-                        <th scope="col">U</th>
-                        <th scope="col">N</th>
-                        <th scope="col">Tore</th>
-                        <th scope="col">Diff</th>
-                        <th scope="col">Punkte</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {daten.ergebnisse.tabelle.map((zeile, index) => (
-                        <tr key={zeile.mannschaftId}>
-                          <td>{index + 1}</td>
-                          <td>{daten.mannschaften.find((m) => m._id === zeile.mannschaftId)?.name ?? zeile.mannschaftId}</td>
-                          <td>{zeile.spiele}</td>
-                          <td>{zeile.siege}</td>
-                          <td>{zeile.unentschieden}</td>
-                          <td>{zeile.niederlagen}</td>
-                          <td>
-                            {zeile.toreFuer}:{zeile.toreGegen}
-                          </td>
-                          <td>{zeile.tordifferenz}</td>
-                          <td>{zeile.punkte}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                  <h2>Tabelle</h2>
+                  <TabellenAnzeige tabelle={daten.ergebnisse.tabelle} mannschaften={daten.mannschaften} />
+                  <h2>Spiele</h2>
+                  <SpieleTabelle
+                    spiele={daten.ergebnisse.spiele}
+                    mannschaften={daten.mannschaften}
+                    felder={daten.felder}
+                    zeigeErgebnis={true}
+                  />
+                </>
               )}
-
-              <h2>Spiele</h2>
-              <SpieleTabelle spiele={daten.ergebnisse.spiele} daten={daten} zeigeErgebnis={true} />
             </div>
           )}
 

@@ -30,7 +30,7 @@ die Ergebnisse beider Spieltage werden zu einer Gesamttabelle summiert.
 - **Korrektur an Tag 1:** erfordert Wiederöffnen (abgeschlossenes Turnier ist gesperrt), danach
   rechnet die Gesamttabelle neu.
 
-## Umgesetzt (Stufen 1–3, 5, 6)
+## Umgesetzt (Stufen 1–6)
 
 - **Datenmodell** (`shared/src/types`): `Turnier.basisTurnierId`, `spieltagNummer`, `regelnGesperrt`
   (+ vorhandene `wettbewerbId`); `MannschaftImTurnier.importiertAusMannschaftId`;
@@ -55,11 +55,19 @@ die Ergebnisse beider Spieltage werden zu einer Gesamttabelle summiert.
 - **Anlege-UI** (`4fb59bd`): `TurnierAnlegenPage` fragt „Daten aus abgeschlossenem Turnier
   übernehmen?"; bei Auswahl entfallen die vom Vorgänger übernommenen Felder, es wird abgeleitet
   und direkt in die Verwaltung gesprungen.
+- **Öffentliche Gesamt-/Spieltag-Ansicht (Stufe 4):** `GET /oeffentlich/turniere/:id`
+  (`backend/src/routes/oeffentlich.ts`) liefert bei Wettbewerbs-Turnieren zusätzlich einen
+  `wettbewerb`-Block (Gesamttabelle + je Spieltag eigene Tabelle/Spiele/Mannschaften). Der
+  Ergebnis-Reiter der öffentlichen Seite (`OeffentlicheTurnierseitePage`) zeigt dann die
+  Unter-Navigation „Gesamt | Spieltag 1 | Spieltag 2": **Gesamt** = Summentabelle über beide Tage +
+  Spiele des aktuell aufgerufenen Spieltags; **je Spieltag** = dessen eigenständige Tabelle +
+  Spiele. **Wichtige Freigabe-Regel:** aggregiert wird bewusst NUR über Spieltage, deren
+  `oeffentlichErgebnisse` selbst gesetzt ist (sonst würde ein nicht freigegebener Spieltag über die
+  Summentabelle durchsickern) – die Navigation erscheint erst ab **zwei** freigegebenen Spieltagen,
+  konsistent mit dem bestehenden per-Sektion-Freigabemodell.
 
 ## Noch offen
 
-- **Stufe 4:** öffentliche Seite mit „Gesamt | Spieltag 1 | Spieltag 2" (öffentliche Route +
-  Seite umbauen).
 - **Torschützen-Summe:** erst mit der digitalen Protokollierung (Herkunft ist vorbereitet).
 - **>2 Spieltage / andere Sportarten:** späterer Release (Datenmodell trägt es über `wettbewerbId`).
 
@@ -69,3 +77,12 @@ Alle Stufen end-to-end gegen die laufende Instanz geprüft (Ableiten kopiert Man
 Regeln/Spielplan korrekt inkl. Swap; Sperren geben 409, Kader bleibt editierbar, Entsperren wirkt;
 Summentabelle = Tag 1 + Tag 2, mit den Mannschaften des Turniers auflösbar; Anlege-UI leitet ab
 und springt in die Verwaltung). `npm run build` / `lint` / `test` nach jeder Stufe grün.
+
+Stufe 4 zusätzlich gegen die laufende Instanz geprüft: aus dem abgeschlossenen Spieltag 1 einen
+Spieltag 2 abgeleitet, dort Ergebnisse erfasst und freigegeben; der öffentliche Endpunkt liefert
+dann den `wettbewerb`-Block (2 Spieltage, Gesamttabelle je Mannschaft 8 Spiele = 4 + 4). Die
+öffentliche Seite rendert die Unter-Navigation „Gesamt | Spieltag 1 | Spieltag 2": Gesamt zeigt die
+Summentabelle + die Spiele des aktuellen Spieltags, Spieltag 2 die eigene Tabelle + die gespiegelten
+Spiele (Heim/Auswärts getauscht), Namen/Startzeiten je Spieltag korrekt aufgelöst, keine
+Konsolenfehler. Solange nur ein Spieltag freigegeben ist, bleibt der `wettbewerb`-Block `null` und
+der Ergebnis-Reiter zeigt wie bisher die Einzeltabelle.

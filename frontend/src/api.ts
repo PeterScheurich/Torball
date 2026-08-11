@@ -647,11 +647,29 @@ export interface OeffentlichesSpiel {
   ergebnisAbgeschlossen: boolean;
 }
 
+/** Ein einzelner Spieltag innerhalb eines Wettbewerbs (Datenimport Stufe 4). */
+export interface OeffentlicherSpieltag {
+  turnierId: string;
+  spieltagNummer: number;
+  name: string;
+  tabelle: TabellenZeile[];
+  spiele: OeffentlichesSpiel[];
+  mannschaften: { _id: string; name: string; bundesland?: string }[];
+  felder: Spielfeld[];
+}
+
 export interface OeffentlicheTurnierseite {
   turnierId: string;
   name: string;
   mannschaften: { _id: string; name: string; bundesland?: string }[];
   felder: Spielfeld[];
+  /** Nur gesetzt, wenn das Turnier zu einem Wettbewerb mit >= 2 oeffentlich freigegebenen Spieltagen
+   *  gehoert: aktiviert die Unter-Navigation "Gesamt | Spieltag 1 | Spieltag 2" im Ergebnis-Reiter. */
+  wettbewerb: {
+    aktuellerSpieltagNummer: number;
+    gesamttabelle: TabellenZeile[];
+    spieltage: OeffentlicherSpieltag[];
+  } | null;
   turnierinfos: {
     datum: string;
     startzeit?: string;

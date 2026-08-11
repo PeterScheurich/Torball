@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
-import type { MannschaftImTurnier, Spiel, Turnier } from "@torball/shared";
+import type { MannschaftImTurnier, Spiel, Spielfeld, Turnier } from "@torball/shared";
 import { findAllBySelector, findById } from "../repository";
-import { berechneTabelle } from "../ergebnisse/tabelle";
+import { berechneGesamttabelle, berechneTabelle, type TabellenZeile } from "../ergebnisse/tabelle";
 
 /** Nie an die oeffentliche Seite ausliefern (Abschnitt 13: "Spielplan ... ohne
  * Schiedsrichter"; Abschnitt 24.3: Schiedsrichter grundsaetzlich nicht genannt). */
@@ -18,6 +18,72 @@ function oeffentlichesSpiel(s: Spiel) {
     ergebnisB: s.ergebnisB,
     istForfait: s.istForfait,
     ergebnisAbgeschlossen: s.ergebnisAbgeschlossen,
+  };
+}
+
+interface OeffentlicherSpieltag {
+  turnierId: string;
+  spieltagNummer: number;
+  name: string;
+  tabelle: TabellenZeile[];
+  spiele: ReturnType<typeof oeffentlichesSpiel>[];
+  mannschaften: { _id: string; name: string; bundesland?: string }[];
+  felder: Spielfeld[];
+}
+
+interface OeffentlicherWettbewerb {
+  aktuellerSpieltagNummer: number;
+  gesamttabelle: TabellenZeile[];
+  spieltage: OeffentlicherSpieltag[];
+}
+
+/**
+ * Baut den Wettbewerbs-Block der oeffentlichen Seite (Datenimport Stufe 4). Liefert `null`, wenn
+ * das Turnier zu keinem Wettbewerb gehoert, seine Ergebnisse nicht freigegeben sind, oder weniger
+ * als zwei Spieltage ihre Ergebnisse oeffentlich freigegeben haben. Die Gesamttabelle summiert nur
+ * ueber die freigegebenen Spieltage (siehe Aufrufstelle).
+ */
+async function ladeWettbewerb(
+  turnier: Turnier,
+  mannschaften: MannschaftImTurnier[],
+): Promise<OeffentlicherWettbewerb | null> {
+  if (!turnier.oeffentlichErgebnisse || !turnier.wettbewerbId) return null;
+
+  const wettbewerbTurniere = await findAllBySelector<Turnier>({
+    docType: "turnier",
+    wettbewerbId: turnier.wettbewerbId,
+  });
+  const freigegeben = wettbewerbTurniere
+    .filter((t) => t.oeffentlichErgebnisse)
+    .sort((a, b) => (a.spieltagNummer ?? 0) - (b.spieltagNummer ?? 0));
+  if (freigegeben.length < 2) return null;
+
+  const proSpieltag = await Promise.all(
+    freigegeben.map(async (t) => {
+      const [ms, sp] = await Promise.all([
+        findAllBySelector<MannschaftImTurnier>({ docType: "mannschaftImTurnier", turnierId: t._id }),
+        findAllBySelector<Spiel>({ docType: "spiel", turnierId: t._id }),
+      ]);
+      return { turnier: t, mannschaften: ms, spiele: sp };
+    }),
+  );
+  const alleMannschaften = proSpieltag.flatMap((p) => p.mannschaften);
+  const alleSpiele = proSpieltag.flatMap((p) => p.spiele);
+
+  return {
+    aktuellerSpieltagNummer: turnier.spieltagNummer ?? 1,
+    // Auf die Mannschaften des ANGEZEIGTEN Turniers abgebildet, damit die Namen im aktuellen Kontext
+    // aufloesen (berechneGesamttabelle uebernimmt das Mapping ueber die Herkunfts-Wurzel).
+    gesamttabelle: berechneGesamttabelle(turnier, mannschaften, alleMannschaften, alleSpiele),
+    spieltage: proSpieltag.map((p) => ({
+      turnierId: p.turnier._id,
+      spieltagNummer: p.turnier.spieltagNummer ?? 1,
+      name: p.turnier.name,
+      tabelle: berechneTabelle(p.turnier, p.mannschaften, p.spiele),
+      spiele: p.spiele.map(oeffentlichesSpiel),
+      mannschaften: p.mannschaften.map((m) => ({ _id: m._id, name: m.name, bundesland: m.bundesland })),
+      felder: p.turnier.felder,
+    })),
   };
 }
 
@@ -41,7 +107,16 @@ export async function oeffentlichRoutes(app: FastifyInstance): Promise<void> {
       findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id }),
     ]);
 
+    // Datenimport (Stufe 4): Gehoert das Turnier zu einem Wettbewerb (mehrere Spieltage), bekommt die
+    // oeffentliche Ergebnis-Ansicht eine Unter-Navigation "Gesamt | Spieltag 1 | Spieltag 2". Aggregiert
+    // wird bewusst NUR ueber Spieltage, deren Ergebnisse ihrerseits oeffentlich freigegeben sind
+    // (oeffentlichErgebnisse) - konsistent mit dem per-Sektion-Freigabemodell, damit ein noch nicht
+    // freigegebener Spieltag nicht ueber die Summentabelle durchsickert. Erst ab zwei freigegebenen
+    // Spieltagen erscheint die Navigation (bei nur einem waere "Gesamt" == "Spieltag N", also redundant).
+    const wettbewerb = await ladeWettbewerb(turnier, mannschaften);
+
     return {
+      wettbewerb,
       turnierId: turnier._id,
       name: turnier.name,
       // Immer dabei (nicht hinter oeffentlichTurnierinfos versteckt): Spielplan/Ergebnisse

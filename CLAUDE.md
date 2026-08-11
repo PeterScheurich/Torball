@@ -355,8 +355,14 @@ getauscht). Gruppierung über `wettbewerbId` (+ `basisTurnierId`, `spieltagNumme
 Die Gesamttabelle über beide Spieltage rechnet `berechneGesamttabelle()` (Mapping
 über die Herkunfts-Wurzel auf die Mannschaften des Anzeige-Turniers);
 `GET /turniere/:id/tabelle` liefert sie bei gesetzter `wettbewerbId`. Angelegt
-über die Frage „Daten übernehmen?" in `TurnierAnlegenPage`. **Noch offen:** die
-öffentliche Gesamt-/Spieltag-Ansicht (Stufe 4) und die Torschützen-Summe (erst mit
+über die Frage „Daten übernehmen?" in `TurnierAnlegenPage`. **Öffentliche
+Gesamt-/Spieltag-Ansicht (Stufe 4):** `GET /oeffentlich/turniere/:id` liefert bei
+Wettbewerbs-Turnieren einen `wettbewerb`-Block; der Ergebnis-Reiter der öffentlichen
+Seite zeigt dann die Unter-Navigation „Gesamt | Spieltag 1 | Spieltag 2" (Gesamt =
+Summentabelle + Spiele des aktuellen Spieltags, je Spieltag eigene Tabelle/Spiele).
+Aggregiert wird bewusst **nur über Spieltage mit eigener `oeffentlichErgebnisse`-
+Freigabe** (kein Durchsickern nicht freigegebener Spieltage), Navigation erst ab
+zwei freigegebenen Spieltagen. **Noch offen:** die Torschützen-Summe (erst mit
 digitalem Protokoll; Herkunft ist bereits vorbereitet). Details:
 `docs/Protokolle/2026-08-12-turnier-datenimport.md`.
 
