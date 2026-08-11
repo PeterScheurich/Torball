@@ -1,6 +1,6 @@
 import { HILFE_THEMEN, type HilfeBlock } from "../hilfe/inhalte";
 
-/** Rendert einen einzelnen Antwort-Baustein (Absatz, Aufzaehlung oder Hinweis-Kasten). */
+/** Rendert einen einzelnen Antwort-Baustein (Absatz, Aufzaehlung, Hinweis oder Vertiefung). */
 function Block({ block }: { block: HilfeBlock }) {
   if (typeof block === "string") {
     return <p>{block}</p>;
@@ -12,6 +12,18 @@ function Block({ block }: { block: HilfeBlock }) {
           <li key={i}>{eintrag}</li>
         ))}
       </ul>
+    );
+  }
+  if ("vertiefung" in block) {
+    return (
+      <details className="hilfe-vertiefung">
+        <summary>{block.vertiefung.titel ?? "Mehr Infos"}</summary>
+        <div className="hilfe-vertiefung-inhalt">
+          {block.vertiefung.text.map((b, i) => (
+            <Block key={i} block={b} />
+          ))}
+        </div>
+      </details>
     );
   }
   return <p className="hilfe-hinweis">{block.hinweis}</p>;

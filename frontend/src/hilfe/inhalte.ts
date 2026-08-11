@@ -12,7 +12,10 @@
  *    aufklappbare ABSCHNITTE (Frage + Antwort).
  *  - Der Antwort-Text (`text`) ist eine Liste von BLOECKEN. Ein Block ist
  *    entweder ein normaler Absatz (einfacher Text), eine Aufzaehlung
- *    (`{ liste: [...] }`) oder ein hervorgehobener Hinweis (`{ hinweis: "..." }`).
+ *    (`{ liste: [...] }`), ein hervorgehobener Hinweis (`{ hinweis: "..." }`)
+ *    oder ein tiefer aufklappbarer "Mehr Infos"-Block fuer Details, die nur
+ *    manche brauchen (`{ vertiefung: { text: [...] } }`, optional mit eigenem
+ *    `titel`). Die Vertiefung enthaelt selbst wieder Bloecke.
  *
  * === Screenshot ergaenzen ===
  * Bild-Datei nach `frontend/public/hilfe/` legen und im Abschnitt ergaenzen:
@@ -23,8 +26,13 @@
  * Optional zusaetzlich `bildUnterschrift: "..."` fuer eine sichtbare Bildunterschrift.
  */
 
-/** Ein Baustein einer Antwort: Absatz (String), Aufzaehlung oder Hinweis-Kasten. */
-export type HilfeBlock = string | { liste: string[] } | { hinweis: string };
+/** Ein Baustein einer Antwort: Absatz (String), Aufzaehlung, Hinweis-Kasten oder
+ *  ein tiefer aufklappbarer "Mehr Infos"-Block (`vertiefung`, selbst wieder aus Bloecken). */
+export type HilfeBlock =
+  | string
+  | { liste: string[] }
+  | { hinweis: string }
+  | { vertiefung: { titel?: string; text: HilfeBlock[] } };
 
 /** Bild-Felder als Union modelliert, damit `bild` ohne `bildAlt` gar nicht kompiliert. */
 type BildFelder =
@@ -64,6 +72,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
           "Die einzelnen Schritte bauen aufeinander auf. Eine typische Reihenfolge ist:",
           {
             liste: [
+              "Optional vorab: Vereine und Teams als Stammdaten anlegen.",
               "Turnier anlegen (Name, Datum, Anzahl der Spielfelder).",
               "Mannschaften erfassen und – wenn gewünscht – deren Kader pflegen.",
               "Schiedsrichter eintragen und die Turnierleitung festlegen.",
@@ -90,12 +99,18 @@ export const HILFE_THEMEN: HilfeThema[] = [
   {
     id: "turnier-anlegen",
     titel: "Turnier anlegen & Grunddaten",
-    kurz: "Ein neues Turnier mit Name, Datum und Spielfeldern anlegen.",
+    kurz: "Ein neues Turnier anlegen – ein Assistent führt in drei Schritten durch Grunddaten, Mannschaften und Spielplan.",
     abschnitte: [
       {
         frage: "Wie lege ich ein neues Turnier an?",
         text: [
-          "In der Turnierliste führt „Neues Turnier“ zum Anlegeformular. Pflicht sind Name und Datum; außerdem legst du die Anzahl der Spielfelder fest.",
+          "In der Turnierliste startest du mit „Neues Turnier anlegen“. Das Anlegen läuft als Assistent in drei Schritten: zuerst die Grunddaten, dann die Mannschaften, dann der Spielplan. Am Ende landest du in der Turnierverwaltung, wo du alles später wieder ändern kannst.",
+        ],
+      },
+      {
+        frage: "Welche Grunddaten trage ich im ersten Schritt ein?",
+        text: [
+          "Pflicht sind Name und Datum. Optional ist eine Startzeit. Dazu wählst du die Anzahl der Spielfelder, den Spielmodus und die Protokollierung.",
         ],
       },
       {
@@ -105,9 +120,52 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
-        frage: "Was ist die Protokollierungsart?",
+        frage: "Was bedeutet der Spielmodus?",
         text: [
-          "Sie legt fest, wie Ergebnisse erfasst werden. Aktuell steht die manuelle Erfassung zur Verfügung: Endergebnisse werden pro Spiel eingetragen – entweder direkt in der Anwendung oder über einen Erfassungslink.",
+          "Er legt fest, wie oft jede Mannschaft gegen jede andere spielt: „Jeder gegen Jeden (einfach)“ – ein Spiel je Paarung – oder „Jeder zweimal gegen Jeden (doppelt)“ – Hin- und Rückspiel.",
+        ],
+      },
+      {
+        frage: "Was ist die Protokollierung?",
+        text: [
+          "Sie legt fest, wie Ergebnisse erfasst werden. Verfügbar ist „Manuell“: Es werden nur die Endergebnisse pro Spiel eingetragen – direkt in der Anwendung oder über einen Erfassungslink.",
+          {
+            hinweis:
+              "Die Option „Digital“ (Live-Protokollierung jedes Wurfs) ist bereits vorgesehen, aber noch nicht umgesetzt. Wähle vorerst „Manuell“.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "stammdaten",
+    titel: "Stammdaten: Vereine & Teams",
+    kurz: "Vereine und Teams zentral pflegen – sie stehen dann für alle Turniere zur Verfügung.",
+    abschnitte: [
+      {
+        frage: "Was sind Stammdaten?",
+        text: [
+          "Unter „Stammdaten“ pflegst du Vereine und ihre Teams turnierübergreifend an einer Stelle. Beim Erfassen einer Mannschaft in einem Turnier greifst du auf diese Liste zurück, statt jedes Mal alles neu einzutippen.",
+        ],
+      },
+      {
+        frage: "Wie hängen Vereine und Teams zusammen?",
+        text: [
+          "Ein Team gehört immer zu einem Verein. Lege also zuerst den Verein an, danach seine Teams.",
+          {
+            vertiefung: {
+              titel: "Und wenn es eine Spielgemeinschaft ohne eigenen Verein ist?",
+              text: [
+                "Trage die Spielgemeinschaft einfach als eigenen Verein ein. Zu jedem Team gehört ein Verein – die Spielgemeinschaft übernimmt dann diese Rolle.",
+              ],
+            },
+          },
+        ],
+      },
+      {
+        frage: "Ändern sich laufende Turniere mit, wenn ich Stammdaten anpasse?",
+        text: [
+          "Nein. Beim Anlegen einer Turnier-Mannschaft werden die Stammdaten kopiert, nicht dauerhaft verknüpft. Eine spätere Änderung hier wirkt sich nicht auf bereits laufende oder abgeschlossene Turniere aus.",
         ],
       },
     ],
@@ -228,7 +286,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Was zeigt die öffentliche Seite?",
         text: [
-          "Sie ist ein frei teilbarer Link je Turnier, den Besucher ohne Login öffnen können. Vier Bereiche lassen sich einzeln freischalten: Turnierinfos, Anfahrt, Spielplan und Ergebnisse.",
+          "Sie ist ein frei teilbarer Link je Turnier, den Besucher ohne Login öffnen können. Vier Bereiche lassen sich einzeln freischalten: „Turnierinfos“, „Anfahrt & Dokumente“, „Spielplan“ und „Ergebnisse“. Die Freischaltung steuerst du im Reiter „Übersicht“ des Turniers.",
         ],
       },
       {
@@ -266,6 +324,72 @@ export const HILFE_THEMEN: HilfeThema[] = [
         frage: "Kann ich einen Benutzer löschen?",
         text: [
           "Benutzer werden nicht gelöscht, sondern gesperrt. Ein gesperrtes Konto kann sich nicht mehr anmelden, bleibt aber für die Nachvollziehbarkeit erhalten.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "anmeldung",
+    titel: "Anmelden & Einladung annehmen",
+    kurz: "Wie du dich anmeldest und wie du als eingeladene Person deinen Zugang aktivierst.",
+    abschnitte: [
+      {
+        frage: "Wie melde ich mich an?",
+        text: [
+          "Mit E-Mail-Adresse und Passwort auf der Anmeldeseite. Ist für dein Konto die Zwei-Faktor-Anmeldung aktiv, gibst du danach zusätzlich den Code aus deiner Authenticator-App ein.",
+        ],
+      },
+      {
+        frage: "Ich wurde eingeladen – was muss ich tun?",
+        text: [
+          "Öffne den Einladungslink aus der E-Mail. Dort vergibst du dein eigenes Passwort und aktivierst damit dein Konto; anschließend bist du direkt angemeldet.",
+          {
+            hinweis:
+              "Der Einladungslink ist persönlich und nur begrenzt gültig. Öffne ihn zeitnah und gib ihn nicht weiter.",
+          },
+        ],
+      },
+      {
+        frage: "Ich habe mein Passwort vergessen.",
+        text: [
+          "Über „Passwort vergessen“ auf der Anmeldeseite forderst du einen Link an, mit dem du dir ein neues Passwort setzen kannst.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "profil-sicherheit",
+    titel: "Mein Profil & Sicherheit",
+    kurz: "E-Mail und Passwort ändern und die Zwei-Faktor-Anmeldung einrichten.",
+    abschnitte: [
+      {
+        frage: "Wo ändere ich E-Mail oder Passwort?",
+        text: [
+          "Unter „Mein Profil“ – erreichbar über das Menü oben rechts mit deinem Namen. Zur Bestätigung solcher sicherheitsrelevanten Änderungen gibst du jeweils dein aktuelles Passwort ein.",
+          {
+            hinweis:
+              "Wenn du dein Passwort änderst, werden alle anderen angemeldeten Sitzungen beendet – die gerade genutzte bleibt bestehen.",
+          },
+        ],
+      },
+      {
+        frage: "Welche Anforderungen hat ein Passwort?",
+        text: [
+          "Mindestens 8 Zeichen, darunter ein Großbuchstabe, eine Zahl und ein Sonderzeichen. Beim Eintippen zeigt dir eine Checkliste live an, welche Bedingungen bereits erfüllt sind.",
+        ],
+      },
+      {
+        frage: "Wie richte ich die Zwei-Faktor-Anmeldung (2FA) ein?",
+        text: [
+          "Im Profil unter „Zwei-Faktor-Authentifizierung“ startest du die Einrichtung, scannst den angezeigten QR-Code mit einer Authenticator-App (oder gibst den Schlüssel manuell ein) und bestätigst mit dem Code aus der App. Danach fragt die Anmeldung neben dem Passwort zusätzlich diesen Code ab.",
+          {
+            vertiefung: {
+              titel: "Was ist eine Authenticator-App?",
+              text: [
+                "Eine App auf deinem Smartphone, die alle 30 Sekunden einen sechsstelligen Einmalcode erzeugt. Dieser zweite Faktor schützt dein Konto zusätzlich – selbst dann, wenn jemand dein Passwort kennen würde.",
+              ],
+            },
+          },
         ],
       },
     ],

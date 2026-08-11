@@ -853,6 +853,24 @@ button:hover:not(:disabled) {
   color: var(--text);
 }
 
+/* Dritte Ebene: tiefer aufklappbares "Mehr Infos" innerhalb einer Antwort. Bewusst dezenter
+   als der Abschnitt selbst (kein voller Rahmen, nur farbige Kante + kleinere, gedaempfte
+   Zusammenfassung), damit die Verschachtelung erkennbar bleibt, ohne aufdringlich zu wirken. */
+.hilfe-vertiefung {
+  margin: 8px 0;
+  border-left: 3px solid var(--border);
+  padding-left: 12px;
+}
+.hilfe-vertiefung > summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.hilfe-vertiefung-inhalt {
+  padding-top: 4px;
+}
+
 /* Screenshot in einem Abschnitt: responsiv, mit dezentem Rahmen und optionaler Unterschrift. */
 .hilfe-bild {
   margin: 12px 0 0;
