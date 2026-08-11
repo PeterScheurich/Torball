@@ -19,6 +19,7 @@
 | Erkenntnisse aus der Umsetzung (Anmeldung) | 10.08.2026 | Abschnitt 25.4 präzisiert: Umsetzungsstand der Selbst-Service-E-Mail-Änderung (aktuell ohne Bestätigungslink/Benachrichtigung) dokumentiert. Details siehe `docs/Protokolle/2026-08-10-anmeldung-benutzerverwaltung.md`. |
 | Erkenntnisse aus der Umsetzung (UI-Verfeinerung) | 10.08.2026 | Abschnitt 24.3 präzisiert: Zwei-Ebenen-Modell für Anzeige-Voreinstellungen (kontogebunden + geräteslokal), neue Zeilenabstand-Einstellung. Abschnitt 5.1 ergänzt: Geo-Referenz wird über Verlinkung zu Google Maps/OpenStreetMap erfasst, nicht über eine eingebettete Karte. Details siehe `docs/Protokolle/2026-08-10-ui-verfeinerung-stammdaten.md`. |
 | Erkenntnisse aus der Umsetzung (öffentliche Turnierseite) | 10.08.2026 | Abschnitt 13 umgesetzt und präzisiert: Turnier-ID selbst als Adresse (kein separater Token wie bei Abschnitt 14, da reiner Lesezugriff unkritisch ist); teilnehmende Mannschaften/Spielfelder werden unabhängig von den vier Sichtbarkeits-Schaltern immer mitgeliefert, da Spielplan/Ergebnisse ohne sie nicht lesbar wären. Details siehe `docs/Protokolle/2026-08-10-oeffentliche-turnierseite.md`. |
+| Erkenntnisse aus der Umsetzung (Turnier-Lebenszyklus) | 11.08.2026 | Abschnitt 10.3 + 26.4 aktualisiert: neuer Status **Abgeschlossen** zwischen Aktiv und Archiviert (Aktiv = nur noch „läuft"); Abschließen durch Turnierleitung/Schreibzugriff (nicht nur Admin), reversibel, Vorbedingung „alle Ergebnisse erfasst"; Schreibschutz im Zustand Abgeschlossen mit Ausnahme von Öffentlich-Freigabe/Teilen. Details siehe `docs/Protokolle/2026-08-11-turnier-abschliessen.md`. |
 
 Dieses Dokument ersetzt die einzelnen Vorgängerdokumente inhaltlich (führt sie zusammen). Sie bleiben als Historie im Projekt erhalten.
 
@@ -343,8 +344,17 @@ Rollen werden pro Turnier vergeben – dieselbe Person kann bei verschiedenen Tu
 | Status | Beschreibung | Öffentlich sichtbar |
 |---|---|---|
 | Entwurf | In Planung | Nein |
-| Aktiv | Läuft oder abgeschlossen | Ja |
-| Archiviert | Nur Ergebnisse verfügbar | Ja (nur Ergebnisse) |
+| Aktiv | Läuft / Spieltag | Ja |
+| Abgeschlossen | Von der Turnierleitung bewusst beendet; inhaltlich schreibgeschützt, aber weiterhin vollständig einsehbar und reversibel (Wieder öffnen) | Ja |
+| Archiviert | Langzeit-Archiv, nur noch Ergebnisse verfügbar | Ja (nur Ergebnisse) |
+
+**Gruppierung in der Turnierübersicht:** *Entwurf* und *Aktiv* (inkl. laufender Turniere) zählen zu den **geplanten**, *Abgeschlossen* und *Archiviert* zu den **abgeschlossenen** Turnieren.
+
+**Abschließen (Übergang Aktiv → Abgeschlossen):** Erfolgt bewusst durch die **Turnierleitung bzw. eine Person mit Schreibzugriff** auf das Turnier (nicht nur Admin). Voraussetzung: **jedes Spiel hat ein erfasstes Ergebnis** – noch nicht finalisierte Ergebnisse werden dabei auf „Fertig" gesetzt, damit ein abgeschlossenes Turnier immer ein konsistenter Endstand ist. Reversibel: „Wieder öffnen" setzt den Status zurück auf *Aktiv*.
+
+**Schreibschutz im Status *Abgeschlossen*:** Inhaltsänderungen (Mannschaften, Spieler, Schiedsrichter, Spielplan, Ergebnisse, Grunddaten) sind gesperrt – zum Bearbeiten muss das Turnier zuerst wieder geöffnet werden. **Bewusst weiterhin erlaubt:** die granulare Öffentlichkeits-Freigabe und das Teilen (Leserechte vergeben), da Ergebnisse oft erst nach dem Abschließen veröffentlicht/geteilt werden.
+
+*Hinweis zum Umsetzungsstand:* Der Status *Abgeschlossen* und der beschriebene Schreibschutz sind umgesetzt; die eigentliche **Archivierung** (Übertragung in einen Archiv-Pool, siehe 26.4) ist noch nicht gebaut. Historie/Begründung der Abweichung vom ursprünglichen Drei-Status-Modell: `docs/Protokolle/2026-08-11-turnier-abschliessen.md`.
 
 ## 11. Datenschutz
 
@@ -980,7 +990,7 @@ Automatisches Backup vor jeder Synchronisation im Konfliktfall, regelmäßige Ba
 
 ### 26.4 Archivierung
 
-Status-Übergang Entwurf → Aktiv → Archiviert, nur durch Admin. Bei Archivierung werden relevante Daten (Ergebnisse, Tabellen, Torschützen) in einen Archiv-Pool übertragen; detaillierte Protokolle bleiben im Original. Archivierte Turniere bleiben öffentlich sichtbar (nur Ergebnisse). Ein Automatismus nach konfigurierbarer Zeit ohne Einspruch ist als spätere Erweiterung vorgesehen, die Grundfunktion sollte aber von Anfang an eingeplant werden.
+Status-Übergang **Entwurf → Aktiv → Abgeschlossen → Archiviert** (siehe 10.3). Das **Abschließen** nimmt die **Turnierleitung bzw. eine Person mit Schreibzugriff** vor (nicht nur Admin) und ist reversibel; das **Archivieren** ist als eigener, weitergehender Schritt gedacht (ursprünglich Admin). Bei Archivierung werden relevante Daten (Ergebnisse, Tabellen, Torschützen) in einen Archiv-Pool übertragen; detaillierte Protokolle bleiben im Original. Archivierte Turniere bleiben öffentlich sichtbar (nur Ergebnisse). Ein Automatismus nach konfigurierbarer Zeit ohne Einspruch ist als spätere Erweiterung vorgesehen, die Grundfunktion sollte aber von Anfang an eingeplant werden. **Umsetzungsstand:** *Abschließen*/*Wieder öffnen* sind gebaut, die *Archivierung* (Archiv-Pool) noch nicht.
 
 ---
 
