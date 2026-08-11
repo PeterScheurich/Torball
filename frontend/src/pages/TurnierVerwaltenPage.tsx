@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import type { Protokollierungsart, Spielmodus, Turnier, TurnierStatus, Turnierregeln } from "@torball/shared";
+import type { Protokollierungsart, Spiel, Spielmodus, Turnier, TurnierStatus, Turnierregeln } from "@torball/shared";
 import {
+  getSpiele,
   getSystemkonfiguration,
   getTurnier,
   turnierAbschliessen,
@@ -209,17 +210,41 @@ export function TurnierVerwaltenPage() {
     }
   }
 
-  /** Turnier bewusst abschliessen - danach steht es in der Uebersicht unter "Abgeschlossen".
-   *  Reversibel (siehe wiederOeffnen), deshalb nur eine kurze Rueckfrage, keine harte Sperre. */
+  /**
+   * Turnier abschliessen. Vorbedingung: jedes Spiel muss ein erfasstes Ergebnis haben (kein
+   * "offenes" Spiel mehr) - sonst wird abgebrochen. Gibt es noch erfasste, aber nicht
+   * finalisierte Ergebnisse ("Erfasst"), wird nachgefragt, ob alle auf "Fertig" gesetzt werden
+   * sollen (das erledigt der Abschluss serverseitig). Reversibel (siehe wiederOeffnen).
+   */
   async function abschliessen() {
-    if (
-      !window.confirm(
-        'Turnier abschließen? Es erscheint danach in der Übersicht unter „Abgeschlossen". ' +
-          "Du kannst es jederzeit wieder öffnen.",
-      )
-    ) {
+    let spiele: Spiel[];
+    try {
+      spiele = await getSpiele(turnierId);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden der Spiele");
       return;
     }
+
+    const ohneErgebnis = spiele.filter((s) => s.ergebnisA == null || s.ergebnisB == null);
+    if (ohneErgebnis.length > 0) {
+      setFehler(
+        `Turnier kann noch nicht abgeschlossen werden: ${ohneErgebnis.length} Spiel(e) haben noch kein ` +
+          "erfasstes Ergebnis. Bitte zuerst im Reiter „Ergebnisse“ alle Ergebnisse erfassen.",
+      );
+      return;
+    }
+
+    // Alle Spiele haben ein Ergebnis; „Erfasst" (Status beendet) sind die noch nicht finalisierten.
+    const nichtFinalisiert = spiele.filter((s) => s.status !== "abgeschlossen");
+    const frage =
+      nichtFinalisiert.length > 0
+        ? `Es gibt ${nichtFinalisiert.length} erfasste, aber noch nicht abgeschlossene Ergebnisse. ` +
+          'Beim Abschließen werden alle auf „Fertig" gesetzt.\n\n' +
+          "Turnier jetzt abschließen? Du kannst es jederzeit wieder öffnen."
+        : 'Turnier abschließen? Es erscheint danach in der Übersicht unter „Abgeschlossen". ' +
+          "Du kannst es jederzeit wieder öffnen.";
+    if (!window.confirm(frage)) return;
+
     try {
       setTurnier(await turnierAbschliessen(turnierId));
       setFehler(undefined);
@@ -293,6 +318,16 @@ export function TurnierVerwaltenPage() {
       </p>
       <h1>{turnier.name}</h1>
       {fehler && <p role="alert">{fehler}</p>}
+
+      {/* Hinweis auf den gesperrten Zustand. Inhalte sind bei abgeschlossenem Turnier serverseitig
+          schreibgeschuetzt; nur Oeffentlich-Freigabe und Teilen bleiben moeglich. Zum Bearbeiten
+          in der Uebersicht "Wieder oeffnen". */}
+      {turnier.status === "abgeschlossen" && (
+        <p className="turnier-gesperrt-hinweis" role="status">
+          Dieses Turnier ist <strong>abgeschlossen</strong> – Inhalte sind gesperrt. Zum Bearbeiten im Reiter
+          „Übersicht" auf <strong>„Wieder öffnen"</strong>. Öffentlich-Freigabe und Teilen bleiben weiterhin möglich.
+        </p>
+      )}
 
       <div role="tablist" aria-label="Turnierbereiche">
         {TABS.map((tab, index) => (

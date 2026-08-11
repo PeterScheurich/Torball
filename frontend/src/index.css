@@ -416,6 +416,19 @@ form {
   color: var(--text-muted);
 }
 
+/* Hinweis-Banner fuer ein abgeschlossenes (schreibgeschuetztes) Turnier. Deutlich sichtbar
+   ueber allen Reitern, mit farbiger Kante links - signalisiert den gesperrten Zustand, ohne
+   wie eine Fehlermeldung (role=alert) zu wirken. */
+.turnier-gesperrt-hinweis {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  background: var(--bg-subtle);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 0 6px 6px 0;
+  margin: 0 0 16px;
+}
+
 /* QR-Code (Ergebnis-Erfassungslink / oeffentliche Turnierseite): feste weisse Flaeche mit etwas
    Rand, damit der Code unabhaengig vom Farbschema scannbar bleibt. */
 .qr-code {

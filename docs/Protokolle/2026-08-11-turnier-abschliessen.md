@@ -66,6 +66,40 @@ end-to-end verifiziert: Abschließen setzt `abgeschlossen`, Wiederöffnen `aktiv
 trennt korrekt in beide Gruppen; der Knopf schaltet je nach Status zwischen „Abschließen" und
 „Wieder öffnen" um.
 
+## Nachtrag: Schreibschutz + Abschluss-Vorbedingung (später am 2026-08-11)
+
+**Abgeschlossenes Turnier ist inhaltlich schreibgeschützt.** Solange der Status
+`abgeschlossen` (oder `archiviert`) ist, lehnt das Backend Inhaltsänderungen mit **HTTP 409**
+ab (Mannschaften, Spieler, Schiedsrichter, Spielplan, Ergebnisse, Turnier-Grunddaten). Zum
+Bearbeiten muss erst „Wieder öffnen" gedrückt werden (Status → `aktiv`). Zentral über den
+Helfer `turnierGesperrt()` + `TURNIER_GESPERRT_FEHLER` (`backend/src/auth/turnierZugriff.ts`),
+angewandt an den Schreib-Pfaden der Routen (`turnier`, `mannschaft`, `spieler`, `schiedsrichter`,
+`spiel`, `spielplan`, `ergebnis`).
+
+**Bewusst NICHT gesperrt (Nutzer-Entscheidung):** die **Öffentlich-Freigabe** (die vier
+`oeffentlich*`-Flags + `spielernamenOeffentlich`) und das **Teilen** (Leserechte vergeben,
+`turnierBerechtigung`). Begründung: Ergebnisse werden oft erst *nach* dem Abschließen
+veröffentlicht/geteilt – dafür soll man das Turnier nicht extra wieder öffnen müssen. Umsetzung:
+`PUT /turniere/:id` erlaubt bei gesperrtem Turnier nur eine Whitelist von Veröffentlichungs-
+Feldern, alles andere → 409.
+
+**Vorbedingung fürs Abschließen.** `POST /turniere/:id/abschliessen` prüft jetzt: **jedes Spiel
+muss ein erfasstes Ergebnis haben** (kein „offenes"/`geplant`-Spiel). Sonst 409 mit Anzahl.
+Beim Abschließen werden alle noch nicht finalisierten Ergebnisse (`beendet` = „Erfasst") auf
+`abgeschlossen` („Fertig") gesetzt – ein abgeschlossenes Turnier ist damit immer ein
+konsistenter Endstand. Das Frontend (`TurnierVerwaltenPage`) prüft vorab, blockiert mit klarer
+Meldung, wenn Ergebnisse fehlen, und fragt bei noch nicht finalisierten Ergebnissen nach, ob
+alle auf „Fertig" gesetzt werden sollen. Ein Hinweis-Banner signalisiert den gesperrten Zustand.
+
+**Berechtigung** (unverändert): Abschließen/Wiederöffnen verlangen Schreibzugriff (= Admin,
+Manager-Ersteller oder `turnierleitung`/`spielleitung`-Berechtigung), erfüllt damit die Vorgabe
+„nur Turnierleitung/Verwalter" für nicht rein lokale Turniere. Der lokal-erstellte Sonderfall
+(Codes statt Konten) ist noch nicht gebaut (siehe lokaler Offline-Betrieb).
+
+Backend-Enforcement + Frontend-Verhalten im Browser end-to-end geprüft (Abschließen blockiert
+bei fehlenden Ergebnissen; Inhaltsänderung am abgeschlossenen Turnier 409; Freigabe erlaubt;
+Banner sichtbar).
+
 ## Offener Folgepunkt
 
 Die **Spezifikation Abschnitt 10.3** (Statustabelle + „nur durch Admin") ist noch nicht auf

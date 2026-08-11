@@ -11,8 +11,19 @@ import type {
 } from "@torball/shared";
 import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth, requireRolle } from "../auth/plugin";
-import { hatMindestens } from "../auth/turnierZugriff";
+import { hatMindestens, turnierGesperrt } from "../auth/turnierZugriff";
 import { aktuelleTurnierregeln } from "../konfiguration";
+
+// Felder, die auch bei einem abgeschlossenen Turnier noch geaendert werden duerfen (Nutzer-Vorgabe:
+// Veroeffentlichen bleibt moeglich, ohne das Turnier erst wieder oeffnen zu muessen). Alle uebrigen
+// Felder sind bei Status "abgeschlossen"/"archiviert" gesperrt.
+const BEI_ABSCHLUSS_ERLAUBTE_FELDER: ReadonlyArray<keyof Turnier> = [
+  "oeffentlichTurnierinfos",
+  "oeffentlichAnfahrtDokumente",
+  "oeffentlichSpielplan",
+  "oeffentlichErgebnisse",
+  "spielernamenOeffentlich",
+];
 
 /** Felder, die der Client beim Anlegen setzen kann; alles andere bekommt einen Default (Abschnitt 20.5). */
 type TurnierBody = Partial<Omit<Turnier, "_id" | "_rev" | "docType" | "turnierId">> &
@@ -111,6 +122,18 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       if (!(await hatMindestens(bestehend, req.benutzer, "schreiben"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
       }
+      // Bei abgeschlossenem Turnier nur noch die Veroeffentlichungs-Felder zulassen (siehe oben);
+      // jeder andere Feldwechsel wird abgelehnt, bis das Turnier wieder geoeffnet wird.
+      if (turnierGesperrt(bestehend)) {
+        const unerlaubt = Object.keys(req.body).filter(
+          (k) => !BEI_ABSCHLUSS_ERLAUBTE_FELDER.includes(k as keyof Turnier),
+        );
+        if (unerlaubt.length > 0) {
+          return reply.code(409).send({
+            error: "Turnier ist abgeschlossen. Zum Bearbeiten zuerst wieder öffnen (nur die Öffentlich-Freigabe ist änderbar).",
+          });
+        }
+      }
       const aktualisiert: Turnier = {
         ...bestehend,
         ...req.body,
@@ -139,10 +162,35 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     return insertDoc({ ...bestehend, status: neuerStatus, geaendertAm: new Date().toISOString() });
   }
 
-  // Beendet das Turnier: erscheint in der Uebersicht danach unter "Abgeschlossen".
-  app.post<{ Params: { id: string } }>("/turniere/:id/abschliessen", (req, reply) =>
-    statusUmschalten(req, reply, "abgeschlossen"),
-  );
+  // Turnier abschliessen. Vorbedingung: jedes Spiel hat ein erfasstes Ergebnis (kein "offenes"
+  // Spiel mehr). Danach werden alle noch nicht finalisierten Ergebnisse auf "Fertig"
+  // (abgeschlossen) gesetzt und das Turnier abgeschlossen - so ist ein abgeschlossenes Turnier
+  // immer ein konsistenter Endstand. Schreibzugriff noetig (= Turnierleitung/Verwalter).
+  app.post<{ Params: { id: string } }>("/turniere/:id/abschliessen", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    const bestehend = await findById<Turnier>(req.params.id);
+    if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+    if (!(await hatMindestens(bestehend, req.benutzer, "schreiben"))) {
+      return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+    }
+
+    const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: bestehend._id });
+    const ohneErgebnis = spiele.filter((s) => s.ergebnisA == null || s.ergebnisB == null);
+    if (ohneErgebnis.length > 0) {
+      return reply.code(409).send({
+        error: `Turnier kann nicht abgeschlossen werden: ${ohneErgebnis.length} Spiel(e) haben noch kein erfasstes Ergebnis.`,
+      });
+    }
+
+    // Alle erfassten, aber noch nicht finalisierten Ergebnisse auf "Fertig" setzen.
+    for (const s of spiele) {
+      if (!s.ergebnisAbgeschlossen) {
+        await insertDoc({ ...s, ergebnisAbgeschlossen: true, status: "abgeschlossen" });
+      }
+    }
+
+    return insertDoc({ ...bestehend, status: "abgeschlossen", geaendertAm: new Date().toISOString() });
+  });
 
   // Macht ein abgeschlossenes Turnier wieder zu einem laufenden ("aktiv") - reversibel,
   // nicht destruktiv, damit ein versehentlicher Abschluss korrigierbar bleibt.

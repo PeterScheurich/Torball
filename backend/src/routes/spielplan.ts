@@ -5,7 +5,7 @@ import { erzeugePaarungen } from "../spielplan/paarungen";
 import { erstelleSpielplanVorschlag, type SpielplanEintrag } from "../spielplan/planung";
 import { berechneStartzeit } from "../spielplan/zeitplanung";
 import { requireAuth } from "../auth/plugin";
-import { hatMindestens } from "../auth/turnierZugriff";
+import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
 
 interface SpielplanQuery {
   /** 1 = einfaches Turnier (Jeder-gegen-Jeden), 2 = doppeltes Turnier. Default 1. */
@@ -145,6 +145,11 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
         if (!ergebnis) return;
         turnier = ergebnis.turnier;
         vorschlag = ergebnis.vorschlag;
+      }
+
+      // Bei abgeschlossenem Turnier kein Spielplan-Speichern mehr (erst wieder oeffnen).
+      if (turnierGesperrt(turnier)) {
+        return reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
       }
 
       // "Spielplan neu generieren" (Abschnitt 8) ist vorgesehen, darf aber keine bereits

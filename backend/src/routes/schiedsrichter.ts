@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { SchiedsrichterImTurnier, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth } from "../auth/plugin";
-import { hatMindestens } from "../auth/turnierZugriff";
+import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
 
 // CRUD fuer turnierbezogene Schiedsrichter (SchiedsrichterImTurnier haengt am turnierId).
 // Zugriff laeuft ueber das Turnier (turnierZugriff); genau eine Person je Turnier ist
@@ -76,6 +76,10 @@ async function ladeTurnierMitZugriff(
   }
   if (!(await hatMindestens(turnier, req.benutzer, stufe))) {
     reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
+    return undefined;
+  }
+  if (stufe === "schreiben" && turnierGesperrt(turnier)) {
+    reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
     return undefined;
   }
   return turnier;

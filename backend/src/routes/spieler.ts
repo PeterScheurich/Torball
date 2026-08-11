@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { Klassifizierung, MannschaftImTurnier, Spieler, SpielerStatus, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth } from "../auth/plugin";
-import { hatMindestens } from "../auth/turnierZugriff";
+import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
 
 // CRUD fuer Spieler/Kader. Spieler haengen an der MANNSCHAFT (mannschaftId), nicht direkt am
 // Turnier; der Zugriff wird deshalb ueber Mannschaft -> Turnier geprueft. Beim Loeschen einer
@@ -73,6 +73,11 @@ async function ladeMannschaftMitZugriff(
   const turnier = await findById<Turnier>(mannschaft.turnierId);
   if (!turnier || !(await hatMindestens(turnier, req.benutzer, stufe))) {
     reply.code(403).send({ error: "Kein Zugriff auf das zugehörige Turnier" });
+    return undefined;
+  }
+  // Kaderaenderungen sind bei abgeschlossenem Turnier gesperrt.
+  if (stufe === "schreiben" && turnierGesperrt(turnier)) {
+    reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
     return undefined;
   }
   return mannschaft;

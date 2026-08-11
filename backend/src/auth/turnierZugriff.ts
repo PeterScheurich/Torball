@@ -27,6 +27,23 @@ export async function turnierZugriffsstufe(
   return undefined;
 }
 
+/**
+ * Ein abgeschlossenes (oder archiviertes) Turnier ist inhaltlich schreibgeschuetzt: Mannschaften,
+ * Spieler, Schiedsrichter, Spielplan, Ergebnisse und Grunddaten lassen sich erst nach dem
+ * Wiederoeffnen (Status -> "aktiv") wieder aendern. Bewusst NICHT gesperrt (Nutzer-Vorgabe):
+ * die Oeffentlich-Freigabe und das Teilen (Leserechte vergeben) - man veroeffentlicht Ergebnisse
+ * oft erst nach dem Abschliessen. Die Routen, die reine Inhalte aendern, pruefen das zusaetzlich
+ * zur Schreibberechtigung.
+ */
+export function turnierGesperrt(turnier: Turnier): boolean {
+  return turnier.status === "abgeschlossen" || turnier.status === "archiviert";
+}
+
+/** Einheitliche Fehlermeldung (HTTP 409), wenn eine Inhaltsaenderung an einem abgeschlossenen
+ *  Turnier abgelehnt wird. */
+export const TURNIER_GESPERRT_FEHLER =
+  "Turnier ist abgeschlossen. Zum Bearbeiten zuerst wieder öffnen.";
+
 export async function hatMindestens(
   turnier: Turnier,
   benutzer: Benutzer | undefined,

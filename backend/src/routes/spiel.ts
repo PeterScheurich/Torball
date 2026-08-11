@@ -4,7 +4,7 @@ import { findAllBySelector, findById, insertDoc } from "../repository";
 import { berechneStartzeit, spieldauerMinuten } from "../spielplan/zeitplanung";
 import { schlageSchiedsrichterVor } from "../spielplan/schiedsrichterZuordnung";
 import { requireAuth } from "../auth/plugin";
-import { hatMindestens } from "../auth/turnierZugriff";
+import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
 
 /** Nur diese Felder darf die Turnierleitung nachtraeglich anpassen (Abschnitt 8: "Reihenfolge,
  * Spielfeld und Startzeiten") sowie die Schiedsrichter-Zuordnung (Abschnitt 5.4, manuell aenderbar). */
@@ -65,6 +65,11 @@ export async function pruefeSpielZugriff(
   const turnier = await findById<Turnier>(spiel.turnierId);
   if (!turnier || !(await hatMindestens(turnier, req.benutzer, mindestens))) {
     reply.code(403).send({ error: "Kein Zugriff auf das zugehörige Turnier" });
+    return false;
+  }
+  // Schreibende Zugriffe (Spielplan-Anpassung, Ergebnisse) sind bei abgeschlossenem Turnier gesperrt.
+  if (mindestens === "schreiben" && turnierGesperrt(turnier)) {
+    reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
     return false;
   }
   return true;

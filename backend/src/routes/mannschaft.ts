@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spieler, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth } from "../auth/plugin";
-import { hatMindestens } from "../auth/turnierZugriff";
+import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
 
 interface MannschaftBody {
   turnierId: string;
@@ -145,6 +145,10 @@ async function ladeMitSchreibzugriff(
     reply.code(403).send({ error: "Kein Schreibzugriff auf das zugehörige Turnier" });
     return undefined;
   }
+  if (turnierGesperrt(turnier)) {
+    reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
+    return undefined;
+  }
   return mannschaft;
 }
 
@@ -177,6 +181,9 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
       }
       if (!(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+      }
+      if (turnierGesperrt(turnier)) {
+        return reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
       }
 
       // Neue Mannschaft wird immer ans Ende der bisherigen Reihenfolge angehaengt.
