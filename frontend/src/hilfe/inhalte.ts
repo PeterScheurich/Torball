@@ -128,7 +128,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Was bedeutet der Spielmodus?",
         text: [
-          "Er legt fest, wie oft jede Mannschaft gegen jede andere spielt: „Jeder gegen Jeden (einfach)“ – ein Spiel je Paarung – oder „Jeder zweimal gegen Jeden (doppelt)“ – Hin- und Rückspiel.",
+          "Er legt fest, wie oft jede Mannschaft gegen jede andere spielt: „Jeder gegen Jeden (einfach)“ – ein Spiel je Paarung – oder „Jeder zweimal gegen Jeden (doppelt)“ – Hin- und Rückspiel an einem Spieltag.",
         ],
       },
       {
@@ -190,7 +190,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie pflege ich den Kader einer Mannschaft?",
         text: [
-          "Jede Mannschaft lässt sich aufklappen; darunter erfasst du die Spieler (Nummer, Name, ggf. Klassifizierung). Die kleine Zahl am Umschalter zeigt schon zugeklappt, wie viele Spieler bereits erfasst sind.",
+          "Jede Mannschaft lässt sich aufklappen; darunter erfasst du die Spieler (Nummer, Name, ggf. Klassifizierung). Die kleine Zahl am Umschalter zeigt schon zugeklappt, wie viele Spieler bereits erfasst sind. Das ist die Grundlage für eine digitale Protokollierung, die noch in Planung ist.",
         ],
       },
       {
@@ -209,7 +209,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wo trage ich Schiedsrichter ein?",
         text: [
-          "Das ist eine optionale Eingabe und erfolgt im Reiter „Schiedsrichter“. Schiedsrichter gehören zum Turnier; optional lässt sich einer Mannschaft zuordnen, der er angehört. Wenn das eingetragen ist, wird bei der automatischen Schiedsrichter-Zuordnung (im Spielplan) vermieden, dass ein Schiedsrichter seine eigene Mannschaft pfeift.",
+          "Das ist eine optionale Eingabe und erfolgt im Reiter „Schiedsrichter“. Schiedsrichter gehören zum Turnier; optional lässt sich eine Mannschaft zuordnen, der er angehört. Wenn das eingetragen ist, wird bei der automatischen Schiedsrichter-Zuordnung (im Spielplan) vermieden, dass ein Schiedsrichter seine eigene Mannschaft pfeift.",
         ],
       },
       {
@@ -234,7 +234,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie ordne ich Schiedsrichter den Spielen zu?",
         text: [
-          "Der Spielplan-Reiter bietet die Sicht „Schiedsrichter-Einteilung“. Ein Klick erzeugt einen Vorschlag je Spiel, den du danach pro Spiel über ein Auswahlfeld ändern kannst.",
+          "Der Spielplan-Reiter bietet die Sicht „Schiedsrichter-Einteilung“. Ein Klick erzeugt einen Vorschlag je Spiel, den du danach pro Spiel über ein Auswahlfeld ändern kannst. Dieser kann auch nach Spielende noch angepasst werden, falls ein anderer Schiedsrichter einspringen musste.",
           {
             hinweis:
               "Die Zuordnung ist ein bewusster Schritt, kein Automatismus. Ein Schiedsrichter wird nie für das Spiel der eigenen Mannschaft vorgeschlagen; spielt die eigene Mannschaft parallel, weist die Anwendung darauf hin – die Entscheidung bleibt bei der Turnierleitung.",
@@ -279,7 +279,14 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Was bedeuten „A n. a.“ und „B n. a.“?",
         text: [
-          "„n. a.“ steht für „nicht angetreten“. „A n. a.“ trägst du ein, wenn Mannschaft A nicht angetreten ist – das Spiel wird dann als Ausfall mit 3:0 für die angetretene Mannschaft gewertet. „B n. a.“ gilt entsprechend, wenn Mannschaft B nicht angetreten ist.",
+          "„n. a.“ steht für „nicht angetreten“. „A n. a.“ trägst du ein, wenn Mannschaft A nicht angetreten ist – das Spiel wird dann als Ausfall gewertet: mit dem in den Turnierregeln festgelegten Forfait-Ergebnis (Standard 3:0) für die angetretene Mannschaft. „B n. a.“ gilt entsprechend, wenn Mannschaft B nicht angetreten ist.",
+        ],
+      },
+      {
+        frage: "Was passiert, wenn eine Mannschaft bei einem Spiel oder Turnier nicht antritt?",
+        text: [
+          "Das kann vorkommen – etwa wenn eine Mannschaft nicht genügend Spieler stellen kann (Torball wird zu dritt gespielt) oder wenn eine gemeldete Mannschaft doch nicht (mehr) antreten kann, zum Beispiel am zweiten von zwei Spieltagen.",
+          "Für das betroffene Spiel hältst du das über „nicht angetreten“ (n. a.) fest; es wird dann mit dem in den Turnierregeln festgelegten Forfait-Ergebnis für die angetretene Mannschaft gewertet. Betrifft es mehrere Spiele, trägst du das entsprechend für jedes betroffene Spiel ein.",
         ],
       },
       {
@@ -326,7 +333,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
           {
             liste: [
               "Administrator: voller Zugriff auf alles.",
-              "Manager: voller Zugriff auf selbst erstellte Turniere; kann Benutzer verwalten.",
+              "Manager: voller Zugriff auf selbst erstellte und freigegebene Turniere; kann Benutzer verwalten.",
               "Weitere Zugriffe werden pro Turnier gezielt vergeben (Lesen oder Schreiben).",
             ],
           },
