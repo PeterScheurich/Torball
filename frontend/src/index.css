@@ -809,8 +809,10 @@ button:hover:not(:disabled) {
   margin-bottom: 32px;
   scroll-margin-top: 16px;
 }
+/* Einleitungssatz je Thema: bewusst volle Textfarbe (nicht --text-muted) - als tragender
+   Einstiegstext braucht er guten Kontrast; die gedaempfte Variante war zu kontrastarm. */
 .hilfe-kurz {
-  color: var(--text-muted);
+  color: var(--text);
   margin-top: 0;
 }
 

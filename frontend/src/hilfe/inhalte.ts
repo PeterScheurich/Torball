@@ -94,6 +94,12 @@ export const HILFE_THEMEN: HilfeThema[] = [
           "Für die Planung und Verwaltung ja – dafür meldest du dich mit deinem Konto an. Zwei Bereiche funktionieren bewusst ohne Login: die Ergebnis-Erfassung über einen Erfassungslink (z. B. für Helfer an den Feldern) und die öffentliche Turnierseite zum reinen Mitlesen.",
         ],
       },
+      {
+        frage: "Geht auch ein spontanes Turnier ohne Verbindung zum zentralen Server?",
+        text: [
+          "Ja. Ist die Software lokal installiert, kannst du auch ohne Verbindung zum zentralen Server ein „schnelles“ Turnier anlegen und protokollieren – zum Beispiel für ein spontan angesetztes Turnier oder wenn vor Ort kein Netz verfügbar ist.",
+        ],
+      },
     ],
   },
   {
@@ -178,7 +184,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie füge ich eine Mannschaft hinzu?",
         text: [
-          "Im Turnier findest du den Reiter „Mannschaften“. Eine Mannschaft wird aus den Stammdaten (Verein und Team) übernommen. Sind noch keine Stammdaten vorhanden, legst du sie zuvor unter „Stammdaten“ an.",
+          "Im Turnier findest du den Reiter „Mannschaften“. Am bequemsten übernimmst du eine Mannschaft aus den Stammdaten (Verein und Team). Bei Bedarf lässt sie sich aber auch von Hand eingeben – ganz ohne passenden Stammdaten-Eintrag.",
         ],
       },
       {
@@ -203,7 +209,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wo trage ich Schiedsrichter ein?",
         text: [
-          "Im eigenen Reiter „Schiedsrichter“ zwischen „Mannschaften“ und „Spielplan“. Schiedsrichter gehören zum Turnier; optional lässt sich einer Mannschaft zuordnen, wem er angehört.",
+          "Das ist eine optionale Eingabe und erfolgt im Reiter „Schiedsrichter“. Schiedsrichter gehören zum Turnier; optional lässt sich einer Mannschaft zuordnen, der er angehört. Wenn das eingetragen ist, wird bei der automatischen Schiedsrichter-Zuordnung (im Spielplan) vermieden, dass ein Schiedsrichter seine eigene Mannschaft pfeift.",
         ],
       },
       {
@@ -222,7 +228,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie entsteht der Spielplan?",
         text: [
-          "Im Reiter „Spielplan“ erzeugst du einen Vorschlag. Reihenfolge, Startzeiten, Status und Hinweise lassen sich anschließend jederzeit anpassen.",
+          "Im Reiter „Spielplan“ erzeugst du zunächst einen Vorschlag. Dieser Vorschlag wird erst zum gültigen Spielplan, wenn du ihn übernimmst. Danach lassen sich Reihenfolge, Startzeiten, Status und Hinweise jederzeit anpassen.",
         ],
       },
       {
@@ -238,7 +244,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Warnt mich die Anwendung bei Regelverstößen?",
         text: [
-          "Ja. Sie warnt z. B. bei Back-to-Back-Spielen einer Mannschaft, trifft aber keine automatischen Entscheidungen. Die Turnierleitung darf jede Warnung bewusst übergehen.",
+          "Ja. Sie warnt zum Beispiel, wenn eine Mannschaft zwei Spiele direkt hintereinander hätte, trifft aber keine automatischen Entscheidungen. Die Turnierleitung darf jede Warnung bewusst übergehen.",
         ],
       },
     ],
@@ -267,7 +273,13 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wozu dient der QR-Code?",
         text: [
-          "Zum Erfassungslink gehört ein QR-Code, den du herunterladen (als SVG zum Aushängen oder als PNG) und in der Halle aufhängen kannst. Er wird lokal im Browser erzeugt und an keinen externen Dienst geschickt.",
+          "Statt den Erfassungslink abzutippen, können Helfer den QR-Code direkt vom Bildschirm abscannen und gelangen so zur Erfassungsseite. Der QR-Code wird lokal im Browser erzeugt und an keinen externen Dienst geschickt. Gib ihn nur an Personen weiter, die Ergebnisse erfassen sollen.",
+        ],
+      },
+      {
+        frage: "Was bedeuten „A n. a.“ und „B n. a.“?",
+        text: [
+          "„n. a.“ steht für „nicht angetreten“. „A n. a.“ trägst du ein, wenn Mannschaft A nicht angetreten ist – das Spiel wird dann als Ausfall mit 3:0 für die angetretene Mannschaft gewertet. „B n. a.“ gilt entsprechend, wenn Mannschaft B nicht angetreten ist.",
         ],
       },
       {
@@ -286,7 +298,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Was zeigt die öffentliche Seite?",
         text: [
-          "Sie ist ein frei teilbarer Link je Turnier, den Besucher ohne Login öffnen können. Vier Bereiche lassen sich einzeln freischalten: „Turnierinfos“, „Anfahrt & Dokumente“, „Spielplan“ und „Ergebnisse“. Die Freischaltung steuerst du im Reiter „Übersicht“ des Turniers.",
+          "Das ist eine Seite, die Besucher ohne Login öffnen können. Vier Bereiche lassen sich einzeln freischalten: „Turnierinfos“, „Anfahrt & Dokumente“, „Spielplan“ und „Ergebnisse“. Die Freischaltung steuerst du im Reiter „Übersicht“ des Turniers. Dort werden ein Link und ein QR-Code zur Verfügung gestellt. Bei Bedarf kannst du den QR-Code herunterladen und in ein Dokument (z. B. Aushang) integrieren.",
         ],
       },
       {
@@ -305,7 +317,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie kommen neue Benutzer hinzu?",
         text: [
-          "Über die Benutzerverwaltung (nur für Administrator und Manager) werden neue Konten per Einladung angelegt. Die eingeladene Person setzt sich über den Einladungslink selbst ein Passwort.",
+          "Über die Benutzerverwaltung (nur für Administrator und Manager) können neue Konten angelegt werden. Dafür ist eine E-Mail-Adresse zwingend notwendig. An diese Adresse wird dann eine Einladung verschickt. Die eingeladene Person setzt sich über den Einladungslink selbst ein Passwort.",
         ],
       },
       {
@@ -337,6 +349,10 @@ export const HILFE_THEMEN: HilfeThema[] = [
         frage: "Wie melde ich mich an?",
         text: [
           "Mit E-Mail-Adresse und Passwort auf der Anmeldeseite. Ist für dein Konto die Zwei-Faktor-Anmeldung aktiv, gibst du danach zusätzlich den Code aus deiner Authenticator-App ein.",
+          {
+            hinweis:
+              "Wichtig: Ein vergessenes Passwort kannst du dir über „Passwort vergessen“ selbst neu setzen. Verlierst du aber den Zugang zu deiner Authenticator-App, ist eine Anmeldung derzeit nicht mehr möglich – auch ein Administrator kann die Zwei-Faktor-Anmeldung aktuell nicht zurücksetzen. Bewahre den Zugang daher sicher auf.",
+          },
         ],
       },
       {
@@ -402,7 +418,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie stelle ich Hell-/Dunkelmodus ein?",
         text: [
-          "Unter „Einstellungen“ wählst du das Farbschema. Standardmäßig folgt die Anwendung deiner Systemeinstellung; du kannst hell oder dunkel aber auch fest wählen.",
+          "Unter „Einstellungen“ wählst du das Farbschema: „Systemeinstellung folgen“, „Hell“ oder „Dunkel“. Standardmäßig folgt die Anwendung deiner Systemeinstellung.",
         ],
       },
       {
