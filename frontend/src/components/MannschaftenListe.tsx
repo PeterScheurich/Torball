@@ -283,7 +283,9 @@ export function MannschaftenListe({ turnierId, onGeaendert }: Props) {
               <th scope="col">
                 <span className="sr-only">Reihenfolge</span>
               </th>
-              <th scope="col">Name</th>
+              <th scope="col">
+                Name <span className="pflicht-stern" title="Pflichtfeld">*</span>
+              </th>
               <th scope="col">Bundesland</th>
               <th scope="col">Aktionen</th>
             </tr>

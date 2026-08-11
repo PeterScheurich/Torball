@@ -152,7 +152,9 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
             <caption className="sr-only">Vereins-Stammdaten, alle Felder bearbeitbar</caption>
             <thead>
               <tr>
-                <th scope="col">Name</th>
+                <th scope="col">
+                  Name <span className="pflicht-stern" title="Pflichtfeld">*</span>
+                </th>
                 <th scope="col">Bundesland</th>
                 <th scope="col">Ansprechpartner</th>
                 <th scope="col">Telefon</th>

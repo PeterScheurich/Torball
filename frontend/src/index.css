@@ -640,6 +640,14 @@ label {
   font-weight: 700;
 }
 
+/* Wiederverwendbares Pflicht-Sternchen fuer Stellen, die keine .feld-/Tabellen-Automatik
+   treffen kann - z.B. Spaltenkoepfe von Datentabellen (Vereine/Teams/Schiedsrichter/Kader),
+   deren Zellen keine eigenen Labels haben. */
+.pflicht-stern {
+  color: var(--danger);
+  font-weight: 700;
+}
+
 /* Legende zur Sternchen-Bedeutung, die ein Formular bei Bedarf selbst einblenden kann. */
 .pflicht-legende {
   font-size: 0.85rem;

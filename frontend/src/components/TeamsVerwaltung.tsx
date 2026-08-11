@@ -122,7 +122,9 @@ export function TeamsVerwaltung({ vereine }: Props) {
             <caption className="sr-only">Team-Stammdaten, Name und Verein bearbeitbar</caption>
             <thead>
               <tr>
-                <th scope="col">Name</th>
+                <th scope="col">
+                  Name <span className="pflicht-stern" title="Pflichtfeld">*</span>
+                </th>
                 <th scope="col">Verein</th>
                 <th scope="col">Aktionen</th>
               </tr>

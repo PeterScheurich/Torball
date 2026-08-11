@@ -184,7 +184,9 @@ export function SchiedsrichterVerwaltung({ turnierId }: Props) {
             <caption className="sr-only">Schiedsrichter, alle Felder bearbeitbar</caption>
             <thead>
               <tr>
-                <th scope="col">Name</th>
+                <th scope="col">
+                  Name <span className="pflicht-stern" title="Pflichtfeld">*</span>
+                </th>
                 <th scope="col">Vorname</th>
                 <th scope="col">Telefon</th>
                 <th scope="col">E-Mail</th>

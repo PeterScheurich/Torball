@@ -174,8 +174,12 @@ export function SpielerKader({ mannschaftId, onAnzahlGeaendert }: Props) {
             <caption className="sr-only">Kader der Mannschaft, alle Felder bearbeitbar</caption>
             <thead>
               <tr>
-                <th scope="col">Nr.</th>
-                <th scope="col">Name</th>
+                <th scope="col">
+                  Nr. <span className="pflicht-stern" title="Pflichtfeld">*</span>
+                </th>
+                <th scope="col">
+                  Name <span className="pflicht-stern" title="Pflichtfeld">*</span>
+                </th>
                 <th scope="col">Vorname</th>
                 <th scope="col">Klassifizierung</th>
                 <th scope="col">Status</th>
