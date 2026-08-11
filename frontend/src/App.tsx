@@ -20,6 +20,7 @@ import { StandardregelnPage } from "./pages/StandardregelnPage";
 import { KanbanBoardPage } from "./pages/KanbanBoardPage";
 import { EinstellungenPage } from "./pages/EinstellungenPage";
 import { HilfePage } from "./pages/HilfePage";
+import { UeberPage } from "./pages/UeberPage";
 import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
 import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { useAuth } from "./auth";
@@ -112,6 +113,16 @@ function Kopfzeile() {
           >
             Hilfe
           </NavLink>
+          {/* "Über" nur für angemeldete Nutzer - die Entwickler-Kontaktseite ist bewusst
+              nicht öffentlich (Scam-/Spam-Schutz, siehe UeberPage). */}
+          {benutzer && (
+            <NavLink
+              to="/ueber"
+              className={({ isActive }) => (isActive ? "kopfzeile-link kopfzeile-link-aktiv" : "kopfzeile-link")}
+            >
+              Über
+            </NavLink>
+          )}
           {benutzer && (
             <KopfzeilenMenue
               label={<><span aria-hidden="true">👤</span> {benutzer.name}</>}
@@ -153,6 +164,7 @@ function App() {
           <Route element={<GeschuetzteRoute />}>
             <Route path="/" element={<TurnierListePage />} />
             <Route path="/profil" element={<ProfilPage />} />
+            <Route path="/ueber" element={<UeberPage />} />
             <Route path="/benutzerverwaltung" element={<BenutzerverwaltungPage />} />
             <Route path="/stammdaten" element={<StammdatenPage />} />
             <Route path="/standardregeln" element={<StandardregelnPage />} />

@@ -433,6 +433,18 @@ form {
   color: var(--text-muted);
 }
 
+/* Kontakt-Angaben auf der "Über & Kontakt"-Seite (Begriff/Wert-Liste). */
+.ueber-kontakt {
+  margin: 0;
+}
+.ueber-kontakt dt {
+  font-weight: 600;
+  margin-top: 8px;
+}
+.ueber-kontakt dd {
+  margin: 2px 0 0;
+}
+
 /* Hinweis-Banner fuer ein abgeschlossenes (schreibgeschuetztes) Turnier. Deutlich sichtbar
    ueber allen Reitern, mit farbiger Kante links - signalisiert den gesperrten Zustand, ohne
    wie eine Fehlermeldung (role=alert) zu wirken. */
