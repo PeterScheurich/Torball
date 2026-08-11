@@ -72,6 +72,12 @@ nach Art und grob priorisiert. Erledigte Hilfe-Textänderungen siehe Commit
     Umsetzungsstand/Spezifikation der drei Modi vor Umsetzung noch schärfen. Der
     aktuelle Hilfe-Satz („bei lokaler Installation offline möglich") bleibt so, da
     er nur die einfachste, zutreffende Aussage macht.
+    - **Anforderung an den Übergabe-Dropdown (Modus a):** Turniere dort mit
+      **Name + Datum** anzeigen, damit die Auswahl auch bei gleichem Namen eindeutig
+      ist. Entscheidung des Nutzers (2026-08-11): Eindeutigkeit nicht beim Anlegen
+      erzwingen, sondern über die Anzeige (Name + Datum) sicherstellen. Alle
+      heutigen Oberflächen erfüllen das bereits (Turnierliste zeigt beide Spalten);
+      neu zu beachten nur beim künftigen Übergabe-Dropdown.
 
 ## F. Doku-Aufgaben
 
