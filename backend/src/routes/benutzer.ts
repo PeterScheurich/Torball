@@ -273,6 +273,31 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  /**
+   * Admin deaktiviert die 2FA eines ANDEREN Benutzers. Hintergrund: Verliert jemand den
+   * Zugang zu seiner Authenticator-App, ist er ausgesperrt - "neu anlegen + Turniere neu
+   * zuordnen" waere zu aufwaendig. Bewusst nur fuer Admins (nicht Manager): das Herabsetzen
+   * fremder Konto-Sicherheit soll eng begrenzt sein. Verlangt kein Passwort des Zielkontos
+   * (das kennt der Admin ja nicht) - anders als die Selbst-Service-Deaktivierung
+   * (POST /benutzer/2fa/deaktivieren), die das eigene Passwort verlangt.
+   */
+  app.post<{ Params: { id: string } }>("/benutzer/:id/2fa/deaktivieren", async (req, reply) => {
+    if (!requireRolle(req, reply, ["admin"])) return;
+    // Fuer das EIGENE Konto bewusst gesperrt: sonst liesse sich die eigene 2FA hier ohne
+    // Passwort abschalten und damit die Regel "sensible Selbst-Aenderungen verlangen das
+    // Passwort" umgehen (CLAUDE.md). Fuers eigene Konto ist die Selbst-Service-Route
+    // POST /benutzer/2fa/deaktivieren (mit Passwort) vorgesehen.
+    if (req.params.id === req.benutzer!._id) {
+      return reply
+        .code(400)
+        .send({ error: "Die eigene 2FA bitte im Profil (mit Passwort-Bestätigung) deaktivieren." });
+    }
+    const bestehend = await findById<Benutzer>(req.params.id);
+    if (!bestehend) return reply.code(404).send({ error: "Benutzer nicht gefunden" });
+    const aktualisiert = await insertDoc({ ...bestehend, zweiFaAktiv: false, zweiFaSecret: undefined });
+    return oeffentlichesProfil(aktualisiert);
+  });
+
   app.get<{ Params: { token: string } }>("/benutzer/einladung/:token", async (req, reply) => {
     const hash = hashe(req.params.token);
     const alle = await findAllByType<Benutzer>("benutzer");

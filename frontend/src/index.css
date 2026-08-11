@@ -510,6 +510,11 @@ form {
   white-space: nowrap;
 }
 
+/* Mehrere Aktions-Buttons in einer Zelle brauchen etwas Abstand zueinander. */
+.mannschaft-aktionen button + button {
+  margin-left: 8px;
+}
+
 /* Kleine Zahl-Plakette am Kader-Umschalter: zeigt schon im zugeklappten Zustand, dass fuer
    diese Mannschaft bereits Spieler erfasst sind (und wie viele). */
 .kader-anzahl {

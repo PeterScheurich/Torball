@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import type { GlobaleRolle } from "@torball/shared";
-import { benutzerAktualisieren, benutzerEinladen, getBenutzerListe, type BenutzerProfil } from "../api";
+import {
+  benutzerAktualisieren,
+  benutzerEinladen,
+  benutzerZweiFaDeaktivieren,
+  getBenutzerListe,
+  type BenutzerProfil,
+} from "../api";
 import { useAuth } from "../auth";
 
 const ROLLEN_LABEL: Record<GlobaleRolle, string> = {
@@ -74,6 +80,24 @@ export function BenutzerverwaltungPage() {
     }
   }
 
+  async function zweiFaDeaktivieren(b: BenutzerProfil) {
+    if (
+      !window.confirm(
+        `Zwei-Faktor-Anmeldung für „${b.name}“ wirklich deaktivieren? ` +
+          `Nutze das nur, wenn die Person den Zugang zu ihrer Authenticator-App verloren hat. ` +
+          `Sie meldet sich danach nur mit Passwort an und kann 2FA im Profil neu einrichten.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await benutzerZweiFaDeaktivieren(b._id);
+      await laden();
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Deaktivieren der 2FA");
+    }
+  }
+
   return (
     <>
       <h1>Benutzerverwaltung</h1>
@@ -117,7 +141,7 @@ export function BenutzerverwaltungPage() {
                   </select>
                 </td>
                 <td>{b.gesperrt ? "Gesperrt" : !b.hatPasswort ? "Einladung offen" : "Aktiv"}</td>
-                <td>
+                <td className="mannschaft-aktionen">
                   <button
                     type="button"
                     onClick={() => sperrenUmschalten(b)}
@@ -125,6 +149,11 @@ export function BenutzerverwaltungPage() {
                   >
                     {b.gesperrt ? "Entsperren" : "Sperren"}
                   </button>
+                  {angemeldeter?.globaleRolle === "admin" && b.zweiFaAktiv && b._id !== angemeldeter?._id && (
+                    <button type="button" onClick={() => zweiFaDeaktivieren(b)}>
+                      2FA deaktivieren
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

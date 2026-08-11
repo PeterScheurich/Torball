@@ -422,6 +422,11 @@ export function benutzerAktualisieren(
   return anfrage(`/benutzer/${id}`, { method: "PUT", body: JSON.stringify(daten) });
 }
 
+/** Admin deaktiviert die 2FA eines anderen Benutzers (z.B. bei verlorener Authenticator-App). */
+export function benutzerZweiFaDeaktivieren(id: string): Promise<BenutzerProfil> {
+  return anfrage(`/benutzer/${id}/2fa/deaktivieren`, { method: "POST" });
+}
+
 /** Selbst-Service fuers eigene Profil - kann anders als benutzerAktualisieren() weder Rolle noch Sperrung aendern. Bei E-Mail-Aenderung ist aktuellesPasswort Pflicht. standardTheme/standardDichte sind Anzeige-Voreinstellungen, kein Passwort noetig. */
 export function eigenesProfilAktualisieren(daten: {
   name?: string;
