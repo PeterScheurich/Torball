@@ -96,11 +96,16 @@ nach Art und grob priorisiert. Erledigte Hilfe-Textänderungen siehe Commit
     Jetzt tragen die Pflicht-Spaltenköpfe bzw. das Übersicht-Namensfeld ein `*`.
     (Profil-E-Mail/-Passwort bewusst nicht markiert – optionale Änderungsformulare.)
 17. **[ERLEDIGT]** Turnierregeln pflegbar (Spielzeit, Pausen, Timeouts, Wertung, …):
-    gemeinsamer Typ `Turnierregeln`; Bearbeitung je Turnier (neuer Reiter „Regeln")
-    UND zentrale Standardwerte (Systemkonfiguration, Admin-Seite „Standardregeln",
-    neue Turniere kopieren die aktuelle Version). Noch NICHT in der UI: die
-    Konfig-Felder `forfaitErgebnis`/`passwortMindestlaenge` (im Typ vorhanden, aber
-    noch nirgends wirksam) – bewusst weggelassen, bis sie tatsächlich verdrahtet sind.
+    gemeinsamer Typ `Turnierregeln`; Bearbeitung je Turnier (Reiter „Regeln" + im
+    Anlage-Assistenten als eigener Schritt) UND zentrale Standardwerte
+    (Systemkonfiguration, Admin-Seite „Standardregeln"). Nachgezogen (2. Iteration):
+    **`forfaitErgebnis`** in die Regeln aufgenommen und mit den „n. a."-Aktionen
+    verdrahtet; Formular vertikal mit eingerückten abhängigen Feldern; Pflichtfelder
+    markiert; „Auf Standardwerte zurücksetzen" im Turnier-Regeln-Reiter.
+    **Fürs nächste Release vorgesehen** (Nutzerwunsch): `passwortMindestlaenge` und
+    weitere reine Systemeinstellungen tatsächlich verdrahten und in die UI aufnehmen.
+    Für den Assistenten-Regeln-Schritt gilt noch: geänderte Werte müssen im Formular
+    „Regeln speichern" bestätigt werden, bevor „Weiter" – kein Auto-Save beim Weitergehen.
 18. **[ERLEDIGT]** Basiskonfig-Änderung nach Spielplan-Erzeugung: Schnappschuss am
     Turnier (`spielplanBasis`); auf dem Spielplan ein Hinweis, der konkret auflistet,
     was sich geändert hat (Modus/Felder/Mannschaften/Spielzeit/Pause/Halbzeiten/
