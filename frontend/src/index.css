@@ -1114,3 +1114,60 @@ button:hover:not(:disabled) {
   font-size: 0.85rem;
   color: var(--text-muted);
 }
+
+/* Gerenderte Gesamtspezifikation (nur Admin, unten auf /hilfe). Die Markdown-Quelle
+   (docs/torball_gesamtspezifikation.md) wird per react-markdown ausgegeben; hier bekommen
+   Ueberschriften, Tabellen und Code lesbare Abstaende/Rahmen, ohne die uebrige App zu beeinflussen. */
+.hilfe-spezifikation {
+  margin-top: 12px;
+}
+.hilfe-spezifikation h1,
+.hilfe-spezifikation h2,
+.hilfe-spezifikation h3,
+.hilfe-spezifikation h4 {
+  margin: 1.2em 0 0.4em;
+  line-height: 1.25;
+}
+.hilfe-spezifikation h1 {
+  font-size: 1.5rem;
+}
+.hilfe-spezifikation h2 {
+  font-size: 1.25rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.2em;
+}
+.hilfe-spezifikation h3 {
+  font-size: 1.1rem;
+}
+.hilfe-spezifikation th,
+.hilfe-spezifikation td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.hilfe-spezifikation th {
+  background: var(--bg-subtle);
+}
+.hilfe-spezifikation code {
+  background: var(--bg-subtle);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.hilfe-spezifikation pre {
+  background: var(--bg-subtle);
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.hilfe-spezifikation pre code {
+  background: none;
+  padding: 0;
+}
+.hilfe-spezifikation blockquote {
+  border-left: 3px solid var(--border);
+  margin: 12px 0;
+  padding-left: 12px;
+  color: var(--text-muted);
+}

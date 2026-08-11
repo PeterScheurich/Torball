@@ -1,4 +1,13 @@
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { HILFE_THEMEN, type HilfeBlock } from "../hilfe/inhalte";
+import { useAuth } from "../auth";
+// Rohtext der Gesamtspezifikation: per Vite `?raw` zur BUILD-Zeit als String eingebettet.
+// Dadurch entspricht die in der App angezeigte Fassung bei jedem Deployment automatisch dem
+// aktuellen Stand von docs/torball_gesamtspezifikation.md - es gibt keine zweite, zu
+// pflegende Kopie. Der Import liegt bewusst ausserhalb von frontend/src; das ist erlaubt,
+// weil Vite die Monorepo-Wurzel (mit docs/) freigibt.
+import spezifikationMarkdown from "../../../docs/torball_gesamtspezifikation.md?raw";
 
 /** Rendert einen einzelnen Antwort-Baustein (Absatz, Aufzaehlung, Hinweis oder Vertiefung). */
 function Block({ block }: { block: HilfeBlock }) {
@@ -41,6 +50,9 @@ function Block({ block }: { block: HilfeBlock }) {
  * oder die oeffentliche Seite nutzen.
  */
 export function HilfePage() {
+  const { benutzer } = useAuth();
+  const istAdmin = benutzer?.globaleRolle === "admin";
+
   return (
     <>
       <h1>Hilfe</h1>
@@ -56,6 +68,11 @@ export function HilfePage() {
               <a href={`#${thema.id}`}>{thema.titel}</a>
             </li>
           ))}
+          {istAdmin && (
+            <li>
+              <a href="#spezifikation">Gesamtspezifikation (nur Admin)</a>
+            </li>
+          )}
         </ul>
       </nav>
 
@@ -82,6 +99,40 @@ export function HilfePage() {
           ))}
         </section>
       ))}
+
+      {/* Gesamtspezifikation - bewusst nur fuer Administratoren. Die verbindliche fachliche/
+          technische Referenz gehoert nicht in die allgemeine Endnutzer-Hilfe, ist fuer die
+          Betreuung der Anwendung aber praktisch direkt griffbereit. */}
+      {istAdmin && (
+        <section id="spezifikation" className="hilfe-thema" aria-labelledby="spezifikation-titel">
+          <h2 id="spezifikation-titel">Gesamtspezifikation (nur für Administratoren)</h2>
+          <p className="hilfe-kurz">
+            Die verbindliche fachliche und technische Spezifikation der Anwendung. Diese Fassung entspricht immer dem
+            zuletzt ausgelieferten (deployten) Stand.
+          </p>
+          <details className="hilfe-abschnitt">
+            <summary>Gesamtspezifikation anzeigen</summary>
+            <div className="hilfe-abschnitt-inhalt">
+              <div className="hilfe-spezifikation">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    // Tabellen in den horizontal scrollbaren Wrapper legen, damit breite
+                    // Tabellen auf schmalen Schirmen die Seite nicht sprengen (siehe .tabellen-wrapper).
+                    table: ({ node: _node, ...props }) => (
+                      <div className="tabellen-wrapper">
+                        <table {...props} />
+                      </div>
+                    ),
+                  }}
+                >
+                  {spezifikationMarkdown}
+                </ReactMarkdown>
+              </div>
+            </div>
+          </details>
+        </section>
+      )}
     </>
   );
 }
