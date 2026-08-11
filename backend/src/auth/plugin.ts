@@ -15,6 +15,15 @@ declare module "fastify" {
 export const SESSION_COOKIE_NAME = "torball_session";
 
 /**
+ * Steuert das `Secure`-Flag des Session-Cookies. In Produktion (hinter HTTPS)
+ * MUSS `COOKIE_SECURE=true` gesetzt sein, sonst wird das Cookie auch ueber
+ * unverschluesseltes HTTP mitgeschickt. Lokal (Vite/HTTP) bleibt es aus, sonst
+ * wuerde der Browser das Cookie gar nicht erst setzen und der Login schluege
+ * ohne erkennbaren Grund fehl. Default bewusst `false` (lokale Entwicklung).
+ */
+const COOKIE_SECURE = process.env.COOKIE_SECURE === "true";
+
+/**
  * Wird in index.ts direkt per `server.addHook("preHandler", authPreHandler)`
  * auf der Root-Instanz registriert (nicht ueber einen verschachtelten Plugin-
  * Scope) - sonst wuerden Fastifys Verkapselungsregeln dazu fuehren, dass die
@@ -42,7 +51,7 @@ export function setzeSessionCookie(reply: FastifyReply, token: string): void {
     path: "/",
     httpOnly: true,
     sameSite: "lax",
-    secure: false, // TODO: auf true stellen, sobald das Backend hinter HTTPS laeuft
+    secure: COOKIE_SECURE,
     maxAge: 60 * 60 * 12,
   });
 }
