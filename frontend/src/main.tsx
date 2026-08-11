@@ -7,6 +7,9 @@ import { AuthProvider } from './auth.tsx'
 import { themeInitialisieren } from './theme'
 import { dichteInitialisieren } from './dichte'
 
+// Einstiegspunkt des Frontends: haengt die App in #root und umschliesst sie mit Router und
+// Auth-Context. Davor werden Theme/Dichte einmalig angewendet (siehe Kommentar unten).
+
 // Vor dem ersten Render anwenden (nicht erst in einer Komponente, die evtl. auf der
 // aktuellen Seite gar nicht gemountet wird - z.B. ThemeUmschalter/DichteUmschalter
 // stecken nur auf der Einstellungen-Seite) - sonst fehlt data-theme/data-dichte nach

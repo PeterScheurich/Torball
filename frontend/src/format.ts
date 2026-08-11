@@ -14,6 +14,7 @@ export function formatiereDatum(datumIso: string): string {
   });
 }
 
+/** Formatiert einen Zeitstempel als Uhrzeit (Stunde:Minute, systemabhaengig); "–" ohne Wert. */
 export function formatiereUhrzeit(zeitstempelIso: string | undefined): string {
   if (!zeitstempelIso) return "–";
   return new Date(zeitstempelIso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });

@@ -25,6 +25,9 @@ import type {
   Verein,
 } from "@torball/shared";
 
+// Zentraler API-Client des Frontends: duenne fetch-Wrapper um die Backend-Routen. Alle
+// Aufrufe laufen ueber `anfrage()` (einheitliche Fehlerbehandlung + Cookie-Auth) gegen das
+// /api-Praefix, das der Vite-Dev-Proxy bzw. der Reverse-Proxy ans Backend weiterreicht.
 const BASIS = "/api";
 
 /** Nie ueber die API zurueckgegeben: Passwort-Hash, 2FA-Secret, Einladungs-/Reset-Token-Hashes (siehe backend/src/auth/benutzerProfil.ts). */

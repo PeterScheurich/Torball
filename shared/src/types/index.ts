@@ -1,3 +1,5 @@
+// Sammelstelle aller geteilten Typen: re-exportiert die einzelnen Typ-Dateien und definiert
+// darunter die zentrale Discriminated Union `TorballDokument` (alle CouchDB-Dokumente).
 export * from "./common";
 export * from "./benutzer";
 export * from "./session";
