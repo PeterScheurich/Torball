@@ -228,6 +228,75 @@ Abhängigkeit `qrcode`): für den Ergebnis-Erfassungslink und die öffentliche
 Turnierseite. Bewusst lokal – die URL bzw. das Token wird an keinen externen
 QR-Dienst geschickt. Download als SVG (skalierbar, für Aushang) und PNG.
 
+**Turnierregeln als gemeinsamer Typ + Systemkonfiguration:** Die Regel-/
+Wertungsparameter (Spielzeit, Pausen, Timeouts, Wertung, `forfaitErgebnis`, …)
+liegen im gemeinsamen Typ `Turnierregeln` (`shared/src/types/turnier.ts`), den
+**sowohl `Turnier` als auch `Systemkonfiguration` per `extends` tragen** – so
+laufen die kopierten Turnierwerte und die Standardwerte nicht auseinander. Die
+Standardwerte pflegt der Admin über `/systemkonfiguration` (Route
+`backend/src/routes/systemkonfiguration.ts`, UI `StandardregelnPage`): jede
+Änderung legt **eine neue Version an** (nie Update, `istAktuell`-Flag), neue
+Turniere **kopieren** die aktuelle Version (`erstelltMitKonfigVersion`),
+bestehende bleiben unberührt. Wichtig: Die fest verdrahteten Standardregeln
+(`STANDARD_TURNIERREGELN`) und die Helfer liegen in `backend/src/konfiguration.ts`
+– **nicht in `shared`**, weil das Frontend aus `shared` (CommonJS) keine
+Laufzeit-Konstante ziehen könnte (siehe CommonJS-Regel oben). `turnierDefaults()`
+in `turnier.ts` liest die Regeln daraus. Bearbeitet werden die Regeln über das
+wiederverwendete `TurnierregelnFormular` (Reiter „Regeln" je Turnier via
+`updateTurnier`, Standardregeln-Seite via `updateSystemkonfiguration`, und der
+Assistenten-Schritt). Die „n. a."-Aktionen der Ergebniserfassung lesen
+`turnier.forfaitErgebnis` (Format „Sieger:Verlierer", Fallback „3:0").
+
+**Anlage-Assistent (mehrstufig, per Route, nicht als Wizard-Komponente):**
+Grunddaten (`TurnierAnlegenPage`) → Regeln (`SpielregelnErfassenPage`) →
+Mannschaften (`MannschaftenErfassenPage`) → **optional** Schiedsrichter
+(`SchiedsrichterErfassenPage`) → Spielplan (`SpielplanErstellenPage`). Der
+optionale Schiedsrichter-Schritt hängt am `Turnier.schiedsrichterPlanung`-Flag
+(beim Anlegen gewählt). Es gibt **keinen zentralen Wizard-Zustand**: jede Seite
+lädt das Turnier selbst und berechnet ihre „Schritt X von N"-Anzeige aus dem
+Flag (`? 5 : 4`). Bei einer Änderung des Ablaufs müssen die Schrittzahlen auf
+**allen** Seiten mitgezogen werden.
+
+**Basiskonfig-Schnappschuss (`spielplanBasis`):** Beim Persistieren des
+Spielplans (`spielplan.ts` POST) wird ein Schnappschuss der spielplan-relevanten
+Konfiguration am Turnier abgelegt. `frontend/src/spielplanBasisDiff.ts` vergleicht
+den aktuellen Stand damit und listet konkret auf, was sich seither geändert hat
+(Modus/Felder/Mannschaften/Zeiten) – angezeigt als Hinweis auf dem Spielplan.
+Zusätzlich warnen `TurnierVerwaltenPage`/`MannschaftenListe` proaktiv beim Ändern
+von Modus bzw. Mannschaften, solange ein Spielplan existiert.
+
+**Ergebnis-Erfassung speichert sofort (onBlur), kein Speichern-Knopf:** Sobald
+beide Tore gültig ausgefüllt sind und das Feld verlassen wird, wird gespeichert.
+Ein Konflikt (zwischenzeitlich anderweitig gespeichert) unterdrückt das
+Auto-Speichern und bietet zwei Knöpfe „Vorhandenes übernehmen"
+(`useErgebnisEingaben.uebernehmeServer`) / „Mit meinem Wert überschreiben". Der
+„n. a."-Knopf (Forfait) sitzt direkt beim jeweiligen Team und existiert **nur in
+der internen Verwaltung** (`ErgebnisVerwaltung`), nicht auf der externen
+Token-Seite (`ErgebnisErfassungPage`).
+
+**In-App-Hilfe, datengetrennt:** `/hilfe` (`HilfePage`) rendert Inhalte aus
+`frontend/src/hilfe/inhalte.ts` (Texte getrennt vom Layout, dreistufig: Kurz →
+`<details>`-Abschnitt → verschachteltes „Mehr Infos"). Screenshots gehören nach
+`frontend/public/hilfe/` (Alt-Text per Typ erzwungen). Öffentliche/externe Seiten
+(öffentliche Turnierseite, Ergebnis-Erfassung per Link) zeigen **kein** globales
+`/hilfe`, sondern die Komponente `KontextHilfe`; für nicht angemeldete Besucher
+rendert die Kopfzeile (`App.tsx`) dort eine **minimale Variante** (Marke als
+reiner Text, keine Nav – behebt zugleich, dass die Marke sonst zur Anmeldung
+führte).
+
+**Regel-Prüfung ohne Sperre:** `frontend/src/turnierPruefung.ts` (reine Logik) +
+`TurnierPruefung` (Knopf „Turnier prüfen" in der Übersicht) sammeln
+Regelverstöße/Auffälligkeiten in einer Liste, **blockieren aber nichts** –
+konsistent mit dem Grundsatz „warnen, nicht entscheiden". Neue Prüfungen dort
+ergänzen. Der Schiedsrichter-Punkt erscheint bewusst immer (bei ausgeschalteter
+Planung als „nicht aktiviert").
+
+**Turnier-Freigabe (`TurnierFreigabe`, Reiter Übersicht):** vergibt/entzieht
+`TurnierBerechtigung` an andere Benutzer (Backend-Route existierte längst, nur
+die UI fehlte). **Admin kann fremde 2FA deaktivieren** (admin-only Route
+`POST /benutzer/:id/2fa/deaktivieren`, eigenes Konto ausgenommen) – für
+ausgesperrte Nutzer mit verlorener Authenticator-App.
+
 **Fachliche Referenz:** `docs/torball_gesamtspezifikation.md` ist die
 verbindliche Spezifikation für Geschäftsregeln; bei Unklarheiten dort
 nachschlagen statt zu raten. `docs/Protokolle/` enthält datierte
@@ -267,6 +336,12 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   `<a>` sonst sichtbar höher/breiter als ein echter `<button>` mit
   demselben Text. Ist in dieser Codebase bereits zweimal unabhängig
   aufgetreten – bei einer neuen gemeinsamen Klasse gleich mit einplanen.
+- **Pflichtfelder werden markiert.** In `.feld`-Formularen automatisch per CSS
+  (`.feld:has(input:required, …) > label::after`), in der Turnier-Übersicht
+  (Label/Wert-Tabelle) per `.uebersicht-tabelle`-Regel. In reinen Datentabellen
+  ohne eigene Feld-Labels (Vereine/Teams/Schiedsrichter/Kader/Mannschaften) wird
+  stattdessen der **Spaltenkopf** markiert (`<span className="pflicht-stern">`).
+  Neue Pflichtfelder: `required` setzen (`.feld`) bzw. den Spaltenkopf markieren.
 - Farbschema folgt standardmäßig der Systemeinstellung
   (`prefers-color-scheme`), mit manuellem Umschalter (`[data-theme]`) als
   Override. Zusätzlich Tabellendichte/Zeilenabstand (`[data-dichte]`,
@@ -333,6 +408,10 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   `docs/testumgebung-starten.md`) - der Rechner, auf dem `npm run
   dev:backend` läuft, muss dieses Netzwerk erreichen können, sonst schlagen
   alle DB-Zugriffe fehl.
+- Das Session-Cookie wird nur mit `Secure`-Flag ausgeliefert, wenn
+  `COOKIE_SECURE=true` gesetzt ist (`backend/src/auth/plugin.ts`). In Produktion
+  hinter HTTPS zwingend `true`; lokal (HTTP) weglassen/`false`, sonst setzt der
+  Browser das Cookie nicht und der Login schlägt ohne erkennbaren Grund fehl.
 
 ## Dokumentation
 
