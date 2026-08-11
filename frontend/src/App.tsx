@@ -24,6 +24,13 @@ import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
 import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { useAuth } from "./auth";
 
+// Wurzelkomponente: globale Kopfzeile (Navigation) plus das komplette Routing der App.
+// Oeffentliche Routen (Login, Einladung, Passwort-Reset, Ergebnis-Erfassung per Link,
+// oeffentliche Turnierseite, Einstellungen, Hilfe) liegen ausserhalb von GeschuetzteRoute;
+// alles Uebrige verlangt eine Anmeldung.
+
+/** Globale Kopfzeile mit Navigation. Menuepunkte richten sich nach Rolle/Anmeldestatus;
+ *  auf oeffentlichen/externen Seiten wird eine minimale Variante ohne Nav gezeigt. */
 function Kopfzeile() {
   const { benutzer, logout } = useAuth();
   const navigate = useNavigate();
@@ -122,6 +129,8 @@ function Kopfzeile() {
   );
 }
 
+/** Definiert alle Routen der Anwendung (siehe Modul-Kommentar oben zur Trennung
+ *  oeffentlich / anmeldepflichtig). */
 function App() {
   return (
     <>

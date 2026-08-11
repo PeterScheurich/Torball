@@ -6,6 +6,7 @@ const OPTIONEN: { wert: Dichte; label: string }[] = [
   { wert: "schmal", label: "Schmal" },
 ];
 
+/** Umschalter Standard/Schmal fuer die Tabellendichte (geraetelokale Wahl, siehe dichte.ts). */
 export function DichteUmschalter() {
   const [dichte, setDichte] = useState<Dichte>(geladeneDichte);
 

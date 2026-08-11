@@ -24,6 +24,12 @@ interface Props {
   turnierId: string;
 }
 
+/**
+ * Schiedsrichter-Tab eines Turniers: Tabelle mit direkt editierbaren Feldern (Textfelder
+ * speichern beim Verlassen, Auswahl/Checkbox sofort) plus Anlege-Formular. Genau eine Person
+ * ist per Radio-Auswahl Turnierleitung; die Mannschaftszuordnung dient spaeter der
+ * Schiedsrichter-Einteilung (kein Pfeifen der eigenen Mannschaft).
+ */
 export function SchiedsrichterVerwaltung({ turnierId }: Props) {
   const [schiedsrichter, setSchiedsrichter] = useState<SchiedsrichterImTurnier[]>([]);
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
@@ -38,6 +44,7 @@ export function SchiedsrichterVerwaltung({ turnierId }: Props) {
   const [neuMannschaftId, setNeuMannschaftId] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
 
+  // Laedt Schiedsrichter und Mannschaften (letztere fuer die Zuordnungs-Auswahl) parallel.
   const laden = useCallback(async () => {
     try {
       const [s, m] = await Promise.all([getSchiedsrichter(turnierId), getMannschaften(turnierId)]);
@@ -53,6 +60,8 @@ export function SchiedsrichterVerwaltung({ turnierId }: Props) {
     laden();
   }, [laden]);
 
+  // Text-Bearbeitungszustand je Zeile mit der geladenen Liste synchron halten, ohne bereits
+  // begonnene Eingaben zu ueberschreiben (vorhandener Eintrag hat Vorrang).
   useEffect(() => {
     setBearbeitung((bisherig) => {
       const naechste: Record<string, TextBearbeitung> = {};
@@ -128,6 +137,7 @@ export function SchiedsrichterVerwaltung({ turnierId }: Props) {
     setBearbeitung((b) => ({ ...b, [id]: { ...b[id], ...aenderung } }));
   }
 
+  // Legt einen neuen Schiedsrichter an, leert das Formular und fokussiert wieder das Namensfeld.
   async function anlegen(event: React.FormEvent) {
     event.preventDefault();
     try {

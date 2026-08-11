@@ -11,6 +11,12 @@ interface Props {
   vereine: Verein[];
 }
 
+/**
+ * Team-Stammdaten (Teil der Stammdaten-Seite, unterhalb der Vereine). Listet Teams in einer
+ * Tabelle mit direkt editierbarem Namen (speichert beim Verlassen des Feldes) und Verein
+ * (speichert sofort), plus ein Formular zum Anlegen. Braucht die Vereinsliste als Prop, weil
+ * jedes Team einen Verein referenziert.
+ */
 export function TeamsVerwaltung({ vereine }: Props) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
@@ -33,6 +39,8 @@ export function TeamsVerwaltung({ vereine }: Props) {
     laden();
   }, [laden]);
 
+  // Haelt den Bearbeitungszustand je Zeile synchron zur geladenen Team-Liste, ohne bereits
+  // begonnene Eingaben zu ueberschreiben (bestehender Eintrag hat Vorrang vor den Serverwerten).
   useEffect(() => {
     setBearbeitung((bisherig) => {
       const naechste: Record<string, Bearbeitung> = {};
@@ -43,6 +51,7 @@ export function TeamsVerwaltung({ vereine }: Props) {
     });
   }, [teams]);
 
+  // Neues Team standardmaessig dem ersten Verein zuordnen, sobald Vereine vorliegen.
   useEffect(() => {
     if (!neuerVereinId && vereine.length > 0) setNeuerVereinId(vereine[0]._id);
   }, [vereine, neuerVereinId]);
@@ -50,6 +59,7 @@ export function TeamsVerwaltung({ vereine }: Props) {
   const nameVonVerein = (vereinId: string) => vereine.find((v) => v._id === vereinId)?.name ?? vereinId;
   const teamsSortiert = [...teams].sort((a, b) => a.name.localeCompare(b.name));
 
+  // Legt ein neues Team an und setzt den Fokus zurueck ins Namensfeld (schnelle Mehrfacherfassung).
   async function anlegen(event: React.FormEvent) {
     event.preventDefault();
     if (!neuerVereinId) {
@@ -76,6 +86,7 @@ export function TeamsVerwaltung({ vereine }: Props) {
     }
   }
 
+  // Speichert Name/Verein eines Teams, aber nur bei echter Aenderung (spart ueberfluessige PUTs).
   async function speichernWerte(t: Team, werte: Bearbeitung) {
     if (werte.name.trim() === "") {
       setFehler("Teamname darf nicht leer sein");
