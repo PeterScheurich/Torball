@@ -31,7 +31,13 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
   const [tokenWert, setTokenWert] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | undefined>();
   const [linkHinweis, setLinkHinweis] = useState<string | undefined>();
-  const { eingaben, setFeld, konflikte } = useErgebnisEingaben(spiele);
+  const [geradeGespeichert, setGeradeGespeichert] = useState<string | null>(null);
+  const { eingaben, setFeld, konflikte, uebernehmeServer } = useErgebnisEingaben(spiele);
+
+  function markiereGespeichert(spielId: string) {
+    setGeradeGespeichert(spielId);
+    window.setTimeout(() => setGeradeGespeichert((cur) => (cur === spielId ? null : cur)), 2500);
+  }
 
   const laden = useCallback(async () => {
     try {
@@ -99,10 +105,29 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
     }
     try {
       await spielErgebnisSetzen(spiel._id, { ergebnisA, ergebnisB, istForfait });
+      markiereGespeichert(spiel._id);
       await laden();
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern des Ergebnisses");
     }
+  }
+
+  /**
+   * Automatisches Speichern beim Verlassen eines Tore-Feldes (onBlur), sobald beide Werte gültig
+   * ausgefüllt und gegenüber dem Server verändert sind - der frühere Speichern-Knopf entfällt.
+   * Bei einem offenen Konflikt wird bewusst NICHT gespeichert; dann entscheidet der Nutzer über
+   * die beiden Konflikt-Knöpfe (übernehmen / überschreiben).
+   */
+  function beiVerlassen(spiel: Spiel) {
+    if (spiel.ergebnisAbgeschlossen || konflikte.has(spiel._id)) return;
+    const eingabe = eingaben[spiel._id];
+    if (!eingabe || eingabe.a === "" || eingabe.b === "") return;
+    const a = Number(eingabe.a);
+    const b = Number(eingabe.b);
+    if (!Number.isFinite(a) || !Number.isFinite(b) || a < 0 || b < 0) return;
+    const unveraendert = (spiel.ergebnisA?.toString() ?? "") === eingabe.a && (spiel.ergebnisB?.toString() ?? "") === eingabe.b;
+    if (unveraendert) return;
+    ergebnisSpeichern(spiel);
   }
 
   function nichtAngetreten(spiel: Spiel, forfaitSeite: "a" | "b") {
@@ -110,7 +135,10 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
     setFeld(spiel._id, "b", forfaitSeite === "a" ? "3" : "0");
     // Direkt mit den gesetzten Forfait-Werten speichern, nicht erst auf einen weiteren Klick warten.
     spielErgebnisSetzen(spiel._id, forfaitSeite === "a" ? { ergebnisA: 0, ergebnisB: 3, istForfait: true } : { ergebnisA: 3, ergebnisB: 0, istForfait: true })
-      .then(laden)
+      .then(() => {
+        markiereGespeichert(spiel._id);
+        return laden();
+      })
       .catch((err) => setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern"));
   }
 
@@ -216,7 +244,18 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
                           disabled={spiel.ergebnisAbgeschlossen}
                           value={eingabe.a}
                           onChange={(e) => setFeld(spiel._id, "a", e.target.value)}
+                          onBlur={() => beiVerlassen(spiel)}
                         />
+                        {!spiel.ergebnisAbgeschlossen && (
+                          <button
+                            type="button"
+                            className="na-button"
+                            onClick={() => nichtAngetreten(spiel, "a")}
+                            title={`${nameVon(spiel.mannschaftAId)} nicht angetreten`}
+                          >
+                            n. a.
+                          </button>
+                        )}
                         {" : "}
                         <label className="sr-only" htmlFor={`ergebnisB-${spiel._id}`}>
                           Tore {nameVon(spiel.mannschaftBId)}
@@ -230,13 +269,35 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
                           disabled={spiel.ergebnisAbgeschlossen}
                           value={eingabe.b}
                           onChange={(e) => setFeld(spiel._id, "b", e.target.value)}
+                          onBlur={() => beiVerlassen(spiel)}
                         />
-                        {konflikte.has(spiel._id) && (
-                          <div className="schiri-warnung" role="alert">
-                            ⚠ Wurde zwischenzeitlich anderweitig gespeichert (jetzt {spiel.ergebnisA ?? "–"} :{" "}
-                            {spiel.ergebnisB ?? "–"}). Speichern überschreibt diesen Wert.
-                          </div>
+                        {!spiel.ergebnisAbgeschlossen && (
+                          <button
+                            type="button"
+                            className="na-button"
+                            onClick={() => nichtAngetreten(spiel, "b")}
+                            title={`${nameVon(spiel.mannschaftBId)} nicht angetreten`}
+                          >
+                            n. a.
+                          </button>
                         )}
+                        {konflikte.has(spiel._id) && (
+                          <>
+                            <div className="schiri-warnung" role="alert">
+                              ⚠ Zwischenzeitlich wurde anderweitig {spiel.ergebnisA ?? "–"} : {spiel.ergebnisB ?? "–"}{" "}
+                              gespeichert.
+                            </div>
+                            <div className="konflikt-aktionen">
+                              <button type="button" onClick={() => uebernehmeServer(spiel._id)}>
+                                Vorhandenes übernehmen
+                              </button>
+                              <button type="button" onClick={() => ergebnisSpeichern(spiel)}>
+                                Mit meinem Wert überschreiben
+                              </button>
+                            </div>
+                          </>
+                        )}
+                        {geradeGespeichert === spiel._id && <div className="gespeichert-hinweis">✓ gespeichert</div>}
                       </td>
                       <td>{nameVon(spiel.mannschaftBId)}</td>
                       <td>
@@ -248,41 +309,16 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
                       </td>
                       <td>
                         {!spiel.ergebnisAbgeschlossen && (
-                          <>
-                            <button
-                              type="button"
-                              className="symbol-button"
-                              onClick={() => ergebnisSpeichern(spiel)}
-                              aria-label="Speichern"
-                              title="Speichern"
-                            >
-                              💾
-                            </button>{" "}
-                            <button
-                              type="button"
-                              onClick={() => nichtAngetreten(spiel, "a")}
-                              title={`${nameVon(spiel.mannschaftAId)} nicht angetreten`}
-                            >
-                              A n. a.
-                            </button>{" "}
-                            <button
-                              type="button"
-                              onClick={() => nichtAngetreten(spiel, "b")}
-                              title={`${nameVon(spiel.mannschaftBId)} nicht angetreten`}
-                            >
-                              B n. a.
-                            </button>{" "}
-                            <button
-                              type="button"
-                              className="symbol-button"
-                              onClick={() => abschliessenEinzeln(spiel)}
-                              disabled={spiel.ergebnisA == null}
-                              aria-label="Abschließen"
-                              title="Abschließen"
-                            >
-                              ✓
-                            </button>
-                          </>
+                          <button
+                            type="button"
+                            className="symbol-button"
+                            onClick={() => abschliessenEinzeln(spiel)}
+                            disabled={spiel.ergebnisA == null}
+                            aria-label="Abschließen"
+                            title="Abschließen"
+                          >
+                            ✓
+                          </button>
                         )}
                       </td>
                     </tr>

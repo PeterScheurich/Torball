@@ -81,5 +81,24 @@ export function useErgebnisEingaben(spiele: SpielErgebnis[] | undefined) {
     setEingaben((b) => ({ ...b, [spielId]: { ...(b[spielId] ?? { a: "", b: "" }), [feld]: wert } }));
   }
 
-  return { eingaben, setFeld, konflikte };
+  /**
+   * Konfliktauflösung „Vorhandenes übernehmen": setzt das Feld auf den aktuellen Serverwert und
+   * hebt den Konflikt sofort auf (ohne auf den nächsten Poll zu warten). Basis mitziehen, damit
+   * die Zeile danach als unverändert gilt.
+   */
+  function uebernehmeServer(spielId: string) {
+    const spiel = liste.find((s) => s._id === spielId);
+    if (!spiel) return;
+    const server = serverWert(spiel);
+    basisRef.current = { ...basisRef.current, [spielId]: server };
+    setEingaben((b) => ({ ...b, [spielId]: server }));
+    setKonflikte((k) => {
+      if (!k.has(spielId)) return k;
+      const n = new Set(k);
+      n.delete(spielId);
+      return n;
+    });
+  }
+
+  return { eingaben, setFeld, konflikte, uebernehmeServer };
 }

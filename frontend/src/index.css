@@ -470,6 +470,31 @@ form {
   width: 3em;
 }
 
+/* Kleiner "nicht angetreten"-Knopf direkt neben dem jeweiligen Tore-Feld (Tooltip nennt die
+   Mannschaft). Bewusst kompakt, damit er die schmale Ergebnis-Spalte nicht sprengt. */
+.na-button {
+  font-size: 0.72rem;
+  padding: 2px 5px;
+  margin-left: 3px;
+  vertical-align: middle;
+}
+
+/* Konflikt-Auflösung: die zwei Knoepfe ("Vorhandenes uebernehmen" / "Mit meinem Wert
+   ueberschreiben") unter der Konflikt-Warnung. */
+.konflikt-aktionen {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Kurze Bestaetigung nach dem automatischen Speichern (onBlur). */
+.gespeichert-hinweis {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
 /* Trikotnummer: normalerweise einstellig, daher bewusst schmal. */
 .trikot-eingabe {
   width: 4em;
