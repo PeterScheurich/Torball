@@ -511,6 +511,17 @@ form {
   font-size: 1rem;
 }
 
+/* Nicht blockierender Hinweis im Kader, wenn mehr sehende Spieler erfasst sind als die
+   Turnierregel erlaubt (Klassifizierung kann sich noch aendern, daher keine Sperre). */
+.kader-warnung {
+  border-left: 3px solid var(--danger);
+  padding: 8px 12px;
+  margin: 0 0 12px;
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 400;
+}
+
 /* Trainer/Betreuer-Felder oberhalb des Kaders im aufgeklappten Bereich: nebeneinander,
    umbrechend auf schmalen Schirmen. */
 .betreuer-bereich {

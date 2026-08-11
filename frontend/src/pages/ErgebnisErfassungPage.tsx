@@ -234,7 +234,7 @@ export function ErgebnisErfassungPage() {
                   </td>
                   <td>{nameVon(spiel.mannschaftBId)}</td>
                   <td>
-                    {spiel.ergebnisAbgeschlossen ? "Abgeschlossen" : spiel.ergebnisA != null ? "Erfasst" : "Offen"}
+                    {spiel.ergebnisAbgeschlossen ? "Fertig" : spiel.ergebnisA != null ? "Erfasst" : "Offen"}
                   </td>
                 </tr>
               );

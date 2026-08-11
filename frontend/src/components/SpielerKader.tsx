@@ -37,9 +37,12 @@ interface Props {
   mannschaftId: string;
   /** Wird nach jedem Laden/Aendern mit der aktuellen Spielerzahl aufgerufen (z.B. fuer die Kopfzeile). */
   onAnzahlGeaendert?: (anzahl: number) => void;
+  /** Turnier-Regel: erlaubte Anzahl sehender Spieler je Mannschaft. Bei Ueberschreitung erscheint
+   *  ein Hinweis (nicht blockierend) - siehe Kommentar am Hinweis. */
+  maxSehendeSpieler?: number;
 }
 
-export function SpielerKader({ mannschaftId, onAnzahlGeaendert }: Props) {
+export function SpielerKader({ mannschaftId, onAnzahlGeaendert, maxSehendeSpieler }: Props) {
   const [spieler, setSpieler] = useState<Spieler[]>([]);
   const [bearbeitung, setBearbeitung] = useState<Record<string, Bearbeitung>>({});
   const [fehler, setFehler] = useState<string | undefined>();
@@ -162,9 +165,23 @@ export function SpielerKader({ mannschaftId, onAnzahlGeaendert }: Props) {
     (a, b) => a.trikotnummer.localeCompare(b.trikotnummer, undefined, { numeric: true }) || a.name.localeCompare(b.name),
   );
 
+  const sehendeAnzahl = spieler.filter((s) => s.klassifizierung === "sehend").length;
+  // Bewusst nur ein Hinweis, KEINE Sperre: Zum Zeitpunkt der Kader-Anlage ist die Klassifizierung
+  // nicht immer bekannt, und am Spieltag kann ein anwesender Arzt neu klassifizieren - dann wird
+  // nur der Spieler-Status/die Klassifizierung geaendert, ohne den Kader neu aufsetzen zu muessen.
+  const zuVieleSehende = maxSehendeSpieler != null && sehendeAnzahl > maxSehendeSpieler;
+
   return (
     <div className="kader">
       {fehler && <p role="alert">{fehler}</p>}
+
+      {zuVieleSehende && (
+        <p className="kader-warnung">
+          ⚠ {sehendeAnzahl} sehende Spieler im Kader – erlaubt sind laut Turnierregeln{" "}
+          {maxSehendeSpieler}. Das lässt sich speichern; bitte die Klassifizierungen prüfen (ggf. wird am
+          Spieltag neu klassifiziert).
+        </p>
+      )}
 
       {spielerSortiert.length === 0 ? (
         <p>Noch keine Spieler im Kader.</p>

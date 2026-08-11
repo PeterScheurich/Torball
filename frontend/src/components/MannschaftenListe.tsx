@@ -50,9 +50,11 @@ interface Props {
   /** Spielplan-Version des Turniers. Ist > 0 (Spielplan existiert), wird beim Hinzufuegen/Loeschen
    *  einer Mannschaft gewarnt, weil das den bestehenden Spielplan inkonsistent macht. */
   spielplanVersion?: number;
+  /** Turnier-Regel „max. sehende Spieler je Mannschaft" - fuer den Kader-Hinweis (durchgereicht). */
+  maxSehendeSpieler?: number;
 }
 
-export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0 }: Props) {
+export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0, maxSehendeSpieler }: Props) {
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
   const [neueMannschaft, setNeueMannschaft] = useState("");
@@ -470,6 +472,7 @@ export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0
                     <SpielerKader
                       mannschaftId={m._id}
                       onAnzahlGeaendert={(anzahl) => setSpielerAnzahl((b) => ({ ...b, [m._id]: anzahl }))}
+                      maxSehendeSpieler={maxSehendeSpieler}
                     />
                   </td>
                 </tr>

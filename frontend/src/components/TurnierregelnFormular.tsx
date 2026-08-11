@@ -72,6 +72,14 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
 
   async function zuruecksetzen() {
     if (!standardWerte) return;
+    if (
+      !window.confirm(
+        "Wirklich auf die Standardwerte zurücksetzen? Deine aktuellen Eingaben im Formular werden dabei überschrieben " +
+          "(gespeichert wird erst danach über den Speichern-Knopf).",
+      )
+    ) {
+      return;
+    }
     setResetFehler(undefined);
     try {
       const standard = await standardWerte();

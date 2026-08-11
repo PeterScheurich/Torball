@@ -313,7 +313,7 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
                       <td>{nameVon(spiel.mannschaftBId)}</td>
                       <td>
                         {spiel.ergebnisAbgeschlossen
-                          ? "Abgeschlossen"
+                          ? "Fertig"
                           : spiel.ergebnisA != null
                             ? "Erfasst"
                             : "Offen"}

@@ -496,7 +496,11 @@ export function TurnierVerwaltenPage() {
         aria-labelledby="tab-mannschaften"
         hidden={aktiverTab !== "mannschaften"}
       >
-        <MannschaftenListe turnierId={turnierId} spielplanVersion={turnier.spielplanVersion} />
+        <MannschaftenListe
+          turnierId={turnierId}
+          spielplanVersion={turnier.spielplanVersion}
+          maxSehendeSpieler={turnier.maxSehendeSpieler}
+        />
       </div>
 
       <div
