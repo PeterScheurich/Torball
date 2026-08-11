@@ -102,6 +102,15 @@ export function turnierWiederOeffnen(id: string): Promise<Turnier> {
   return anfrage(`/turniere/${id}/wieder-oeffnen`, { method: "POST" });
 }
 
+/** Leitet einen neuen Spieltag aus einem abgeschlossenen Vorgaenger-Turnier ab (Datenuebernahme:
+ *  Mannschaften + Kader + Regeln + gespiegelter Spielplan). Liefert das neue Turnier. */
+export function turnierAbleiten(
+  basisId: string,
+  daten: { name: string; datum: string; startzeit?: string },
+): Promise<Turnier> {
+  return anfrage(`/turniere/${basisId}/ableiten`, { method: "POST", body: JSON.stringify(daten) });
+}
+
 /** Optionale Freitextfelder duerfen explizit auf null gesetzt werden, um sie zu leeren -
  * JSON.stringify(undefined) liesse den Schluessel im Request-Body komplett verschwinden,
  * das Backend wuerde den bisherigen Wert dann faelschlich unveraendert stehen lassen. */

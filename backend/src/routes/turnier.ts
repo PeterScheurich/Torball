@@ -5,14 +5,17 @@ import type {
   SchiedsrichterImTurnier,
   Spiel,
   Spieler,
+  SpielplanBasis,
   Turnier,
   Turnierregeln,
   TurnierStatus,
+  Wettbewerb,
 } from "@torball/shared";
 import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth, requireRolle } from "../auth/plugin";
 import { hatMindestens, turnierGesperrt } from "../auth/turnierZugriff";
 import { aktuelleTurnierregeln } from "../konfiguration";
+import { berechneStartzeit } from "../spielplan/zeitplanung";
 
 // Felder, die auch bei einem abgeschlossenen Turnier noch geaendert werden duerfen (Nutzer-Vorgabe:
 // Veroeffentlichen bleibt moeglich, ohne das Turnier erst wieder oeffnen zu muessen). Alle uebrigen
@@ -198,6 +201,171 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   // nicht destruktiv, damit ein versehentlicher Abschluss korrigierbar bleibt.
   app.post<{ Params: { id: string } }>("/turniere/:id/wieder-oeffnen", (req, reply) =>
     statusUmschalten(req, reply, "aktiv"),
+  );
+
+  // Neuen Spieltag aus einem abgeschlossenen Vorgaenger-Turnier ableiten (Datenuebernahme,
+  // Hin-/Rueckspieltag). Kopiert Mannschaften + Kader (mit Herkunftsverweisen), uebernimmt die
+  // Regeln gesperrt und spiegelt den Spielplan (Heim/Auswaerts getauscht, Ergebnisse
+  // zurueckgesetzt). Die beiden Spieltage teilen eine gemeinsame wettbewerbId (Aggregations-
+  // Klammer). Anlegen wie ein normales Turnier nur fuer Admin/Manager.
+  app.post<{ Params: { id: string }; Body: { name: string; datum: string; startzeit?: string } }>(
+    "/turniere/:id/ableiten",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["name", "datum"],
+          properties: {
+            name: { type: "string", minLength: 1 },
+            datum: { type: "string", minLength: 1 },
+            startzeit: { type: "string" },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!requireRolle(req, reply, ["admin", "manager"])) return;
+      const basis = await findById<Turnier>(req.params.id);
+      if (!basis) return reply.code(404).send({ error: "Vorgänger-Turnier nicht gefunden" });
+      if (!(await hatMindestens(basis, req.benutzer, "lesen"))) {
+        return reply.code(403).send({ error: "Kein Zugriff auf das Vorgänger-Turnier" });
+      }
+      if (basis.status !== "abgeschlossen" && basis.status !== "archiviert") {
+        return reply
+          .code(409)
+          .send({ error: "Ein neuer Spieltag lässt sich nur aus einem abgeschlossenen Turnier ableiten." });
+      }
+
+      const jetzt = new Date().toISOString();
+
+      // Wettbewerbs-Klammer: vorhandene uebernehmen, sonst neu anlegen und den Vorgaenger
+      // nachtraeglich damit verknuepfen (rein strukturelle Gruppierung fuer die Aggregation).
+      let wettbewerbId = basis.wettbewerbId;
+      if (!wettbewerbId) {
+        const wId = newId("wettbewerb");
+        const wettbewerb: Wettbewerb = {
+          _id: wId,
+          docType: "wettbewerb",
+          wettbewerbId: wId,
+          name: basis.name,
+          erstelltVon: req.benutzer!._id,
+          erstelltAm: jetzt,
+        };
+        await insertDoc(wettbewerb);
+        wettbewerbId = wId;
+        await insertDoc({ ...basis, wettbewerbId, spieltagNummer: basis.spieltagNummer ?? 1 });
+      }
+
+      // Abgeleitetes Turnier: uebernimmt Regelwerte/Felder/Modus vom Vorgaenger, setzt aber
+      // eigene Grunddaten, frische Oeffentlichkeits-/Spielplan-Metadaten und Herkunftsbezuege.
+      const neuId = newId("turnier");
+      const neuesTurnier: Turnier = {
+        ...basis,
+        _id: neuId,
+        _rev: undefined,
+        turnierId: neuId,
+        name: req.body.name,
+        datum: req.body.datum,
+        startzeit: req.body.startzeit,
+        status: "entwurf",
+        wettbewerbId,
+        basisTurnierId: basis._id,
+        spieltagNummer: (basis.spieltagNummer ?? 1) + 1,
+        regelnGesperrt: true,
+        oeffentlichTurnierinfos: false,
+        oeffentlichAnfahrtDokumente: false,
+        oeffentlichSpielplan: false,
+        oeffentlichErgebnisse: false,
+        oeffentlichRegeln: false,
+        spielplanFreigegeben: false,
+        spielplanVersion: 1,
+        spielplanGeaendertAm: jetzt,
+        spielplanBasis: undefined,
+        erstelltVon: req.benutzer!._id,
+        erstelltAm: jetzt,
+        geaendertAm: undefined,
+        geaendertVon: undefined,
+      };
+      // Bewusst noch NICHT einfuegen - das Turnier-Dokument wird einmalig am Ende (inkl.
+      // spielplanBasis) gespeichert; Mannschaften/Kader/Spiele referenzieren nur die neue ID.
+
+      // Mannschaften kopieren (mit Herkunftsverweis) und Zuordnung alt->neu merken.
+      const basisMannschaften = await findAllBySelector<MannschaftImTurnier>({
+        docType: "mannschaftImTurnier",
+        turnierId: basis._id,
+      });
+      const mannschaftMap = new Map<string, string>();
+      for (const m of basisMannschaften) {
+        const nmId = newId("mannschaftImTurnier");
+        mannschaftMap.set(m._id, nmId);
+        await insertDoc<MannschaftImTurnier>({
+          ...m,
+          _id: nmId,
+          _rev: undefined,
+          mannschaftId: nmId,
+          turnierId: neuId,
+          importiertAusTurnierId: basis._id,
+          importiertAusMannschaftId: m._id,
+        });
+
+        // Kader dieser Mannschaft mitkopieren (uebernommen, aber spaeter editierbar).
+        const kader = await findAllBySelector<Spieler>({ docType: "spieler", mannschaftId: m._id });
+        for (const s of kader) {
+          const nsId = newId("spieler");
+          await insertDoc<Spieler>({
+            ...s,
+            _id: nsId,
+            _rev: undefined,
+            spielerId: nsId,
+            mannschaftId: nmId,
+            importiertAusTurnierId: basis._id,
+            importiertAusSpielerId: s._id,
+          });
+        }
+      }
+
+      // Spielplan spiegeln: Heim/Auswaerts getauscht, Startzeiten auf den neuen Termin neu
+      // berechnet, Ergebnisse/Schiedsrichter zurueckgesetzt (Status "geplant").
+      const basisSpiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: basis._id });
+      for (const sp of basisSpiele) {
+        const neuA = mannschaftMap.get(sp.mannschaftBId);
+        const neuB = mannschaftMap.get(sp.mannschaftAId);
+        if (!neuA || !neuB) continue; // Sicherheitsnetz - sollte nie eintreten
+        const slot = Number(sp.runde);
+        const nId = newId("spiel");
+        await insertDoc<Spiel>({
+          _id: nId,
+          docType: "spiel",
+          spielId: nId,
+          turnierId: neuId,
+          runde: sp.runde,
+          feldId: sp.feldId,
+          startzeitGeplant: Number.isFinite(slot) ? berechneStartzeit(neuesTurnier, slot - 1) : sp.startzeitGeplant,
+          mannschaftAId: neuA,
+          mannschaftBId: neuB,
+          status: "geplant",
+          istForfait: false,
+          ergebnisAbgeschlossen: false,
+        });
+      }
+
+      // Spielplan-Basis-Schnappschuss fuer den Aenderungs-Hinweis setzen (analog spielplan.ts).
+      const spielplanBasis: SpielplanBasis = {
+        spielplanModus: neuesTurnier.spielplanModus,
+        felder: neuesTurnier.felder,
+        mannschaften: [...mannschaftMap.values()].map((id) => ({
+          id,
+          name: basisMannschaften.find((m) => mannschaftMap.get(m._id) === id)?.name ?? "",
+        })),
+        spielzeitMinuten: neuesTurnier.spielzeitMinuten,
+        pauseMinuten: neuesTurnier.pauseMinuten,
+        anzahlHalbzeiten: neuesTurnier.anzahlHalbzeiten,
+        startzeit: neuesTurnier.startzeit,
+      };
+      const mitBasis = await insertDoc({ ...neuesTurnier, spielplanBasis });
+
+      return reply.code(201).send(mitBasis);
+    },
   );
 
   app.delete<{ Params: { id: string } }>("/turniere/:id", async (req, reply) => {
