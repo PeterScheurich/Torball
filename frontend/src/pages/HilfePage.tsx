@@ -51,7 +51,9 @@ function Block({ block }: { block: HilfeBlock }) {
  */
 export function HilfePage() {
   const { benutzer } = useAuth();
-  const istAdmin = benutzer?.globaleRolle === "admin";
+  // Die Gesamtspezifikation ist fuer Administratoren UND Manager sichtbar (beide betreuen
+  // Turniere/Anwendung), nicht fuer normale Benutzer oder nicht angemeldete Besucher.
+  const darfSpezSehen = benutzer?.globaleRolle === "admin" || benutzer?.globaleRolle === "manager";
 
   return (
     <>
@@ -68,9 +70,9 @@ export function HilfePage() {
               <a href={`#${thema.id}`}>{thema.titel}</a>
             </li>
           ))}
-          {istAdmin && (
+          {darfSpezSehen && (
             <li>
-              <a href="#spezifikation">Gesamtspezifikation (nur Admin)</a>
+              <a href="#spezifikation">Gesamtspezifikation (Admin/Manager)</a>
             </li>
           )}
         </ul>
@@ -100,12 +102,12 @@ export function HilfePage() {
         </section>
       ))}
 
-      {/* Gesamtspezifikation - bewusst nur fuer Administratoren. Die verbindliche fachliche/
-          technische Referenz gehoert nicht in die allgemeine Endnutzer-Hilfe, ist fuer die
-          Betreuung der Anwendung aber praktisch direkt griffbereit. */}
-      {istAdmin && (
+      {/* Gesamtspezifikation - bewusst nur fuer Administratoren und Manager. Die verbindliche
+          fachliche/technische Referenz gehoert nicht in die allgemeine Endnutzer-Hilfe, ist fuer
+          die Betreuung von Turnieren/Anwendung aber praktisch direkt griffbereit. */}
+      {darfSpezSehen && (
         <section id="spezifikation" className="hilfe-thema" aria-labelledby="spezifikation-titel">
-          <h2 id="spezifikation-titel">Gesamtspezifikation (nur für Administratoren)</h2>
+          <h2 id="spezifikation-titel">Gesamtspezifikation (nur für Administratoren und Manager)</h2>
           <p className="hilfe-kurz">
             Die verbindliche fachliche und technische Spezifikation der Anwendung. Diese Fassung entspricht immer dem
             zuletzt ausgelieferten (deployten) Stand.
