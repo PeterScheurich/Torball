@@ -3,7 +3,7 @@ import type { MannschaftImTurnier, Spiel, Turnier } from "@torball/shared";
 import { findAllBySelector, findById, insertDoc } from "../repository";
 import { requireAuth } from "../auth/plugin";
 import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
-import { berechneTabelle } from "../ergebnisse/tabelle";
+import { berechneGesamttabelle, berechneTabelle } from "../ergebnisse/tabelle";
 import { pruefeSpielZugriff } from "./spiel";
 
 interface ErgebnisBody {
@@ -92,10 +92,34 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
     }
 
-    const [mannschaften, spiele] = await Promise.all([
-      findAllBySelector<MannschaftImTurnier>({ docType: "mannschaftImTurnier", turnierId: turnier._id }),
-      findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id }),
-    ]);
+    const mannschaften = await findAllBySelector<MannschaftImTurnier>({
+      docType: "mannschaftImTurnier",
+      turnierId: turnier._id,
+    });
+
+    // Gehoert das Turnier zu einem Wettbewerb (mehrere Spieltage), wird die SUMMENtabelle ueber
+    // alle Spieltage berechnet (Datenimport-Spec: intern reicht der summierte Tabellenstand).
+    if (turnier.wettbewerbId) {
+      const wettbewerbTurniere = await findAllBySelector<Turnier>({
+        docType: "turnier",
+        wettbewerbId: turnier.wettbewerbId,
+      });
+      const alleMannschaften = (
+        await Promise.all(
+          wettbewerbTurniere.map((t) =>
+            findAllBySelector<MannschaftImTurnier>({ docType: "mannschaftImTurnier", turnierId: t._id }),
+          ),
+        )
+      ).flat();
+      const alleSpiele = (
+        await Promise.all(
+          wettbewerbTurniere.map((t) => findAllBySelector<Spiel>({ docType: "spiel", turnierId: t._id })),
+        )
+      ).flat();
+      return berechneGesamttabelle(turnier, mannschaften, alleMannschaften, alleSpiele);
+    }
+
+    const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id });
     return berechneTabelle(turnier, mannschaften, spiele);
   });
 }

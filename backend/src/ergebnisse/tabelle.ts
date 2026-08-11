@@ -102,6 +102,44 @@ export function berechneTabelle(
   return zeilen;
 }
 
+/**
+ * Gesamttabelle ueber mehrere Spieltag-Turniere eines Wettbewerbs (Datenuebernahme, Hin-/Rueck-
+ * spieltag). Dieselbe Mannschaft tritt an jedem Spieltag als eigenes Dokument an; die Zuordnung
+ * laeuft ueber die gemeinsame Herkunfts-Wurzel (importiertAusMannschaftId bis zum ersten Spieltag).
+ * Alle Spiele werden auf die Mannschaften des ANZEIGE-Turniers abgebildet - so summieren sich
+ * Punkte/Tore ueber alle Tage, und die Tabelle ist mit den (Namen der) Mannschaften des gerade
+ * betrachteten Turniers aufloesbar.
+ */
+export function berechneGesamttabelle(
+  anzeigeTurnier: Turnier,
+  anzeigeMannschaften: MannschaftImTurnier[],
+  alleMannschaften: MannschaftImTurnier[],
+  alleSpiele: Spiel[],
+): TabellenZeile[] {
+  const byId = new Map(alleMannschaften.map((m) => [m._id, m]));
+  const wurzel = (id: string): string => {
+    let cur = byId.get(id);
+    const gesehen = new Set<string>();
+    while (cur?.importiertAusMannschaftId && byId.has(cur.importiertAusMannschaftId) && !gesehen.has(cur._id)) {
+      gesehen.add(cur._id);
+      cur = byId.get(cur.importiertAusMannschaftId);
+    }
+    return cur ? cur._id : id;
+  };
+  // Wurzel-Mannschaft -> Mannschaft im Anzeige-Turnier (die die Tabellenzeile stellt).
+  const wurzelZuAnzeige = new Map<string, string>();
+  for (const m of anzeigeMannschaften) {
+    wurzelZuAnzeige.set(wurzel(m._id), m._id);
+  }
+  const abbilden = (id: string): string => wurzelZuAnzeige.get(wurzel(id)) ?? id;
+  const abgebildeteSpiele = alleSpiele.map((s) => ({
+    ...s,
+    mannschaftAId: abbilden(s.mannschaftAId),
+    mannschaftBId: abbilden(s.mannschaftBId),
+  }));
+  return berechneTabelle(anzeigeTurnier, anzeigeMannschaften, abgebildeteSpiele);
+}
+
 function vergleicheZeilen(
   x: TabellenZeile,
   y: TabellenZeile,
