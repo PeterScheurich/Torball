@@ -1,9 +1,80 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import type { Turnier } from "@torball/shared";
+import type { Turnier, TurnierStatus } from "@torball/shared";
 import { deleteTurnier, getTurniere } from "../api";
 import { useAuth } from "../auth";
 import { formatiereDatum } from "../format";
+
+/** Anzeige-Labels der Status-Werte (das rohe Feld waere z.B. "entwurf" - hier lesbar gemacht). */
+const STATUS_LABEL: Record<TurnierStatus, string> = {
+  entwurf: "Entwurf",
+  aktiv: "Aktiv",
+  abgeschlossen: "Abgeschlossen",
+  archiviert: "Archiviert",
+};
+
+/**
+ * Trennkriterium der Uebersicht: "abgeschlossen" (bewusst von der Turnierleitung beendet)
+ * und "archiviert" (Langzeit-Archiv) gelten als abgeschlossen; entwurf/aktiv (inkl. gerade
+ * laufender Turniere) zaehlen zu den geplanten. Vorgabe des Nutzers: laufende Turniere
+ * gehoeren zu den geplanten.
+ */
+function istAbgeschlossen(status: TurnierStatus): boolean {
+  return status === "abgeschlossen" || status === "archiviert";
+}
+
+/** Eine Turnier-Tabelle (fuer je eine Gruppe der Uebersicht). Zeigt eine eigene
+ *  Leer-Meldung, wenn die Gruppe keine Turniere enthaelt. */
+function TurnierTabelle({
+  turniere,
+  beschriftung,
+  leerText,
+  onLoeschen,
+}: {
+  turniere: Turnier[];
+  beschriftung: string;
+  leerText: string;
+  onLoeschen: (id: string) => void;
+}) {
+  if (turniere.length === 0) {
+    return <p>{leerText}</p>;
+  }
+  return (
+    <table>
+      <caption className="sr-only">{beschriftung}</caption>
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Datum</th>
+          <th scope="col">Status</th>
+          <th scope="col">Aktionen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {turniere.map((turnier) => (
+          <tr key={turnier._id}>
+            <td>
+              <Link to={`/turniere/${encodeURIComponent(turnier._id)}`}>{turnier.name}</Link>
+            </td>
+            <td>{formatiereDatum(turnier.datum)}</td>
+            <td className="status-zelle">{STATUS_LABEL[turnier.status]}</td>
+            <td>
+              <button
+                type="button"
+                className="symbol-button"
+                onClick={() => onLoeschen(turnier._id)}
+                aria-label={`${turnier.name} löschen`}
+                title="Löschen"
+              >
+                ✕
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 export function TurnierListePage() {
   const [turniere, setTurniere] = useState<Turnier[]>([]);
@@ -15,6 +86,7 @@ export function TurnierListePage() {
     laden();
   }, []);
 
+  /** Laedt die fuer den angemeldeten Benutzer sichtbaren Turniere neu. */
   async function laden() {
     try {
       setTurniere(await getTurniere());
@@ -24,6 +96,7 @@ export function TurnierListePage() {
     }
   }
 
+  /** Loescht ein Turnier (mit allen abhaengigen Daten, Kaskade im Backend) und laedt neu. */
   async function loeschen(id: string) {
     try {
       await deleteTurnier(id);
@@ -33,56 +106,45 @@ export function TurnierListePage() {
     }
   }
 
+  const geplant = turniere.filter((t) => !istAbgeschlossen(t.status));
+  const abgeschlossen = turniere.filter((t) => istAbgeschlossen(t.status));
+
   return (
     <>
       <h1>Turniere</h1>
 
-      {fehler && <p role="alert">{fehler}</p>}
-
-      {turniere.length === 0 && !fehler ? (
-        <p>Noch keine Turniere angelegt.</p>
-      ) : (
-        <table>
-          <caption className="sr-only">Liste der angelegten Turniere</caption>
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Datum</th>
-              <th scope="col">Status</th>
-              <th scope="col">Aktionen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {turniere.map((turnier) => (
-              <tr key={turnier._id}>
-                <td>
-                  <Link to={`/turniere/${encodeURIComponent(turnier._id)}`}>{turnier.name}</Link>
-                </td>
-                <td>{formatiereDatum(turnier.datum)}</td>
-                <td className="status-zelle">{turnier.status}</td>
-                <td>
-                  <button
-                    type="button"
-                    className="symbol-button"
-                    onClick={() => loeschen(turnier._id)}
-                    aria-label={`${turnier.name} löschen`}
-                    title="Löschen"
-                  >
-                    ✕
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
+      {/* Anlegen-Knopf bewusst oberhalb der Uebersicht (Nutzer-Vorgabe): sofort erreichbar,
+          ohne an langen Listen vorbeiscrollen zu muessen. */}
       {darfAnlegen && (
         <p>
           <Link to="/turniere/neu" className="button-link">
             Neues Turnier anlegen
           </Link>
         </p>
+      )}
+
+      {fehler && <p role="alert">{fehler}</p>}
+
+      {turniere.length === 0 && !fehler ? (
+        <p>Noch keine Turniere angelegt.</p>
+      ) : (
+        <>
+          <h2>Geplante Turniere</h2>
+          <TurnierTabelle
+            turniere={geplant}
+            beschriftung="Geplante und laufende Turniere"
+            leerText="Keine geplanten Turniere."
+            onLoeschen={loeschen}
+          />
+
+          <h2>Abgeschlossene Turniere</h2>
+          <TurnierTabelle
+            turniere={abgeschlossen}
+            beschriftung="Abgeschlossene Turniere"
+            leerText="Keine abgeschlossenen Turniere."
+            onLoeschen={loeschen}
+          />
+        </>
       )}
     </>
   );

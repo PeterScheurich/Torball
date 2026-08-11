@@ -1,6 +1,18 @@
 import { BenutzerId, CouchMeta, FeldId, TurnierId, WettbewerbId, Zeitstempel } from "./common";
 
-export type TurnierStatus = "entwurf" | "aktiv" | "archiviert";
+/**
+ * Lebenszyklus eines Turniers:
+ *  - "entwurf"      – in Planung (nicht oeffentlich)
+ *  - "aktiv"        – laeuft / Spieltag (oeffentlich sichtbar)
+ *  - "abgeschlossen"– von der Turnierleitung bewusst beendet; erscheint in der
+ *                     Uebersicht unter "Abgeschlossen", bleibt aber vollstaendig
+ *                     einsehbar/bearbeitbar (Wiederoeffnen moeglich)
+ *  - "archiviert"   – Langzeit-Archiv (nur Ergebnisse), spaetere Erweiterung
+ * "abgeschlossen" ergaenzt bewusst das Spez-Modell (Abschnitt 10.3 kannte nur
+ * entwurf/aktiv/archiviert), damit die Uebersicht geplante von abgeschlossenen
+ * Turnieren trennen kann und die Turnierleitung ein Turnier gezielt abschliesst.
+ */
+export type TurnierStatus = "entwurf" | "aktiv" | "abgeschlossen" | "archiviert";
 
 export type Protokollierungsart = "digital" | "manuell";
 

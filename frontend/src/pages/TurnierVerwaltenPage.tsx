@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import type { Protokollierungsart, Spielmodus, Turnier, Turnierregeln } from "@torball/shared";
-import { getSystemkonfiguration, getTurnier, updateTurnier } from "../api";
+import type { Protokollierungsart, Spielmodus, Turnier, TurnierStatus, Turnierregeln } from "@torball/shared";
+import {
+  getSystemkonfiguration,
+  getTurnier,
+  turnierAbschliessen,
+  turnierWiederOeffnen,
+  updateTurnier,
+} from "../api";
 import { ErgebnisVerwaltung } from "../components/ErgebnisVerwaltung";
 import { MannschaftenListe } from "../components/MannschaftenListe";
 import { QrCode } from "../components/QrCode";
@@ -13,6 +19,14 @@ import { TurnierregelnFormular } from "../components/TurnierregelnFormular";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 
 type Tab = "uebersicht" | "regeln" | "mannschaften" | "schiedsrichter" | "spielplan" | "ergebnisse";
+
+/** Lesbare Anzeige der Status-Werte (das rohe Feld waere z.B. "entwurf"). */
+const STATUS_LABEL: Record<TurnierStatus, string> = {
+  entwurf: "Entwurf",
+  aktiv: "Aktiv",
+  abgeschlossen: "Abgeschlossen",
+  archiviert: "Archiviert",
+};
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "uebersicht", label: "Übersicht" },
@@ -195,6 +209,35 @@ export function TurnierVerwaltenPage() {
     }
   }
 
+  /** Turnier bewusst abschliessen - danach steht es in der Uebersicht unter "Abgeschlossen".
+   *  Reversibel (siehe wiederOeffnen), deshalb nur eine kurze Rueckfrage, keine harte Sperre. */
+  async function abschliessen() {
+    if (
+      !window.confirm(
+        'Turnier abschließen? Es erscheint danach in der Übersicht unter „Abgeschlossen". ' +
+          "Du kannst es jederzeit wieder öffnen.",
+      )
+    ) {
+      return;
+    }
+    try {
+      setTurnier(await turnierAbschliessen(turnierId));
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Abschließen");
+    }
+  }
+
+  /** Ein abgeschlossenes Turnier wieder oeffnen (zurueck zu "aktiv"). */
+  async function wiederOeffnen() {
+    try {
+      setTurnier(await turnierWiederOeffnen(turnierId));
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Wiederöffnen");
+    }
+  }
+
   async function sichtbarkeitAendern(feld: SichtbarkeitsFeld, sichtbar: boolean) {
     try {
       setTurnier(await updateTurnier(turnierId, { [feld]: sichtbar }));
@@ -321,7 +364,16 @@ export function TurnierVerwaltenPage() {
                   <label htmlFor="uebersichtStatus">Status</label>
                 </th>
                 <td>
-                  <input id="uebersichtStatus" readOnly className="status-zelle" value={turnier.status} />
+                  <input id="uebersichtStatus" readOnly className="status-zelle" value={STATUS_LABEL[turnier.status]} />{" "}
+                  {turnier.status === "abgeschlossen" ? (
+                    <button type="button" onClick={wiederOeffnen}>
+                      Wieder öffnen
+                    </button>
+                  ) : (
+                    <button type="button" onClick={abschliessen}>
+                      Turnier abschließen
+                    </button>
+                  )}
                 </td>
               </tr>
               <tr>

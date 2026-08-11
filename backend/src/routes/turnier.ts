@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type {
   MannschaftImTurnier,
   Protokollierungsart,
@@ -24,7 +24,7 @@ const turnierBodySchema = {
   properties: {
     name: { type: "string", minLength: 1 },
     datum: { type: "string", minLength: 1 },
-    status: { type: "string", enum: ["entwurf", "aktiv", "archiviert"] },
+    status: { type: "string", enum: ["entwurf", "aktiv", "abgeschlossen", "archiviert"] },
     protokollierungsart: { type: "string", enum: ["digital", "manuell"] },
     spielplanModus: { type: "string", enum: ["einfach", "doppelt"] },
   },
@@ -118,6 +118,36 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       };
       return insertDoc(aktualisiert);
     },
+  );
+
+  // Turnier abschliessen bzw. wieder oeffnen. Bewusst eigene Endpunkte statt eines rohen
+  // Status-PUT: nur die klar definierten Uebergaenge sind moeglich, und die Absicht ist im
+  // Aufruf ersichtlich. Erlaubt fuer Schreibzugriff (= "Turnierleitung": Admin,
+  // Manager-Ersteller oder vergebene turnierleitung/spielleitung-Berechtigung, siehe
+  // turnierZugriff.ts). Der Wechsel setzt nur das Status-Feld, alles andere bleibt erhalten.
+  async function statusUmschalten(
+    req: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply,
+    neuerStatus: TurnierStatus,
+  ) {
+    if (!requireAuth(req, reply)) return;
+    const bestehend = await findById<Turnier>(req.params.id);
+    if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+    if (!(await hatMindestens(bestehend, req.benutzer, "schreiben"))) {
+      return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+    }
+    return insertDoc({ ...bestehend, status: neuerStatus, geaendertAm: new Date().toISOString() });
+  }
+
+  // Beendet das Turnier: erscheint in der Uebersicht danach unter "Abgeschlossen".
+  app.post<{ Params: { id: string } }>("/turniere/:id/abschliessen", (req, reply) =>
+    statusUmschalten(req, reply, "abgeschlossen"),
+  );
+
+  // Macht ein abgeschlossenes Turnier wieder zu einem laufenden ("aktiv") - reversibel,
+  // nicht destruktiv, damit ein versehentlicher Abschluss korrigierbar bleibt.
+  app.post<{ Params: { id: string } }>("/turniere/:id/wieder-oeffnen", (req, reply) =>
+    statusUmschalten(req, reply, "aktiv"),
   );
 
   app.delete<{ Params: { id: string } }>("/turniere/:id", async (req, reply) => {

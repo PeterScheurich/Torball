@@ -88,6 +88,17 @@ export function deleteTurnier(id: string): Promise<void> {
   return anfrage(`/turniere/${id}`, { method: "DELETE" });
 }
 
+/** Turnier bewusst abschliessen (Status -> "abgeschlossen"). Nur mit Schreibzugriff
+ *  (Turnierleitung); danach erscheint es in der Uebersicht unter "Abgeschlossen". */
+export function turnierAbschliessen(id: string): Promise<Turnier> {
+  return anfrage(`/turniere/${id}/abschliessen`, { method: "POST" });
+}
+
+/** Ein abgeschlossenes Turnier wieder oeffnen (Status -> "aktiv"), reversibel. */
+export function turnierWiederOeffnen(id: string): Promise<Turnier> {
+  return anfrage(`/turniere/${id}/wieder-oeffnen`, { method: "POST" });
+}
+
 /** Optionale Freitextfelder duerfen explizit auf null gesetzt werden, um sie zu leeren -
  * JSON.stringify(undefined) liesse den Schluessel im Request-Body komplett verschwinden,
  * das Backend wuerde den bisherigen Wert dann faelschlich unveraendert stehen lassen. */
