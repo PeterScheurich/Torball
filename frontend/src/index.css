@@ -1171,3 +1171,192 @@ button:hover:not(:disabled) {
   padding-left: 12px;
   color: var(--text-muted);
 }
+
+/* --- Entwicklungs-Kanban-Board (nur Admins) --- */
+
+/* Das Anlege-/Bearbeiten-Formular darf breiter sein als das schmale Standard-form. */
+.kanban-formular form {
+  max-width: none;
+}
+.kanban-formular-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.kanban-formular-zeile .feld {
+  flex: 1 1 160px;
+}
+.kanban-formular-aktionen {
+  display: flex;
+  gap: 8px;
+}
+
+/* Vier Spalten nebeneinander; gestuft schmaler auf kleineren Schirmen. */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0 24px;
+}
+@media (max-width: 720px) {
+  .kanban-board {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .kanban-board {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kanban-spalte {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 0;
+}
+.kanban-spalte-titel {
+  font-size: 1rem;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kanban-anzahl {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 8px;
+}
+.kanban-leer {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.kanban-karte {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+/* Prioritaet als farbige linke Kante (zusaetzlich zum Text-Badge, nicht als alleinige Info). */
+.kanban-karte.prio-hoch {
+  border-left-color: var(--danger);
+}
+.kanban-karte.prio-mittel {
+  border-left-color: var(--accent);
+}
+.kanban-karte.prio-niedrig {
+  border-left-color: var(--border);
+}
+.kanban-karte-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.kanban-badge {
+  font-size: 0.72rem;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+}
+.kanban-karte-titel {
+  font-size: 0.95rem;
+  margin: 0 0 4px;
+}
+.kanban-karte-text {
+  font-size: 0.88rem;
+  margin: 0 0 6px;
+  white-space: pre-wrap;
+}
+.kanban-karte-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
+.kanban-karte-aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.kanban-karte-aktionen button {
+  font-size: 0.8rem;
+  padding: 2px 8px;
+}
+.kanban-loeschen {
+  color: var(--danger);
+}
+
+.kanban-sync {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.kanban-sync-aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Import-Vorschau mit Konfliktauflösung */
+.kanban-import-vorschau {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-subtle);
+}
+.kanban-konflikte {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kanban-konflikt fieldset {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin: 0;
+  padding: 8px 12px 12px;
+  background: var(--bg);
+}
+.kanban-konflikt legend {
+  font-weight: 600;
+  padding: 0 6px;
+}
+.kanban-konflikt-seiten {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 560px) {
+  .kanban-konflikt-seiten {
+    grid-template-columns: 1fr;
+  }
+}
+/* Auswahlseite: Radio + zweizeilige Beschreibung nebeneinander, gut anklickbar. */
+.kanban-konflikt-seite {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.kanban-konflikt-seite:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--bg-subtle);
+}

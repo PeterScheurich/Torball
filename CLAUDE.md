@@ -297,6 +297,21 @@ die UI fehlte). **Admin kann fremde 2FA deaktivieren** (admin-only Route
 `POST /benutzer/:id/2fa/deaktivieren`, eigenes Konto ausgenommen) – für
 ausgesperrte Nutzer mit verlorener Authenticator-App.
 
+**Entwicklungs-Kanban-Board (admin-only, kein Turnier-Bezug):** eigenständiges
+Werkzeug zur Organisation der Weiterentwicklung, `docType: "kanbanKarte"` in
+derselben CouchDB (`shared/src/types/kanban.ts`, `backend/src/routes/kanban.ts`,
+`frontend/src/pages/KanbanBoardPage.tsx`, Route `/entwicklungs-board`, Menü nur
+für Admins). Abgleich Dev↔Prod ohne zentralen Server per **JSON-Export/-Import**:
+Export überall, schreibender **Import nur wenn `KANBAN_SYNC=true`** (Env-Flag, nur
+Dev-Instanz) – sonst 403 + Button ausgeblendet. Import ist **zweistufig**
+(`/kanban/import/vorschau` + `/kanban/import/anwenden`): Merge je stabiler
+`kanbanId`, **kein automatisches Last-Write-Wins** – inhaltliche Konflikte werden
+im UI je Karte zur Entscheidung vorgelegt (lokal/eingehend), der neuere Stand ist
+nur markiert. Reine Logik + Tests in
+`backend/src/kanban/importMerge.ts(.test.ts)`. Details und späterer Umstieg auf
+CouchDB-Replikation: `docs/kanban-board.md`. Löschungen syncen bewusst nicht
+(kein Tombstone).
+
 **Fachliche Referenz:** `docs/torball_gesamtspezifikation.md` ist die
 verbindliche Spezifikation für Geschäftsregeln; bei Unklarheiten dort
 nachschlagen statt zu raten. `docs/Protokolle/` enthält datierte

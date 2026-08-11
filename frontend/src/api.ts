@@ -2,6 +2,10 @@ import type {
   Benutzer,
   Dichte,
   GlobaleRolle,
+  KanbanKarte,
+  KanbanKategorie,
+  KanbanPrioritaet,
+  KanbanSpalte,
   Klassifizierung,
   MannschaftImTurnier,
   Protokollierungsart,
@@ -647,4 +651,81 @@ export interface OeffentlicheTurnierseite {
 
 export function getOeffentlicheTurnierseite(turnierId: string): Promise<OeffentlicheTurnierseite> {
   return anfrage(`/oeffentlich/turniere/${turnierId}`);
+}
+
+// --- Kanban-Board (nur Admins, Entwicklungs-Organisation) ---
+
+export interface KanbanBoard {
+  karten: KanbanKarte[];
+  /** true, wenn auf dieser Instanz importiert werden darf (nur Dev, KANBAN_SYNC=true). */
+  syncAktiv: boolean;
+}
+
+export interface KanbanKarteEingabe {
+  titel: string;
+  /** null sendet, um eine gesetzte Beschreibung gezielt zu leeren (siehe api.ts oben). */
+  beschreibung?: string | null;
+  spalte: KanbanSpalte;
+  kategorie: KanbanKategorie;
+  prioritaet: KanbanPrioritaet;
+}
+
+export interface KanbanKonflikt {
+  kanbanId: string;
+  lokal: KanbanKarte;
+  eingehend: KanbanKarte;
+}
+
+export interface KanbanImportVorschau {
+  neu: KanbanKarte[];
+  identisch: number;
+  konflikte: KanbanKonflikt[];
+  uebersprungen: number;
+}
+
+export type KanbanKonfliktWahl = "lokal" | "eingehend";
+
+export interface KanbanImportErgebnis {
+  eingefuegt: number;
+  ueberschrieben: number;
+  lokalBehalten: number;
+  identisch: number;
+  offen: number;
+  uebersprungen: number;
+}
+
+export function getKanbanBoard(): Promise<KanbanBoard> {
+  return anfrage("/kanban");
+}
+
+export function createKanbanKarte(daten: KanbanKarteEingabe): Promise<KanbanKarte> {
+  return anfrage("/kanban/karten", { method: "POST", body: JSON.stringify(daten) });
+}
+
+export function updateKanbanKarte(id: string, daten: KanbanKarteEingabe): Promise<KanbanKarte> {
+  return anfrage(`/kanban/karten/${id}`, { method: "PUT", body: JSON.stringify(daten) });
+}
+
+export function kanbanKarteVerschieben(id: string, richtung: "hoch" | "runter"): Promise<KanbanKarte[]> {
+  return anfrage(`/kanban/karten/${id}/position`, {
+    method: "PUT",
+    body: JSON.stringify({ richtung }),
+  });
+}
+
+export function deleteKanbanKarte(id: string): Promise<void> {
+  return anfrage(`/kanban/karten/${id}`, { method: "DELETE" });
+}
+
+/** Schritt 1: ermittelt Neu/Identisch/Konflikte, ohne zu schreiben. */
+export function kanbanImportVorschau(karten: KanbanKarte[]): Promise<KanbanImportVorschau> {
+  return anfrage("/kanban/import/vorschau", { method: "POST", body: JSON.stringify({ karten }) });
+}
+
+/** Schritt 2: schreibt neue Karten und wendet die je Konflikt getroffenen Entscheidungen an. */
+export function kanbanImportAnwenden(
+  karten: KanbanKarte[],
+  wahlen: Record<string, KanbanKonfliktWahl>,
+): Promise<KanbanImportErgebnis> {
+  return anfrage("/kanban/import/anwenden", { method: "POST", body: JSON.stringify({ karten, wahlen }) });
 }

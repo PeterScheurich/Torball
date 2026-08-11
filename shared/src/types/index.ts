@@ -16,6 +16,7 @@ export * from "./dokumentAnhang";
 export * from "./ergebnis";
 export * from "./berechtigung";
 export * from "./auditLog";
+export * from "./kanban";
 
 import type { Benutzer } from "./benutzer";
 import type { Session } from "./session";
@@ -34,6 +35,7 @@ import type { DokumentAnhang } from "./dokumentAnhang";
 import type { ErgebnisToken, ErgebnisAenderung } from "./ergebnis";
 import type { TurnierBerechtigung } from "./berechtigung";
 import type { AuditLogEintrag } from "./auditLog";
+import type { KanbanKarte } from "./kanban";
 
 /**
  * Discriminated Union aller CouchDB-Dokumenttypen (Unterscheidung über
@@ -58,4 +60,5 @@ export type TorballDokument =
   | ErgebnisToken
   | ErgebnisAenderung
   | TurnierBerechtigung
-  | AuditLogEintrag;
+  | AuditLogEintrag
+  | KanbanKarte;

@@ -17,6 +17,7 @@ import { ProfilPage } from "./pages/ProfilPage";
 import { BenutzerverwaltungPage } from "./pages/BenutzerverwaltungPage";
 import { StammdatenPage } from "./pages/StammdatenPage";
 import { StandardregelnPage } from "./pages/StandardregelnPage";
+import { KanbanBoardPage } from "./pages/KanbanBoardPage";
 import { EinstellungenPage } from "./pages/EinstellungenPage";
 import { HilfePage } from "./pages/HilfePage";
 import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
@@ -82,6 +83,11 @@ function Kopfzeile() {
                   Standardregeln
                 </Link>
               )}
+              {benutzer?.globaleRolle === "admin" && (
+                <Link to="/entwicklungs-board" className="kopfzeile-menue-eintrag" role="menuitem">
+                  Entwicklungs-Board
+                </Link>
+              )}
             </KopfzeilenMenue>
           )}
           <NavLink
@@ -138,6 +144,7 @@ function App() {
             <Route path="/benutzerverwaltung" element={<BenutzerverwaltungPage />} />
             <Route path="/stammdaten" element={<StammdatenPage />} />
             <Route path="/standardregeln" element={<StandardregelnPage />} />
+            <Route path="/entwicklungs-board" element={<KanbanBoardPage />} />
             <Route path="/turniere/neu" element={<TurnierAnlegenPage />} />
             <Route path="/turniere/:id/regeln-erfassen" element={<SpielregelnErfassenPage />} />
             <Route path="/turniere/:id/mannschaften-erfassen" element={<MannschaftenErfassenPage />} />

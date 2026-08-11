@@ -17,6 +17,7 @@ import { ergebnisRoutes } from "./routes/ergebnis";
 import { ergebnisTokenRoutes } from "./routes/ergebnisToken";
 import { oeffentlichRoutes } from "./routes/oeffentlich";
 import { systemkonfigurationRoutes } from "./routes/systemkonfiguration";
+import { kanbanRoutes } from "./routes/kanban";
 
 const server = Fastify({ logger: true });
 
@@ -48,6 +49,7 @@ const start = async () => {
     server.register(ergebnisTokenRoutes);
     server.register(oeffentlichRoutes);
     server.register(systemkonfigurationRoutes);
+    server.register(kanbanRoutes);
 
     await ensureIndexes();
     await server.listen({ port: 3000, host: "0.0.0.0" });
