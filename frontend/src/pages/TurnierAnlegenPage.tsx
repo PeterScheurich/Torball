@@ -42,6 +42,10 @@ export function TurnierAnlegenPage() {
       <p>Schritt 1 von 3: Turnier anlegen</p>
       <h1>Neues Turnier</h1>
 
+      <p className="pflicht-legende">
+        <span className="stern">*</span> Pflichtfeld
+      </p>
+
       <form onSubmit={anlegen}>
         <div className="feld">
           <label htmlFor="name">Name</label>
