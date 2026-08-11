@@ -240,6 +240,11 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
 - Vor dem Committen: `npm run build`, `npm run lint --workspace=frontend`,
   `npm run test --workspace=backend` – alle drei müssen grün sein.
 - Commit-Messages auf Deutsch, beschreiben das *Warum*, nicht nur das Was.
+- **Keine Zugangsdaten/Secrets in getrackte Dateien** (CLAUDE.md, Doku, Code,
+  Tests …) – das Repo wird geteilt/synchronisiert. Test-Logins, Passwörter,
+  Tokens, API-Keys gehören in den lokalen Claude-Memory-Ordner (außerhalb des
+  Repos) bzw. in die git-ignorierte `backend/.env`, nie ins Repository. Vor dem
+  Committen im Zweifel kurz prüfen (`git grep`/`git log -S` nach dem Geheimwert).
 
 ## Testdaten
 
