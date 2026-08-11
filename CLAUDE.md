@@ -325,7 +325,22 @@ finalisierte Ergebnisse werden dabei auf „Fertig" (`abgeschlossen`) gesetzt.
 `turnierGesperrt()` an den Schreib-Pfaden von turnier/mannschaft/spieler/
 schiedsrichter/spiel/spielplan/ergebnis) – bewusst NICHT gesperrt bleiben die
 Öffentlich-Freigabe (`oeffentlich*`/`spielernamenOeffentlich`, Whitelist im
-turnier-PUT) und das Teilen (`turnierBerechtigung`). Details:
+turnier-PUT) und das Teilen (`turnierBerechtigung`); beide ändern nichts am
+Turnier selbst. **Die Sperre wird im Frontend durchgängig gespiegelt** (nicht nur
+serverseitig): `TurnierVerwaltenPage` berechnet `istGesperrt` aus dem Status und
+deaktiviert die Turnierdaten-Eingaben aller Reiter – Übersicht (außer den
+Freigabe-Checkboxen + „Wieder öffnen"), Regeln-Formular, sowie die Tab-Komponenten
+über eine `gesperrt`-Prop: `MannschaftenListe` (gezielt, damit das **Kader-
+Ausklappen zum Ansehen** aktiv bleibt), `SchiedsrichterVerwaltung` (ganzer Inhalt
+in einem `disabled`-`<fieldset>`), `SpielplanVerwaltung` (Reihenfolge/Zeit/Status
+sind schon über den Spiel-Status gesperrt, zusätzlich die Schiedsrichter-
+Einteilung) und `ErgebnisVerwaltung` (Ergebnisfelder ohnehin über
+`ergebnisAbgeschlossen`; zusätzlich „Alle abschließen" deaktiviert und die externe
+Erfassungslink-Sektion ausgeblendet). **Beim Abschließen wird zudem ein aktiver
+Ergebnis-Token widerrufen** (`abschliessen`-Endpunkt), damit der externe Link
+zurückgesetzt ist. Prüf-Hinweis: über ein `disabled`-`<fieldset>` gesperrte
+Controls melden `.disabled === false` (das IDL-Attribut spiegelt nur das eigene
+Attribut) – effektive Sperre mit `el.matches(':disabled')` prüfen. Details:
 `docs/Protokolle/2026-08-11-turnier-abschliessen.md`.
 
 **Öffentliche Regeln:** fünftes `oeffentlich*`-Flag `oeffentlichRegeln` – zeigt

@@ -212,6 +212,10 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
   }
 
   const erfassungsLink = tokenWert ? `${window.location.origin}/ergebnis-erfassung/${tokenWert}` : undefined;
+  // Abgeschlossenes Turnier: Ergebnis-Aktionen sperren. Die einzelnen Ergebnisfelder sind ohnehin
+  // ueber ergebnisAbgeschlossen deaktiviert; zusaetzlich das "Alle abschliessen" sinnlos und der
+  // externe Erfassungslink wird beim Abschliessen serverseitig widerrufen (hier nicht mehr anbieten).
+  const istGesperrt = turnier.status === "abgeschlossen" || turnier.status === "archiviert";
 
   return (
     <div>
@@ -250,6 +254,20 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
                       <td>{index + 1}</td>
                       <td>{nameVon(spiel.mannschaftAId)}</td>
                       <td>
+                        {/* "n. a." fuer Mannschaft A bewusst VOR dem Feld: sonst laege der Button beim
+                            Tabben zwischen den beiden Tore-Feldern und muesste uebersprungen werden.
+                            So flankieren beide "n. a."-Knoepfe das Eingabepaar (A : B) und Tab springt
+                            von Feld A direkt auf Feld B. */}
+                        {!spiel.ergebnisAbgeschlossen && (
+                          <button
+                            type="button"
+                            className="na-button na-vor"
+                            onClick={() => nichtAngetreten(spiel, "a")}
+                            title={`${nameVon(spiel.mannschaftAId)} nicht angetreten`}
+                          >
+                            n. a.
+                          </button>
+                        )}
                         <label className="sr-only" htmlFor={`ergebnisA-${spiel._id}`}>
                           Tore {nameVon(spiel.mannschaftAId)}
                         </label>
@@ -264,16 +282,6 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
                           onChange={(e) => setFeld(spiel._id, "a", e.target.value)}
                           onBlur={() => beiVerlassen(spiel)}
                         />
-                        {!spiel.ergebnisAbgeschlossen && (
-                          <button
-                            type="button"
-                            className="na-button"
-                            onClick={() => nichtAngetreten(spiel, "a")}
-                            title={`${nameVon(spiel.mannschaftAId)} nicht angetreten`}
-                          >
-                            n. a.
-                          </button>
-                        )}
                         {" : "}
                         <label className="sr-only" htmlFor={`ergebnisB-${spiel._id}`}>
                           Tore {nameVon(spiel.mannschaftBId)}
@@ -345,7 +353,7 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
               </tbody>
             </table>
           </div>
-          <button type="button" onClick={abschliessenAlle}>
+          <button type="button" onClick={abschliessenAlle} disabled={istGesperrt}>
             Alle erfassten Ergebnisse abschließen
           </button>
         </>
@@ -393,30 +401,37 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
       )}
 
       <h2>Ergebniserfassung ohne Anmeldung</h2>
-      <p>
-        Wer diesen Link hat, kann Endergebnisse dieses Turniers eintragen - ohne eigenen Account. Sinnvoll, um die
-        Ergebniserfassung an die Spielleitung vor Ort weiterzugeben.
-      </p>
-      {erfassungsLink ? (
+      {istGesperrt ? (
         <p>
-          <input type="text" readOnly value={erfassungsLink} onFocus={(e) => e.target.select()} />
-          <br />
-          <button type="button" onClick={() => linkKopieren(erfassungsLink)}>
-            Link kopieren
-          </button>{" "}
-          <button type="button" onClick={linkWiderrufen}>
-            Link widerrufen
-          </button>
-          {linkHinweis && <> {linkHinweis}</>}
+          Das Turnier ist abgeschlossen – der externe Erfassungslink ist deaktiviert. Zum Erzeugen eines neuen Links
+          das Turnier zuerst wieder öffnen.
         </p>
-      ) : null}
-      {erfassungsLink && (
-        <QrCode text={erfassungsLink} dateiname={`Ergebniserfassung ${turnier.name}`} />
-      )}
-      {!erfassungsLink && (
-        <button type="button" onClick={linkErzeugen}>
-          Link erzeugen
-        </button>
+      ) : (
+        <>
+          <p>
+            Wer diesen Link hat, kann Endergebnisse dieses Turniers eintragen - ohne eigenen Account. Sinnvoll, um die
+            Ergebniserfassung an die Spielleitung vor Ort weiterzugeben.
+          </p>
+          {erfassungsLink ? (
+            <p>
+              <input type="text" readOnly value={erfassungsLink} onFocus={(e) => e.target.select()} />
+              <br />
+              <button type="button" onClick={() => linkKopieren(erfassungsLink)}>
+                Link kopieren
+              </button>{" "}
+              <button type="button" onClick={linkWiderrufen}>
+                Link widerrufen
+              </button>
+              {linkHinweis && <> {linkHinweis}</>}
+            </p>
+          ) : null}
+          {erfassungsLink && <QrCode text={erfassungsLink} dateiname={`Ergebniserfassung ${turnier.name}`} />}
+          {!erfassungsLink && (
+            <button type="button" onClick={linkErzeugen}>
+              Link erzeugen
+            </button>
+          )}
+        </>
       )}
     </div>
   );

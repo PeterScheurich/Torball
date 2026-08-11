@@ -530,6 +530,12 @@ form {
   vertical-align: middle;
 }
 
+/* "n. a."-Knopf vor dem Tore-Feld (Mannschaft A): Abstand nach rechts statt links. */
+.na-vor {
+  margin-left: 0;
+  margin-right: 3px;
+}
+
 /* Konflikt-Auflösung: die zwei Knoepfe ("Vorhandenes uebernehmen" / "Mit meinem Wert
    ueberschreiben") unter der Konflikt-Warnung. */
 .konflikt-aktionen {

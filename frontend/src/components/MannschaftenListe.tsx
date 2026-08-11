@@ -52,9 +52,18 @@ interface Props {
   spielplanVersion?: number;
   /** Turnier-Regel „max. sehende Spieler je Mannschaft" - fuer den Kader-Hinweis (durchgereicht). */
   maxSehendeSpieler?: number;
+  /** Turnier abgeschlossen: Bearbeitung sperren (Name/Bundesland/Betreuer/Kader/Reihenfolge/Anlegen/
+   *  Loeschen). Das Auf-/Zuklappen des Kaders bleibt moeglich, damit die Daten ansehbar sind. */
+  gesperrt?: boolean;
 }
 
-export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0, maxSehendeSpieler }: Props) {
+export function MannschaftenListe({
+  turnierId,
+  onGeaendert,
+  spielplanVersion = 0,
+  maxSehendeSpieler,
+  gesperrt = false,
+}: Props) {
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
   const [neueMannschaft, setNeueMannschaft] = useState("");
@@ -333,7 +342,7 @@ export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0
                 <td className="reihenfolge-zelle">
                   <span
                     className="ziehpunkt"
-                    draggable
+                    draggable={!gesperrt}
                     onDragStart={() => setZiehIndex(i)}
                     onDragEnd={() => {
                       setZiehIndex(null);
@@ -348,7 +357,7 @@ export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0
                     type="button"
                     className="symbol-button"
                     onClick={() => anNeuePositionVerschieben(i, i - 1)}
-                    disabled={i === 0}
+                    disabled={i === 0 || gesperrt}
                     aria-label={`${m.name} nach oben verschieben`}
                   >
                     ▲
@@ -357,7 +366,7 @@ export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0
                     type="button"
                     className="symbol-button"
                     onClick={() => anNeuePositionVerschieben(i, i + 1)}
-                    disabled={i === mannschaftenSortiert.length - 1}
+                    disabled={i === mannschaftenSortiert.length - 1 || gesperrt}
                     aria-label={`${m.name} nach unten verschieben`}
                   >
                     ▼
@@ -369,6 +378,7 @@ export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0
                   </label>
                   <input
                     id={`name-${m._id}`}
+                    disabled={gesperrt}
                     value={bearbeitung[m._id]?.name ?? ""}
                     onChange={(e) =>
                       setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], name: e.target.value } }))
@@ -386,6 +396,7 @@ export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0
                   <input
                     id={`bundesland-${m._id}`}
                     list="bundeslaender-liste"
+                    disabled={gesperrt}
                     value={bearbeitung[m._id]?.bundesland ?? ""}
                     onChange={(e) =>
                       setBearbeitung((b) => ({ ...b, [m._id]: { ...b[m._id], bundesland: e.target.value } }))
@@ -417,6 +428,7 @@ export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0
                     type="button"
                     className="symbol-button"
                     onClick={() => loeschen(m._id)}
+                    disabled={gesperrt}
                     aria-label={`${m.name} löschen`}
                     title="Löschen"
                   >
@@ -427,6 +439,9 @@ export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0
               {offeneKader.has(m._id) && (
                 <tr>
                   <td colSpan={4} id={`kader-${m._id}`} className="kader-zelle">
+                    {/* Ansehen bleibt moeglich; bei abgeschlossenem Turnier sind Betreuer-Felder
+                        und der Kader (SpielerKader) ueber das disabled-<fieldset> gesperrt. */}
+                    <fieldset className="blank-fieldset" disabled={gesperrt}>
                     <div className="betreuer-bereich">
                       {BETREUER_FELDER.map(({ nameKey, schiriKey, label }) => {
                         const nameWert = bearbeitung[m._id]?.[nameKey] ?? "";
@@ -474,6 +489,7 @@ export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0
                       onAnzahlGeaendert={(anzahl) => setSpielerAnzahl((b) => ({ ...b, [m._id]: anzahl }))}
                       maxSehendeSpieler={maxSehendeSpieler}
                     />
+                    </fieldset>
                   </td>
                 </tr>
               )}
@@ -491,6 +507,7 @@ export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0
       </datalist>
 
       <form onSubmit={anlegen}>
+        <fieldset className="blank-fieldset" disabled={gesperrt}>
         {/* Auswahl bewusst immer anzeigen (auch wenn leer), damit die Stammdaten-Uebernahme
             auffindbar bleibt und ein leerer Stand erklaert wird - sonst wirkt es, als sei die
             Funktion verschwunden. Ein Team darf je Turnier nur einmal auftreten, daher sind
@@ -547,6 +564,7 @@ export function MannschaftenListe({ turnierId, onGeaendert, spielplanVersion = 0
           />
         </div>
         <button type="submit">Mannschaft anlegen</button>
+        </fieldset>
       </form>
     </div>
   );

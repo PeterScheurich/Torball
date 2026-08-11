@@ -22,6 +22,8 @@ function ausText(s: SchiedsrichterImTurnier): TextBearbeitung {
 
 interface Props {
   turnierId: string;
+  /** Turnier abgeschlossen: alle Eingaben sperren (nur Ansicht). */
+  gesperrt?: boolean;
 }
 
 /**
@@ -30,7 +32,7 @@ interface Props {
  * ist per Radio-Auswahl Turnierleitung; die Mannschaftszuordnung dient spaeter der
  * Schiedsrichter-Einteilung (kein Pfeifen der eigenen Mannschaft).
  */
-export function SchiedsrichterVerwaltung({ turnierId }: Props) {
+export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props) {
   const [schiedsrichter, setSchiedsrichter] = useState<SchiedsrichterImTurnier[]>([]);
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [bearbeitung, setBearbeitung] = useState<Record<string, TextBearbeitung>>({});
@@ -186,6 +188,9 @@ export function SchiedsrichterVerwaltung({ turnierId }: Props) {
       </p>
       {fehler && <p role="alert">{fehler}</p>}
 
+      {/* Bei abgeschlossenem Turnier sind alle Eingaben ueber das disabled-<fieldset> gesperrt
+          (Tabelle + Anlege-Formular) - zum Bearbeiten erst wieder oeffnen. */}
+      <fieldset className="blank-fieldset" disabled={gesperrt}>
       {schiedsrichterSortiert.length === 0 ? (
         <p>Noch keine Schiedsrichter erfasst.</p>
       ) : (
@@ -365,6 +370,7 @@ export function SchiedsrichterVerwaltung({ turnierId }: Props) {
         </label>
         <button type="submit">Schiedsrichter hinzufügen</button>
       </form>
+      </fieldset>
     </div>
   );
 }

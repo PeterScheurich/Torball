@@ -100,6 +100,40 @@ Backend-Enforcement + Frontend-Verhalten im Browser end-to-end geprüft (Abschli
 bei fehlenden Ergebnissen; Inhaltsänderung am abgeschlossenen Turnier 409; Freigabe erlaubt;
 Banner sichtbar).
 
+## Nachtrag 2026-08-12: Frontend-Sperre durchgängig + Token-Reset
+
+Bis hierhin war die Sperre nur **serverseitig** durchgesetzt – die Eingabefelder waren im UI weiter
+bedienbar und liefen erst beim Speichern in einen 409. Auf Nutzerwunsch wird die Sperre jetzt im
+**Frontend durchgängig gespiegelt**, damit gar nichts mehr editierbar aussieht:
+
+- `TurnierVerwaltenPage` berechnet `istGesperrt` aus dem Status und deaktiviert die
+  Turnierdaten-Eingaben der **Übersicht** (Name, Modus, Protokollierung, Ort/Kontakt, Zusatzinfo)
+  sowie das **Regeln**-Formular. **Bewusst weiter aktiv:** die Öffentlich-Freigabe-Checkboxen und
+  „Wieder öffnen" (ändern nichts am Turnier bzw. heben die Sperre auf) – konsistent mit der
+  Backend-Whitelist.
+- Die Tab-Komponenten bekommen eine `gesperrt`-Prop: `MannschaftenListe` sperrt gezielt
+  (Name/Bundesland/Betreuer/Kader/Reihenfolge/Anlegen/Löschen), lässt aber das **Kader-Ausklappen
+  zum Ansehen** aktiv; `SchiedsrichterVerwaltung` kapselt ihren ganzen Inhalt in ein
+  `disabled`-`<fieldset>`; `SpielplanVerwaltung` sperrt zusätzlich zur ohnehin über den Spiel-Status
+  gesperrten Reihenfolge-/Zeit-Steuerung die **Schiedsrichter-Einteilung** (Auto-Zuordnen + Dropdown).
+- `ErgebnisVerwaltung`: die Ergebnisfelder sind ohnehin über `ergebnisAbgeschlossen` gesperrt;
+  zusätzlich „Alle abschließen" deaktiviert und die **externe Erfassungslink-Sektion** ausgeblendet.
+
+**Token-Reset:** `POST /turniere/:id/abschliessen` widerruft jetzt zusätzlich einen aktiven
+`ergebnisToken`, damit der externe Erfassungslink beim Abschließen zurückgesetzt ist (die
+Token-Erfassung würde an bereits finalisierten Ergebnissen ohnehin scheitern, aber der Link soll
+gar nicht mehr auflösen).
+
+**Kleiner UI-Nebenpunkt (gleiche Sitzung):** In der Ergebniserfassung sitzt der „n. a."-Knopf für
+Mannschaft A jetzt **vor** dem Tore-Feld (beide „n. a."-Knöpfe flankieren das Eingabepaar), damit
+beim Tabben von Feld A direkt Feld B folgt, statt den Knopf überspringen zu müssen.
+
+Prüf-Hinweis für die Browser-Verifikation: Über ein `disabled`-`<fieldset>` gesperrte Controls
+melden `element.disabled === false` (das IDL-Attribut spiegelt nur das **eigene** Attribut) – die
+effektive Sperre prüft man mit `element.matches(':disabled')`. Alles end-to-end gegen die laufende
+Instanz geprüft (Übersicht/Mannschaften/Schiedsrichter effektiv `:disabled`, Freigabe-Checkbox +
+Kader-Toggle aktiv, „Alle abschließen" deaktiviert, Link-Sektion ausgeblendet, Tab-Sprung A→B).
+
 ## Offener Folgepunkt
 
 Die **Spezifikation Abschnitt 10.3** (Statustabelle + „nur durch Admin") ist noch nicht auf

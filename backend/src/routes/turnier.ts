@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type {
+  ErgebnisToken,
   MannschaftImTurnier,
   Protokollierungsart,
   SchiedsrichterImTurnier,
@@ -18,8 +19,9 @@ import { aktuelleTurnierregeln } from "../konfiguration";
 import { berechneStartzeit } from "../spielplan/zeitplanung";
 
 // Felder, die auch bei einem abgeschlossenen Turnier noch geaendert werden duerfen (Nutzer-Vorgabe:
-// Veroeffentlichen bleibt moeglich, ohne das Turnier erst wieder oeffnen zu muessen). Alle uebrigen
-// Felder sind bei Status "abgeschlossen"/"archiviert" gesperrt.
+// die reine Oeffentlich-Freigabe aendert nichts am Turnier selbst und bleibt moeglich, ohne es erst
+// wieder oeffnen zu muessen). Alle uebrigen Felder sind bei Status "abgeschlossen"/"archiviert"
+// gesperrt.
 const BEI_ABSCHLUSS_ERLAUBTE_FELDER: ReadonlyArray<keyof Turnier> = [
   "oeffentlichTurnierinfos",
   "oeffentlichAnfahrtDokumente",
@@ -220,6 +222,18 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       if (!s.ergebnisAbgeschlossen) {
         await insertDoc({ ...s, ergebnisAbgeschlossen: true, status: "abgeschlossen" });
       }
+    }
+
+    // Externen Ergebnis-Erfassungslink zuruecksetzen: fuer ein abgeschlossenes Turnier soll kein
+    // aktiver Token-Link mehr existieren (die Token-Erfassung wuerde ohnehin an bereits
+    // finalisierten Ergebnissen scheitern, aber der Link soll auch nicht mehr aufloesen).
+    const aktiveTokens = await findAllBySelector<ErgebnisToken>({
+      docType: "ergebnisToken",
+      turnierId: bestehend._id,
+      widerrufen: false,
+    });
+    for (const t of aktiveTokens) {
+      await insertDoc({ ...t, widerrufen: true, widerrufenAm: new Date().toISOString() });
     }
 
     return insertDoc({ ...bestehend, status: "abgeschlossen", geaendertAm: new Date().toISOString() });

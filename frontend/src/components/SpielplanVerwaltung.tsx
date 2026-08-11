@@ -127,9 +127,13 @@ interface Props {
   turnierId: string;
   /** Wird nach jedem Laden/Aendern mit der aktuellen Spieleliste aufgerufen. */
   onGeaendert?: (spiele: Spiel[]) => void;
+  /** Turnier abgeschlossen: Bearbeitung sperren. Die Reihenfolge-/Zeit-/Status-Steuerung ist bei
+   *  abgeschlossenem Turnier ohnehin ueber den Spiel-Status gesperrt (keine "geplant"-Spiele mehr);
+   *  zusaetzlich muss die Schiedsrichter-Einteilung (Auto-Zuordnen + Dropdown) gesperrt werden. */
+  gesperrt?: boolean;
 }
 
-export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
+export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }: Props) {
   const [turnier, setTurnier] = useState<Turnier | undefined>();
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [spiele, setSpiele] = useState<Spiel[]>([]);
@@ -744,7 +748,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
               <button
                 type="button"
                 onClick={schiedsrichterVorschlagen}
-                disabled={schiedsrichter.length === 0}
+                disabled={schiedsrichter.length === 0 || gesperrt}
                 title={
                   schiedsrichter.length === 0
                     ? "Erst im Tab Schiedsrichter Personen anlegen."
@@ -798,6 +802,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert }: Props) {
                               <select
                                 id={`spiel-sr-${s._id}`}
                                 className="spiel-schiri-select"
+                                disabled={gesperrt}
                                 value={s.schiedsrichterId ?? ""}
                                 onChange={(e) => schiedsrichterFuerSpielAendern(s._id, e.target.value || null)}
                               >
