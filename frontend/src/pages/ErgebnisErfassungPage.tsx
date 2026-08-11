@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ergebnisPerTokenSetzen, getErgebnisErfassung, type ErgebnisErfassungDaten } from "../api";
 import { useErgebnisEingaben } from "../useErgebnisEingaben";
+import { KontextHilfe } from "../components/KontextHilfe";
 
 /** Intervall fuers automatische Aktualisieren (damit Ergebnisse der jeweils anderen Seite erscheinen). */
 const AKTUALISIER_INTERVALL_MS = 10_000;
@@ -128,6 +129,15 @@ export function ErgebnisErfassungPage() {
     <>
       <h1>{daten.turnierName}</h1>
       <p>Angemeldet als „{name}".</p>
+
+      <KontextHilfe>
+        <p>
+          Trage für jedes Spiel die Tore beider Mannschaften ein und speichere die Zeile mit dem 💾-Knopf. Die Liste
+          aktualisiert sich automatisch, sodass Eingaben von anderen Geräten von selbst erscheinen.
+        </p>
+        <p>Dein Name wird bei jeder Eingabe mitprotokolliert.</p>
+        <p>Ein bereits abgeschlossenes Ergebnis kann nur noch die Turnierleitung ändern.</p>
+      </KontextHilfe>
 
       {fehler && <p role="alert">{fehler}</p>}
       {hinweis && <p>{hinweis}</p>}

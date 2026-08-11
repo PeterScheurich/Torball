@@ -31,6 +31,27 @@ function Kopfzeile() {
     navigate("/login");
   }
 
+  // Oeffentliche/externe Seiten (oeffentliche Turnierseite, Ergebnis-Erfassung per Link) sind fuer
+  // nicht angemeldete Besucher gedacht. Dort blenden wir die App-Navigation (inkl. globaler Hilfe)
+  // bewusst aus und zeigen die Marke als reinen Text - ein Klick darauf fuehrte sonst ueber "/" in
+  // die Anmeldung (GeschuetzteRoute). Angemeldete Nutzer (z.B. Vorschau durch die Turnierleitung)
+  // behalten die volle Kopfzeile.
+  const oeffentlicheAnsicht =
+    /^\/turniere\/[^/]+\/oeffentlich$/.test(pathname) || pathname.startsWith("/ergebnis-erfassung/");
+  if (oeffentlicheAnsicht && !benutzer) {
+    return (
+      <header>
+        <nav>
+          <span className="marke">
+            <img className="logo logo-hell" src="/images/torball-logo.svg" alt="" width="32" height="32" />
+            <img className="logo logo-dunkel" src="/images/torball-logo-dark.svg" alt="" width="32" height="32" />
+            Torball-Turniere
+          </span>
+        </nav>
+      </header>
+    );
+  }
+
   return (
     <header>
       <nav>

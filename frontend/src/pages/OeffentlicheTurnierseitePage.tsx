@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { getOeffentlicheTurnierseite, type OeffentlicheTurnierseite, type OeffentlichesSpiel } from "../api";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
+import { QrCode } from "../components/QrCode";
+import { KontextHilfe } from "../components/KontextHilfe";
 
 /** Intervall fuers automatische Aktualisieren der oeffentlichen Seite (Live-Ergebnisse/-Spielplan fuer Zuschauer). */
 const AKTUALISIER_INTERVALL_MS = 15_000;
@@ -150,9 +152,30 @@ export function OeffentlicheTurnierseitePage() {
     );
   }
 
+  const oeffentlicheSeiteUrl = `${window.location.origin}/turniere/${turnierId}/oeffentlich`;
+
   return (
     <>
       <h1>{daten.name}</h1>
+
+      <KontextHilfe>
+        <p>
+          Diese Seite zeigt die öffentlich freigegebenen Informationen zu diesem Turnier. Je nach Freigabe erscheinen
+          oben Reiter für Turnierinfos, Anfahrt, Spielplan und Ergebnisse.
+        </p>
+        <p>Die Seite aktualisiert sich automatisch – neue Ergebnisse und Änderungen erscheinen von selbst.</p>
+        <p>Über den QR-Code kannst du diese Seite direkt auf dem Smartphone öffnen.</p>
+      </KontextHilfe>
+
+      <details className="qr-aufklappen">
+        <summary>
+          <span aria-hidden="true">📱</span> Diese Seite auf dem Smartphone öffnen
+        </summary>
+        <div className="qr-aufklappen-inhalt">
+          <p className="feld-hinweis">Mit der Kamera bzw. einer QR-App vom Bildschirm abscannen.</p>
+          <QrCode text={oeffentlicheSeiteUrl} dateiname={`turnier-${daten.name}`} zeigeDownload={false} />
+        </div>
+      </details>
 
       {verfuegbareTabs.length === 0 || !aktiverTab ? (
         <p>Diese Turnierseite ist aktuell nicht öffentlich freigegeben.</p>

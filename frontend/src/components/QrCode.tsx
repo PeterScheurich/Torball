@@ -6,6 +6,10 @@ interface Props {
   text: string;
   /** Menschlicher Basis-Dateiname fuer den Download; wird fuer den Dateinamen bereinigt. */
   dateiname: string;
+  /** Download-Links (SVG/PNG) anzeigen. Default true. Auf der oeffentlichen Seite bewusst
+   *  false: dort soll der Code nur zum Abscannen vom Bildschirm dienen, nicht heruntergeladen
+   *  werden (Weitergabe steuert allein die Turnierleitung). */
+  zeigeDownload?: boolean;
 }
 
 function dateinameBereinigt(name: string): string {
@@ -18,7 +22,7 @@ function dateinameBereinigt(name: string): string {
  * Geraet nicht (kein externer QR-Dienst). Feste weisse Flaeche mit schwarzen Modulen, damit er
  * unabhaengig vom Farbschema (auch im Dunkelmodus) zuverlaessig scannbar bleibt.
  */
-export function QrCode({ text, dateiname }: Props) {
+export function QrCode({ text, dateiname, zeigeDownload = true }: Props) {
   const [svg, setSvg] = useState("");
   const [pngUrl, setPngUrl] = useState("");
   const [fehler, setFehler] = useState(false);
@@ -59,17 +63,19 @@ export function QrCode({ text, dateiname }: Props) {
         aria-label={`QR-Code für ${text}`}
         dangerouslySetInnerHTML={{ __html: svg }}
       />
-      <div className="qr-code-download">
-        Herunterladen:{" "}
-        <a className="button-link" href={svgUrl} download={`${basis}.svg`}>
-          SVG (skalierbar)
-        </a>{" "}
-        {pngUrl && (
-          <a className="button-link" href={pngUrl} download={`${basis}.png`}>
-            PNG
-          </a>
-        )}
-      </div>
+      {zeigeDownload && (
+        <div className="qr-code-download">
+          Herunterladen:{" "}
+          <a className="button-link" href={svgUrl} download={`${basis}.svg`}>
+            SVG (skalierbar)
+          </a>{" "}
+          {pngUrl && (
+            <a className="button-link" href={pngUrl} download={`${basis}.png`}>
+              PNG
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }

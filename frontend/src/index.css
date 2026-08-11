@@ -200,6 +200,15 @@ header nav a {
   gap: 10px;
 }
 
+/* Marke als reiner Text (minimale Kopfzeile auf oeffentlichen/externen Seiten): dieselbe
+   Groesse/Staerke wie der sonst als <a> gerenderte Marken-Link (der die Werte aus "header nav a"
+   bezieht, die ein <span> nicht erbt). */
+header nav span.marke {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
 .logo {
   border-radius: 50%;
 }
@@ -773,6 +782,47 @@ button:hover:not(:disabled) {
 [role='alert'] {
   color: var(--danger);
   font-weight: 600;
+}
+
+/* Aufklappbarer QR-Code-Bereich auf der oeffentlichen Seite ("Seite auf dem Smartphone oeffnen").
+   Bewusst zugeklappt als Default: fuer Handy-Besucher unnoetig, fuer die Anzeige am Bildschirm
+   (Beamer) klappt die Turnierleitung ihn einmalig auf. */
+.qr-aufklappen {
+  margin: 0 0 20px;
+}
+.qr-aufklappen > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.qr-aufklappen-inhalt {
+  padding-top: 8px;
+}
+
+/* Kontextbezogene Hilfe auf einzelnen Seiten (oeffentliche Turnierseite, Ergebnis-Erfassung):
+   dezenter, aufklappbarer Kasten - abgesetzt vom Seiteninhalt, aber nicht aufdringlich. */
+.kontext-hilfe {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  margin: 0 0 20px;
+}
+.kontext-hilfe > summary {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.kontext-hilfe[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+.kontext-hilfe-inhalt {
+  padding: 4px 14px 12px;
+}
+.kontext-hilfe-inhalt p {
+  margin: 10px 0 0;
+}
+.kontext-hilfe-inhalt ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
 }
 
 /* --- In-App-Hilfe (/hilfe) --- */
