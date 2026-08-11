@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import type { Protokollierungsart, Spielmodus, Turnier } from "@torball/shared";
+import type { Protokollierungsart, Spielmodus, Turnier, Turnierregeln } from "@torball/shared";
 import { getTurnier, updateTurnier } from "../api";
 import { ErgebnisVerwaltung } from "../components/ErgebnisVerwaltung";
 import { MannschaftenListe } from "../components/MannschaftenListe";
@@ -8,12 +8,14 @@ import { QrCode } from "../components/QrCode";
 import { SchiedsrichterVerwaltung } from "../components/SchiedsrichterVerwaltung";
 import { SpielplanVerwaltung } from "../components/SpielplanVerwaltung";
 import { TurnierFreigabe } from "../components/TurnierFreigabe";
+import { TurnierregelnFormular } from "../components/TurnierregelnFormular";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 
-type Tab = "uebersicht" | "mannschaften" | "schiedsrichter" | "spielplan" | "ergebnisse";
+type Tab = "uebersicht" | "regeln" | "mannschaften" | "schiedsrichter" | "spielplan" | "ergebnisse";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "uebersicht", label: "Übersicht" },
+  { id: "regeln", label: "Regeln" },
   { id: "mannschaften", label: "Mannschaften" },
   { id: "schiedsrichter", label: "Schiedsrichter" },
   { id: "spielplan", label: "Spielplan" },
@@ -109,6 +111,7 @@ export function TurnierVerwaltenPage() {
   const aktiverTab: Tab = TABS.some((t) => t.id === tabParam) ? (tabParam as Tab) : "uebersicht";
   const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({
     uebersicht: null,
+    regeln: null,
     mannschaften: null,
     schiedsrichter: null,
     spielplan: null,
@@ -166,6 +169,16 @@ export function TurnierVerwaltenPage() {
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Protokollierungsart");
+    }
+  }
+
+  async function regelnSpeichern(regeln: Turnierregeln) {
+    try {
+      setTurnier(await updateTurnier(turnierId, regeln));
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern der Regeln");
+      throw err;
     }
   }
 
@@ -453,6 +466,15 @@ export function TurnierVerwaltenPage() {
         </p>
 
         <TurnierFreigabe turnierId={turnierId} />
+      </div>
+
+      <div role="tabpanel" id="panel-regeln" aria-labelledby="tab-regeln" hidden={aktiverTab !== "regeln"}>
+        <h2>Regeln für dieses Turnier</h2>
+        <TurnierregelnFormular
+          werte={turnier}
+          onSpeichern={regelnSpeichern}
+          hinweis="Diese Regeln gelten nur für dieses Turnier. Die Standardwerte für neue Turniere legst du unter Stammdaten → Standardregeln fest."
+        />
       </div>
 
       <div

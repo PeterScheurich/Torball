@@ -15,6 +15,7 @@ import { OeffentlicheTurnierseitePage } from "./pages/OeffentlicheTurnierseitePa
 import { ProfilPage } from "./pages/ProfilPage";
 import { BenutzerverwaltungPage } from "./pages/BenutzerverwaltungPage";
 import { StammdatenPage } from "./pages/StammdatenPage";
+import { StandardregelnPage } from "./pages/StandardregelnPage";
 import { EinstellungenPage } from "./pages/EinstellungenPage";
 import { HilfePage } from "./pages/HilfePage";
 import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
@@ -75,6 +76,11 @@ function Kopfzeile() {
                   Benutzerverwaltung
                 </Link>
               )}
+              {benutzer?.globaleRolle === "admin" && (
+                <Link to="/standardregeln" className="kopfzeile-menue-eintrag" role="menuitem">
+                  Standardregeln
+                </Link>
+              )}
             </KopfzeilenMenue>
           )}
           <NavLink
@@ -130,6 +136,7 @@ function App() {
             <Route path="/profil" element={<ProfilPage />} />
             <Route path="/benutzerverwaltung" element={<BenutzerverwaltungPage />} />
             <Route path="/stammdaten" element={<StammdatenPage />} />
+            <Route path="/standardregeln" element={<StandardregelnPage />} />
             <Route path="/turniere/neu" element={<TurnierAnlegenPage />} />
             <Route path="/turniere/:id/mannschaften-erfassen" element={<MannschaftenErfassenPage />} />
             <Route path="/turniere/:id/schiedsrichter-erfassen" element={<SchiedsrichterErfassenPage />} />

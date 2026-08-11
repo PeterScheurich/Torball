@@ -11,10 +11,12 @@ import type {
   Spieler,
   SpielerStatus,
   Spielmodus,
+  Systemkonfiguration,
   Team,
   Theme,
   Turnier,
   TurnierBerechtigung,
+  Turnierregeln,
   TurnierRolle,
   Verein,
 } from "@torball/shared";
@@ -107,9 +109,21 @@ export function updateTurnier(
     ansprechpartnerName?: string | null;
     ansprechpartnerKontakt?: string | null;
     zusatzinfo?: string | null;
-  },
+  } & Partial<Turnierregeln>,
 ): Promise<Turnier> {
   return anfrage(`/turniere/${id}`, { method: "PUT", body: JSON.stringify(daten) });
+}
+
+// --- Systemkonfiguration (Standardregeln) ---
+
+export function getSystemkonfiguration(): Promise<Systemkonfiguration> {
+  return anfrage("/systemkonfiguration");
+}
+
+export function updateSystemkonfiguration(
+  daten: Turnierregeln & { forfaitErgebnis?: string; passwortMindestlaenge?: number; aenderungskommentar?: string },
+): Promise<Systemkonfiguration> {
+  return anfrage("/systemkonfiguration", { method: "PUT", body: JSON.stringify(daten) });
 }
 
 export interface NeueMannschaft {

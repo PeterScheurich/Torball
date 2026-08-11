@@ -774,6 +774,36 @@ button:disabled {
   text-decoration: none;
 }
 
+/* Regeln-Formular (Turnier-Reiter „Regeln" und Systemkonfiguration): Felder je Gruppe
+   nebeneinander, umbrechend auf schmalen Schirmen. */
+.regeln-formular {
+  max-width: none;
+}
+.regeln-gruppe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.regeln-gruppe .feld {
+  max-width: 16em;
+}
+.kriterien-liste {
+  max-width: 24em;
+  padding-left: 1.4em;
+}
+.kriterien-liste li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 0;
+}
+.kriterien-aktionen {
+  white-space: nowrap;
+}
+
 [role="tablist"] {
   display: flex;
   gap: 4px;
