@@ -3,6 +3,16 @@ import { useNavigate } from "react-router-dom";
 import type { Protokollierungsart, Spielmodus } from "@torball/shared";
 import { createTurnier } from "../api";
 
+/**
+ * Erster Schritt des Anlege-Assistenten: Grunddaten eines neuen Turniers (Name, Datum,
+ * Spielfelder, Modus, Protokollierung, optionale Schiedsrichter-Planung). Nach dem Anlegen
+ * geht es weiter zur Regel-Erfassung. Die uebrigen Turnierfelder bekommen serverseitig
+ * Standardwerte (siehe turnierDefaults in backend/src/routes/turnier.ts).
+ *
+ * Das Schiedsrichter-Flag steuert, ob der Assistent 5 statt 4 Schritte hat (optionaler
+ * Schiedsrichter-Schritt) - hier wird der Startwert gesetzt; die Schrittzahl berechnet jede
+ * Folge-Seite selbst aus dem Turnier-Flag (kein zentraler Wizard-Zustand, siehe CLAUDE.md).
+ */
 export function TurnierAnlegenPage() {
   const [name, setName] = useState("");
   const [datum, setDatum] = useState("");
@@ -14,6 +24,8 @@ export function TurnierAnlegenPage() {
   const [fehler, setFehler] = useState<string | undefined>();
   const navigate = useNavigate();
 
+  // Baut aus der gewaehlten Feldanzahl die Feld-Objekte ("Feld 1"/"Feld 2"), legt das Turnier
+  // an und springt in den naechsten Assistenten-Schritt (Regeln).
   async function anlegen(event: React.FormEvent) {
     event.preventDefault();
     setFehler(undefined);

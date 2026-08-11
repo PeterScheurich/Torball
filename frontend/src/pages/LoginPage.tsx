@@ -3,6 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { bootstrapVerfuegbar } from "../api";
 import { useAuth } from "../auth";
 
+/**
+ * Anmeldeseite. Zweistufig, wenn 2FA aktiv ist: Der erste Login-Versuch liefert
+ * `benoetigtTotp`, danach wird zusaetzlich der Authenticator-Code abgefragt (E-Mail/Passwort
+ * bleiben gesperrt, damit sie zwischen den Schritten nicht mehr geaendert werden). Zeigt oben
+ * einen Ersteinrichtungs-Hinweis, solange ueberhaupt noch kein Benutzer existiert.
+ */
 export function LoginPage() {
   const [email, setEmail] = useState("");
   const [passwort, setPasswort] = useState("");
@@ -20,6 +26,8 @@ export function LoginPage() {
       .catch(() => setErsteinrichtungVerfuegbar(false));
   }, []);
 
+  // Meldet an; verlangt der Server 2FA, wird auf die Code-Eingabe umgeschaltet statt
+  // weiterzuleiten. Erst der zweite Aufruf (mit Code) fuehrt zum Ziel.
   async function anmelden(event: React.FormEvent) {
     event.preventDefault();
     setFehler(undefined);

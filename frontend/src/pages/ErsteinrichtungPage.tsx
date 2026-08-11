@@ -4,6 +4,11 @@ import { bootstrapAdmin } from "../api";
 import { useAuth } from "../auth";
 import { PasswortRegeln } from "../PasswortRegeln";
 
+/**
+ * Einmalige Ersteinrichtung: legt den allerersten Admin-Account an (Bootstrap). Die zugehoerige
+ * API funktioniert serverseitig nur, solange noch kein Benutzer existiert. Nach dem Anlegen wird
+ * direkt angemeldet und auf die Startseite geleitet.
+ */
 export function ErsteinrichtungPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -14,6 +19,8 @@ export function ErsteinrichtungPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  // Legt den Admin an und meldet ihn direkt an. Passwort-Gleichheit wird hier im Client
+  // vorgeprueft (die inhaltlichen Passwortregeln erzwingt zusaetzlich der Server).
   async function anlegen(event: React.FormEvent) {
     event.preventDefault();
     setFehler(undefined);

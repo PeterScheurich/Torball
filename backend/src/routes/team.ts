@@ -3,12 +3,18 @@ import type { Team } from "@torball/shared";
 import { deleteDoc, findAllByType, findById, insertDoc, newId } from "../repository";
 import { requireAuth } from "../auth/plugin";
 
+// CRUD fuer Teams (Stammdaten: ein Team gehoert immer zu einem Verein). Stammdaten
+// verlangen nur eine Anmeldung (requireAuth), keine turnierbezogene Berechtigungspruefung -
+// anders als Turnier-/Mannschaftsdaten (siehe CLAUDE.md, Berechtigungsmodell).
+
+/** Vom Client setzbare Felder eines Teams. */
 interface TeamBody {
   vereinId: string;
   name: string;
   logoOverride?: string;
 }
 
+/** Fastify-Body-Schema: erzwingt Verein-Referenz und Name serverseitig (400 bei Verstoss). */
 const teamBodySchema = {
   type: "object",
   required: ["vereinId", "name"],
@@ -19,12 +25,15 @@ const teamBodySchema = {
   },
 } as const;
 
+/** Registriert die Team-Routen (GET-Liste, GET-einzeln, POST, PUT, DELETE) an der App-Instanz. */
 export async function teamRoutes(app: FastifyInstance): Promise<void> {
+  // Alle Teams (turnieruebergreifende Stammdaten).
   app.get("/teams", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     return findAllByType<Team>("team");
   });
 
+  // Einzelnes Team per ID.
   app.get<{ Params: { id: string } }>("/teams/:id", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const team = await findById<Team>(req.params.id);
@@ -32,6 +41,8 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
     return team;
   });
 
+  // Neues Team anlegen. Der referenzierte Verein muss existieren (sonst 400), damit keine
+  // verwaisten Team->Verein-Referenzen entstehen.
   app.post<{ Body: TeamBody }>(
     "/teams",
     { schema: { body: teamBodySchema } },
@@ -54,6 +65,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // Team aktualisieren (ersetzt Name/Verein/Logo aus dem Body, uebrige Felder bleiben).
   app.put<{ Params: { id: string }; Body: TeamBody }>(
     "/teams/:id",
     { schema: { body: teamBodySchema } },
@@ -66,6 +78,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // Team loeschen.
   app.delete<{ Params: { id: string } }>("/teams/:id", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const bestehend = await findById<Team>(req.params.id);

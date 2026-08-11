@@ -4,6 +4,14 @@ import type { MannschaftImTurnier } from "@torball/shared";
 import { getTurnier } from "../api";
 import { MannschaftenListe } from "../components/MannschaftenListe";
 
+/**
+ * Assistenten-Schritt 3: teilnehmende Mannschaften erfassen (ueber die wiederverwendete
+ * MannschaftenListe). Weiter geht es erst ab zwei Mannschaften; der naechste Schritt ist je
+ * nach Turnier-Flag die Schiedsrichter- oder direkt die Spielplan-Seite.
+ *
+ * Die Gesamt-Schrittzahl (5 bzw. 4) wird lokal aus dem Schiedsrichter-Flag berechnet - kein
+ * zentraler Wizard-Zustand (siehe CLAUDE.md); bei Ablauf-Aenderungen auf allen Seiten mitziehen.
+ */
 export function MannschaftenErfassenPage() {
   const { id } = useParams<{ id: string }>();
   const turnierId = id!;

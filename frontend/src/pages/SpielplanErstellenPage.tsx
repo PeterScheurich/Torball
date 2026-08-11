@@ -4,6 +4,16 @@ import type { Spiel } from "@torball/shared";
 import { getTurnier } from "../api";
 import { SpielplanVerwaltung } from "../components/SpielplanVerwaltung";
 
+/**
+ * Letzter Schritt des Anlege-Assistenten: den Spielplan erzeugen (ueber die wiederverwendete
+ * SpielplanVerwaltung) und danach in die Turnierverwaltung abschliessen. Erst mit mindestens
+ * einem erzeugten Spiel ist "Fertig" moeglich.
+ *
+ * Die Schrittzahl (5 bzw. 4) haengt am optionalen Schiedsrichter-Schritt und wird - wie in
+ * jedem Assistenten-Schritt - lokal aus dem Turnier-Flag berechnet; es gibt bewusst keinen
+ * zentralen Wizard-Zustand (siehe CLAUDE.md). Bei einer Ablauf-Aenderung muessen die
+ * Schrittzahlen auf allen Assistenten-Seiten mitgezogen werden.
+ */
 export function SpielplanErstellenPage() {
   const { id } = useParams<{ id: string }>();
   const turnierId = id!;

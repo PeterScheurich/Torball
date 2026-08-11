@@ -3,6 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { passwortReset } from "../api";
 import { PasswortRegeln } from "../PasswortRegeln";
 
+/**
+ * Passwort-Reset ueber den Einmal-Link aus der "Passwort vergessen"-E-Mail (Token in der URL).
+ * Nach erfolgreichem Setzen werden serverseitig alle bisherigen Sitzungen beendet - darauf
+ * weist die Erfolgsmeldung hin.
+ */
 export function PasswortResetPage() {
   const { token } = useParams<{ token: string }>();
   const [neuesPasswort, setNeuesPasswort] = useState("");

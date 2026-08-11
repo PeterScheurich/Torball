@@ -4,6 +4,12 @@ import { einladungAnnehmen, getEinladung } from "../api";
 import { useAuth } from "../auth";
 import { PasswortRegeln } from "../PasswortRegeln";
 
+/**
+ * Einladung annehmen (Aufruf ueber den personalisierten Link aus der Einladungs-E-Mail): laedt
+ * anhand des Tokens Name/E-Mail des eingeladenen Kontos, laesst ein eigenes Passwort setzen und
+ * aktiviert damit den Account. Anschliessend wird direkt angemeldet. Ist der Token ungueltig/
+ * abgelaufen, wird nur die Fehlermeldung gezeigt.
+ */
 export function EinladungAnnehmenPage() {
   const { token } = useParams<{ token: string }>();
   const [info, setInfo] = useState<{ email: string; name: string } | undefined>();
@@ -21,6 +27,7 @@ export function EinladungAnnehmenPage() {
       .catch((err) => setFehler(err instanceof Error ? err.message : "Einladung ungültig"));
   }, [token]);
 
+  // Setzt das Passwort, aktiviert den Account und meldet direkt an.
   async function annehmen(event: React.FormEvent) {
     event.preventDefault();
     if (!token || !info) return;

@@ -9,12 +9,19 @@ import {
 } from "../api";
 import { useAuth } from "../auth";
 
+/** Anzeige-Labels der globalen Rollen. */
 const ROLLEN_LABEL: Record<GlobaleRolle, string> = {
   admin: "Admin",
   manager: "Manager",
   benutzer: "Benutzer",
 };
 
+/**
+ * Benutzerverwaltung (nur Admin/Manager, siehe Routen-Gate in App.tsx): bestehende Benutzer
+ * auflisten, Rolle aendern, sperren/entsperren, fremde 2FA deaktivieren, und neue Benutzer per
+ * E-Mail einladen. Ein Admin darf alle Rollen vergeben, ein Manager nur "manager"/"benutzer"
+ * (kein Hochstufen zum Admin). Benutzer werden nie geloescht, nur gesperrt (Spez. 25.3).
+ */
 export function BenutzerverwaltungPage() {
   const { benutzer: angemeldeter } = useAuth();
   const [liste, setListe] = useState<BenutzerProfil[]>([]);
@@ -38,9 +45,13 @@ export function BenutzerverwaltungPage() {
     laden();
   }, [laden]);
 
+  // Welche Rollen der/die Angemeldete vergeben darf: nur ein Admin darf "admin" vergeben.
   const vergebbareRollen: GlobaleRolle[] =
     angemeldeter?.globaleRolle === "admin" ? ["admin", "manager", "benutzer"] : ["manager", "benutzer"];
 
+  // Laedt eine Einladung ein. Ist SMTP konfiguriert, verschickt der Server die Einladungsmail
+  // (kein Token in der Antwort) -> Hinweis "per E-Mail verschickt". Ohne Mail-Versand liefert
+  // der Server den Token zurueck, aus dem hier ein manuell weiterzugebender Link gebaut wird.
   async function einladen(event: React.FormEvent) {
     event.preventDefault();
     setFehler(undefined);
@@ -62,6 +73,8 @@ export function BenutzerverwaltungPage() {
     }
   }
 
+  // Aendert die globale Rolle eines Benutzers (Eigen-Account und - fuer Manager - Admins sind
+  // im UI gesperrt, damit sich niemand selbst hoch-/herunterstuft; der Server prueft zusaetzlich).
   async function rolleAendern(id: string, neueRolle: GlobaleRolle) {
     try {
       await benutzerAktualisieren(id, { globaleRolle: neueRolle });
@@ -71,6 +84,8 @@ export function BenutzerverwaltungPage() {
     }
   }
 
+  // Sperrt bzw. entsperrt einen Benutzer (das eigene Konto ist im UI ausgenommen). Sperren ist
+  // laut Spezifikation der Ersatz fuer ein Loeschen - der Datensatz bleibt fuer die Nachvollziehbarkeit.
   async function sperrenUmschalten(b: BenutzerProfil) {
     try {
       await benutzerAktualisieren(b._id, { gesperrt: !b.gesperrt });
@@ -80,6 +95,9 @@ export function BenutzerverwaltungPage() {
     }
   }
 
+  // Admin-Notfallhilfe: deaktiviert die 2FA eines anderen Benutzers, der den Zugang zu seiner
+  // Authenticator-App verloren hat (das eigene Konto ist ausgenommen). Danach Anmeldung nur mit
+  // Passwort, 2FA im Profil neu einrichtbar.
   async function zweiFaDeaktivieren(b: BenutzerProfil) {
     if (
       !window.confirm(
