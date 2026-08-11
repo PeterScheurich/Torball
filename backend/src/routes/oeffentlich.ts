@@ -106,7 +106,10 @@ export async function oeffentlichRoutes(app: FastifyInstance): Promise<void> {
             punkteUnentschieden: turnier.punkteUnentschieden,
             punkteNiederlage: turnier.punkteNiederlage,
             tabellenKriterien: turnier.tabellenKriterien,
-            forfaitErgebnis: turnier.forfaitErgebnis,
+            // Aeltere Turniere (vor Einfuehrung des Feldes) haben kein forfaitErgebnis gesetzt -
+            // auf den dokumentierten Standard "3:0" zurueckfallen, damit die Zeile nicht leer bleibt
+            // (gleicher Fallback wie in der Ergebniserfassung, siehe CLAUDE.md).
+            forfaitErgebnis: turnier.forfaitErgebnis || "3:0",
           }
         : null,
     };
