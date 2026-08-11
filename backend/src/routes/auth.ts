@@ -7,6 +7,10 @@ import { loescheSessionCookie, SESSION_COOKIE_NAME, setzeSessionCookie } from ".
 import { erstelleSession, loescheSessionPerToken } from "../auth/session";
 import { totpCodeGueltig } from "../auth/totp";
 
+// Anmelde-bezogene Routen: Login (inkl. optionaler 2FA), Logout, "wer bin ich" (/auth/me)
+// und die einmalige Ersteinrichtung des allerersten Admin-Kontos. Die eigentliche
+// Benutzerverwaltung (Einladung, Rollen, Profil) liegt in routes/benutzer.ts.
+
 interface LoginBody {
   email: string;
   passwort: string;
@@ -40,6 +44,8 @@ const bootstrapAdminSchema = {
 } as const;
 
 export async function authRoutes(app: FastifyInstance): Promise<void> {
+  // Login: prueft E-Mail/Passwort, bei aktiver 2FA zusaetzlich den TOTP-Code (erster Aufruf
+  // ohne Code liefert nur {benoetigtTotp:true}). Erfolg -> Session-Cookie + oeffentliches Profil.
   app.post<{ Body: LoginBody }>("/auth/login", { schema: { body: loginSchema } }, async (req, reply) => {
     const email = req.body.email.trim().toLowerCase();
     const alle = await findAllByType<Benutzer>("benutzer");
@@ -75,6 +81,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     return oeffentlichesProfil(aktualisiert);
   });
 
+  // Logout: beendet die aktuelle Session serverseitig und loescht das Cookie.
   app.post("/auth/logout", async (req, reply) => {
     const token = req.cookies[SESSION_COOKIE_NAME];
     if (token) await loescheSessionPerToken(token);
@@ -82,6 +89,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     return reply.code(204).send();
   });
 
+  // Aktuell angemeldeter Benutzer (aus req.benutzer, das der authPreHandler aufloest).
   app.get("/auth/me", async (req, reply) => {
     if (!req.benutzer) return reply.code(401).send({ error: "Nicht angemeldet" });
     return oeffentlichesProfil(req.benutzer);

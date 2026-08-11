@@ -4,6 +4,11 @@ import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../rep
 import { requireAuth } from "../auth/plugin";
 import { hatMindestens } from "../auth/turnierZugriff";
 
+// CRUD fuer turnierbezogene Schiedsrichter (SchiedsrichterImTurnier haengt am turnierId).
+// Zugriff laeuft ueber das Turnier (turnierZugriff); genau eine Person je Turnier ist
+// istTurnierleitung (das Frontend erzwingt die Einzelauswahl). Beim Loeschen einer Mannschaft
+// wird nur die optionale mannschaftId-Referenz geloest, der Schiedsrichter bleibt.
+
 interface SchiedsrichterBody {
   turnierId: string;
   name: string;
@@ -94,6 +99,7 @@ async function ladeSchiedsrichterMitZugriff(
 }
 
 export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> {
+  // Alle Schiedsrichter eines Turniers (Leserecht genuegt).
   app.get<{ Params: { turnierId: string } }>(
     "/turniere/:turnierId/schiedsrichter",
     async (req, reply) => {
@@ -107,6 +113,7 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
     },
   );
 
+  // Neuen Schiedsrichter zum Turnier anlegen (Schreibrecht noetig).
   app.post<{ Body: SchiedsrichterBody }>(
     "/schiedsrichter",
     { schema: { body: schiedsrichterBodySchema } },
@@ -134,6 +141,7 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
     },
   );
 
+  // Schiedsrichter aktualisieren (Merge; optionale Felder per null leerbar).
   app.put<{ Params: { id: string }; Body: SchiedsrichterAktualisierungBody }>(
     "/schiedsrichter/:id",
     { schema: { body: schiedsrichterAktualisierungSchema } },
@@ -147,6 +155,7 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
     },
   );
 
+  // Schiedsrichter loeschen.
   app.delete<{ Params: { id: string } }>("/schiedsrichter/:id", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const bestehend = await ladeSchiedsrichterMitZugriff(req.params.id, "schreiben", req, reply);

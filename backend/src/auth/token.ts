@@ -6,6 +6,8 @@ export function erzeugeToken(): { token: string; hash: string } {
   return { token, hash: hashe(token) };
 }
 
+/** SHA-256-Hash eines Tokens - zum Vergleich eines eingehenden Klartext-Tokens mit dem
+ *  gespeicherten Hash (der Klartext wird nie persistiert). */
 export function hashe(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }

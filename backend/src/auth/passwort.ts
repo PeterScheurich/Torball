@@ -1,11 +1,14 @@
 import bcrypt from "bcryptjs";
 
+// Passwort-Hashing (bcrypt) und die serverseitige Durchsetzung der Passwortregeln.
 const SALT_ROUNDS = 12;
 
+/** Erzeugt den bcrypt-Hash eines Klartext-Passworts (zum Speichern). */
 export async function hashePasswort(passwort: string): Promise<string> {
   return bcrypt.hash(passwort, SALT_ROUNDS);
 }
 
+/** Prueft ein Klartext-Passwort gegen einen gespeicherten bcrypt-Hash (beim Login). */
 export async function passwortStimmt(passwort: string, hash: string): Promise<boolean> {
   return bcrypt.compare(passwort, hash);
 }

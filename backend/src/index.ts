@@ -19,12 +19,17 @@ import { oeffentlichRoutes } from "./routes/oeffentlich";
 import { systemkonfigurationRoutes } from "./routes/systemkonfiguration";
 import { kanbanRoutes } from "./routes/kanban";
 
+// Einstiegspunkt des Backends: baut die Fastify-Instanz, registriert Cookie-Plugin, den
+// Auth-Hook und alle Routen-Module und startet den Server. Der Port ist bewusst fest 3000
+// (der Vite-Dev-Proxy zielt dorthin, siehe CLAUDE.md).
 const server = Fastify({ logger: true });
 
+// Schlanker Health-Check (z.B. fuer Monitoring/Reverse-Proxy), ohne Anmeldung.
 server.get("/health", async () => {
   return { status: "ok" };
 });
 
+// Registriert alles in der richtigen Reihenfolge und startet den Listener.
 const start = async () => {
   try {
     // Cookie-Plugin und der Auth-Hook muessen VOR den Routen-Plugins auf der

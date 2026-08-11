@@ -8,6 +8,8 @@ export function erzeugeTotpSecret(): string {
   return generateSecret();
 }
 
+/** Baut die otpauth://-URI (Issuer + E-Mail + Secret), die als QR-Code fuer die
+ *  Authenticator-App codiert wird. */
 export function erzeugeOtpAuthUri(email: string, secret: string): string {
   return generateURI({ strategy: "totp", issuer: ISSUER, label: email, secret });
 }

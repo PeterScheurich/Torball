@@ -9,6 +9,8 @@ export type OeffentlichesBenutzerProfil = Omit<
   hatPasswort: boolean;
 };
 
+/** Entfernt alle sensiblen Felder aus einem Benutzer-Dokument, bevor es die API verlaesst.
+ *  Muss vor JEDER Rueckgabe eines Benutzers durchlaufen werden (siehe CLAUDE.md, Benutzer-Fachregeln). */
 export function oeffentlichesProfil(benutzer: Benutzer): OeffentlichesBenutzerProfil {
   const {
     passwortHash,

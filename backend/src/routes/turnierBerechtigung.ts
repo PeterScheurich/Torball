@@ -4,6 +4,9 @@ import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../rep
 import { requireAuth } from "../auth/plugin";
 import { hatMindestens, turnierZugriffsstufe } from "../auth/turnierZugriff";
 
+// Vergabe/Entzug turnierbezogener Zugriffsrechte (TurnierBerechtigung) an andere Benutzer -
+// die Datenbasis fuer das Berechtigungsmodell (siehe turnierZugriff.ts). UI: TurnierFreigabe.
+
 interface BerechtigungVergebenBody {
   benutzerId: string;
   rolle: TurnierRolle;
@@ -19,6 +22,7 @@ const berechtigungVergebenSchema = {
 } as const;
 
 export async function turnierBerechtigungRoutes(app: FastifyInstance): Promise<void> {
+  // Alle fuer ein Turnier vergebenen Berechtigungen (nur mit Schreibzugriff einsehbar).
   app.get<{ Params: { turnierId: string } }>("/turniere/:turnierId/berechtigungen", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const turnier = await findById<Turnier>(req.params.turnierId);

@@ -4,6 +4,10 @@ import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../rep
 import { requireAuth } from "../auth/plugin";
 import { hatMindestens } from "../auth/turnierZugriff";
 
+// CRUD fuer Spieler/Kader. Spieler haengen an der MANNSCHAFT (mannschaftId), nicht direkt am
+// Turnier; der Zugriff wird deshalb ueber Mannschaft -> Turnier geprueft. Beim Loeschen einer
+// Mannschaft bzw. eines Turniers werden die Spieler kaskadierend mitgeloescht (siehe CLAUDE.md).
+
 const KLASSIFIZIERUNGEN: Klassifizierung[] = ["B1", "B2", "B3", "sehend", "AB"];
 const STATUS: SpielerStatus[] = ["aktiv", "gesperrt"];
 
@@ -92,6 +96,7 @@ async function ladeSpielerMitZugriff(
 }
 
 export async function spielerRoutes(app: FastifyInstance): Promise<void> {
+  // Kader einer Mannschaft (Leserecht auf das Turnier genuegt).
   app.get<{ Params: { mannschaftId: string } }>(
     "/mannschaften/:mannschaftId/spieler",
     async (req, reply) => {
@@ -102,6 +107,7 @@ export async function spielerRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // Spieler zum Kader hinzufuegen (Schreibrecht noetig); Status ohne Angabe "aktiv".
   app.post<{ Body: SpielerBody }>(
     "/spieler",
     { schema: { body: spielerBodySchema } },
@@ -127,6 +133,7 @@ export async function spielerRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // Spieler aktualisieren (Merge; Vorname per null leerbar).
   app.put<{ Params: { id: string }; Body: SpielerAktualisierungBody }>(
     "/spieler/:id",
     { schema: { body: spielerAktualisierungSchema } },
@@ -140,6 +147,7 @@ export async function spielerRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // Einzelnen Spieler loeschen.
   app.delete<{ Params: { id: string } }>("/spieler/:id", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const bestehend = await ladeSpielerMitZugriff(req.params.id, "schreiben", req, reply);

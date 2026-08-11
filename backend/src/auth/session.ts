@@ -2,6 +2,10 @@ import { createHash, randomBytes } from "node:crypto";
 import type { Session } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc } from "../repository";
 
+// Server-seitige Sessions (kein JWT). Beim Login wird ein zufaelliger Klartext-Token erzeugt und
+// als Cookie gesetzt; persistiert wird nur dessen SHA-256-Hash als Doc-ID (session:<hash>), damit
+// die Pruefung pro Request ein direkter findById-Lookup ist (siehe CLAUDE.md, Auth).
+
 /** Inaktivitaets-Fenster (Abschnitt 25.1: "automatischer Logout nach konfigurierbarer Inaktivitaet"). Aktuell fest, spaeter aus der Systemkonfiguration. */
 const INAKTIVITAETS_FENSTER_MS = 12 * 60 * 60 * 1000;
 
@@ -14,6 +18,8 @@ function sessionIdVon(token: string): string {
   return `session:${tokenHash(token)}`;
 }
 
+/** Legt eine neue Session fuer einen Benutzer an und gibt den Klartext-Token (fuers Cookie)
+ *  zusammen mit dem gespeicherten Session-Dokument zurueck. */
 export async function erstelleSession(benutzerId: string): Promise<{ token: string; session: Session }> {
   const token = randomBytes(32).toString("hex");
   const jetzt = new Date();
@@ -30,6 +36,8 @@ export async function erstelleSession(benutzerId: string): Promise<{ token: stri
   return { token, session };
 }
 
+/** Loest den Cookie-Token zur Session auf; eine abgelaufene Session wird dabei geloescht und als
+ *  "nicht vorhanden" (null) behandelt. */
 export async function findeSessionPerToken(token: string): Promise<Session | null> {
   const session = await findById<Session>(sessionIdVon(token));
   if (!session) return null;
@@ -54,6 +62,7 @@ export async function beruehreSession(session: Session): Promise<void> {
   }
 }
 
+/** Beendet die eine Session zu diesem Token (Logout). */
 export async function loescheSessionPerToken(token: string): Promise<void> {
   const session = await findById<Session>(sessionIdVon(token));
   if (session) await deleteDoc(session._id, session._rev!);

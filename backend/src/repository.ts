@@ -3,6 +3,10 @@ import type { MangoSelector } from "nano";
 import type { TorballDokument } from "@torball/shared";
 import { db } from "./db";
 
+// Generische CRUD-Helfer ueber der einen CouchDB-Datenbank. Alle Routen nutzen diese statt
+// direkt db.find(...) aufzurufen - v.a. wegen der bookmark-Paginierung (siehe unten), die
+// CouchDBs stilles 25-Treffer-Limit umgeht.
+
 /** CouchDB-Dokument-ID im Format "<docType>:<uuid>", dient zugleich als fachliche ID. */
 export function newId(docType: TorballDokument["docType"]): string {
   return `${docType}:${randomUUID()}`;
@@ -32,16 +36,19 @@ async function findeAlleSeiten<T extends TorballDokument>(selector: MangoSelecto
   return ergebnisse;
 }
 
+/** Alle Dokumente eines docType (vollstaendig paginiert). */
 export async function findAllByType<T extends TorballDokument>(docType: T["docType"]): Promise<T[]> {
   return findeAlleSeiten<T>({ docType });
 }
 
+/** Alle Dokumente zu einem beliebigen Mango-Selector (vollstaendig paginiert). */
 export async function findAllBySelector<T extends TorballDokument>(
   selector: MangoSelector,
 ): Promise<T[]> {
   return findeAlleSeiten<T>(selector);
 }
 
+/** Einzelnes Dokument per ID; null (statt Fehler), wenn es nicht existiert. */
 export async function findById<T extends TorballDokument>(id: string): Promise<T | null> {
   try {
     const doc = await db.get(id);
@@ -52,15 +59,18 @@ export async function findById<T extends TorballDokument>(id: string): Promise<T
   }
 }
 
+/** Legt ein Dokument an oder aktualisiert es (CouchDB-Upsert) und gibt es mit neuer _rev zurueck. */
 export async function insertDoc<T extends TorballDokument>(doc: T): Promise<T> {
   const response = await db.insert(doc);
   return { ...doc, _rev: response.rev };
 }
 
+/** Loescht ein Dokument (die aktuelle _rev ist fuer CouchDB Pflicht). */
 export async function deleteDoc(id: string, rev: string): Promise<void> {
   await db.destroy(id, rev);
 }
 
+/** Erkennt einen CouchDB-404 (Dokument nicht vorhanden) an der statusCode-Eigenschaft. */
 function isNotFound(err: unknown): boolean {
   return typeof err === "object" && err !== null && (err as { statusCode?: number }).statusCode === 404;
 }

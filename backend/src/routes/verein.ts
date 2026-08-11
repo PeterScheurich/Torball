@@ -3,6 +3,10 @@ import type { Team, Verein } from "@torball/shared";
 import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth } from "../auth/plugin";
 
+// CRUD fuer Vereine (turnieruebergreifende Stammdaten; ein Team gehoert immer zu einem Verein).
+// Wie alle Stammdaten nur mit Anmeldung, ohne turnierbezogene Berechtigungspruefung.
+
+/** Vom Client setzbare Vereinsfelder (alle ausser Name optional). */
 interface VereinBody {
   name: string;
   logo?: string;
@@ -29,12 +33,15 @@ const vereinBodySchema = {
   },
 } as const;
 
+/** Registriert die Vereins-Routen an der App-Instanz. */
 export async function vereinRoutes(app: FastifyInstance): Promise<void> {
+  // Alle Vereine.
   app.get("/vereine", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     return findAllByType<Verein>("verein");
   });
 
+  // Einzelner Verein per ID.
   app.get<{ Params: { id: string } }>("/vereine/:id", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const verein = await findById<Verein>(req.params.id);
@@ -42,6 +49,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
     return verein;
   });
 
+  // Neuen Verein anlegen.
   app.post<{ Body: VereinBody }>(
     "/vereine",
     { schema: { body: vereinBodySchema } },
@@ -59,6 +67,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // Verein aktualisieren (Merge mit bestehendem Dokument; optionale Felder per null leerbar).
   app.put<{ Params: { id: string }; Body: VereinBody }>(
     "/vereine/:id",
     { schema: { body: vereinBodySchema } },
@@ -71,6 +80,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // Verein loeschen - nur, wenn kein Team mehr auf ihn verweist (sonst 409).
   app.delete<{ Params: { id: string } }>("/vereine/:id", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const bestehend = await findById<Verein>(req.params.id);
