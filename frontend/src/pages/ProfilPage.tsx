@@ -30,6 +30,12 @@ const DICHTE_LABEL: Record<Dichte, string> = {
   schmal: "Schmal",
 };
 
+/**
+ * "Mein Profil": E-Mail und Passwort aendern, 2FA einrichten/deaktivieren sowie die
+ * kontogebundenen Standardwerte fuer Farbschema/Zeilenabstand pflegen. Sicherheitsrelevante
+ * Aenderungen (E-Mail, Passwort, 2FA-Deaktivierung) verlangen das aktuelle Passwort zur
+ * Bestaetigung. Rolle/Name sind hier nur lesbar (Rolle aendert nur die Benutzerverwaltung).
+ */
 export function ProfilPage() {
   const { benutzer, aktualisiereBenutzer } = useAuth();
   const [email, setEmail] = useState(benutzer?.email ?? "");
@@ -62,6 +68,7 @@ export function ProfilPage() {
     }
   }
 
+  // Aendert die eigene E-Mail-Adresse (mit aktuellem Passwort bestaetigt).
   async function emailSpeichern(event: React.FormEvent) {
     event.preventDefault();
     setFehler(undefined);
@@ -76,6 +83,8 @@ export function ProfilPage() {
     }
   }
 
+  // Aendert das eigene Passwort (alt + neu). Serverseitig werden dabei alle ANDEREN Sitzungen
+  // beendet, die aktuelle bleibt bestehen.
   async function passwortAendern(event: React.FormEvent) {
     event.preventDefault();
     setFehler(undefined);
@@ -95,6 +104,8 @@ export function ProfilPage() {
     }
   }
 
+  // 2FA-Einrichtung starten: holt Secret + QR-Code vom Server. Aktiv wird 2FA erst nach
+  // erfolgreicher Bestaetigung eines App-Codes (siehe bestaetigen()).
   async function einrichtungStarten() {
     setFehler(undefined);
     try {
@@ -104,6 +115,7 @@ export function ProfilPage() {
     }
   }
 
+  // Bestaetigt die 2FA-Einrichtung mit einem Code aus der Authenticator-App und aktiviert sie.
   async function bestaetigen(event: React.FormEvent) {
     event.preventDefault();
     setFehler(undefined);
@@ -118,6 +130,7 @@ export function ProfilPage() {
     }
   }
 
+  // Deaktiviert die eigene 2FA (mit aktuellem Passwort bestaetigt).
   async function deaktivieren(event: React.FormEvent) {
     event.preventDefault();
     setFehler(undefined);

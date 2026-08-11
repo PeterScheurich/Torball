@@ -51,6 +51,8 @@ interface SpieleTabelleProps {
   zeigeErgebnis: boolean;
 }
 
+/** Spielplan-/Ergebnis-Tabelle der oeffentlichen Seite. Die Feld-Spalte erscheint nur bei
+ *  mehreren Feldern, die Ergebnis-Spalte nur, wenn die Ergebnisse freigegeben sind. */
 function SpieleTabelle({ spiele, daten, zeigeErgebnis }: SpieleTabelleProps) {
   const mehrereFelder = daten.felder.length > 1;
   const nameVonMannschaft = (id: string) => daten.mannschaften.find((m) => m._id === id)?.name ?? id;
@@ -96,6 +98,12 @@ function SpieleTabelle({ spiele, daten, zeigeErgebnis }: SpieleTabelleProps) {
   );
 }
 
+/**
+ * Oeffentliche Turnierseite ohne Login (die Turnier-ID selbst ist die Adresse). Zeigt in Reitern
+ * Turnierinfos, Anfahrt & Dokumente, Spielplan und Ergebnisse - jeweils nur, wenn die Sektion
+ * von der Turnierleitung freigegeben ist (vier oeffentlich*-Flags). Schiedsrichter werden hier
+ * grundsaetzlich nicht genannt. Aktualisiert sich fuer Zuschauer automatisch (Polling).
+ */
 export function OeffentlicheTurnierseitePage() {
   const { id } = useParams<{ id: string }>();
   const turnierId = id!;
