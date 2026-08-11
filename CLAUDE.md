@@ -445,6 +445,14 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
 Beim Verifizieren von Frontend-Änderungen über die Browser-Vorschau-Tools
 sind hier mehrfach dieselben Stolperfallen aufgetreten:
 
+- **Backend bindet fix auf Port 3000** (`backend/src/index.ts`), der Vite-Proxy
+  zielt dorthin (`frontend/vite.config.ts`) – deshalb `autoPort: false` beim
+  Backend in `.claude/launch.json`. Läuft parallel schon ein Dev-Server auf 3000
+  (z. B. eine andere Claude-Sitzung), lässt sich keine zweite isolierte Instanz
+  starten; erst den belegenden Prozess stoppen. Das Backend braucht keine
+  Browser-Erreichbarkeit (nur der Vite-Dev-Server spricht es über den Proxy an) –
+  im Notfall kann man es daher regulär als Prozess auf 3000 starten und nur das
+  Frontend über `preview_start` laufen lassen.
 - `computer`-Klicks (`left_click`/`type`) landen in dieser Umgebung nicht
   zuverlässig auf dem Zielelement (Symptom: `screenshot` schlägt mit "the
   Browser pane is not displayed" fehl) - nach einem Klick immer mit
