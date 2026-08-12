@@ -119,8 +119,16 @@ einem Kernel-Update jetzt neu gestartet wird) – für den App-Teil ruft es inte
 REPO_URL=<REPO_URL> bash deploy/aktualisieren.sh prod 8080 3001
 ```
 
+`provision.sh` legt dafür zusätzlich einen Symlink `/usr/local/bin/torball-aktualisieren` an, sodass
+derselbe Befehl **von jedem Verzeichnis aus** funktioniert (kein `cd` in den Checkout nötig):
+
+```bash
+REPO_URL=<REPO_URL> torball-aktualisieren prod 8080 3001
+```
+
 Aktualisiert **nicht** sich selbst (den Checkout unter `~/torball-src`) – falls sich die
-Deploy-Skripte seit dem letzten Lauf geändert haben, vorher dort `git pull` ausführen.
+Deploy-Skripte seit dem letzten Lauf geändert haben, vorher dort `git pull` ausführen (der Symlink
+zeigt auf die Datei im Checkout, zieht die Änderung also automatisch nach).
 
 ## Lokale Installation unter Windows
 

@@ -654,7 +654,14 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   Bash-Skript durch `git reset --hard` unter sich selbst zu verändern); bei Änderungen an den
   Deploy-Skripten muss vorher manuell `git pull` im Checkout laufen. Damit das nicht in
   Vergessenheit gerät, endet jeder Lauf mit genau diesem Hinweis + fertigem `cd ... && git pull`-
-  Befehl (Pfad wird zur Laufzeit ermittelt, kein Platzhalter).
+  Befehl (Pfad wird zur Laufzeit ermittelt, kein Platzhalter). **`provision.sh` legt zusätzlich
+  einen Symlink `/usr/local/bin/torball-aktualisieren` an** (Schritt `[7/7]`), damit derselbe
+  Befehl von jedem Verzeichnis aus aufrufbar ist, nicht nur relativ aus dem Checkout heraus – der
+  Symlink zeigt auf die Datei im Checkout, ein späteres `git pull` dort wirkt sich also automatisch
+  auch auf den globalen Befehl aus. **Wichtig für `aktualisieren.sh` selbst:** löst seinen eigenen
+  Pfad über `readlink -f "${BASH_SOURCE[0]}"` auf statt direkt über `BASH_SOURCE`, sonst würde es
+  bei Aufruf über den Symlink `/usr/local/bin` (statt den echten `deploy/`-Ordner) als eigenen
+  Ordner annehmen und `deploy-instanz.sh` nicht mehr finden.
 - **Interne LAN-Adressen gehören NICHT ins Repo** (Nutzer-Vorgabe): Dev-CouchDB,
   Gitea-Repo, BookStack usw. stehen im Repo nur als Platzhalter (`couchdb-host`,
   `gitea-host`, `bookstack-host`); die konkreten Adressen liegen im Claude-Memory.

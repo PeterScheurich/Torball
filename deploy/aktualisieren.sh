@@ -6,8 +6,10 @@
 # unterscheiden (das sind zwei unabhaengige Mechanismen: apt aktualisiert das Betriebssystem,
 # deploy-instanz.sh den App-Code - siehe docs/installation-konfiguration.md).
 #
-# Nutzung (dieselben Parameter wie deploy-instanz.sh, an das dieses Skript den App-Teil delegiert):
+# Nutzung (dieselben Parameter wie deploy-instanz.sh, an das dieses Skript den App-Teil delegiert),
+# entweder direkt im Checkout oder von ueberall ueber den Symlink torball-aktualisieren:
 #   REPO_URL=<git-url> [BRANCH=main] deploy/aktualisieren.sh <name> <frontend_port> <backend_port> [server_name]
+#   REPO_URL=<git-url> [BRANCH=main] torball-aktualisieren <name> <frontend_port> <backend_port> [server_name]
 #
 # Ablauf:
 #   1) apt-get update, zeigt verfuegbare System-Updates an, fragt VOR "dist-upgrade" nach.
@@ -21,11 +23,17 @@
 #
 # Aktualisiert NICHT sich selbst / den umgebenden Checkout (~/torball-src): falls sich die
 # Deploy-Skripte seit dem letzten Lauf geaendert haben, vorher "git pull" dort ausfuehren.
+#
+# Global aufrufbar ueber den Symlink /usr/local/bin/torball-aktualisieren (von provision.sh
+# angelegt) - deshalb ueber readlink -f aufgeloest statt direkt ueber BASH_SOURCE: ein Symlink
+# wuerde sonst dazu fuehren, dass "eigener Ordner" faelschlich /usr/local/bin waere statt des
+# tatsaechlichen deploy/-Ordners im Checkout (dort liegt deploy-instanz.sh).
 set -euo pipefail
 
 [[ $EUID -eq 0 ]] || { echo "Bitte als root ausfuehren."; exit 1; }
 
-SKRIPT_ORDNER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKRIPT_PFAD="$(readlink -f "${BASH_SOURCE[0]}")"
+SKRIPT_ORDNER="$(cd "$(dirname "$SKRIPT_PFAD")" && pwd)"
 
 echo "== [1/3] System-Pakete pruefen (apt) =="
 apt-get update

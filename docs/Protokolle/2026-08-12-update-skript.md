@@ -37,6 +37,18 @@ Ende jedes Skript-Laufs auszugeben – sonst geht er in der Praxis leicht unter.
 dafür zur Laufzeit den tatsächlichen Checkout-Pfad (`cd "${SKRIPT_ORDNER}/.." && pwd`) und gibt am
 Ende einen direkt copy-pasteable `cd ... && git pull`-Befehl aus, keinen Platzhalter.
 
+**Zweiter Nachtrag (selbe Sitzung):** Live beim ersten echten Einsatz aufgefallen – der Befehl war
+nur relativ zum Checkout aufrufbar (`bash deploy/aktualisieren.sh`, abhängig vom aktuellen
+Arbeitsverzeichnis; zweimal live danebengegriffen: einmal aus `deploy/` heraus aufgerufen, einmal
+mit dem neuen Skript noch vor dem nötigen `git pull`). Nutzer-Wunsch: von jedem Verzeichnis aus
+aufrufbar. Umsetzung: `provision.sh` legt einen Symlink `/usr/local/bin/torball-aktualisieren` an
+(neuer Schritt `[7/7]`, alle vorherigen Schritte entsprechend umnummeriert). Dabei ein Detail, das
+sonst zu einem stillen Fehler geführt hätte: `aktualisieren.sh` bestimmte seinen eigenen Ordner
+bisher direkt über `BASH_SOURCE[0]`, um darüber `deploy-instanz.sh` zu finden – bei Aufruf über
+einen Symlink liefert das aber den Pfad des Symlinks (`/usr/local/bin`), nicht den der Zieldatei.
+Fix: `readlink -f "${BASH_SOURCE[0]}"` löst den Symlink zuerst auf, danach stimmt der ermittelte
+Ordner (und damit auch der Checkout-Pfad für den Git-Pull-Hinweis) unabhängig vom Aufrufweg.
+
 Nur syntaktisch geprüft (`bash -n`), nicht live gegen den echten Produktiv-Server ausgeführt (würde
 System-Pakete aktualisieren bzw. ggf. neu starten – das soll der Nutzer selbst anstoßen).
 
