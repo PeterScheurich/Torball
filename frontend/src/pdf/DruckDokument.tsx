@@ -27,7 +27,7 @@ function DatenTabelle({ tabelle, leerHinweis }: { tabelle: PdfTabelle; leerHinwe
   if (tabelle.zeilen.length === 0) return <p>{leerHinweis ?? "Keine Daten vorhanden."}</p>;
   return (
     <div className="tabellen-wrapper">
-      <table>
+      <table className={tabelle.schmaleFuehrungsspalten ? "druck-tabelle-spielplan" : undefined}>
         <thead>
           <tr>
             {tabelle.spalten.map((s, i) => (
@@ -71,6 +71,7 @@ export function DruckDokument({ dokument }: { dokument: PdfDokument }) {
       {dokument.qr && <QrBlock qr={dokument.qr} dateiname={dokument.dateiname} />}
       {dokument.abschnitte.map((a: PdfAbschnitt, i) => (
         <section key={i} className={a.seitenumbruchVor ? "druck-abschnitt druck-seitenumbruch" : "druck-abschnitt"}>
+          {a.seitenkopf && <p className="druck-seitenkopf">{a.seitenkopf}</p>}
           {a.ueberschrift && <h2>{a.ueberschrift}</h2>}
           {a.absaetze?.map((p, j) => (
             <p key={j}>{p}</p>

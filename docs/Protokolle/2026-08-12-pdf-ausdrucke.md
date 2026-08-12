@@ -61,6 +61,14 @@ QR-Ziele: Info → öffentliche Turnierseite; Spielplan/Schiedsrichter → öffe
   Lazy-Chunks (nur bei Bedarf geladen; html2canvas ist eine optionale jsPDF-Abhängigkeit, wird zur
   Laufzeit nicht benötigt).
 
+## Nachtrag (Feinschliff nach Sichtung)
+
+- **Spielplan-Tabelle:** Schriftgröße bleibt normal (war ausreichend); stattdessen die ersten beiden
+  Spalten (Nr., Zeit) schmal (`PdfTabelle.schmaleFuehrungsspalten`) – jsPDF via `columnStyles`, HTML
+  via `.druck-tabelle-spielplan`. Die Mannschaftsspalten werden dadurch breit.
+- **Schiedsrichter-Blatt:** der **Turniername** steht jetzt als Seitenkopf oben auf **jeder** Seite
+  (`PdfAbschnitt.seitenkopf`), zusätzlich zur Kontextzeile unter dem Namen.
+
 ## Offen / später
 
 - Nutzer entscheidet noch, ob einer der beiden Wege (Druck-PDF vs. jsPDF) wieder entfällt.

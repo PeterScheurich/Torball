@@ -69,6 +69,11 @@ export async function erzeugeJsPdf(dokument: PdfDokument): Promise<void> {
       schreibe(leerHinweis ?? "Keine Daten vorhanden.", TEXT_GROESSE, "normal");
       return;
     }
+    // Spielplan: die ersten beiden Spalten (Nr., Zeit) schmal halten, der Rest geht an die
+    // Mannschaftsspalten.
+    const columnStyles = tabelle.schmaleFuehrungsspalten
+      ? { 0: { cellWidth: 26 }, 1: { cellWidth: 48 } }
+      : undefined;
     autoTable(doc, {
       startY: y + 4,
       head: [tabelle.spalten],
@@ -76,6 +81,7 @@ export async function erzeugeJsPdf(dokument: PdfDokument): Promise<void> {
       margin: { left: RAND, right: RAND },
       styles: { fontSize: TEXT_GROESSE, cellPadding: 4, overflow: "linebreak" },
       headStyles: { fillColor: [55, 55, 55], textColor: 255 },
+      columnStyles,
     });
     y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 12;
   }
@@ -96,6 +102,8 @@ export async function erzeugeJsPdf(dokument: PdfDokument): Promise<void> {
     } else {
       y += 8;
     }
+    // Seitenkopf (z.B. Turniername) oben auf jeder Schiedsrichter-Seite wiederholen.
+    if (abschnitt.seitenkopf) schreibe(abschnitt.seitenkopf, TEXT_GROESSE, "bold");
     if (abschnitt.ueberschrift) {
       platzPruefen(H2_GROESSE * 1.6);
       schreibe(abschnitt.ueberschrift, H2_GROESSE, "bold");

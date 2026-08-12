@@ -1460,6 +1460,23 @@ button:hover:not(:disabled) {
 .druck-abschnitt {
   margin-top: 16px;
 }
+/* Wiederholter Turniername oben auf jeder Schiedsrichter-Seite. */
+.druck-seitenkopf {
+  margin: 0 0 2px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+/* Spielplan-Tabelle: schmale Fuehrungsspalten (Nr., Zeit), damit die Mannschaftsspalten breit sind. */
+.druck-tabelle-spielplan th:first-child,
+.druck-tabelle-spielplan td:first-child {
+  width: 2.5em;
+  white-space: nowrap;
+}
+.druck-tabelle-spielplan th:nth-child(2),
+.druck-tabelle-spielplan td:nth-child(2) {
+  width: 4.5em;
+  white-space: nowrap;
+}
 .druck-qr {
   margin: 12px 0;
 }

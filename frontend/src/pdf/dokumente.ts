@@ -13,6 +13,9 @@ export interface PdfFeld {
 export interface PdfTabelle {
   spalten: string[];
   zeilen: string[][];
+  /** Die ersten beiden Spalten (Nr., Zeit) schmal halten (Spielplan) - sie brauchen wenig Platz,
+   *  der Rest geht an die Mannschaftsspalten. */
+  schmaleFuehrungsspalten?: boolean;
 }
 
 export interface PdfQr {
@@ -24,6 +27,9 @@ export interface PdfQr {
 /** Ein Abschnitt mit eigener Ueberschrift (H2). Fuer die Schiedsrichter-Blaetter startet jeder
  *  Abschnitt eine neue Seite (seitenumbruchVor) und traegt seinen eigenen QR-Code. */
 export interface PdfAbschnitt {
+  /** Kleiner Kopf ueber der Ueberschrift, der bei seitenweisen Abschnitten (Schiedsrichter-Blaetter)
+   *  auf JEDER Seite den Turnierkontext wiederholt. */
+  seitenkopf?: string;
   ueberschrift?: string;
   absaetze?: string[];
   felder?: PdfFeld[];
@@ -158,7 +164,11 @@ export function baueSpielplanDokument(
     abschnitte: [
       {
         ueberschrift: "Spielplan",
-        tabelle: { spalten: spielSpalten(mehrereFelder), zeilen: spielZeilen(spiele, mehrereFelder) },
+        tabelle: {
+          spalten: spielSpalten(mehrereFelder),
+          zeilen: spielZeilen(spiele, mehrereFelder),
+          schmaleFuehrungsspalten: true,
+        },
         leerHinweis: "Noch kein Spielplan veröffentlicht.",
       },
     ],
@@ -178,6 +188,9 @@ export function baueSchiedsrichterDokument(
 ): PdfDokument {
   const kontext = [g.name, g.datum].filter(Boolean).join(" · ");
   const abschnitte: PdfAbschnitt[] = schiedsrichter.map((sr, index) => ({
+    // Turniername als Kopf auf JEDER Seite (jede Person = eigene Seite), auch wenn der Kontext
+    // darunter noch einmal auftaucht.
+    seitenkopf: g.name,
     ueberschrift: sr.name,
     seitenumbruchVor: index > 0,
     absaetze: kontext ? [`Turnier: ${kontext}`] : undefined,
