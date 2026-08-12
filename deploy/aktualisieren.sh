@@ -76,5 +76,11 @@ echo
 echo "== [3/3] App-Instanz aktualisieren (Git-Pull + Build + Dienst-Neustart) =="
 bash "${SKRIPT_ORDNER}/deploy-instanz.sh" "$@"
 
+CHECKOUT_ORDNER="$(cd "${SKRIPT_ORDNER}/.." && pwd)"
 echo
 echo "Fertig - System und App-Instanz sind auf dem aktuellen Stand."
+echo
+echo "Hinweis: Dieses Skript (deploy/aktualisieren.sh) aktualisiert sich nicht selbst - es kann also"
+echo "sein, dass beim naechsten Update-Lauf noch eine aeltere Fassung verwendet wird. Vor dem"
+echo "naechsten Lauf einmal pruefen/aktualisieren mit:"
+echo "  cd ${CHECKOUT_ORDNER} && git pull"

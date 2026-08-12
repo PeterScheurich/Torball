@@ -32,6 +32,11 @@ bekanntes Footgun (unvorhersehbares Verhalten, falls sich Zeilenoffsets während
 verschieben). Stattdessen bleibt es bei der bestehenden Regel: vor einem Lauf ggf. manuell
 `git pull` im Checkout, falls sich die Deploy-Skripte seit dem letzten Mal geändert haben.
 
+**Nachtrag (selbe Sitzung):** Nutzer-Wunsch, diesen Hinweis nicht nur in der Doku, sondern auch am
+Ende jedes Skript-Laufs auszugeben – sonst geht er in der Praxis leicht unter. Das Skript ermittelt
+dafür zur Laufzeit den tatsächlichen Checkout-Pfad (`cd "${SKRIPT_ORDNER}/.." && pwd`) und gibt am
+Ende einen direkt copy-pasteable `cd ... && git pull`-Befehl aus, keinen Platzhalter.
+
 Nur syntaktisch geprüft (`bash -n`), nicht live gegen den echten Produktiv-Server ausgeführt (würde
 System-Pakete aktualisieren bzw. ggf. neu starten – das soll der Nutzer selbst anstoßen).
 

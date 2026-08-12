@@ -652,7 +652,9 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   komplett an `deploy-instanz.sh` (dieselben Parameter durchgereicht) – keine doppelte Logik.
   Aktualisiert bewusst **nicht** sich selbst/den umgebenden Checkout (Risiko, ein laufendes
   Bash-Skript durch `git reset --hard` unter sich selbst zu verändern); bei Änderungen an den
-  Deploy-Skripten muss vorher manuell `git pull` im Checkout laufen.
+  Deploy-Skripten muss vorher manuell `git pull` im Checkout laufen. Damit das nicht in
+  Vergessenheit gerät, endet jeder Lauf mit genau diesem Hinweis + fertigem `cd ... && git pull`-
+  Befehl (Pfad wird zur Laufzeit ermittelt, kein Platzhalter).
 - **Interne LAN-Adressen gehören NICHT ins Repo** (Nutzer-Vorgabe): Dev-CouchDB,
   Gitea-Repo, BookStack usw. stehen im Repo nur als Platzhalter (`couchdb-host`,
   `gitea-host`, `bookstack-host`); die konkreten Adressen liegen im Claude-Memory.
