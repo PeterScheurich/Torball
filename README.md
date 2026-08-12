@@ -9,18 +9,28 @@ Turnierseite und einer barrierefreien Bedienung.
 
 - **Turnierplanung** per Assistent: Grunddaten, Mannschaften (mit Kader und
   Trainer/Betreuern), Schiedsrichter, Spielplan.
-- **Stammdaten** für Vereine und Teams, turnierübergreifend wiederverwendbar.
+- **Stammdaten** für Vereine und Teams, turnierübergreifend wiederverwendbar;
+  zusätzlich **Kontakt-/Stammdaten am Benutzerprofil**, die sich als
+  Turnierleitung/Schiedsrichter ins Turnier übernehmen lassen.
 - **Spielplan-Vorschlag** mit Regel-Warnungen (z. B. zwei Spiele hintereinander)
   und **Schiedsrichter-Zuordnung** als bewusster Schritt (kein Automatismus).
 - **Ergebniserfassung** direkt in der App oder über einen teilbaren
   Erfassungslink (mit QR-Code) ohne Login – z. B. für Helfer an den Spielfeldern.
+- **Datenübernahme zwischen Spieltagen** (Hin-/Rückspieltag): ein neues Turnier
+  aus einem abgeschlossenen ableiten, mit Gesamttabelle über beide Spieltage.
+- **Ausdrucke (PDF)** für Turnierinfos, Spielplan, Ergebnisse und
+  Schiedsrichter-Einteilung – wahlweise als getaggtes, barrierefreies PDF über
+  den Druckdialog oder als Direkt-Download; jeweils mit Link und QR-Code.
+- **Turnier-Logo** je Turnier (Standard: Torball-Logo, überschreibbar).
 - **Öffentliche Turnierseite** je Turnier (ohne Login), Bereiche einzeln
-  freischaltbar, mit QR-Code zum Öffnen auf dem Smartphone.
-- **Benutzerverwaltung** mit Rollen, Einladungs-Flow, Zwei-Faktor-Anmeldung.
+  freischaltbar, mit QR-Code zum Öffnen auf dem Smartphone – plus eine
+  **öffentliche Startseite**, die alle freigegebenen Turniere auflistet.
+- **Benutzerverwaltung** mit Rollen, Einladungs-Flow, Zwei-Faktor-Anmeldung; die
+  Turnierliste zeigt, wer ein Turnier angelegt/zuletzt bearbeitet/abgeschlossen hat.
 - **In-App-Hilfe** unter `/hilfe` sowie kontextbezogene Hilfe auf öffentlichen
   Seiten.
 - **Barrierefreiheit & Theming** von Anfang an: Tastaturbedienung, sichtbarer
-  Fokus, Hell-/Dunkelmodus und Zeilenabstand einstellbar.
+  Fokus, Hell-/Dunkelmodus, Zeilenabstand und Inhaltsbreite einstellbar.
 
 ## Technischer Aufbau
 
