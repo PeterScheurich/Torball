@@ -18,6 +18,7 @@ interface SchiedsrichterBody {
   lizenzVorhanden?: boolean;
   mannschaftId?: string;
   istTurnierleitung?: boolean;
+  nurTurnierleitung?: boolean;
 }
 
 const schiedsrichterBodySchema = {
@@ -32,6 +33,7 @@ const schiedsrichterBodySchema = {
     lizenzVorhanden: { type: "boolean" },
     mannschaftId: { type: "string" },
     istTurnierleitung: { type: "boolean" },
+    nurTurnierleitung: { type: "boolean" },
   },
 } as const;
 
@@ -43,6 +45,7 @@ interface SchiedsrichterAktualisierungBody {
   lizenzVorhanden: boolean;
   mannschaftId?: string;
   istTurnierleitung: boolean;
+  nurTurnierleitung?: boolean;
 }
 
 // Optionale Freitextfelder (inkl. mannschaftId) akzeptieren beim Aktualisieren bewusst auch
@@ -59,6 +62,7 @@ const schiedsrichterAktualisierungSchema = {
     lizenzVorhanden: { type: "boolean" },
     mannschaftId: { type: ["string", "null"] },
     istTurnierleitung: { type: "boolean" },
+    nurTurnierleitung: { type: "boolean" },
   },
 } as const;
 
@@ -139,6 +143,8 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
         lizenzVorhanden: req.body.lizenzVorhanden ?? false,
         mannschaftId: req.body.mannschaftId ?? undefined,
         istTurnierleitung: req.body.istTurnierleitung ?? false,
+        // "nur Turnierleitung" ist nur sinnvoll, wenn die Person auch Turnierleitung ist.
+        nurTurnierleitung: (req.body.istTurnierleitung ?? false) && (req.body.nurTurnierleitung ?? false),
       };
       const gespeichert = await insertDoc(schiedsrichter);
       return reply.code(201).send(gespeichert);
@@ -155,6 +161,8 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
       if (!bestehend) return;
 
       const aktualisiert: SchiedsrichterImTurnier = { ...bestehend, ...req.body };
+      // "nur Turnierleitung" ohne Turnierleitung ist bedeutungslos - konsequent zuruecksetzen.
+      if (!aktualisiert.istTurnierleitung) aktualisiert.nurTurnierleitung = false;
       return insertDoc(aktualisiert);
     },
   );

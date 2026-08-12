@@ -19,7 +19,14 @@ export interface Benutzer extends CouchMeta {
   email: string;
   passwortHash?: string;
   name: string;
+  /** Vorname als eigenes Feld (der `name` bleibt Nachname/Anzeigename). Zusammen mit `name` in die
+   *  Schiedsrichter-Erfassung eines Turniers uebernehmbar (Name+Vorname). */
+  vorname?: string;
   telefon?: string;
+  /** Kontakt-/Stammdaten fuer die Uebernahme ins Turnier bzw. rein informativ. */
+  lizenzVorhanden?: boolean;
+  vereinVerband?: string;
+  adresse?: string;
   globaleRolle: GlobaleRolle;
   sprache: Sprache;
   zweiFaAktiv: boolean;

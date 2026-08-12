@@ -203,6 +203,19 @@ vorgeschlagen); **P2** (nachrangig) – möglichst nicht pfeifen, während eine
 eigene Mannschaft gleichzeitig auf einem Parallelfeld spielt. Beide Konflikte
 werden im UI als Hinweis angezeigt (`schiedsrichterKonflikt.ts`).
 
+**Benutzer-Stammdaten → Turnier-Übernahme:** `Benutzer` trägt neben `name`/`email`/`telefon` auch
+`vorname`, `lizenzVorhanden`, `vereinVerband`, `adresse` (alle optional, gepflegt unter „Mein
+Profil" → Abschnitt „Kontakt- und Stammdaten", `PUT /benutzer/mich`, nicht sicherheitsrelevant →
+**ohne** Passwort-Bestätigung). Sie lassen sich ins Turnier übernehmen: **automatisch** – `POST
+/turniere` legt die anlegende Person direkt als Turnierleitung-Schiedsrichter aus ihrem Profil an
+(nur der normale Anlege-Pfad, **nicht** `/ableiten`, das kopiert aus dem Vorgänger) – **und manuell**
+über den Knopf „Meine Profildaten übernehmen" in `SchiedsrichterVerwaltung` (füllt das Anlege-
+Formular vor, setzt bewusst **nicht** automatisch die Turnierleitung). `SchiedsrichterImTurnier`
+trägt zusätzlich `nurTurnierleitung` (Kennzeichen „pfeift nicht", nur bei `istTurnierleitung`
+sinnvoll – Backend setzt es ohne Turnierleitung auf `false` zurück): solche Personen fallen in
+`schiedsrichterZuordnung.ts` aus dem Kandidatenpool. Details:
+`docs/Protokolle/2026-08-12-benutzer-stammdaten.md`.
+
 **Der Spielplan-Tab hat zwei Sichten** (Umschalter): „Spielplan" (Planung:
 Reihenfolge/Zeiten/Status/Hinweis) und die abgespeckte
 „Schiedsrichter-Einteilung". Die Spielplan-Tabellen nutzen

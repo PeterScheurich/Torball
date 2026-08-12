@@ -51,13 +51,16 @@ export function schlageSchiedsrichterVor(
   const einsaetze = new Map<string, number>();
   const belegtProSlot = new Map<number, Set<string>>();
 
+  // "Nur Turnierleitung"-Personen pfeifen nicht und werden nie als Kandidat vorgeschlagen.
+  const kandidaten = schiedsrichter.filter((sr) => !sr.nurTurnierleitung);
+
   for (const spiel of sortiert) {
     const slot = Number(spiel.runde);
     const teamsImSlot = slotTeams.get(slot) ?? new Set<string>();
 
     let bester: string | undefined;
     let besteStrafe = Infinity;
-    for (const sr of schiedsrichter) {
+    for (const sr of kandidaten) {
       let strafe = einsaetze.get(sr._id) ?? 0; // Lastausgleich (Feinsortierung)
       const imEigenen = eigeneMannschaftImSpiel(sr, spiel);
       if (imEigenen) strafe += STRAFE_EIGENE_MANNSCHAFT;

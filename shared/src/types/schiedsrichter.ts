@@ -12,5 +12,9 @@ export interface SchiedsrichterImTurnier extends CouchMeta {
   lizenzVorhanden: boolean;
   mannschaftId?: MannschaftId;
   istTurnierleitung: boolean;
+  /** Kennzeichen "nur Turnierleitung, nicht als Schiedsrichter aktiv". Nur relevant, wenn
+   *  istTurnierleitung=true. Solche Personen pfeifen nicht und werden bei der Schiedsrichter-
+   *  Einteilung nicht als Kandidat vorgeschlagen. */
+  nurTurnierleitung?: boolean;
   importiertAusTurnierId?: TurnierId;
 }

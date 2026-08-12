@@ -139,6 +139,28 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         ...req.body,
       };
       const gespeichert = await insertDoc(turnier);
+
+      // Auto-Uebernahme: die anlegende Person wird aus ihrem Benutzerprofil direkt als
+      // Turnierleitung in die Schiedsrichter-Liste uebernommen (Vorschlag, danach frei
+      // editier-/loeschbar). Bewusst nur hier im normalen Anlege-Pfad - beim Ableiten
+      // (/ableiten) werden Schiedsrichter aus dem Vorgaenger kopiert.
+      const anleger = req.benutzer!;
+      const srId = newId("schiedsrichterImTurnier");
+      const leitung: SchiedsrichterImTurnier = {
+        _id: srId,
+        docType: "schiedsrichterImTurnier",
+        schiedsrichterId: srId,
+        turnierId: id,
+        name: anleger.name,
+        vorname: anleger.vorname,
+        telefon: anleger.telefon,
+        email: anleger.email,
+        lizenzVorhanden: anleger.lizenzVorhanden ?? false,
+        istTurnierleitung: true,
+        nurTurnierleitung: false,
+      };
+      await insertDoc(leitung);
+
       return reply.code(201).send(gespeichert);
     },
   );

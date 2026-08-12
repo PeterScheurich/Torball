@@ -8,6 +8,7 @@ import {
   updateSchiedsrichter,
   type SchiedsrichterAktualisierung,
 } from "../api";
+import { useAuth } from "../auth";
 
 interface TextBearbeitung {
   name: string;
@@ -33,6 +34,7 @@ interface Props {
  * Schiedsrichter-Einteilung (kein Pfeifen der eigenen Mannschaft).
  */
 export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props) {
+  const { benutzer } = useAuth();
   const [schiedsrichter, setSchiedsrichter] = useState<SchiedsrichterImTurnier[]>([]);
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [bearbeitung, setBearbeitung] = useState<Record<string, TextBearbeitung>>({});
@@ -86,6 +88,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
       lizenzVorhanden: s.lizenzVorhanden,
       mannschaftId: s.mannschaftId ?? null,
       istTurnierleitung: s.istTurnierleitung,
+      nurTurnierleitung: s.nurTurnierleitung ?? false,
       ...override,
     };
   }
@@ -106,7 +109,8 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
       (payload.email ?? null) === (s.email ?? null) &&
       payload.lizenzVorhanden === s.lizenzVorhanden &&
       (payload.mannschaftId ?? null) === (s.mannschaftId ?? null) &&
-      payload.istTurnierleitung === s.istTurnierleitung;
+      payload.istTurnierleitung === s.istTurnierleitung &&
+      (payload.nurTurnierleitung ?? false) === (s.nurTurnierleitung ?? false);
     if (unveraendert) return;
 
     try {
@@ -137,6 +141,21 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
 
   function textAendern(id: string, aenderung: Partial<TextBearbeitung>) {
     setBearbeitung((b) => ({ ...b, [id]: { ...b[id], ...aenderung } }));
+  }
+
+  /** Fuellt das Anlege-Formular mit den Stammdaten des angemeldeten Benutzers vor (einmal im Profil
+   *  gepflegt, hier uebernehmbar). Danach kann die Person noch angepasst und per "hinzufügen"
+   *  gespeichert werden - Turnierleitung wird bewusst nicht automatisch gesetzt (per Radio waehlbar). */
+  function profildatenUebernehmen() {
+    if (!benutzer) return;
+    setNeuName(benutzer.name ?? "");
+    setNeuVorname(benutzer.vorname ?? "");
+    setNeuTelefon(benutzer.telefon ?? "");
+    setNeuEmail(benutzer.email ?? "");
+    setNeuLizenz(benutzer.lizenzVorhanden ?? false);
+    setNeuMannschaftId("");
+    setFehler(undefined);
+    nameRef.current?.focus();
   }
 
   // Legt einen neuen Schiedsrichter an, leert das Formular und fokussiert wieder das Namensfeld.
@@ -312,6 +331,18 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
                       checked={s.istTurnierleitung}
                       onChange={() => turnierleitungSetzen(s)}
                     />
+                    {/* Nur relevant fuer die Turnierleitung: pfeift diese Person selbst nicht,
+                        wird sie bei der Schiedsrichter-Einteilung nicht als Kandidat vorgeschlagen. */}
+                    {s.istTurnierleitung && (
+                      <label className="sr-nur-leitung">
+                        <input
+                          type="checkbox"
+                          checked={s.nurTurnierleitung ?? false}
+                          onChange={(e) => speichern(s, { nurTurnierleitung: e.target.checked })}
+                        />{" "}
+                        pfeift nicht
+                      </label>
+                    )}
                   </td>
                   <td>
                     <button
@@ -329,6 +360,17 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
             </tbody>
           </table>
         </div>
+      )}
+
+      {benutzer && (
+        <p>
+          <button type="button" onClick={profildatenUebernehmen}>
+            Meine Profildaten übernehmen
+          </button>{" "}
+          <span className="feld-hinweis">
+            Füllt das Formular mit deinen Stammdaten aus „Mein Profil“ vor.
+          </span>
+        </p>
       )}
 
       <form onSubmit={anlegen} className="schiedsrichter-formular">

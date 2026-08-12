@@ -46,6 +46,16 @@ test("Ohne Schiedsrichter bleibt jede Zuordnung leer", () => {
   assert.equal(z.get("g1"), undefined);
 });
 
+test("'nur Turnierleitung' pfeift nicht: wird nie vorgeschlagen, auch wenn kein anderer bereitsteht", () => {
+  const nurTL = { ...sr("tl"), istTurnierleitung: true, nurTurnierleitung: true } as SchiedsrichterImTurnier;
+  // Einziger Kandidat ist die reine Turnierleitung -> Spiel bleibt bewusst unbesetzt.
+  const alleine = schlageSchiedsrichterVor([spiel("g1", "1", "A", "B")], [nurTL]);
+  assert.equal(alleine.get("g1"), undefined);
+  // Mit einem echten Schiedsrichter daneben wird nur dieser gewaehlt.
+  const zusammen = schlageSchiedsrichterVor([spiel("g1", "1", "A", "B")], [nurTL, sr("srN")]);
+  assert.equal(zusammen.get("g1"), "srN");
+});
+
 test("Neutrale Schiedsrichter (ohne Mannschaft) werden zur Lastverteilung gestreut", () => {
   // Zwei Spiele in verschiedenen Slots, zwei neutrale Schiedsrichter -> je einer pro Spiel.
   const z = schlageSchiedsrichterVor(

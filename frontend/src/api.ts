@@ -261,6 +261,7 @@ export interface NeuerSchiedsrichter {
   lizenzVorhanden?: boolean;
   mannschaftId?: string;
   istTurnierleitung?: boolean;
+  nurTurnierleitung?: boolean;
 }
 
 export interface SchiedsrichterAktualisierung {
@@ -273,6 +274,7 @@ export interface SchiedsrichterAktualisierung {
   /** null loest die Mannschaftszugehoerigkeit ("— keine —"). */
   mannschaftId?: string | null;
   istTurnierleitung: boolean;
+  nurTurnierleitung?: boolean;
 }
 
 export function getSchiedsrichter(turnierId: string): Promise<SchiedsrichterImTurnier[]> {
@@ -478,6 +480,11 @@ export function benutzerZweiFaDeaktivieren(id: string): Promise<BenutzerProfil> 
 /** Selbst-Service fuers eigene Profil - kann anders als benutzerAktualisieren() weder Rolle noch Sperrung aendern. Bei E-Mail-Aenderung ist aktuellesPasswort Pflicht. standardTheme/standardDichte sind Anzeige-Voreinstellungen, kein Passwort noetig. */
 export function eigenesProfilAktualisieren(daten: {
   name?: string;
+  vorname?: string;
+  telefon?: string;
+  lizenzVorhanden?: boolean;
+  vereinVerband?: string;
+  adresse?: string;
   email?: string;
   aktuellesPasswort?: string;
   standardTheme?: Theme;

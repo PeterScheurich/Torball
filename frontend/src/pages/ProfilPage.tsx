@@ -40,6 +40,15 @@ export function ProfilPage() {
   const { benutzer, aktualisiereBenutzer } = useAuth();
   const [email, setEmail] = useState(benutzer?.email ?? "");
   const [emailPasswort, setEmailPasswort] = useState("");
+  // Kontakt-/Stammdaten (nicht sicherheitsrelevant, ohne Passwort speicherbar).
+  const [stammdaten, setStammdaten] = useState({
+    name: benutzer?.name ?? "",
+    vorname: benutzer?.vorname ?? "",
+    telefon: benutzer?.telefon ?? "",
+    lizenzVorhanden: benutzer?.lizenzVorhanden ?? false,
+    vereinVerband: benutzer?.vereinVerband ?? "",
+    adresse: benutzer?.adresse ?? "",
+  });
   const [aktuellesPasswort, setAktuellesPasswort] = useState("");
   const [neuesPasswort, setNeuesPasswort] = useState("");
   const [neuesPasswortWiederholung, setNeuesPasswortWiederholung] = useState("");
@@ -65,6 +74,29 @@ export function ProfilPage() {
       setHinweis("Voreinstellung gespeichert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern der Voreinstellung");
+    }
+  }
+
+  // Speichert die Kontakt-/Stammdaten (Name, Vorname, Telefon, Lizenz, Verein/Verband, Adresse).
+  // Nicht sicherheitsrelevant -> kein Passwort noetig. Diese Daten lassen sich beim Turnier in die
+  // Schiedsrichter-/Turnierleitungs-Erfassung uebernehmen.
+  async function stammdatenSpeichern(event: React.FormEvent) {
+    event.preventDefault();
+    setFehler(undefined);
+    setHinweis(undefined);
+    try {
+      const aktualisiert = await eigenesProfilAktualisieren({
+        name: stammdaten.name,
+        vorname: stammdaten.vorname,
+        telefon: stammdaten.telefon,
+        lizenzVorhanden: stammdaten.lizenzVorhanden,
+        vereinVerband: stammdaten.vereinVerband,
+        adresse: stammdaten.adresse,
+      });
+      aktualisiereBenutzer(aktualisiert);
+      setHinweis("Stammdaten gespeichert.");
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern der Stammdaten");
     }
   }
 
@@ -155,14 +187,6 @@ export function ProfilPage() {
         <table>
           <caption className="sr-only">Eigene Profildaten</caption>
           <tbody>
-            <tr>
-              <th scope="row">
-                <label htmlFor="profilName">Name</label>
-              </th>
-              <td>
-                <input id="profilName" readOnly value={benutzer.name} />
-              </td>
-            </tr>
             <tr>
               <th scope="row">
                 <label htmlFor="email">E-Mail</label>
@@ -293,6 +317,66 @@ export function ProfilPage() {
         keine eigene Wahl in <a href="/einstellungen">den Einstellungen</a> getroffen wurde.
       </p>
       <p>Für ein neues Passwort: mindestens 8 Zeichen, davon 1 Großbuchstabe, 1 Zahl, 1 Sonderzeichen.</p>
+
+      <h2>Kontakt- und Stammdaten</h2>
+      <p>
+        Diese Angaben lassen sich beim Anlegen bzw. in der Schiedsrichter-Verwaltung eines Turniers als
+        Turnierleitung/Schiedsrichter übernehmen – einmal pflegen, mehrfach nutzen.
+      </p>
+      <form onSubmit={stammdatenSpeichern}>
+        <div className="feld">
+          <label htmlFor="stammName">Name</label>
+          <input
+            id="stammName"
+            required
+            value={stammdaten.name}
+            onChange={(e) => setStammdaten((s) => ({ ...s, name: e.target.value }))}
+          />
+        </div>
+        <div className="feld">
+          <label htmlFor="stammVorname">Vorname</label>
+          <input
+            id="stammVorname"
+            value={stammdaten.vorname}
+            onChange={(e) => setStammdaten((s) => ({ ...s, vorname: e.target.value }))}
+          />
+        </div>
+        <div className="feld">
+          <label htmlFor="stammTelefon">Telefon</label>
+          <input
+            id="stammTelefon"
+            type="tel"
+            value={stammdaten.telefon}
+            onChange={(e) => setStammdaten((s) => ({ ...s, telefon: e.target.value }))}
+          />
+        </div>
+        <label className="feld-checkbox">
+          <input
+            type="checkbox"
+            checked={stammdaten.lizenzVorhanden}
+            onChange={(e) => setStammdaten((s) => ({ ...s, lizenzVorhanden: e.target.checked }))}
+          />{" "}
+          Schiedsrichter-Lizenz vorhanden
+        </label>
+        <div className="feld">
+          <label htmlFor="stammVereinVerband">Verein/Verband</label>
+          <input
+            id="stammVereinVerband"
+            value={stammdaten.vereinVerband}
+            onChange={(e) => setStammdaten((s) => ({ ...s, vereinVerband: e.target.value }))}
+          />
+        </div>
+        <div className="feld">
+          <label htmlFor="stammAdresse">Adresse</label>
+          <textarea
+            id="stammAdresse"
+            rows={2}
+            value={stammdaten.adresse}
+            onChange={(e) => setStammdaten((s) => ({ ...s, adresse: e.target.value }))}
+          />
+        </div>
+        <button type="submit">Stammdaten speichern</button>
+      </form>
 
       <h2>Zwei-Faktor-Authentifizierung (2FA)</h2>
       {benutzer.zweiFaAktiv ? (

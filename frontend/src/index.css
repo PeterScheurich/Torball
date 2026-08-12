@@ -425,6 +425,12 @@ form {
   gap: 4px;
 }
 
+/* Checkbox mit Inline-Label in einem Formular (Ausrichtung wie eine .feld-Zeile, aber horizontal). */
+.feld-checkbox {
+  display: block;
+  margin: 8px 0;
+}
+
 /* Kleiner erklaerender Hinweis unter einem Formularfeld (z.B. warum die Stammdaten-Auswahl
    leer ist), gedaempft und in normaler Schriftstaerke. */
 .feld-hinweis {
@@ -648,6 +654,15 @@ form {
   align-items: center;
   gap: 4px;
   font-weight: 400;
+}
+
+/* "pfeift nicht"-Kennzeichen unter dem Turnierleitung-Radio (nur bei aktiver Turnierleitung). */
+.sr-nur-leitung {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
 }
 
 /* E-Mail-Feld breiter als die uebrigen Schiedsrichter-Eingaben - Adressen sind meist laenger

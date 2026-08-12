@@ -144,6 +144,11 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
   app.put<{
     Body: {
       name?: string;
+      vorname?: string;
+      telefon?: string;
+      lizenzVorhanden?: boolean;
+      vereinVerband?: string;
+      adresse?: string;
       email?: string;
       aktuellesPasswort?: string;
       standardTheme?: Benutzer["standardTheme"];
@@ -157,6 +162,12 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
           type: "object",
           properties: {
             name: { type: "string", minLength: 1 },
+            // Optionale Stammdaten: leerer String erlaubt (Feld gezielt leeren).
+            vorname: { type: "string" },
+            telefon: { type: "string" },
+            lizenzVorhanden: { type: "boolean" },
+            vereinVerband: { type: "string" },
+            adresse: { type: "string" },
             email: { type: "string", minLength: 1 },
             aktuellesPasswort: { type: "string" },
             standardTheme: { type: "string", enum: ["system", "light", "dark"] },
@@ -167,13 +178,44 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
     },
     async (req, reply) => {
       if (!requireAuth(req, reply)) return;
-      // standardTheme/standardDichte sind reine Anzeige-Voreinstellungen, keine
-      // sensiblen Felder (siehe CLAUDE.md) - anders als E-Mail/Passwort/2FA
-      // deshalb ohne Passwort-Bestaetigung aenderbar.
-      const aenderungen: Partial<Pick<Benutzer, "name" | "email" | "standardTheme" | "standardDichte">> = {};
+      // standardTheme/standardDichte und die Kontakt-/Stammdaten (Vorname, Telefon, Lizenz,
+      // Verein/Verband, Adresse) sind keine sensiblen Felder (siehe CLAUDE.md) - anders als
+      // E-Mail/Passwort/2FA deshalb ohne Passwort-Bestaetigung aenderbar.
+      const aenderungen: Partial<
+        Pick<
+          Benutzer,
+          | "name"
+          | "vorname"
+          | "telefon"
+          | "lizenzVorhanden"
+          | "vereinVerband"
+          | "adresse"
+          | "email"
+          | "standardTheme"
+          | "standardDichte"
+        >
+      > = {};
 
       if (req.body.name) {
         aenderungen.name = req.body.name;
+      }
+
+      // Optionale Textfelder: bei vorhandenem Schluessel immer uebernehmen (getrimmt), damit ein
+      // leerer Wert das Feld auch wirklich leert (undefined = Feld nicht mitgesendet, unveraendert).
+      if (req.body.vorname !== undefined) {
+        aenderungen.vorname = req.body.vorname.trim() || undefined;
+      }
+      if (req.body.telefon !== undefined) {
+        aenderungen.telefon = req.body.telefon.trim() || undefined;
+      }
+      if (req.body.vereinVerband !== undefined) {
+        aenderungen.vereinVerband = req.body.vereinVerband.trim() || undefined;
+      }
+      if (req.body.adresse !== undefined) {
+        aenderungen.adresse = req.body.adresse.trim() || undefined;
+      }
+      if (req.body.lizenzVorhanden !== undefined) {
+        aenderungen.lizenzVorhanden = req.body.lizenzVorhanden;
       }
 
       if (req.body.standardTheme) {
