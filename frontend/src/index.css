@@ -1441,3 +1441,79 @@ button:hover:not(:disabled) {
   border-color: var(--accent);
   background: var(--bg-subtle);
 }
+
+/* --- Ausdrucke / Druckansicht (PDFs) ---
+   Auf dem Bildschirm eine schlichte Vorschau; im Druck (Chrome "Als PDF speichern" liefert ein
+   getaggtes PDF) werden Kopfzeile und Bedienelemente ausgeblendet, sodass nur das Dokument bleibt. */
+.druck-dokument {
+  max-width: 60em;
+}
+.druck-felder {
+  margin: 8px 0 16px;
+}
+.druck-felder th[scope="row"] {
+  text-align: left;
+  padding-right: 12px;
+  white-space: nowrap;
+  vertical-align: top;
+}
+.druck-abschnitt {
+  margin-top: 16px;
+}
+.druck-qr {
+  margin: 12px 0;
+}
+.druck-qr .qr-code-bild {
+  width: 160px;
+  max-width: 45vw;
+}
+.druck-qr-text {
+  margin-top: 4px;
+}
+.druck-qr-url {
+  word-break: break-all;
+  font-size: 0.85rem;
+}
+.druck-seitenumbruch {
+  break-before: page;
+}
+.druck-aktionen {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0 20px;
+}
+.druck-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0;
+}
+
+@media print {
+  header,
+  .druck-aktionen,
+  .kein-druck {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .druck-dokument {
+    max-width: none;
+    color: #000;
+  }
+  .tabellen-wrapper {
+    overflow: visible !important;
+  }
+  /* Nicht mitten in einer Tabellenzeile oder im QR-Block umbrechen. */
+  tr,
+  .druck-qr {
+    break-inside: avoid;
+  }
+  a {
+    color: #000;
+    text-decoration: none;
+  }
+}

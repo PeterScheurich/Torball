@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@torball/shared": "*",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "qrcode": "^1.5.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

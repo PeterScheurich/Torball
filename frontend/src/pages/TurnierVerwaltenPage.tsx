@@ -597,6 +597,23 @@ export function TurnierVerwaltenPage() {
           QR-Code zum Aushängen – wer ihn scannt, kommt direkt auf die öffentliche Turnierseite.
         </p>
 
+        <h2>Ausdrucke (PDF)</h2>
+        <p>
+          Druckfertige Dokumente – jeweils als barrierefreies PDF (Druckdialog) oder Direkt-Download. Enthalten den
+          Link und QR-Code zur öffentlichen Seite.
+        </p>
+        <p className="druck-links">
+          <Link className="button-link" to={`/turniere/${encodeURIComponent(turnierId)}/druck?doc=info`}>
+            Turnierinformationen
+          </Link>{" "}
+          <Link className="button-link" to={`/turniere/${encodeURIComponent(turnierId)}/druck?doc=spielplan`}>
+            Spielplan
+          </Link>{" "}
+          <Link className="button-link" to={`/turniere/${encodeURIComponent(turnierId)}/druck?doc=schiedsrichter`}>
+            Schiedsrichter-Einteilung
+          </Link>
+        </p>
+
         <TurnierFreigabe turnierId={turnierId} />
 
         <TurnierPruefung turnier={turnier} />

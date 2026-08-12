@@ -6,6 +6,8 @@ import { SpielregelnErfassenPage } from "./pages/SpielregelnErfassenPage";
 import { SchiedsrichterErfassenPage } from "./pages/SchiedsrichterErfassenPage";
 import { SpielplanErstellenPage } from "./pages/SpielplanErstellenPage";
 import { TurnierVerwaltenPage } from "./pages/TurnierVerwaltenPage";
+import { DruckansichtPage } from "./pages/DruckansichtPage";
+import { OeffentlicheDruckansichtPage } from "./pages/OeffentlicheDruckansichtPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ErsteinrichtungPage } from "./pages/ErsteinrichtungPage";
 import { EinladungAnnehmenPage } from "./pages/EinladungAnnehmenPage";
@@ -158,6 +160,7 @@ function App() {
           <Route path="/passwort-reset/:token" element={<PasswortResetPage />} />
           <Route path="/ergebnis-erfassung/:tokenWert" element={<ErgebnisErfassungPage />} />
           <Route path="/turniere/:id/oeffentlich" element={<OeffentlicheTurnierseitePage />} />
+          <Route path="/turniere/:id/oeffentlich/druck" element={<OeffentlicheDruckansichtPage />} />
           <Route path="/einstellungen" element={<EinstellungenPage />} />
           <Route path="/hilfe" element={<HilfePage />} />
 
@@ -174,6 +177,7 @@ function App() {
             <Route path="/turniere/:id/mannschaften-erfassen" element={<MannschaftenErfassenPage />} />
             <Route path="/turniere/:id/schiedsrichter-erfassen" element={<SchiedsrichterErfassenPage />} />
             <Route path="/turniere/:id/spielplan-erstellen" element={<SpielplanErstellenPage />} />
+            <Route path="/turniere/:id/druck" element={<DruckansichtPage />} />
             <Route path="/turniere/:id" element={<TurnierVerwaltenPage />} />
           </Route>
         </Routes>

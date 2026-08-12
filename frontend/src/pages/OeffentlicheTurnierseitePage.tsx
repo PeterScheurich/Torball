@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   getOeffentlicheTurnierseite,
   type OeffentlicheTurnierseite,
@@ -338,6 +338,18 @@ export function OeffentlicheTurnierseitePage() {
           <QrCode text={oeffentlicheSeiteUrl} dateiname={`turnier-${daten.name}`} zeigeDownload={false} />
         </div>
       </details>
+
+      <p className="druck-links">
+        Als PDF:{" "}
+        <Link className="button-link" to={`/turniere/${turnierId}/oeffentlich/druck?doc=info`}>
+          Turnierinformationen
+        </Link>{" "}
+        {daten.spielplan && (
+          <Link className="button-link" to={`/turniere/${turnierId}/oeffentlich/druck?doc=spielplan`}>
+            Spielplan
+          </Link>
+        )}
+      </p>
 
       {verfuegbareTabs.length === 0 || !aktiverTab ? (
         <p>Diese Turnierseite ist aktuell nicht öffentlich freigegeben.</p>

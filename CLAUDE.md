@@ -241,6 +241,23 @@ Abhängigkeit `qrcode`): für den Ergebnis-Erfassungslink und die öffentliche
 Turnierseite. Bewusst lokal – die URL bzw. das Token wird an keinen externen
 QR-Dienst geschickt. Download als SVG (skalierbar, für Aushang) und PNG.
 
+**Ausdrucke / PDFs – ein Modell, zwei Ausgaben (clientseitig, nichts serverseitig abgelegt):**
+`frontend/src/pdf/dokumente.ts` definiert ein quellen-agnostisches Dokument-Modell (`PdfDokument`)
++ Builder (`baueInfoDokument`/`baueSpielplanDokument`/`baueSchiedsrichterDokument`), die **bereits
+formatierte** Werte bekommen (Datum/Uhrzeit formatiert der Aufrufer) – so speisen sie intern (volle
+Turnierdaten, `DruckansichtPage`, `?doc=info|spielplan|schiedsrichter`) **und** öffentlich (nur
+freigegebene Daten, `OeffentlicheDruckansichtPage`, `?doc=info|spielplan`) dieselben Dokumente. Aus
+dem Modell werden **zwei** Ausgaben erzeugt: `DruckDokument.tsx` rendert **semantisches HTML** (genau
+ein `<h1>`, `<h2>` je Abschnitt, echte `<table>`, QR mit lesbarem Ziel-Link) → über den Druckdialog
+(„Als PDF speichern") liefert Chrome ein **getaggtes, barrierefreies** PDF; `erzeugeJsPdf.ts` (jsPDF
++ jspdf-autotable, **dynamisch importiert** = Lazy-Chunk) erzeugt den **Direktdownload** (Best-Effort
+barrierefrei, aber **ohne** echte Struktur-Tags – jsPDF kann kein PDF/UA). Beide Wege sind bewusst
+parallel gebaut (Nutzer entscheidet später, ob einer entfällt). Druck-CSS in `index.css`
+(`@media print`) blendet Kopfzeile + `.kein-druck`/`.druck-aktionen` aus; `.druck-seitenumbruch` für
+je eine Schiedsrichter-Seite. QR-Ziele: Info → öffentliche Turnierseite, Spielplan/Schiedsrichter →
+öffentliche Ergebnisseite (`?tab=ergebnisse`). Schiedsrichter-Blatt: eine Seite je pfeifender Person
+(`nurTurnierleitung` ausgeschlossen). Details: `docs/Protokolle/2026-08-12-pdf-ausdrucke.md`.
+
 **Turnierregeln als gemeinsamer Typ + Systemkonfiguration:** Die Regel-/
 Wertungsparameter (Spielzeit, Pausen, Timeouts, Wertung, `forfaitErgebnis`, …)
 liegen im gemeinsamen Typ `Turnierregeln` (`shared/src/types/turnier.ts`), den
