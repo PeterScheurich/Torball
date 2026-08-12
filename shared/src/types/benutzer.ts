@@ -10,6 +10,8 @@ export type Sprache = "de" | "en" | "fr" | "it";
  * automatisch der Systemeinstellung des jeweiligen Geraets. */
 export type Theme = "system" | "light" | "dark";
 export type Dichte = "standard" | "schmal";
+/** Inhaltsbreite: "standard" (schmale, gut lesbare Spalte) oder "breit" (mehr Bildschirmbreite nutzen). */
+export type Breite = "standard" | "breit";
 
 /** Siehe Gesamtspezifikation Abschnitt 20.15. */
 export interface Benutzer extends CouchMeta {
@@ -45,6 +47,7 @@ export interface Benutzer extends CouchMeta {
    */
   standardTheme?: Theme;
   standardDichte?: Dichte;
+  standardBreite?: Breite;
 
   /**
    * Einladungs-Flow (Abschnitt 25.2): Admin/Manager legt Benutzer ohne

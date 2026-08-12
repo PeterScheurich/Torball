@@ -1,5 +1,6 @@
 import { ThemeUmschalter } from "../components/ThemeUmschalter";
 import { DichteUmschalter } from "../components/DichteUmschalter";
+import { BreiteUmschalter } from "../components/BreiteUmschalter";
 import { useAuth } from "../auth";
 
 /** Rein geraetelokale Anzeige-Einstellungen (localStorage) - bewusst NICHT an ein
@@ -30,6 +31,10 @@ export function EinstellungenPage() {
       <h2>Zeilenabstand</h2>
       <p>Wirkt sich auf die Zeilenhöhe von Tabellen und die Höhe von Eingabefeldern in der ganzen Anwendung aus.</p>
       <DichteUmschalter />
+
+      <h2>Breite</h2>
+      <p>„Breit" nutzt mehr Bildschirmbreite (z. B. auf Widescreen-Monitoren); „Standard" hält eine schmalere, gut lesbare Spalte.</p>
+      <BreiteUmschalter />
     </>
   );
 }

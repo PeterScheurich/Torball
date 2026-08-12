@@ -69,6 +69,12 @@ body {
   margin: 0;
 }
 
+/* Inhaltsbreite: "breit" nutzt mehr Bildschirmbreite (Widescreen), Standard bleibt schmal.
+   [data-breite] steht auf <html> (siehe breite.ts). */
+:root[data-breite='breit'] #root {
+  max-width: 1400px;
+}
+
 #root {
   max-width: 960px;
   margin: 0 auto;

@@ -6,6 +6,7 @@ import App from './App.tsx'
 import { AuthProvider } from './auth.tsx'
 import { themeInitialisieren } from './theme'
 import { dichteInitialisieren } from './dichte'
+import { breiteInitialisieren } from './breite'
 
 // Einstiegspunkt des Frontends: haengt die App in #root und umschliesst sie mit Router und
 // Auth-Context. Davor werden Theme/Dichte einmalig angewendet (siehe Kommentar unten).
@@ -16,6 +17,7 @@ import { dichteInitialisieren } from './dichte'
 // einem Reload (F5) auf jeder anderen Seite und es gilt wieder der Standardwert.
 themeInitialisieren()
 dichteInitialisieren()
+breiteInitialisieren()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

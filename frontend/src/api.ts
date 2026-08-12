@@ -1,5 +1,6 @@
 import type {
   Benutzer,
+  Breite,
   Dichte,
   GlobaleRolle,
   KanbanKarte,
@@ -491,6 +492,7 @@ export function eigenesProfilAktualisieren(daten: {
   aktuellesPasswort?: string;
   standardTheme?: Theme;
   standardDichte?: Dichte;
+  standardBreite?: Breite;
 }): Promise<BenutzerProfil> {
   return anfrage("/benutzer/mich", { method: "PUT", body: JSON.stringify(daten) });
 }

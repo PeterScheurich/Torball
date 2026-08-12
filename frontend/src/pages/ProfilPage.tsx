@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Dichte, GlobaleRolle, Theme } from "@torball/shared";
+import type { Breite, Dichte, GlobaleRolle, Theme } from "@torball/shared";
 import {
   eigenesPasswortAendern,
   eigenesProfilAktualisieren,
@@ -12,6 +12,7 @@ import { useAuth } from "../auth";
 import { PasswortRegeln } from "../PasswortRegeln";
 import { themeAnwenden } from "../theme";
 import { dichteAnwenden } from "../dichte";
+import { breiteAnwenden } from "../breite";
 
 const ROLLEN_LABEL: Record<GlobaleRolle, string> = {
   admin: "Admin",
@@ -28,6 +29,11 @@ const THEME_LABEL: Record<Theme, string> = {
 const DICHTE_LABEL: Record<Dichte, string> = {
   standard: "Standard",
   schmal: "Schmal",
+};
+
+const BREITE_LABEL: Record<Breite, string> = {
+  standard: "Standard",
+  breit: "Breit",
 };
 
 /**
@@ -63,14 +69,15 @@ export function ProfilPage() {
   /** Speichert sofort bei Auswahl (wie die uebrigen Auswahlfelder in der App) und wendet
    * die Wahl gleich auch auf diesem Geraet an - eine bewusste Aktion "das soll jetzt
    * mein Standard sein" darf nicht erst auf ein anderes Geraet warten, um sichtbar zu werden. */
-  async function voreinstellungAendern(feld: "standardTheme" | "standardDichte", wert: string) {
+  async function voreinstellungAendern(feld: "standardTheme" | "standardDichte" | "standardBreite", wert: string) {
     setFehler(undefined);
     setHinweis(undefined);
     try {
       const aktualisiert = await eigenesProfilAktualisieren({ [feld]: wert });
       aktualisiereBenutzer(aktualisiert);
       if (feld === "standardTheme") themeAnwenden(wert as Theme);
-      else dichteAnwenden(wert as Dichte);
+      else if (feld === "standardDichte") dichteAnwenden(wert as Dichte);
+      else breiteAnwenden(wert as Breite);
       setHinweis("Voreinstellung gespeichert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern der Voreinstellung");
@@ -309,12 +316,30 @@ export function ProfilPage() {
                 </select>
               </td>
             </tr>
+            <tr>
+              <th scope="row">
+                <label htmlFor="standardBreite">Standard-Breite</label>
+              </th>
+              <td>
+                <select
+                  id="standardBreite"
+                  value={benutzer.standardBreite ?? "standard"}
+                  onChange={(e) => voreinstellungAendern("standardBreite", e.target.value)}
+                >
+                  {(Object.keys(BREITE_LABEL) as Breite[]).map((wert) => (
+                    <option key={wert} value={wert}>
+                      {BREITE_LABEL[wert]}
+                    </option>
+                  ))}
+                </select>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
       <p>
-        Farbschema und Zeilenabstand gelten dann auch beim nächsten Login auf einem anderen Gerät, sofern dort noch
-        keine eigene Wahl in <a href="/einstellungen">den Einstellungen</a> getroffen wurde.
+        Farbschema, Zeilenabstand und Breite gelten dann auch beim nächsten Login auf einem anderen Gerät, sofern dort
+        noch keine eigene Wahl in <a href="/einstellungen">den Einstellungen</a> getroffen wurde.
       </p>
       <p>Für ein neues Passwort: mindestens 8 Zeichen, davon 1 Großbuchstabe, 1 Zahl, 1 Sonderzeichen.</p>
 

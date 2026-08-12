@@ -498,20 +498,26 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
 - Farbschema folgt standardmäßig der Systemeinstellung
   (`prefers-color-scheme`), mit manuellem Umschalter (`[data-theme]`) als
   Override. Zusätzlich Tabellendichte/Zeilenabstand (`[data-dichte]`,
-  „Standard"/„Schmal") nach demselben Muster.
-- **Zwei-Ebenen-Modell für beide Einstellungen** (`frontend/src/theme.ts`,
-  `frontend/src/dichte.ts`): geräte-/browserlokal (`localStorage`, Seite
-  `/einstellungen`, auch ohne Login erreichbar) hat immer Vorrang vor dem
-  kontogebundenen Standardwert (`Benutzer.standardTheme`/`standardDichte`,
-  wird beim Login nur übernommen, wenn auf dem Gerät noch keine eigene Wahl
-  existiert - siehe `seedeVoreinstellungen()` in `frontend/src/auth.tsx`).
+  „Standard"/„Schmal") und Inhaltsbreite (`[data-breite]`, „Standard"/„Breit":
+  `#root` max-width 960px ↔ 1400px) nach demselben Muster.
+- **Zwei-Ebenen-Modell für alle drei Einstellungen** (`frontend/src/theme.ts`,
+  `frontend/src/dichte.ts`, `frontend/src/breite.ts`): geräte-/browserlokal
+  (`localStorage`, Seite `/einstellungen`, auch ohne Login erreichbar) hat immer
+  Vorrang vor dem kontogebundenen Standardwert (`Benutzer.standardTheme`/
+  `standardDichte`/`standardBreite`, wird beim Login nur übernommen, wenn auf dem
+  Gerät noch keine eigene Wahl existiert - siehe `seedeVoreinstellungen()` in
+  `frontend/src/auth.tsx`). **Ein neues solches Zwei-Ebenen-Setting braucht
+  überall dieselben Stellen:** `<name>.ts` (localStorage + `[data-*]`),
+  `<Name>Umschalter`, Init in `main.tsx`, Abschnitt in `EinstellungenPage`,
+  `Benutzer.standard<Name>` (shared) + Profil-Select + `voreinstellungAendern`,
+  `PUT /benutzer/mich` (Body-Typ/Schema-Enum/Handler) und `seedeVoreinstellungen`.
 - **Initialisierung gehört nach `main.tsx`, nicht in eine Komponente:**
-  `themeInitialisieren()`/`dichteInitialisieren()` werden dort vor dem
-  ersten Render aufgerufen (rein lesend, kein `localStorage`-Schreiben).
+  `themeInitialisieren()`/`dichteInitialisieren()`/`breiteInitialisieren()` werden
+  dort vor dem ersten Render aufgerufen (rein lesend, kein `localStorage`-Schreiben).
   Würde man das stattdessen nur beim Mounten von `ThemeUmschalter`/
-  `DichteUmschalter` setzen, fehlt das `data-*`-Attribut nach einem Reload
-  auf jeder Seite, auf der diese Komponenten nicht eingebunden sind (schon
-  einmal genau so live erlebt).
+  `DichteUmschalter`/`BreiteUmschalter` setzen, fehlt das `data-*`-Attribut nach
+  einem Reload auf jeder Seite, auf der diese Komponenten nicht eingebunden sind
+  (schon einmal genau so live erlebt).
 
 ## Datum/Uhrzeit
 

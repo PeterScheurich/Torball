@@ -153,6 +153,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       aktuellesPasswort?: string;
       standardTheme?: Benutzer["standardTheme"];
       standardDichte?: Benutzer["standardDichte"];
+      standardBreite?: Benutzer["standardBreite"];
     };
   }>(
     "/benutzer/mich",
@@ -172,6 +173,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
             aktuellesPasswort: { type: "string" },
             standardTheme: { type: "string", enum: ["system", "light", "dark"] },
             standardDichte: { type: "string", enum: ["standard", "schmal"] },
+            standardBreite: { type: "string", enum: ["standard", "breit"] },
           },
         },
       },
@@ -193,6 +195,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
           | "email"
           | "standardTheme"
           | "standardDichte"
+          | "standardBreite"
         >
       > = {};
 
@@ -224,6 +227,10 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
 
       if (req.body.standardDichte) {
         aenderungen.standardDichte = req.body.standardDichte;
+      }
+
+      if (req.body.standardBreite) {
+        aenderungen.standardBreite = req.body.standardBreite;
       }
 
       if (req.body.email) {

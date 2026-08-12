@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { getMe, login as apiLogin, logout as apiLogout, type BenutzerProfil, type LoginErgebnis } from "./api";
 import { themeAnwenden, themeLokalUeberschrieben } from "./theme";
 import { dichteAnwenden, dichteLokalUeberschrieben } from "./dichte";
+import { breiteAnwenden, breiteLokalUeberschrieben } from "./breite";
 
 /**
  * Wendet die kontogebundenen Standardwerte (Profil-Einstellungen) als Startwert auf
@@ -15,6 +16,9 @@ function seedeVoreinstellungen(profil: BenutzerProfil): void {
   }
   if (profil.standardDichte && !dichteLokalUeberschrieben()) {
     dichteAnwenden(profil.standardDichte);
+  }
+  if (profil.standardBreite && !breiteLokalUeberschrieben()) {
+    breiteAnwenden(profil.standardBreite);
   }
 }
 
