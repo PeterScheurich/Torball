@@ -265,7 +265,8 @@ je eine Schiedsrichter-Seite. QR-Ziele: Info → öffentliche Turnierseite, Spie
 
 **Turnier-Logo (je Turnier überschreibbar, als Data-URL):** `Turnier.logoDataUrl` – ein optionales
 Logo, das clientseitig verkleinert (`frontend/src/logoBild.ts`, Canvas, max. 256 px lange Kante,
-PNG-Data-URL) und **direkt am Turnier-Dokument** gespeichert wird (bewusst **keine** separate
+PNG-Data-URL; Upload auf 1 MB begrenzt, Seitenverhältnis bleibt erhalten) und **direkt am
+Turnier-Dokument** gespeichert wird (bewusst **keine** separate
 Dateiablage – die ist zurückgestellt, siehe [[project-offene-dateianhaenge]]). Fehlt es, zeigt die
 Komponente `TurnierLogo` das **Standard-Torball-Logo** (`frontend/public/images/torball-logo*.svg`,
 theme-abhängig über dieselbe `.logo-hell`/`.logo-dunkel`-Umschaltung wie die Kopfzeile). Angezeigt in

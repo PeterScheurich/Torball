@@ -5,6 +5,9 @@
 /** Maximale Kantenlaenge (laengste Seite) des gespeicherten Logos in Pixeln. */
 const MAX_KANTE = 256;
 
+/** Maximale Groesse der hochgeladenen Bilddatei (1 MB). Der Upload wird darueber abgelehnt. */
+export const MAX_LOGO_BYTES = 1024 * 1024;
+
 function ladeBild(datei: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(datei);

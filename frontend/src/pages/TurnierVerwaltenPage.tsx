@@ -19,7 +19,7 @@ import { TurnierFreigabe } from "../components/TurnierFreigabe";
 import { TurnierPruefung } from "../components/TurnierPruefung";
 import { TurnierregelnFormular } from "../components/TurnierregelnFormular";
 import { TurnierLogo } from "../components/TurnierLogo";
-import { bildAlsLogoDataUrl } from "../logoBild";
+import { bildAlsLogoDataUrl, MAX_LOGO_BYTES } from "../logoBild";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 
 type Tab = "uebersicht" | "regeln" | "mannschaften" | "schiedsrichter" | "spielplan" | "ergebnisse";
@@ -301,6 +301,10 @@ export function TurnierVerwaltenPage() {
     const datei = event.target.files?.[0];
     event.target.value = ""; // erlaubt erneutes Waehlen derselben Datei
     if (!datei) return;
+    if (datei.size > MAX_LOGO_BYTES) {
+      setFehler("Das Logo darf höchstens 1 MB groß sein.");
+      return;
+    }
     try {
       const logoDataUrl = await bildAlsLogoDataUrl(datei);
       setTurnier(await updateTurnier(turnierId, { logoDataUrl }));
@@ -592,7 +596,8 @@ export function TurnierVerwaltenPage() {
         <h2>Logo</h2>
         <p>
           Wird in dieser Übersicht und auf der öffentlichen Turnierseite angezeigt. Ohne eigenes Logo erscheint das
-          Torball-Standardlogo. Das gewählte Bild wird automatisch verkleinert.
+          Torball-Standardlogo. Das gewählte Bild (höchstens 1 MB) wird automatisch verkleinert, das Seitenverhältnis
+          bleibt dabei erhalten.
         </p>
         <div className="logo-bereich">
           <TurnierLogo logoDataUrl={turnier.logoDataUrl} hoehe={80} />
