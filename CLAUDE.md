@@ -571,6 +571,23 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   `COOKIE_SECURE=true` gesetzt ist (`backend/src/auth/plugin.ts`). In Produktion
   hinter HTTPS zwingend `true`; lokal (HTTP) weglassen/`false`, sonst setzt der
   Browser das Cookie nicht und der Login schlägt ohne erkennbaren Grund fehl.
+- **Produktions-Installation ist skript-basiert** (`deploy/`): `provision.sh`
+  richtet den Debian-Host ein (Node LTS via NodeSource, CouchDB single-node nur
+  `127.0.0.1`, nginx, systemd-Template `torball@.service`, Service-User `torball`);
+  `deploy-instanz.sh <name> <frontend_port> <backend_port>` rollt je Instanz aus
+  (Git-Checkout + Build unter `/opt/torball/<name>`, eigene CouchDB-DB + DB-User,
+  `backend/.env`, nginx-Site, systemd-Service) und dient zugleich als Update
+  (pull + rebuild + restart). Prod läuft **API-only** über `npm start`
+  (`node --env-file=.env dist/index.js`), nginx serviert das Frontend statisch +
+  proxied `/api`. Mehrere Instanzen (prod/demo) auf einem Host über eigenen `PORT`
+  + eigene DB. Backend-Routen liegen an der Wurzel (nicht unter `/api`) – der
+  Vite-Dev-Proxy **und** die nginx-Site strippen das `/api`-Präfix. Details:
+  `docs/Protokolle/2026-08-12-produktiv-installation.md`,
+  `docs/installation-konfiguration.md`. **`.sh`-Dateien müssen LF-Zeilenenden
+  haben** (erzwungen über `.gitattributes`; CRLF scheitert auf Linux).
+- **Interne LAN-Adressen gehören NICHT ins Repo** (Nutzer-Vorgabe): Dev-CouchDB,
+  Gitea-Repo, BookStack usw. stehen im Repo nur als Platzhalter (`couchdb-host`,
+  `gitea-host`, `bookstack-host`); die konkreten Adressen liegen im Claude-Memory.
 
 ## Dokumentation
 
