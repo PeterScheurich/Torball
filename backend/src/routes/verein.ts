@@ -1,10 +1,12 @@
 import type { FastifyInstance } from "fastify";
 import type { Team, Verein } from "@torball/shared";
 import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
-import { requireAuth } from "../auth/plugin";
+import { requireAuth, requireRolle } from "../auth/plugin";
 
 // CRUD fuer Vereine (turnieruebergreifende Stammdaten; ein Team gehoert immer zu einem Verein).
-// Wie alle Stammdaten nur mit Anmeldung, ohne turnierbezogene Berechtigungspruefung.
+// Lesen verlangt nur eine Anmeldung (jede Rolle braucht das z.B. bei der Mannschaftserfassung,
+// um aus den Stammdaten auszuwaehlen); Schreiben (Anlegen/Aendern/Loeschen) ist auf Admin/Manager
+// beschraenkt - systemweite Stammdaten sollen nicht von jeder "Benutzer"-Rolle aenderbar sein.
 
 /** Vom Client setzbare Vereinsfelder (alle ausser Name optional). */
 interface VereinBody {
@@ -54,7 +56,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
     "/vereine",
     { schema: { body: vereinBodySchema } },
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
+      if (!requireRolle(req, reply, ["admin", "manager"])) return;
       const id = newId("verein");
       const verein: Verein = {
         _id: id,
@@ -72,7 +74,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
     "/vereine/:id",
     { schema: { body: vereinBodySchema } },
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
+      if (!requireRolle(req, reply, ["admin", "manager"])) return;
       const bestehend = await findById<Verein>(req.params.id);
       if (!bestehend) return reply.code(404).send({ error: "Verein nicht gefunden" });
       const aktualisiert: Verein = { ...bestehend, ...req.body };
@@ -82,7 +84,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
 
   // Verein loeschen - nur, wenn kein Team mehr auf ihn verweist (sonst 409).
   app.delete<{ Params: { id: string } }>("/vereine/:id", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireRolle(req, reply, ["admin", "manager"])) return;
     const bestehend = await findById<Verein>(req.params.id);
     if (!bestehend) return reply.code(404).send({ error: "Verein nicht gefunden" });
 

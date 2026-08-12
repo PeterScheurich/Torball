@@ -1,11 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import type { Team } from "@torball/shared";
 import { deleteDoc, findAllByType, findById, insertDoc, newId } from "../repository";
-import { requireAuth } from "../auth/plugin";
+import { requireAuth, requireRolle } from "../auth/plugin";
 
-// CRUD fuer Teams (Stammdaten: ein Team gehoert immer zu einem Verein). Stammdaten
-// verlangen nur eine Anmeldung (requireAuth), keine turnierbezogene Berechtigungspruefung -
-// anders als Turnier-/Mannschaftsdaten (siehe CLAUDE.md, Berechtigungsmodell).
+// CRUD fuer Teams (Stammdaten: ein Team gehoert immer zu einem Verein). Lesen verlangt nur eine
+// Anmeldung, Schreiben (Anlegen/Aendern/Loeschen) ist auf Admin/Manager beschraenkt - siehe
+// verein.ts (analoge Begruendung) bzw. CLAUDE.md, Berechtigungsmodell.
 
 /** Vom Client setzbare Felder eines Teams. */
 interface TeamBody {
@@ -47,7 +47,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
     "/teams",
     { schema: { body: teamBodySchema } },
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
+      if (!requireRolle(req, reply, ["admin", "manager"])) return;
       const vereinExistiert = await findById(req.body.vereinId);
       if (!vereinExistiert) {
         return reply.code(400).send({ error: "Referenzierter Verein existiert nicht" });
@@ -70,7 +70,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
     "/teams/:id",
     { schema: { body: teamBodySchema } },
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
+      if (!requireRolle(req, reply, ["admin", "manager"])) return;
       const bestehend = await findById<Team>(req.params.id);
       if (!bestehend) return reply.code(404).send({ error: "Team nicht gefunden" });
       const aktualisiert: Team = { ...bestehend, ...req.body };
@@ -80,7 +80,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
 
   // Team loeschen.
   app.delete<{ Params: { id: string } }>("/teams/:id", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireRolle(req, reply, ["admin", "manager"])) return;
     const bestehend = await findById<Team>(req.params.id);
     if (!bestehend) return reply.code(404).send({ error: "Team nicht gefunden" });
     await deleteDoc(bestehend._id, bestehend._rev!);

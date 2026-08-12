@@ -94,11 +94,9 @@ function Kopfzeile() {
                   Benutzerverwaltung
                 </Link>
               )}
-              {benutzer?.globaleRolle === "admin" && (
-                <Link to="/standardregeln" className="kopfzeile-menue-eintrag" role="menuitem">
-                  Standardregeln
-                </Link>
-              )}
+              <Link to="/standardregeln" className="kopfzeile-menue-eintrag" role="menuitem">
+                Standardregeln
+              </Link>
               {benutzer?.globaleRolle === "admin" && (
                 <Link to="/systemeinstellungen" className="kopfzeile-menue-eintrag" role="menuitem">
                   Systemeinstellungen

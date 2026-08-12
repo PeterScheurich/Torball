@@ -15,6 +15,8 @@ const LEERES_FORMULAR: VereinAktualisierung = {
 interface Props {
   /** Wird nach jedem Laden mit der aktuellen Liste aufgerufen (z.B. fuer die Verein-Auswahl bei Teams). */
   onGeaendert?: (vereine: Verein[]) => void;
+  /** Steuert das disabled-<fieldset> um Tabelle + Anlege-Formular (Backend erzwingt es ohnehin). */
+  darfBearbeiten: boolean;
 }
 
 /**
@@ -23,7 +25,7 @@ interface Props {
  * (die Teams-Verwaltung braucht sie fuer ihre Verein-Auswahl). Ein Verein laesst sich erst
  * loeschen, wenn kein Team mehr auf ihn verweist (das Backend antwortet sonst mit 409).
  */
-export function VereineVerwaltung({ onGeaendert }: Props) {
+export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
   const [vereine, setVereine] = useState<Verein[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
   const [neu, setNeu] = useState<VereinAktualisierung>(LEERES_FORMULAR);
@@ -150,6 +152,9 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
       <h2>Vereine</h2>
       {fehler && <p role="alert">{fehler}</p>}
 
+      {/* Ohne Bearbeitungsrecht werden alle Eingaben nativ ueber das disabled-<fieldset>
+          deaktiviert (Tabelle + Anlege-Formular) - das Backend erzwingt es ohnehin serverseitig. */}
+      <fieldset className="blank-fieldset" disabled={!darfBearbeiten}>
       {vereine.length === 0 ? (
         <p>Noch keine Vereine angelegt.</p>
       ) : (
@@ -375,6 +380,7 @@ export function VereineVerwaltung({ onGeaendert }: Props) {
         <button type="submit">Verein anlegen</button>
       </form>
       )}
+      </fieldset>
     </div>
   );
 }

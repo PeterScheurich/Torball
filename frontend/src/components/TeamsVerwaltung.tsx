@@ -9,6 +9,8 @@ interface Bearbeitung {
 
 interface Props {
   vereine: Verein[];
+  /** Steuert das disabled-<fieldset> um Tabelle + Anlege-Formular (Backend erzwingt es ohnehin). */
+  darfBearbeiten: boolean;
 }
 
 /**
@@ -17,7 +19,7 @@ interface Props {
  * (speichert sofort), plus ein Formular zum Anlegen. Braucht die Vereinsliste als Prop, weil
  * jedes Team einen Verein referenziert.
  */
-export function TeamsVerwaltung({ vereine }: Props) {
+export function TeamsVerwaltung({ vereine, darfBearbeiten }: Props) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
   const [neuerName, setNeuerName] = useState("");
@@ -123,6 +125,7 @@ export function TeamsVerwaltung({ vereine }: Props) {
       <h2>Teams</h2>
       {fehler && <p role="alert">{fehler}</p>}
 
+      <fieldset className="blank-fieldset" disabled={!darfBearbeiten}>
       {vereine.length === 0 ? (
         <p>Bitte zuerst mindestens einen Verein anlegen.</p>
       ) : teams.length === 0 ? (
@@ -225,6 +228,7 @@ export function TeamsVerwaltung({ vereine }: Props) {
           <button type="submit">Team anlegen</button>
         </form>
       )}
+      </fieldset>
     </div>
   );
 }

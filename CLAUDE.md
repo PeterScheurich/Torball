@@ -123,8 +123,21 @@ Benutzer: Admin hat immer Vollzugriff; Manager hat immer Vollzugriff auf
 selbst erstellte Turniere (`turnier.erstelltVon`); alle anderen Fälle richten
 sich nach explizit vergebenen `TurnierBerechtigung`-Dokumenten. Jede Route,
 die Turnier-/Mannschaft-/Spiel-/Spielplan-/Ergebnis-Daten anfasst, muss das
-prüfen; `verein`/`team` (Stammdaten) verlangen dagegen nur eine Anmeldung,
-keine turnierbezogene Prüfung (die Spezifikation kennt hier keine Rollen).
+prüfen; `verein`/`team` (Stammdaten) verlangen dagegen keine turnierbezogene
+Prüfung, sondern eine **globale** Rollenprüfung: Lesen (`GET`) genügt jede
+Anmeldung (wird z. B. bei der Mannschaftserfassung gebraucht, um aus den
+Stammdaten auszuwählen), Schreiben (`POST`/`PUT`/`DELETE`) ist auf
+Admin/Manager beschränkt (`requireRolle(["admin", "manager"])`) – die
+Spezifikation kennt hier zwar keine Rollen, aber „jede Person kann
+systemweite Stammdaten ändern" widerspräche dem sonstigen Rollenmodell
+(Abschnitt 21.1), das der Rolle „Benutzer" bewusst wenig zutraut. Frontend
+spiegelt das über ein `disabled`-`<fieldset>` in `VereineVerwaltung.tsx`/
+`TeamsVerwaltung.tsx` (Lesen bleibt sichtbar, nur die Eingaben sind gesperrt).
+**Analog bei den Standardregeln** (`/systemkonfiguration`, `StandardregelnPage`):
+`GET` ist für jede Anmeldung offen (war serverseitig schon immer so), `PUT`
+bleibt Admin-only; der Menüpunkt ist jetzt für alle angemeldeten Personen
+sichtbar (vorher admin-only versteckt), das Formular für Nicht-Admins über
+dasselbe `disabled`-`<fieldset>`-Muster gesperrt.
 
 **Zwei parallele Wege zum Spielergebnis, nur einer ist umgesetzt:** Ein
 Turnier ist entweder `protokollierungsart: "manuell"` (Endergebnisse per
