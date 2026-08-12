@@ -588,6 +588,20 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
 - **Interne LAN-Adressen gehören NICHT ins Repo** (Nutzer-Vorgabe): Dev-CouchDB,
   Gitea-Repo, BookStack usw. stehen im Repo nur als Platzhalter (`couchdb-host`,
   `gitea-host`, `bookstack-host`); die konkreten Adressen liegen im Claude-Memory.
+- **Lokale Windows-Installation ist ebenfalls skript-basiert** (`deploy/Installieren-Windows.cmd`
+  → `deploy/installieren-windows.ps1`, Option A der geplanten Installationswege): installiert Node
+  LTS (winget) + Apache CouchDB als Windows-Dienst (offizieller MSI-Installer, unbeaufsichtigt,
+  Prüfsummen-Check) falls nicht vorhanden, legt eine eingeschränkte CouchDB-App-Datenbank +
+  -Benutzer an (analog `deploy-instanz.sh`), baut die App und schreibt `backend/.env` +
+  Start-Skript/Desktop-Verknüpfung. Selbst-elevierend (UAC), idempotent. Dabei aktiviert
+  (`SERVE_FRONTEND=true`) das Backend einen **Einzelprozess-Modus**: `backend/src/index.ts`
+  registriert dann `@fastify/static` für `frontend/dist` (SPA-Fallback auf `index.html` im
+  `notFoundHandler`, analog zu nginx' `try_files`) und streift per `rewriteUrl` selbst das
+  `/api`-Präfix ab, das `frontend/src/api.ts` fest verdrahtet hat – das übernehmen sonst der
+  Vite-Dev-Proxy bzw. die nginx-Site. **Bewusst hinter einem Flag** (Default `false`), damit der
+  bestehende Debian/nginx-Produktivbetrieb unverändert bleibt. Ein verteilbares MSI/EXE (Option B,
+  für einen späteren Download-Knopf auf der Webseite) ist noch offen. Details:
+  `docs/Protokolle/2026-08-12-windows-installer-option-a.md`.
 
 ## Dokumentation
 

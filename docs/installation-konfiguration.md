@@ -50,6 +50,7 @@ Prozess neu starten.
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_FROM` | E-Mail-Versand (Einladungen, Passwort-Reset). Optional – ohne diese Werte fällt das Backend auf Link-in-Antwort/Server-Log zurück. |
 | `FRONTEND_URL` | Basis-URL des Frontends für Links in E-Mails |
 | `COOKIE_SECURE` | Session-Cookie mit `Secure`-Flag ausliefern (nur über HTTPS gültig). **Lokal (HTTP) weglassen bzw. `false`**, sonst setzt der Browser das Cookie nicht und der Login schlägt fehl. **In Produktion hinter HTTPS zwingend `true`.** |
+| `SERVE_FRONTEND` | Einzelprozess-Modus: Backend liefert `frontend/dist` gleich mit aus (siehe Windows-Installer unten). Auf dem Debian-Produktivserver weglassen/`false` – dort übernimmt nginx das Ausliefern. |
 
 **Werte mit Sonderzeichen** (z. B. `#`, Leerzeichen) immer in Anführungszeichen
 setzen (`SMTP_PASSWORD="Geheim#123"`) – ohne Anführungszeichen wird alles ab
@@ -104,7 +105,40 @@ TLS-Endpunkt → dann `COOKIE_SECURE=true` + `FRONTEND_URL=https://…`):
 
 ## Lokale Installation unter Windows
 
-Für einen lokalen Betrieb auf einem Windows-Rechner (z. B. offline am Spielort) aktuell manuell:
+Für einen lokalen Betrieb auf einem Windows-Rechner (z. B. offline am Spielort) – zwei Wege:
+
+### Ein-Klick-Installer (empfohlen)
+
+Voraussetzung: der Projektordner liegt bereits lokal vor (`git clone` oder ZIP entpackt).
+`deploy/Installieren-Windows.cmd` per Doppelklick starten (fragt bei Bedarf per UAC nach
+Administratorrechten – nötig für die Node-/CouchDB-Installation). Das Skript
+(`deploy/installieren-windows.ps1`) übernimmt automatisiert:
+
+- **Node.js LTS** per `winget`, falls nicht vorhanden.
+- **Apache CouchDB** als Windows-Dienst über den offiziellen MSI-Installer (unbeaufsichtigt,
+  eigenes Zufalls-Admin-Passwort, Prüfsumme wird vor der Installation verifiziert) – läuft bereits
+  eine CouchDB, fragt das Skript stattdessen nach deren Admin-Zugang. Läuft lokal unter
+  `http://127.0.0.1:5984`.
+- **App-Datenbank + eigener eingeschränkter CouchDB-Benutzer** (`torball_backend`, kein
+  Admin-Zugriff) – analog zu `deploy/deploy-instanz.sh` auf der Linux-Seite.
+- **Bauen** (`npm install`, `shared` zuerst, dann alle Workspaces).
+- **`backend/.env`** – nur angelegt, falls noch keine vorhanden ist; setzt zusätzlich
+  `SERVE_FRONTEND=true` (siehe unten).
+- **`Start-Torball.cmd`** im Projektordner + Verknüpfung „Torball-Turniere" auf dem Desktop.
+
+Erneutes Ausführen ist unschädlich (Idempotenz wie bei den Linux-Skripten) und dient zugleich als
+Update (Neubau, `.env`/Verknüpfung bleiben erhalten). Start danach über die Desktop-Verknüpfung
+(öffnet `http://localhost:3000`); beim allerersten Start führt die Anmeldeseite durch die einmalige
+Ersteinrichtung des Admin-Kontos.
+
+**Einzelprozess-Modus (`SERVE_FRONTEND=true`):** Anders als beim Debian-Produktivbetrieb (nginx
+liefert das Frontend + proxied `/api`, siehe unten) liefert das Backend hier das gebaute Frontend
+selbst mit aus (`@fastify/static`, SPA-Fallback auf `index.html`) – ein einziger Prozess auf
+`http://localhost:3000`, kein separater Webserver nötig. Das Frontend ruft die API weiterhin unter
+`/api/*` auf; das Backend streift dieses Präfix in diesem Modus selbst ab (`rewriteUrl` in
+`backend/src/index.ts`), genau das, was sonst nginx bzw. der Vite-Dev-Proxy übernehmen.
+
+### Manuell
 
 1. **Node.js LTS** installieren (`winget install OpenJS.NodeJS.LTS` oder von nodejs.org).
 2. **CouchDB** installieren – Apache CouchDB bietet einen Windows-Installer (MSI); bei der Einrichtung
@@ -122,8 +156,7 @@ Für einen lokalen Betrieb auf einem Windows-Rechner (z. B. offline am Spielort)
    `http://localhost:5173` im Browser öffnen. Beim ersten Start durch die Ersteinrichtung des
    Admin-Kontos gehen.
 
-> **Geplant – einfacher Windows-Installer:** Für nicht-IT-affine Anwender soll das zu einer
-> Ein-Klick-Installation werden (Bündelung von Node + CouchDB + App, das Backend liefert dann das
-> Frontend gleich mit aus, Start per Verknüpfung/Autostart). Umsetzung als eigener Schritt – die
-> Richtung (PowerShell-Installer vs. kompiliertes MSI/EXE, Online- vs. Offline-Bundle) wird noch
-> festgelegt.
+> **Geplant – Option B, verteilbarer Installer:** Für eine spätere Bereitstellung als Download-Knopf
+> auf der Webseite ist zusätzlich ein kompiliertes MSI/EXE vorgesehen (z. B. Inno Setup, bündelt
+> portables Node + gebaute App), damit Anwender nicht erst den Quellcode besorgen müssen. Umsetzung
+> als eigener Schritt.

@@ -1,5 +1,8 @@
+import path from "node:path";
+import type { IncomingMessage } from "node:http";
 import Fastify from "fastify";
 import fastifyCookie from "@fastify/cookie";
+import fastifyStatic from "@fastify/static";
 import { authPreHandler } from "./auth/plugin";
 import { ensureIndexes } from "./db";
 import { authRoutes } from "./routes/auth";
@@ -26,7 +29,18 @@ import { kanbanRoutes } from "./routes/kanban";
 // (mehrere Instanzen auf einem Host, siehe docs/Protokolle/…-produktiv-installation.md).
 const PORT = Number(process.env.PORT ?? 3000);
 const HOST = process.env.HOST ?? "0.0.0.0";
-const server = Fastify({ logger: true });
+// Einzelprozess-Modus (z.B. Windows-Lokalinstallation, siehe deploy/installieren-windows.ps1):
+// das Backend liefert das gebaute Frontend gleich mit aus, kein separater nginx/Vite-Proxy
+// noetig. Das Frontend ruft die API weiterhin unter /api/* auf (siehe frontend/src/api.ts) -
+// rewriteUrl streift das Praefix vor dem Routing ab, genau das, was in den anderen Betriebs-
+// arten der Vite-Dev-Proxy bzw. die nginx-Site uebernehmen (siehe CLAUDE.md).
+const serveFrontend = process.env.SERVE_FRONTEND === "true";
+const server = Fastify({
+  logger: true,
+  ...(serveFrontend
+    ? { rewriteUrl: (req: IncomingMessage) => (req.url?.startsWith("/api/") ? req.url.slice(4) : (req.url ?? "/")) }
+    : {}),
+});
 
 // Schlanker Health-Check (z.B. fuer Monitoring/Reverse-Proxy), ohne Anmeldung.
 server.get("/health", async () => {
@@ -59,6 +73,21 @@ const start = async () => {
     server.register(oeffentlichRoutes);
     server.register(systemkonfigurationRoutes);
     server.register(kanbanRoutes);
+
+    if (serveFrontend) {
+      // Registrierungsreihenfolge egal: find-my-way (Fastifys Router) bevorzugt exakte
+      // Routen-Treffer ohnehin vor dem Static-Plugin-Wildcard. Fallback fuer clientseitiges
+      // Routing (React Router) im notFoundHandler unten - identisch zu nginx' "try_files
+      // $uri /index.html" in deploy/deploy-instanz.sh.
+      await server.register(fastifyStatic, { root: path.join(__dirname, "../../frontend/dist") });
+      server.setNotFoundHandler((request, reply) => {
+        if (request.method === "GET") {
+          reply.sendFile("index.html");
+          return;
+        }
+        reply.code(404).send({ error: "Nicht gefunden" });
+      });
+    }
 
     await ensureIndexes();
     await server.listen({ port: PORT, host: HOST });
