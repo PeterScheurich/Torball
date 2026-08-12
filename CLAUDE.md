@@ -642,6 +642,17 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   `docs/Protokolle/2026-08-12-produktiv-installation.md`,
   `docs/installation-konfiguration.md`. **`.sh`-Dateien müssen LF-Zeilenenden
   haben** (erzwungen über `.gitattributes`; CRLF scheitert auf Linux).
+- **`deploy/aktualisieren.sh` bündelt System- und App-Update in einem Befehl** (Nutzer-Vorgabe,
+  nachdem `apt-get dist-upgrade` und das App-Deploy live verwechselt wurden): ruft `apt-get update`
+  + zeigt verfügbare Pakete, fragt **vor** `dist-upgrade` nach (bewusst **ohne**
+  `DEBIAN_FRONTEND=noninteractive` – native dpkg-Rückfragen bei Konfigurationsdatei-Konflikten
+  sollen interaktiv bleiben, das ist der Punkt, an dem echte Entscheidungen anfallen), prüft danach
+  per `/var/run/reboot-required` **und** einem Kernel-Versionsvergleich, ob ein Neustart nötig ist
+  und fragt auch dafür nach, statt automatisch neu zu starten. Für den App-Teil delegiert es
+  komplett an `deploy-instanz.sh` (dieselben Parameter durchgereicht) – keine doppelte Logik.
+  Aktualisiert bewusst **nicht** sich selbst/den umgebenden Checkout (Risiko, ein laufendes
+  Bash-Skript durch `git reset --hard` unter sich selbst zu verändern); bei Änderungen an den
+  Deploy-Skripten muss vorher manuell `git pull` im Checkout laufen.
 - **Interne LAN-Adressen gehören NICHT ins Repo** (Nutzer-Vorgabe): Dev-CouchDB,
   Gitea-Repo, BookStack usw. stehen im Repo nur als Platzhalter (`couchdb-host`,
   `gitea-host`, `bookstack-host`); die konkreten Adressen liegen im Claude-Memory.
