@@ -136,8 +136,11 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-# Scripte für Doku-Sync / sollen nicht mit übernommen werden.
+# Scripte für Doku-Sync (BookStack) / sollen nicht mit übernommen werden - nur lokal auf der
+# Entwicklungsinstanz vorhanden (Nutzer-Vorgabe, 2026-08-12).
 scripts/.env
+scripts/.env.example.txt
+scripts/bookstack-*.mjs
 
 # Claude Code: lokale, maschinenspezifische Artefakte (launch.json bleibt bewusst getrackt).
 .claude/settings.local.json

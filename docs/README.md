@@ -4,7 +4,9 @@ Diese Dateien sind die führende Fassung der Projektdokumentation.
 Änderungen bitte hier vornehmen und anschließend mit
 `node scripts/bookstack-push.mjs` nach BookStack übertragen (das Skript
 überträgt die Markdown-Dateien direkt in diesem Ordner – ohne diese
-`README.md` und ohne Unterordner).
+`README.md` und ohne Unterordner). Die `scripts/bookstack-*`-Dateien liegen
+bewusst nur lokal auf der Entwicklungsinstanz (git-ignoriert) – ein frischer
+Checkout dieses Repos hat sie nicht.
 
 ## Inhalt
 

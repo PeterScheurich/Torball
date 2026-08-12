@@ -676,7 +676,10 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
 - Die Dateien direkt unter `docs/` (nicht `Archiv/`, nicht `Protokolle/`)
   sind laut `docs/README.md` die führende Fassung und werden mit `node
   scripts/bookstack-push.mjs` nach BookStack gespiegelt – Änderungen gehören
-  hier ins Repo, nicht direkt in BookStack.
+  hier ins Repo, nicht direkt in BookStack. **Die `scripts/bookstack-*`-Dateien
+  liegen bewusst nur lokal auf der Entwicklungsinstanz** (git-ignoriert, siehe
+  `.gitignore`) – ein frischer Checkout hat sie nicht; der BookStack-Sync ist
+  damit kein Schritt, der auf jeder Instanz möglich/nötig ist.
 
 ## Browser-Tests (Vorschau-Tools)
 
