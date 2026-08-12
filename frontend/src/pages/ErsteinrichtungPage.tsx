@@ -11,6 +11,7 @@ import { PasswortRegeln } from "../PasswortRegeln";
  */
 export function ErsteinrichtungPage() {
   const [name, setName] = useState("");
+  const [vorname, setVorname] = useState("");
   const [email, setEmail] = useState("");
   const [passwort, setPasswort] = useState("");
   const [passwortWiederholung, setPasswortWiederholung] = useState("");
@@ -32,7 +33,7 @@ export function ErsteinrichtungPage() {
 
     setSendet(true);
     try {
-      await bootstrapAdmin(email, passwort, name);
+      await bootstrapAdmin(email, passwort, name, vorname);
       await login(email, passwort);
       navigate("/");
     } catch (err) {
@@ -51,6 +52,10 @@ export function ErsteinrichtungPage() {
         <div className="feld">
           <label htmlFor="name">Name</label>
           <input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div className="feld">
+          <label htmlFor="vorname">Vorname</label>
+          <input id="vorname" value={vorname} onChange={(e) => setVorname(e.target.value)} />
         </div>
         <div className="feld">
           <label htmlFor="email">E-Mail</label>

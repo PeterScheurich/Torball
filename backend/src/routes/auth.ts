@@ -31,6 +31,7 @@ interface BootstrapAdminBody {
   email: string;
   passwort: string;
   name: string;
+  vorname?: string;
 }
 
 const bootstrapAdminSchema = {
@@ -40,6 +41,7 @@ const bootstrapAdminSchema = {
     email: { type: "string", minLength: 1 },
     passwort: { type: "string", minLength: 1 },
     name: { type: "string", minLength: 1 },
+    vorname: { type: "string" },
   },
 } as const;
 
@@ -128,6 +130,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         email: req.body.email.trim().toLowerCase(),
         passwortHash: await hashePasswort(req.body.passwort),
         name: req.body.name,
+        vorname: req.body.vorname?.trim() || undefined,
         globaleRolle: "admin",
         sprache: "de",
         zweiFaAktiv: false,

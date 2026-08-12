@@ -441,8 +441,13 @@ export function getMe(): Promise<BenutzerProfil> {
   return anfrage("/auth/me");
 }
 
-export function bootstrapAdmin(email: string, passwort: string, name: string): Promise<BenutzerProfil> {
-  return anfrage("/auth/bootstrap-admin", { method: "POST", body: JSON.stringify({ email, passwort, name }) });
+export function bootstrapAdmin(
+  email: string,
+  passwort: string,
+  name: string,
+  vorname?: string,
+): Promise<BenutzerProfil> {
+  return anfrage("/auth/bootstrap-admin", { method: "POST", body: JSON.stringify({ email, passwort, name, vorname }) });
 }
 
 export function bootstrapVerfuegbar(): Promise<{ verfuegbar: boolean }> {
