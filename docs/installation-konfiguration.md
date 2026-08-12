@@ -108,7 +108,10 @@ Zwei unabhängige Dinge lassen sich aktualisieren, die leicht verwechselt werden
 
 - **Betriebssystem** (Debian selbst, System-Pakete): `apt-get update && apt-get dist-upgrade`.
 - **App-Code** (dieses Repo, per Git): das Deploy-Skript erneut laufen lassen (git pull + Rebuild +
-  Neustart des Dienstes) – `REPO_URL=<REPO_URL> bash deploy/deploy-instanz.sh prod 8080 3001`.
+  Neustart des Dienstes) – `bash deploy/deploy-instanz.sh prod 8080 3001`. `REPO_URL` wird dafür
+  **nicht mehr** gebraucht, sobald die Instanz einmal existiert – die Git-Adresse steckt bereits im
+  `origin`-Remote ihres Checkouts unter `/opt/torball/<name>` und wird automatisch wiederverwendet;
+  nötig ist `REPO_URL` nur beim allerersten Deploy einer neuen Instanz.
 
 **`deploy/aktualisieren.sh`** erledigt **beides in einem Rutsch**, mit Rückfrage an den Stellen, wo
 eine echte Entscheidung ansteht (ob System-Updates überhaupt eingespielt werden sollen; ob nach
@@ -116,14 +119,14 @@ einem Kernel-Update jetzt neu gestartet wird) – für den App-Teil ruft es inte
 `deploy-instanz.sh` mit denselben Parametern auf:
 
 ```bash
-REPO_URL=<REPO_URL> bash deploy/aktualisieren.sh prod 8080 3001
+bash deploy/aktualisieren.sh prod 8080 3001
 ```
 
 `provision.sh` legt dafür zusätzlich einen Symlink `/usr/local/bin/torball-aktualisieren` an, sodass
 derselbe Befehl **von jedem Verzeichnis aus** funktioniert (kein `cd` in den Checkout nötig):
 
 ```bash
-REPO_URL=<REPO_URL> torball-aktualisieren prod 8080 3001
+torball-aktualisieren prod 8080 3001
 ```
 
 Aktualisiert **nicht** sich selbst (den Checkout unter `~/torball-src`) – falls sich die

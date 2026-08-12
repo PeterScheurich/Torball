@@ -647,7 +647,10 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   `deploy-instanz.sh <name> <frontend_port> <backend_port>` rollt je Instanz aus
   (Git-Checkout + Build unter `/opt/torball/<name>`, eigene CouchDB-DB + DB-User,
   `backend/.env`, nginx-Site, systemd-Service) und dient zugleich als Update
-  (pull + rebuild + restart). Prod läuft **API-only** über `npm start`
+  (pull + rebuild + restart). **`REPO_URL` nur beim allerersten Deploy einer neuen Instanz
+  nötig** – danach steckt die Git-Adresse im `origin`-Remote des bestehenden Checkouts und wird
+  automatisch wiederverwendet (Nutzer-Vorgabe: Update soll ohne wiederholte Repo-Angabe
+  funktionieren). Prod läuft **API-only** über `npm start`
   (`node --env-file=.env dist/index.js`), nginx serviert das Frontend statisch +
   proxied `/api`. Mehrere Instanzen (prod/demo) auf einem Host über eigenen `PORT`
   + eigene DB. Backend-Routen liegen an der Wurzel (nicht unter `/api`) – der

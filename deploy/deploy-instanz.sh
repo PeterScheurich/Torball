@@ -4,7 +4,11 @@
 # Voraussetzung: deploy/provision.sh wurde einmal ausgefuehrt. Als root ausfuehren.
 #
 # Nutzung:
-#   REPO_URL=<git-url> [BRANCH=main] deploy/deploy-instanz.sh <name> <frontend_port> <backend_port> [server_name]
+#   Allererster Deploy einer neuen Instanz (REPO_URL noetig, es gibt ja noch keinen Checkout):
+#     REPO_URL=<git-url> [BRANCH=main] deploy/deploy-instanz.sh <name> <frontend_port> <backend_port> [server_name]
+#   Danach zum Aktualisieren (REPO_URL NICHT mehr noetig - steckt schon im bestehenden Checkout
+#   als "origin"-Remote):
+#     deploy/deploy-instanz.sh <name> <frontend_port> <backend_port> [server_name]
 #
 #   name           Instanzname, z. B. prod, demo  (bestimmt Verzeichnis, DB-Name, Service)
 #   frontend_port  nginx-Port dieser Instanz (z. B. 8080) - hierueber ist die App erreichbar
@@ -25,7 +29,6 @@ NAME="${1:?Instanzname fehlt (z. B. prod)}"
 FE_PORT="${2:?frontend_port fehlt (z. B. 8080)}"
 BE_PORT="${3:?backend_port fehlt (z. B. 3001)}"
 SERVER_NAME="${4:-_}"
-: "${REPO_URL:?REPO_URL muss gesetzt sein (Git-URL des Repos, vom Server erreichbar)}"
 
 [[ $EUID -eq 0 ]] || { echo "Bitte als root ausfuehren (sudo, falls installiert; sonst direkt als root)."; exit 1; }
 [[ -f "${CONF_DIR}/couchdb-admin" ]] || { echo "CouchDB-Admin fehlt - erst deploy/provision.sh ausfuehren."; exit 1; }
@@ -44,6 +47,9 @@ if [[ -d "${DIR}/.git" ]]; then
   git -c safe.directory="$DIR" -C "$DIR" fetch origin "$BRANCH"
   git -c safe.directory="$DIR" -C "$DIR" reset --hard "origin/${BRANCH}"
 else
+  # Nur der allererste Deploy braucht REPO_URL noch von aussen - danach steht die Adresse im
+  # "origin"-Remote des Checkouts und wird beim naechsten Lauf automatisch wiederverwendet.
+  : "${REPO_URL:?REPO_URL muss gesetzt sein (Git-URL des Repos) - nur beim allerersten Deploy dieser Instanz noetig, danach nicht mehr}"
   git clone -b "$BRANCH" "$REPO_URL" "$DIR"
 fi
 

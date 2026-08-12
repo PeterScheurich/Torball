@@ -85,6 +85,21 @@ geteilten, abgeschnittenen Ausgabe.
 ergänzt – ein reiner Kommandozeilen-Override für genau diesen einen Aufruf, keine dauerhafte
 Änderung an `root`s `~/.gitconfig` (die bräuchte ohnehin einen Eintrag pro Instanz-Verzeichnis).
 
+## Vierter Nachtrag: REPO_URL für Updates nicht mehr nötig
+
+Ursprüngliches Anliegen (Grund für den ganzen `aktualisieren.sh`-Umbau) war eigentlich nicht der
+apt/App-Unterschied allein, sondern dass `REPO_URL=...` bei **jedem** Aufruf erneut angegeben
+werden musste – das war beim ersten Formulieren nicht klar genug rübergekommen.
+
+**Lösung:** `REPO_URL` steckt nach dem allerersten `git clone` bereits im `origin`-Remote des
+Checkouts unter `/opt/torball/<name>` – `git fetch origin`/`git reset --hard origin/<branch>`
+brauchen die URL selbst gar nicht mehr, nur den bereits konfigurierten Remote-Namen `origin`. Die
+verpflichtende `REPO_URL`-Prüfung in `deploy-instanz.sh` stand bisher aber unbedingt ganz oben im
+Skript, unabhängig davon, ob es sich um den ersten Deploy oder ein Update handelte. Verschoben in
+den `else`-Zweig (nur beim `git clone`, also nur wenn `${DIR}/.git` noch nicht existiert) – für
+eine bestehende Instanz reicht damit `bash deploy/deploy-instanz.sh prod 8080 3001` bzw.
+`torball-aktualisieren prod 8080 3001`, ganz ohne `REPO_URL`.
+
 Nur syntaktisch geprüft (`bash -n`), nicht live gegen den echten Produktiv-Server ausgeführt (würde
 System-Pakete aktualisieren bzw. ggf. neu starten – das soll der Nutzer selbst anstoßen).
 

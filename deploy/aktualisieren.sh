@@ -7,9 +7,11 @@
 # deploy-instanz.sh den App-Code - siehe docs/installation-konfiguration.md).
 #
 # Nutzung (dieselben Parameter wie deploy-instanz.sh, an das dieses Skript den App-Teil delegiert),
-# entweder direkt im Checkout oder von ueberall ueber den Symlink torball-aktualisieren:
-#   REPO_URL=<git-url> [BRANCH=main] deploy/aktualisieren.sh <name> <frontend_port> <backend_port> [server_name]
-#   REPO_URL=<git-url> [BRANCH=main] torball-aktualisieren <name> <frontend_port> <backend_port> [server_name]
+# entweder direkt im Checkout oder von ueberall ueber den Symlink torball-aktualisieren. REPO_URL
+# wird fuer eine BEREITS bestehende Instanz nicht mehr gebraucht (steckt schon im "origin"-Remote
+# ihres Checkouts, siehe deploy-instanz.sh) - nur beim allerersten Deploy einer neuen Instanz noetig:
+#   deploy/aktualisieren.sh <name> <frontend_port> <backend_port> [server_name]
+#   torball-aktualisieren <name> <frontend_port> <backend_port> [server_name]
 #
 # Ablauf:
 #   1) apt-get update, zeigt verfuegbare System-Updates an, fragt VOR "dist-upgrade" nach.
