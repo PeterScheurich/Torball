@@ -593,32 +593,9 @@ export function TurnierVerwaltenPage() {
           </table>
         </div>
 
-        <h2>Logo</h2>
-        <p>
-          Wird in dieser Übersicht und auf der öffentlichen Turnierseite angezeigt. Ohne eigenes Logo erscheint das
-          Torball-Standardlogo. Das gewählte Bild (höchstens 1 MB) wird automatisch verkleinert, das Seitenverhältnis
-          bleibt dabei erhalten.
-        </p>
-        <div className="logo-bereich">
-          <TurnierLogo logoDataUrl={turnier.logoDataUrl} hoehe={80} />
-          <div className="logo-aktionen">
-            <input
-              ref={logoInputRef}
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={logoGewaehlt}
-            />
-            <button type="button" onClick={() => logoInputRef.current?.click()} disabled={istGesperrt}>
-              Logo wählen…
-            </button>{" "}
-            {turnier.logoDataUrl && (
-              <button type="button" onClick={logoZuruecksetzen} disabled={istGesperrt}>
-                Standard-Logo verwenden
-              </button>
-            )}
-          </div>
-        </div>
+        <TurnierPruefung turnier={turnier} />
+
+        <TurnierFreigabe turnierId={turnierId} />
 
         <h2>Öffentliche Turnierseite</h2>
         <p>
@@ -675,9 +652,32 @@ export function TurnierVerwaltenPage() {
           </Link>
         </p>
 
-        <TurnierFreigabe turnierId={turnierId} />
-
-        <TurnierPruefung turnier={turnier} />
+        <h2>Logo</h2>
+        <p>
+          Wird in dieser Übersicht und auf der öffentlichen Turnierseite angezeigt. Ohne eigenes Logo erscheint das
+          Torball-Standardlogo. Das gewählte Bild (höchstens 1 MB) wird automatisch verkleinert, das Seitenverhältnis
+          bleibt dabei erhalten.
+        </p>
+        <div className="logo-bereich">
+          <TurnierLogo logoDataUrl={turnier.logoDataUrl} hoehe={80} />
+          <div className="logo-aktionen">
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={logoGewaehlt}
+            />
+            <button type="button" onClick={() => logoInputRef.current?.click()} disabled={istGesperrt}>
+              Logo wählen…
+            </button>{" "}
+            {turnier.logoDataUrl && (
+              <button type="button" onClick={logoZuruecksetzen} disabled={istGesperrt}>
+                Standard-Logo verwenden
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       <div role="tabpanel" id="panel-regeln" aria-labelledby="tab-regeln" hidden={aktiverTab !== "regeln"}>
