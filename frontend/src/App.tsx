@@ -97,16 +97,22 @@ function Kopfzeile() {
               <Link to="/standardregeln" className="kopfzeile-menue-eintrag" role="menuitem">
                 Standardregeln
               </Link>
-              {benutzer?.globaleRolle === "admin" && (
-                <Link to="/systemeinstellungen" className="kopfzeile-menue-eintrag" role="menuitem">
-                  Systemeinstellungen
-                </Link>
-              )}
-              {benutzer?.globaleRolle === "admin" && (
-                <Link to="/entwicklungs-board" className="kopfzeile-menue-eintrag" role="menuitem">
-                  Entwicklungs-Board
-                </Link>
-              )}
+            </KopfzeilenMenue>
+          )}
+          {/* Eigenes Admin-Menue fuer Funktionen, die ausschliesslich der Rolle Admin vorbehalten
+              sind (anders als "Stammdaten", das auch fuer Manager/Benutzer relevante Eintraege
+              enthaelt) - wird fuer alle anderen Rollen komplett nicht gerendert. */}
+          {benutzer?.globaleRolle === "admin" && (
+            <KopfzeilenMenue
+              label="Admin"
+              aktiv={pathname.startsWith("/systemeinstellungen") || pathname.startsWith("/entwicklungs-board")}
+            >
+              <Link to="/systemeinstellungen" className="kopfzeile-menue-eintrag" role="menuitem">
+                Systemeinstellungen
+              </Link>
+              <Link to="/entwicklungs-board" className="kopfzeile-menue-eintrag" role="menuitem">
+                Entwicklungs-Board
+              </Link>
             </KopfzeilenMenue>
           )}
           <NavLink

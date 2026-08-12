@@ -139,6 +139,17 @@ bleibt Admin-only; der Menüpunkt ist jetzt für alle angemeldeten Personen
 sichtbar (vorher admin-only versteckt), das Formular für Nicht-Admins über
 dasselbe `disabled`-`<fieldset>`-Muster gesperrt.
 
+**Eigenes „Admin"-Menü in der Kopfzeile** (`App.tsx`, neben „Stammdaten"):
+bündelt Funktionen, die *ausschließlich* der Rolle Admin vorbehalten sind
+(„Systemeinstellungen", „Entwicklungs-Board") – wird für alle anderen Rollen
+komplett nicht gerendert, nicht nur einzelne Einträge darin versteckt.
+**Bewusst nicht mit umgezogen: „Benutzerverwaltung"** – die bleibt im
+„Stammdaten"-Menü und für Admin **und** Manager zugänglich (Manager dürfen
+laut Spezifikation 21.1 Benutzer-/Manager-Accounts anlegen); ein rein
+admin-sichtbares Menü hätte das gebrochen. Bei einem neuen admin-only
+Menüpunkt: erst prüfen, ob die Funktion wirklich *nur* für Admin gedacht ist,
+nicht nur gerade zufällig admin-only umgesetzt wurde.
+
 **Zwei parallele Wege zum Spielergebnis, nur einer ist umgesetzt:** Ein
 Turnier ist entweder `protokollierungsart: "manuell"` (Endergebnisse per
 Formular oder per Token-Link ohne Login, `backend/src/routes/ergebnis.ts` +
