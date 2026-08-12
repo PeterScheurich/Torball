@@ -36,8 +36,13 @@ COUCH_ADMIN_PASS="$(cat "${CONF_DIR}/couchdb-admin")"
 
 echo "== Code holen/aktualisieren (${DIR}, Branch ${BRANCH}) =="
 if [[ -d "${DIR}/.git" ]]; then
-  git -C "$DIR" fetch origin "$BRANCH"
-  git -C "$DIR" reset --hard "origin/${BRANCH}"
+  # -c safe.directory="$DIR": das Verzeichnis gehoert nach dem chown weiter unten dem
+  # Service-Benutzer "torball", nicht root - neuere Git-Versionen verweigern sonst mit "dubious
+  # ownership" JEDEN Zugriff auf ein Repo, das einem anderen Benutzer gehoert (auch fuer root
+  # kein automatischer Vorrang mehr). Nur als Kommandozeilen-Override, keine dauerhafte
+  # ~/.gitconfig-Aenderung fuer root noetig.
+  git -c safe.directory="$DIR" -C "$DIR" fetch origin "$BRANCH"
+  git -c safe.directory="$DIR" -C "$DIR" reset --hard "origin/${BRANCH}"
 else
   git clone -b "$BRANCH" "$REPO_URL" "$DIR"
 fi

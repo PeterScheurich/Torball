@@ -49,6 +49,42 @@ einen Symlink liefert das aber den Pfad des Symlinks (`/usr/local/bin`), nicht d
 Fix: `readlink -f "${BASH_SOURCE[0]}"` löst den Symlink zuerst auf, danach stimmt der ermittelte
 Ordner (und damit auch der Checkout-Pfad für den Git-Pull-Hinweis) unabhängig vom Aufrufweg.
 
+## Dritter Nachtrag: echter Bug in deploy-instanz.sh gefunden (erster funktionierender Update-Lauf)
+
+Nach dem Fix des ausführbaren Bits (siehe unten) lief `torball-aktualisieren` zum ersten Mal
+wirklich durch bis zum App-Update-Schritt – und schlug dort fehl:
+
+```
+== Code holen/aktualisieren (/opt/torball/prod, Branch main) ==
+fatal: detected dubious ownership in repository at '/opt/torball/prod'
+```
+
+**Ursache:** Neuere Git-Versionen (CVE-2022-24765-Absicherung) verweigern jeden Zugriff auf ein
+Repository, dessen Besitzer nicht dem aktuellen Benutzer entspricht – **auch für `root`**, anders
+als in älteren Git-Versionen. `deploy-instanz.sh` klont beim allerersten Deploy noch als `root`
+(Verzeichnis gehört in dem Moment `root`), setzt den Besitz danach aber bewusst per
+`chown -R torball:torball "$DIR"` auf den Service-Benutzer um (Sicherheitsprinzip: der laufende
+Node-Prozess soll nicht als root laufen). Jeder **weitere** Lauf nimmt den `git fetch`/
+`reset --hard`-Zweig (nicht mehr `clone`) – und der lief in dieser Installation bis heute **nie
+wirklich durch einen zweiten echten Skript-Aufruf**: der CouchDB-Berechtigungsfix weiter oben in
+dieser Sitzung wurde manuell per `curl` direkt gegen CouchDB angewendet (unabhängig vom App-Code)
+und der Dienst nur manuell neu gestartet – nie über `deploy-instanz.sh`. Deshalb blieb der Bug bis
+zum ersten echten Update-Versuch unentdeckt; der Server stand zu diesem Zeitpunkt noch auf dem
+Commit des allerersten Deploys, mehr als zehn Commits hinter dem aktuellen Stand.
+
+**Diagnose (read-only SSH-Zugriff genutzt):** `git log -1` in
+`/opt/torball/prod` (mit demselben `-c safe.directory=`-Override, da auch der unprivilegierte
+Diagnose-Account beim reinen Lesen an derselben Sperre scheiterte) zeigte den alten Commit;
+`systemctl show torball@prod --property=ActiveEnterTimestamp` zeigte denselben Zeitstempel wie der
+manuelle Neustart nach dem CouchDB-Fix, Stunden zuvor – der Dienst war seither nie neu gestartet
+worden. Kein hängender Prozess (`ps aux`) - das Skript war nicht "stecken geblieben", sondern mit
+einem klaren Fehler abgebrochen (`set -euo pipefail`), nur stand der Fehler nicht in der zuvor
+geteilten, abgeschnittenen Ausgabe.
+
+**Fix:** `deploy-instanz.sh`, `git -C "$DIR" fetch`/`reset --hard` um `-c safe.directory="$DIR"`
+ergänzt – ein reiner Kommandozeilen-Override für genau diesen einen Aufruf, keine dauerhafte
+Änderung an `root`s `~/.gitconfig` (die bräuchte ohnehin einen Eintrag pro Instanz-Verzeichnis).
+
 Nur syntaktisch geprüft (`bash -n`), nicht live gegen den echten Produktiv-Server ausgeführt (würde
 System-Pakete aktualisieren bzw. ggf. neu starten – das soll der Nutzer selbst anstoßen).
 

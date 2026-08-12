@@ -611,6 +611,19 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   strikt auf genau diese eine Datenbank beschränkt, kein CouchDB-Server-Admin) – in beiden
   Skripten bereits so umgesetzt; bei einer künftigen dritten Provisionierungs-Stelle (weiterer
   Installationsweg, Option B, …) dasselbe Muster verwenden.
+- **Git verweigert (auch für `root`, seit neueren Git-Versionen kein automatischer Vorrang mehr)
+  jeden Zugriff auf ein Repository, das einem anderen Benutzer gehört** (`"detected dubious
+  ownership in repository"`, CVE-2022-24765-Absicherung). Trifft `deploy-instanz.sh`: der erste
+  Deploy klont noch als `root` (Verzeichnis gehört zu dem Zeitpunkt `root`), danach wird per
+  `chown -R torball:torball` auf den Service-Benutzer umbesitzt – jeder **zweite** Lauf (Update
+  über `git fetch`/`reset --hard`, nicht `clone`) lief seither ins Leere, weil das nie zuvor über
+  einen echten zweiten Skript-Lauf getestet wurde (alle bisherigen Fixes liefen über manuelle
+  Workarounds). Fix: `git -c safe.directory="$DIR" -C "$DIR" fetch/reset` – nur als
+  Kommandozeilen-Override für genau diesen Aufruf, keine dauerhafte `~/.gitconfig`-Änderung für
+  `root` nötig (die würde für alle künftigen Instanzen mit unterschiedlichen `$DIR` sowieso nicht
+  reichen). Bei eigenen Lesezugriffen auf `/opt/torball/<name>` (z. B. über einen unprivilegierten
+  Diagnose-Account) gilt dasselbe – dort ebenfalls `-c safe.directory=<pfad>` statt einer
+  dauerhaften Konfigurationsänderung verwenden.
 - Werte in `backend/.env` mit Sonderzeichen (z. B. `#`) immer in
   Anführungszeichen setzen - unquotiert wird alles ab einem `#` als
   Kommentar abgeschnitten (schwer zu findender Bug, einmal live erlebt:
