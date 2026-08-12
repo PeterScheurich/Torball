@@ -5,6 +5,7 @@ import { formatiereDatum, formatiereUhrzeit } from "../format";
 import { DruckDokument } from "../pdf/DruckDokument";
 import { erzeugeJsPdf } from "../pdf/erzeugeJsPdf";
 import {
+  baueErgebnisDokument,
   baueInfoDokument,
   baueSpielplanDokument,
   type Grunddaten,
@@ -13,7 +14,7 @@ import {
   type SpielZeile,
 } from "../pdf/dokumente";
 
-type DokTyp = "info" | "spielplan";
+type DokTyp = "info" | "spielplan" | "ergebnisse";
 
 const KRITERIUM_LABEL: Record<string, string> = {
   punkte: "Punkte",
@@ -68,7 +69,9 @@ export function OeffentlicheDruckansichtPage() {
   const { id } = useParams<{ id: string }>();
   const turnierId = id!;
   const [params] = useSearchParams();
-  const dokTyp: DokTyp = params.get("doc") === "spielplan" ? "spielplan" : "info";
+  const dokTyp: DokTyp = (["info", "spielplan", "ergebnisse"] as DokTyp[]).includes(params.get("doc") as DokTyp)
+    ? (params.get("doc") as DokTyp)
+    : "info";
 
   const [daten, setDaten] = useState<OeffentlicheTurnierseite>();
   const [fehler, setFehler] = useState<string>();
@@ -91,10 +94,46 @@ export function OeffentlicheDruckansichtPage() {
     const ergebnisSeiteUrl = `${oeffentlicheSeiteUrl}?tab=ergebnisse`;
     const g = grunddatenAus(daten);
 
+    const mehrereFelder = daten.felder.length > 1;
+    const nameVon = (mId: string) => daten.mannschaften.find((m) => m._id === mId)?.name ?? mId;
+    const feldName = (feldId?: string) => daten.felder.find((f) => f.feldId === feldId)?.name ?? feldId ?? "";
+
+    if (dokTyp === "ergebnisse") {
+      // Bei einem Wettbewerb die Summentabelle, sonst die Turniertabelle; Spiele nur dieser Spieltag.
+      const istGesamt = !!daten.wettbewerb;
+      const tabelleQuelle = daten.wettbewerb ? daten.wettbewerb.gesamttabelle : daten.ergebnisse?.tabelle ?? [];
+      const tabellePdf = tabelleQuelle.map((z) => ({
+        mannschaft: nameVon(z.mannschaftId),
+        spiele: z.spiele,
+        siege: z.siege,
+        unentschieden: z.unentschieden,
+        niederlagen: z.niederlagen,
+        toreFuer: z.toreFuer,
+        toreGegen: z.toreGegen,
+        tordifferenz: z.tordifferenz,
+        punkte: z.punkte,
+      }));
+      const ergebnisSpiele = [...(daten.ergebnisse?.spiele ?? [])]
+        .sort((a, b) => Number(a.runde) - Number(b.runde))
+        .map((s, i) => ({
+          nr: i + 1,
+          zeit: formatiereUhrzeit(s.startzeitGeplant),
+          feld: feldName(s.feldId),
+          teamA: nameVon(s.mannschaftAId),
+          teamB: nameVon(s.mannschaftBId),
+          ergebnis: s.ergebnisA != null && s.ergebnisB != null ? `${s.ergebnisA} : ${s.ergebnisB}` : "–",
+        }));
+      return baueErgebnisDokument(
+        g,
+        tabellePdf,
+        istGesamt ? "Gesamttabelle" : "Tabelle",
+        ergebnisSpiele,
+        mehrereFelder,
+        ergebnisSeiteUrl,
+      );
+    }
+
     if (dokTyp === "spielplan") {
-      const mehrereFelder = daten.felder.length > 1;
-      const nameVon = (mId: string) => daten.mannschaften.find((m) => m._id === mId)?.name ?? mId;
-      const feldName = (feldId?: string) => daten.felder.find((f) => f.feldId === feldId)?.name ?? feldId ?? "";
       const zeilen: SpielZeile[] = [...(daten.spielplan?.spiele ?? [])]
         .sort((a: OeffentlichesSpiel, b: OeffentlichesSpiel) => Number(a.runde) - Number(b.runde))
         .map((s, i) => ({

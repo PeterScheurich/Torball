@@ -71,6 +71,18 @@ QR-Ziele: Info → öffentliche Turnierseite; Spielplan/Schiedsrichter → öffe
   Titel/H1). Optisch wie das H1, semantisch ein laufender Kopf (kein zweites Überschrift-Tag). Der
   zuvor testweise ergänzte reine Turniername ist wieder entfernt (steht in der Kontextzeile).
 
+## Nachtrag: Ergebnis-Dokument
+
+Viertes Dokument **Ergebnisse** (`baueErgebnisDokument`, `?doc=ergebnisse` intern + öffentlich):
+zeigt die Spiele **nur des aktuellen Spieltags** (mit Ergebnis-Spalte), die Tabelle aber als
+**Gesamtstand** – bei Wettbewerben über beide Spieltage summiert (intern liefert `getTabelle` bereits
+die Summentabelle bei gesetzter `wettbewerbId`; öffentlich `daten.wettbewerb.gesamttabelle`),
+sonst die einfache Turniertabelle. Überschrift entsprechend „Gesamttabelle" vs. „Tabelle". Einstiege:
+Turnier-Übersicht „Ausdrucke → Ergebnisse" und öffentliche Seite „Als PDF: Ergebnisse" (nur wenn die
+Ergebnisse freigegeben sind). Verifiziert: Wettbewerbs-Turnier → „Gesamttabelle" (Sp = 4+4) + Spiele
+des Spieltags mit Ergebnis; Nicht-Wettbewerb mit zwei Feldern → „Tabelle" + Feld-Spalte in der
+Ergebnisliste.
+
 ## Offen / später
 
 - Nutzer entscheidet noch, ob einer der beiden Wege (Druck-PDF vs. jsPDF) wieder entfällt.

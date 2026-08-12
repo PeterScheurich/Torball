@@ -74,6 +74,25 @@ export interface SpielZeile {
   teamB: string;
 }
 
+/** Spielzeile mit Ergebnis (Ergebnis-Dokument). */
+export interface ErgebnisSpielZeile extends SpielZeile {
+  /** Anzeigetext, z.B. „3 : 1" oder „–" (noch offen). */
+  ergebnis: string;
+}
+
+/** Eine Tabellenzeile (Platzierung) fuers Ergebnis-Dokument. */
+export interface TabellenPdfZeile {
+  mannschaft: string;
+  spiele: number;
+  siege: number;
+  unentschieden: number;
+  niederlagen: number;
+  toreFuer: number;
+  toreGegen: number;
+  tordifferenz: number;
+  punkte: number;
+}
+
 function dateinameTeil(name: string): string {
   return name.replace(/[^\w-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase() || "turnier";
 }
@@ -207,5 +226,60 @@ export function baueSchiedsrichterDokument(
       abschnitte.length > 0
         ? abschnitte
         : [{ ueberschrift: "Schiedsrichter", absaetze: ["Es sind noch keine Schiedsrichter erfasst."] }],
+  };
+}
+
+/**
+ * Dokument 4: Ergebnisse eines Spieltags. Zeigt die (Gesamt-)Tabelle und die Spiele MIT Ergebnis –
+ * bewusst nur die des aktuellen Spieltags, die Tabelle aber als Gesamtstand (bei Wettbewerben über
+ * beide Spieltage summiert, sonst die Turniertabelle). Link + QR zur öffentlichen Ergebnisseite.
+ */
+export function baueErgebnisDokument(
+  g: Grunddaten,
+  tabelle: TabellenPdfZeile[],
+  tabelleTitel: string,
+  spiele: ErgebnisSpielZeile[],
+  mehrereFelder: boolean,
+  ergebnisSeiteUrl: string,
+): PdfDokument {
+  const ergebnisSpalten = mehrereFelder
+    ? ["#", "Zeit", "Feld", "Mannschaft A", "Ergebnis", "Mannschaft B"]
+    : ["#", "Zeit", "Mannschaft A", "Ergebnis", "Mannschaft B"];
+  const ergebnisZeilen = spiele.map((s, i) =>
+    mehrereFelder
+      ? [String(i + 1), s.zeit ?? "", s.feld ?? "", s.teamA, s.ergebnis, s.teamB]
+      : [String(i + 1), s.zeit ?? "", s.teamA, s.ergebnis, s.teamB],
+  );
+
+  return {
+    dateiname: `ergebnisse-${dateinameTeil(g.name)}`,
+    titel: `Ergebnisse – ${g.name}`,
+    kopffelder: grunddatenFelder(g, false),
+    qr: { url: ergebnisSeiteUrl, beschriftung: "Ergebnisse online (öffentliche Seite)" },
+    abschnitte: [
+      {
+        ueberschrift: tabelleTitel,
+        tabelle: {
+          spalten: ["Platz", "Mannschaft", "Sp", "S", "U", "N", "Tore", "Diff", "Punkte"],
+          zeilen: tabelle.map((z, i) => [
+            String(i + 1),
+            z.mannschaft,
+            String(z.spiele),
+            String(z.siege),
+            String(z.unentschieden),
+            String(z.niederlagen),
+            `${z.toreFuer}:${z.toreGegen}`,
+            String(z.tordifferenz),
+            String(z.punkte),
+          ]),
+        },
+        leerHinweis: "Noch keine Ergebnisse erfasst.",
+      },
+      {
+        ueberschrift: "Ergebnisse (dieser Spieltag)",
+        tabelle: { spalten: ergebnisSpalten, zeilen: ergebnisZeilen, schmaleFuehrungsspalten: true },
+        leerHinweis: "Noch keine Spiele mit Ergebnis.",
+      },
+    ],
   };
 }

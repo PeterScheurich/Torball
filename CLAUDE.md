@@ -243,10 +243,15 @@ QR-Dienst geschickt. Download als SVG (skalierbar, für Aushang) und PNG.
 
 **Ausdrucke / PDFs – ein Modell, zwei Ausgaben (clientseitig, nichts serverseitig abgelegt):**
 `frontend/src/pdf/dokumente.ts` definiert ein quellen-agnostisches Dokument-Modell (`PdfDokument`)
-+ Builder (`baueInfoDokument`/`baueSpielplanDokument`/`baueSchiedsrichterDokument`), die **bereits
-formatierte** Werte bekommen (Datum/Uhrzeit formatiert der Aufrufer) – so speisen sie intern (volle
-Turnierdaten, `DruckansichtPage`, `?doc=info|spielplan|schiedsrichter`) **und** öffentlich (nur
-freigegebene Daten, `OeffentlicheDruckansichtPage`, `?doc=info|spielplan`) dieselben Dokumente. Aus
++ Builder (`baueInfoDokument`/`baueSpielplanDokument`/`baueSchiedsrichterDokument`/
+`baueErgebnisDokument`), die **bereits formatierte** Werte bekommen (Datum/Uhrzeit formatiert der
+Aufrufer) – so speisen sie intern (volle Turnierdaten, `DruckansichtPage`,
+`?doc=info|spielplan|ergebnisse|schiedsrichter`) **und** öffentlich (nur freigegebene Daten,
+`OeffentlicheDruckansichtPage`, `?doc=info|spielplan|ergebnisse`) dieselben Dokumente. Das
+**Ergebnis-Dokument** zeigt die Spiele **nur des aktuellen Spieltags** (mit Ergebnis), die Tabelle
+aber als **Gesamtstand** (bei Wettbewerben summiert – intern via `getTabelle`, öffentlich via
+`daten.wettbewerb.gesamttabelle`; sonst die Turniertabelle, Überschrift „Tabelle" statt
+„Gesamttabelle"). Aus
 dem Modell werden **zwei** Ausgaben erzeugt: `DruckDokument.tsx` rendert **semantisches HTML** (genau
 ein `<h1>`, `<h2>` je Abschnitt, echte `<table>`, QR mit lesbarem Ziel-Link) → über den Druckdialog
 („Als PDF speichern") liefert Chrome ein **getaggtes, barrierefreies** PDF; `erzeugeJsPdf.ts` (jsPDF

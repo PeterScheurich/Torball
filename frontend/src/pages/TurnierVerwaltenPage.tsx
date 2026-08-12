@@ -609,6 +609,9 @@ export function TurnierVerwaltenPage() {
           <Link className="button-link" to={`/turniere/${encodeURIComponent(turnierId)}/druck?doc=spielplan`}>
             Spielplan
           </Link>{" "}
+          <Link className="button-link" to={`/turniere/${encodeURIComponent(turnierId)}/druck?doc=ergebnisse`}>
+            Ergebnisse
+          </Link>{" "}
           <Link className="button-link" to={`/turniere/${encodeURIComponent(turnierId)}/druck?doc=schiedsrichter`}>
             Schiedsrichter-Einteilung
           </Link>

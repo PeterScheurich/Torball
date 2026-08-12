@@ -348,6 +348,11 @@ export function OeffentlicheTurnierseitePage() {
           <Link className="button-link" to={`/turniere/${turnierId}/oeffentlich/druck?doc=spielplan`}>
             Spielplan
           </Link>
+        )}{" "}
+        {daten.ergebnisse && (
+          <Link className="button-link" to={`/turniere/${turnierId}/oeffentlich/druck?doc=ergebnisse`}>
+            Ergebnisse
+          </Link>
         )}
       </p>
 

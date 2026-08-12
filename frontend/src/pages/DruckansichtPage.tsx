@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spiel, Turnier } from "@torball/shared";
-import { getMannschaften, getSchiedsrichter, getSpiele, getTurnier } from "../api";
+import { getMannschaften, getSchiedsrichter, getSpiele, getTabelle, getTurnier, type TabellenZeile } from "../api";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 import { DruckDokument } from "../pdf/DruckDokument";
 import { erzeugeJsPdf } from "../pdf/erzeugeJsPdf";
 import {
+  baueErgebnisDokument,
   baueInfoDokument,
   baueSchiedsrichterDokument,
   baueSpielplanDokument,
@@ -15,7 +16,7 @@ import {
   type SpielZeile,
 } from "../pdf/dokumente";
 
-type DokTyp = "info" | "spielplan" | "schiedsrichter";
+type DokTyp = "info" | "spielplan" | "schiedsrichter" | "ergebnisse";
 
 const STATUS_LABEL: Record<string, string> = {
   entwurf: "Entwurf",
@@ -77,7 +78,9 @@ export function DruckansichtPage() {
   const { id } = useParams<{ id: string }>();
   const turnierId = id!;
   const [params] = useSearchParams();
-  const dokTyp: DokTyp = (["info", "spielplan", "schiedsrichter"] as DokTyp[]).includes(params.get("doc") as DokTyp)
+  const dokTyp: DokTyp = (["info", "spielplan", "schiedsrichter", "ergebnisse"] as DokTyp[]).includes(
+    params.get("doc") as DokTyp,
+  )
     ? (params.get("doc") as DokTyp)
     : "info";
 
@@ -85,21 +88,24 @@ export function DruckansichtPage() {
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [spiele, setSpiele] = useState<Spiel[]>([]);
   const [schiedsrichter, setSchiedsrichter] = useState<SchiedsrichterImTurnier[]>([]);
+  const [tabelle, setTabelle] = useState<TabellenZeile[]>([]);
   const [fehler, setFehler] = useState<string>();
   const [pdfLaeuft, setPdfLaeuft] = useState(false);
 
   const laden = useCallback(async () => {
     try {
-      const [t, m, s, sr] = await Promise.all([
+      const [t, m, s, sr, tab] = await Promise.all([
         getTurnier(turnierId),
         getMannschaften(turnierId),
         getSpiele(turnierId),
         getSchiedsrichter(turnierId),
+        getTabelle(turnierId),
       ]);
       setTurnier(t);
       setMannschaften(m);
       setSpiele(s);
       setSchiedsrichter(sr);
+      setTabelle(tab);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden");
     }
@@ -131,6 +137,34 @@ export function DruckansichtPage() {
       const zeilen = [...spiele].sort(nachRunde).map(alsZeile);
       return baueSpielplanDokument(g, zeilen, mehrereFelder, ergebnisSeiteUrl);
     }
+    if (dokTyp === "ergebnisse") {
+      // Bei einem Wettbewerb (mehrere Spieltage) liefert getTabelle bereits die Summentabelle;
+      // die Spiele bleiben bewusst nur die des aktuellen Spieltags.
+      const istGesamt = !!turnier.wettbewerbId;
+      const tabellePdf = tabelle.map((z) => ({
+        mannschaft: nameVon(z.mannschaftId),
+        spiele: z.spiele,
+        siege: z.siege,
+        unentschieden: z.unentschieden,
+        niederlagen: z.niederlagen,
+        toreFuer: z.toreFuer,
+        toreGegen: z.toreGegen,
+        tordifferenz: z.tordifferenz,
+        punkte: z.punkte,
+      }));
+      const ergebnisSpiele = [...spiele].sort(nachRunde).map((s, i) => ({
+        ...alsZeile(s, i),
+        ergebnis: s.ergebnisA != null && s.ergebnisB != null ? `${s.ergebnisA} : ${s.ergebnisB}` : "–",
+      }));
+      return baueErgebnisDokument(
+        g,
+        tabellePdf,
+        istGesamt ? "Gesamttabelle" : "Tabelle",
+        ergebnisSpiele,
+        mehrereFelder,
+        ergebnisSeiteUrl,
+      );
+    }
     if (dokTyp === "schiedsrichter") {
       // "Nur Turnierleitung"-Personen pfeifen nicht - sie bekommen kein Einteilungsblatt.
       const pfeifende = schiedsrichter.filter((sr) => !sr.nurTurnierleitung);
@@ -151,7 +185,7 @@ export function DruckansichtPage() {
       regelnFelder(turnier),
       oeffentlicheSeiteUrl,
     );
-  }, [turnier, mannschaften, spiele, schiedsrichter, dokTyp, turnierId]);
+  }, [turnier, mannschaften, spiele, schiedsrichter, tabelle, dokTyp, turnierId]);
 
   async function herunterladen() {
     if (!dokument) return;
