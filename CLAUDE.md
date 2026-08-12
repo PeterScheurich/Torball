@@ -64,7 +64,13 @@ npm run torball --workspace=backend -- <befehl> [--option="wert"]
 npm run torball --workspace=backend -- --hilfe
 ```
 Neue Befehle werden im `BEFEHLE`-Objekt in `backend/src/cli/torball.ts`
-ergänzt.
+ergänzt. Enthält u. a. `konfiguration:anzeigen`/`konfiguration:setzen`
+(gezielte `backend/.env`-Werte ändern, ohne die Datei von Hand zu bearbeiten –
+nur eine feste Allowlist, bewusst ohne `COUCHDB_*`) und `aktualisieren`
+(`git pull` falls Git-Repo + `npm install` + Build; gedacht v. a. für die
+Windows-Installation, siehe unten). `konfiguration:setzen` quotet Werte mit
+Leerzeichen/`#` automatisch (gleiche Sonderzeichen-Regel wie in
+„Betrieb / Infrastruktur").
 
 ## Architektur
 
@@ -593,15 +599,21 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   LTS (winget) + Apache CouchDB als Windows-Dienst (offizieller MSI-Installer, unbeaufsichtigt,
   Prüfsummen-Check) falls nicht vorhanden, legt eine eingeschränkte CouchDB-App-Datenbank +
   -Benutzer an (analog `deploy-instanz.sh`), baut die App und schreibt `backend/.env` +
-  Start-Skript/Desktop-Verknüpfung. Selbst-elevierend (UAC), idempotent. Dabei aktiviert
-  (`SERVE_FRONTEND=true`) das Backend einen **Einzelprozess-Modus**: `backend/src/index.ts`
-  registriert dann `@fastify/static` für `frontend/dist` (SPA-Fallback auf `index.html` im
-  `notFoundHandler`, analog zu nginx' `try_files`) und streift per `rewriteUrl` selbst das
-  `/api`-Präfix ab, das `frontend/src/api.ts` fest verdrahtet hat – das übernehmen sonst der
-  Vite-Dev-Proxy bzw. die nginx-Site. **Bewusst hinter einem Flag** (Default `false`), damit der
-  bestehende Debian/nginx-Produktivbetrieb unverändert bleibt. Ein verteilbares MSI/EXE (Option B,
-  für einen späteren Download-Knopf auf der Webseite) ist noch offen. Details:
-  `docs/Protokolle/2026-08-12-windows-installer-option-a.md`.
+  Start-/Update-Skript/Desktop-Verknüpfung. Selbst-elevierend (UAC), idempotent. Fragt bei einer
+  **Neu**anlage von `backend/.env` interaktiv Port + optionalen SMTP-Versand ab (Default-Wert
+  vorgeschlagen, Enter übernimmt ihn) – bei einer bereits vorhandenen `.env` (erneuter Lauf =
+  Update) wird nicht erneut gefragt. Erzeugt zusätzlich `Aktualisieren-Torball.cmd`
+  (`npm run torball -- aktualisieren`, siehe „Konsolen-Tool" oben) für spätere Updates, ohne den
+  kompletten Installer (inkl. Node-/CouchDB-Prüfung) erneut zu durchlaufen; `Start-Torball.cmd` +
+  `Aktualisieren-Torball.cmd` sind generierte, individuelle Artefakte im Projekt-Wurzelverzeichnis
+  und deshalb in `.gitignore` gelistet. Dabei aktiviert (`SERVE_FRONTEND=true`) das Backend einen
+  **Einzelprozess-Modus**: `backend/src/index.ts` registriert dann `@fastify/static` für
+  `frontend/dist` (SPA-Fallback auf `index.html` im `notFoundHandler`, analog zu nginx'
+  `try_files`) und streift per `rewriteUrl` selbst das `/api`-Präfix ab, das `frontend/src/api.ts`
+  fest verdrahtet hat – das übernehmen sonst der Vite-Dev-Proxy bzw. die nginx-Site. **Bewusst
+  hinter einem Flag** (Default `false`), damit der bestehende Debian/nginx-Produktivbetrieb
+  unverändert bleibt. Ein verteilbares MSI/EXE (Option B, für einen späteren Download-Knopf auf der
+  Webseite) ist noch offen. Details: `docs/Protokolle/2026-08-12-windows-installer-option-a.md`.
 
 ## Dokumentation
 

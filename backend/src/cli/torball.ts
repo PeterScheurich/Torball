@@ -9,11 +9,30 @@
  *
  * Aufruf: npm run torball -- <befehl> [--option=wert ...]
  */
+import { execSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import type { Benutzer } from "@torball/shared";
 import { findAllByType, insertDoc } from "../repository";
 
 type Optionen = Record<string, string>;
 type Befehl = (optionen: Optionen) => Promise<void>;
+
+/** Nur diese Schluessel duerfen ueber die CLI geaendert werden - bewusst ohne COUCHDB_*
+ * (Verbindung wuerde ein Tippfehler sofort kappen; die werden vom Installer/deploy-instanz.sh
+ * verwaltet) und ohne KANBAN_SYNC (nur fuer die Entwicklungs-Instanz relevant). */
+const ERLAUBTE_KONFIGURATIONS_SCHLUESSEL = [
+  "PORT",
+  "HOST",
+  "FRONTEND_URL",
+  "COOKIE_SECURE",
+  "SMTP_HOST",
+  "SMTP_PORT",
+  "SMTP_USER",
+  "SMTP_PASSWORD",
+  "SMTP_FROM",
+  "SERVE_FRONTEND",
+];
 
 const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
   "benutzer:liste": {
@@ -23,6 +42,23 @@ const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
   "benutzer:entsperren": {
     beschreibung: 'Entsperrt einen Benutzer. Optionen: --email="<E-Mail>"',
     ausfuehren: benutzerEntsperren,
+  },
+  "konfiguration:anzeigen": {
+    beschreibung: "Zeigt die aktuelle backend/.env (Passwoerter maskiert).",
+    ausfuehren: konfigurationAnzeigen,
+  },
+  "konfiguration:setzen": {
+    beschreibung:
+      'Aendert einen Wert in backend/.env (Neustart des Backends noetig, damit es wirkt). ' +
+      'Optionen: --schluessel="PORT" --wert="3005". Erlaubte Schluessel: ' +
+      ERLAUBTE_KONFIGURATIONS_SCHLUESSEL.join(", "),
+    ausfuehren: konfigurationSetzen,
+  },
+  aktualisieren: {
+    beschreibung:
+      "Aktualisiert die Installation: git pull (falls Git-Repo vorhanden), npm install, Neubau " +
+      "(shared zuerst, dann alle Workspaces). Laufende Server-Prozesse danach neu starten.",
+    ausfuehren: aktualisieren,
   },
 };
 
@@ -59,6 +95,111 @@ async function benutzerEntsperren(optionen: Optionen): Promise<void> {
 
   await insertDoc({ ...benutzer, gesperrt: false });
   console.log(`"${email}" ist jetzt entsperrt.`);
+}
+
+/** Sensible Werte werden nie im Klartext ausgegeben (Konsolen-Historie, geteilte Bildschirme). */
+const MASKIERTE_SCHLUESSEL = ["COUCHDB_PASSWORD", "SMTP_PASSWORD"];
+
+/** backend/.env liegt relativ zum Arbeitsverzeichnis, in dem "npm run torball" laeuft - das ist
+ * bei Aufruf per --workspace=backend (bzw. direkt in backend/) immer der backend-Ordner selbst. */
+function envDateiPfad(): string {
+  return path.resolve(process.cwd(), ".env");
+}
+
+/** Sehr einfacher .env-Parser (KEY=VALUE je Zeile, # leitet Kommentare ein) - reicht fuer die
+ * selbst erzeugten .env-Dateien dieses Projekts, keine Bibliothek noetig. */
+function leseEnvZeilen(inhalt: string): { schluessel: string; wert: string }[] {
+  const zeilen: { schluessel: string; wert: string }[] = [];
+  for (const zeile of inhalt.split(/\r?\n/)) {
+    const treffer = /^([A-Z_][A-Z0-9_]*)=(.*)$/.exec(zeile);
+    if (treffer) zeilen.push({ schluessel: treffer[1], wert: treffer[2] });
+  }
+  return zeilen;
+}
+
+async function konfigurationAnzeigen(): Promise<void> {
+  const pfad = envDateiPfad();
+  if (!fs.existsSync(pfad)) {
+    console.error(`Keine .env gefunden unter ${pfad}.`);
+    process.exitCode = 1;
+    return;
+  }
+  const zeilen = leseEnvZeilen(fs.readFileSync(pfad, "utf8"));
+  console.log(`Konfiguration (${pfad}):\n`);
+  for (const { schluessel, wert } of zeilen) {
+    const anzeige = MASKIERTE_SCHLUESSEL.includes(schluessel) ? (wert ? "(gesetzt)" : "(leer)") : wert;
+    console.log(`  ${schluessel}=${anzeige}`);
+  }
+}
+
+async function konfigurationSetzen(optionen: Optionen): Promise<void> {
+  const schluessel = optionen.schluessel?.trim();
+  const wert = optionen.wert ?? "";
+  if (!schluessel) {
+    console.error('Bitte --schluessel="<NAME>" --wert="<WERT>" angeben.');
+    process.exitCode = 1;
+    return;
+  }
+  if (!ERLAUBTE_KONFIGURATIONS_SCHLUESSEL.includes(schluessel)) {
+    console.error(
+      `"${schluessel}" ist ueber die CLI nicht aenderbar. Erlaubt: ${ERLAUBTE_KONFIGURATIONS_SCHLUESSEL.join(", ")}.`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  const pfad = envDateiPfad();
+  if (!fs.existsSync(pfad)) {
+    console.error(`Keine .env gefunden unter ${pfad}.`);
+    process.exitCode = 1;
+    return;
+  }
+
+  // Werte mit Sonderzeichen (Leerzeichen, #) in Anführungszeichen setzen - sonst wird beim naechsten
+  // Start alles ab dem # als Kommentar abgeschnitten (siehe CLAUDE.md, Betrieb/Infrastruktur).
+  const wertFuerDatei = /[\s#]/.test(wert) && !wert.startsWith('"') ? `"${wert}"` : wert;
+
+  const zeilen = fs.readFileSync(pfad, "utf8").split(/\r?\n/);
+  let gefunden = false;
+  const neueZeilen = zeilen.map((zeile) => {
+    if (new RegExp(`^${schluessel}=`).test(zeile)) {
+      gefunden = true;
+      return `${schluessel}=${wertFuerDatei}`;
+    }
+    return zeile;
+  });
+  if (!gefunden) neueZeilen.push(`${schluessel}=${wertFuerDatei}`);
+
+  fs.writeFileSync(pfad, neueZeilen.join("\n"));
+  console.log(`"${schluessel}" gesetzt. Bitte das Backend neu starten, damit die Aenderung wirkt.`);
+}
+
+async function aktualisieren(): Promise<void> {
+  // process.cwd() ist beim Aufruf ueber "npm run torball" immer backend/ (siehe envDateiPfad()) -
+  // das Projekt-Wurzelverzeichnis ist somit immer genau eine Ebene darueber.
+  const projektWurzel = path.resolve(process.cwd(), "..");
+
+  const ausfuehren = (befehl: string) => {
+    console.log(`\n> ${befehl}`);
+    execSync(befehl, { cwd: projektWurzel, stdio: "inherit" });
+  };
+
+  try {
+    if (fs.existsSync(path.join(projektWurzel, ".git"))) {
+      ausfuehren("git pull");
+    } else {
+      console.log("Kein Git-Repository erkannt - Quellcode wird nicht aktualisiert, nur neu gebaut.");
+    }
+    ausfuehren("npm install");
+    ausfuehren("npm run build --workspace=shared");
+    ausfuehren("npm run build");
+  } catch (err) {
+    console.error("\nAktualisierung fehlgeschlagen:", err instanceof Error ? err.message : err);
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log("\nFertig aktualisiert. Bitte den laufenden Server-Prozess neu starten.");
 }
 
 function zeigeHilfe(): void {

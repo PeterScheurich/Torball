@@ -46,13 +46,22 @@ Datenhaltung: eine einzige CouchDB-Datenbank, alle Entitäten über ein
 `docType`-Feld unterschieden. Authentifizierung: server-seitige Sessions per
 Cookie (kein JWT).
 
-## Voraussetzungen
+## Installation
 
-- Node.js (aktuelles LTS) und npm
-- Erreichbare CouchDB-Instanz (siehe `docs/installation-konfiguration.md` bzw.
-  `docs/testumgebung-starten.md`)
+Je nach Zweck gibt es drei Wege – ausführlich beschrieben in
+[`docs/installation-konfiguration.md`](docs/installation-konfiguration.md):
 
-## Schnellstart
+| Zweck | Kurzform | Details |
+|---|---|---|
+| Entwickeln/Beitragen (jede Plattform) | Abschnitt „Schnellstart" unten | `docs/installation-konfiguration.md` |
+| Lokal auf einem Windows-Rechner nutzen (z. B. offline am Spielort) | `deploy/Installieren-Windows.cmd` doppelklicken | Abschnitt „Lokale Installation unter Windows" |
+| Produktiv auf einem Linux-Server betreiben | `deploy/provision.sh` + `deploy/deploy-instanz.sh` | Abschnitt „Produktive Installation (Debian-LXC/VM)" |
+
+### Schnellstart (Entwicklung)
+
+**Voraussetzungen:** Node.js (aktuelles LTS) mit npm, sowie eine erreichbare
+CouchDB-Instanz (lokal oder im Netz – siehe `docs/installation-konfiguration.md`
+bzw. die kompaktere `docs/testumgebung-starten.md`).
 
 ```bash
 # Abhängigkeiten installieren
@@ -73,6 +82,11 @@ npm run dev:backend      # Fastify auf Port 3000
 npm run dev:frontend     # Vite auf Port 5173 (proxied /api -> localhost:3000)
 ```
 
+Sobald Installation und Konfiguration einmal durchgelaufen sind, reichen für
+den Alltag die beiden `npm run dev:*`-Befehle oben – ein Neubau ist nur nach
+Änderungen an `shared/src` bzw. vor dem produktiven Start nötig (siehe
+„Befehle" in `CLAUDE.md`).
+
 Beim allerersten Start (noch kein Benutzer vorhanden) weist die Anmeldeseite auf
 die einmalige Ersteinrichtung eines Admin-Kontos hin.
 
@@ -91,7 +105,9 @@ npx tsx --test src/spielplan/planung.test.ts
 
 ## Konsolen-Tool
 
-Administrative Aufgaben ohne Web-Login (z. B. einen gesperrten Admin entsperren):
+Administrative Aufgaben ohne Web-Login – z. B. einen gesperrten Admin entsperren,
+`backend/.env`-Werte wie Port oder SMTP nachträglich ändern, oder die Installation
+aktualisieren (Git-Pull falls vorhanden + Neubau):
 
 ```bash
 npm run torball --workspace=backend -- --hilfe

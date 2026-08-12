@@ -109,6 +109,20 @@ Für einen lokalen Betrieb auf einem Windows-Rechner (z. B. offline am Spielort)
 
 ### Ein-Klick-Installer (empfohlen)
 
+**Systemanforderungen:** Windows 10/11 (64-bit), lokale Administratorrechte (für die
+Node-/CouchDB-Installation), einmalig Internetzugang für die Downloads – danach läuft die App
+komplett offline (auch geeignet für den Einsatz ohne Netz am Spielort). Keine besonderen
+Hardware-Ansprüche: Node.js und CouchDB sind genügsam, 2 CPU-Kerne/2 GB RAM reichen, 4 GB RAM
+empfohlen, wenn nebenbei noch ein Browser laufen soll.
+
+**Speicherplatz** (Richtwerte, an diesem Rechner gemessen bzw. per Download-Größe ermittelt):
+Node.js ≈ 90 MB, CouchDB-Installer-Download ≈ 115 MB (installiert in ähnlicher Größenordnung, dazu
+die wachsenden Datenbankdateien), Projektordner inkl. sämtlicher `node_modules` ≈ 165 MB. Insgesamt
+also **grob 400–450 MB** für App + Laufzeitumgebung, zzgl. der CouchDB-eigenen Installation.
+Turnierdaten selbst sind klein (reines Text/JSON, keine Dateianhänge außer dem optionalen,
+clientseitig auf max. 1 MB begrenzten Turnier-Logo je Turnier) – über eine Saison typischerweise nur
+einige weitere Megabyte.
+
 Voraussetzung: der Projektordner liegt bereits lokal vor (`git clone` oder ZIP entpackt).
 `deploy/Installieren-Windows.cmd` per Doppelklick starten (fragt bei Bedarf per UAC nach
 Administratorrechten – nötig für die Node-/CouchDB-Installation). Das Skript
@@ -122,21 +136,38 @@ Administratorrechten – nötig für die Node-/CouchDB-Installation). Das Skript
 - **App-Datenbank + eigener eingeschränkter CouchDB-Benutzer** (`torball_backend`, kein
   Admin-Zugriff) – analog zu `deploy/deploy-instanz.sh` auf der Linux-Seite.
 - **Bauen** (`npm install`, `shared` zuerst, dann alle Workspaces).
-- **`backend/.env`** – nur angelegt, falls noch keine vorhanden ist; setzt zusätzlich
+- **`backend/.env`** – nur angelegt, falls noch keine vorhanden ist; fragt dabei interaktiv den
+  **Port** (Standard `3000`) sowie optional **SMTP-Zugangsdaten** für den Mailversand ab (jeweils
+  mit vorgeschlagenem Standardwert, einfach Enter drücken zum Übernehmen). Setzt zusätzlich
   `SERVE_FRONTEND=true` (siehe unten).
-- **`Start-Torball.cmd`** im Projektordner + Verknüpfung „Torball-Turniere" auf dem Desktop.
+- **`Start-Torball.cmd`** + **`Aktualisieren-Torball.cmd`** im Projektordner sowie eine Verknüpfung
+  „Torball-Turniere" auf dem Desktop (startet `Start-Torball.cmd`).
 
-Erneutes Ausführen ist unschädlich (Idempotenz wie bei den Linux-Skripten) und dient zugleich als
-Update (Neubau, `.env`/Verknüpfung bleiben erhalten). Start danach über die Desktop-Verknüpfung
-(öffnet `http://localhost:3000`); beim allerersten Start führt die Anmeldeseite durch die einmalige
-Ersteinrichtung des Admin-Kontos.
+Erneutes Ausführen ist unschädlich (Idempotenz wie bei den Linux-Skripten): vorhandene `.env` bleibt
+unangetastet (keine erneute Abfrage), Node/CouchDB werden nur bei Bedarf nachinstalliert, die App
+wird neu gebaut. Start über die Desktop-Verknüpfung (öffnet den Browser auf dem gewählten Port);
+beim allerersten Start führt die Anmeldeseite durch die einmalige Ersteinrichtung des Admin-Kontos.
 
 **Einzelprozess-Modus (`SERVE_FRONTEND=true`):** Anders als beim Debian-Produktivbetrieb (nginx
 liefert das Frontend + proxied `/api`, siehe unten) liefert das Backend hier das gebaute Frontend
-selbst mit aus (`@fastify/static`, SPA-Fallback auf `index.html`) – ein einziger Prozess auf
-`http://localhost:3000`, kein separater Webserver nötig. Das Frontend ruft die API weiterhin unter
-`/api/*` auf; das Backend streift dieses Präfix in diesem Modus selbst ab (`rewriteUrl` in
-`backend/src/index.ts`), genau das, was sonst nginx bzw. der Vite-Dev-Proxy übernehmen.
+selbst mit aus (`@fastify/static`, SPA-Fallback auf `index.html`) – ein einziger Prozess, kein
+separater Webserver nötig. Das Frontend ruft die API weiterhin unter `/api/*` auf; das Backend
+streift dieses Präfix in diesem Modus selbst ab (`rewriteUrl` in `backend/src/index.ts`), genau das,
+was sonst nginx bzw. der Vite-Dev-Proxy übernehmen.
+
+**Konfiguration später anpassen oder die App aktualisieren:** Für Änderungen nach der Installation
+(z. B. Port oder SMTP nachträglich setzen) muss nicht der komplette Installer erneut durchlaufen
+werden – dafür hat das Konsolen-Tool `torball` (siehe unten) eigene Befehle:
+
+```bash
+npm run torball --workspace=backend -- konfiguration:anzeigen
+npm run torball --workspace=backend -- konfiguration:setzen --schluessel="PORT" --wert="3005"
+npm run torball --workspace=backend -- aktualisieren
+```
+
+(Backend danach neu starten, damit `.env`-Änderungen wirken – siehe oben.) Unter Windows genügt für
+das Aktualisieren (Git-Pull falls Git-Repo, `npm install`, Neubau) auch ein Doppelklick auf
+`Aktualisieren-Torball.cmd` im Projektordner.
 
 ### Manuell
 

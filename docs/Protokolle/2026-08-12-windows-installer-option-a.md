@@ -100,3 +100,84 @@ beschrieben lokal verifiziert.
 
 Verteilbares MSI/EXE für einen Download-Knopf auf der (künftigen) Webseite – Anwender sollen dafür
 nicht erst den Quellcode besorgen müssen. Noch nicht begonnen.
+
+## Nachtrag (selbe Sitzung): interaktive Parameter, Konfiguration/Update per CLI, Systemanforderungen
+
+Nutzer-Feedback nach dem ersten Durchlauf, noch bevor ein echter Windows-Test stattfand (der wird
+zurückgestellt, bis ein Testrechner vorbereitet ist):
+
+### 1. Interaktive Parameterabfrage im Installer
+
+`deploy/installieren-windows.ps1` fragt jetzt bei einer **Neu**anlage von `backend/.env` (nicht bei
+einem erneuten Lauf mit bereits vorhandener `.env`) interaktiv:
+
+- **Port** (Standard `3000`, mit Zahlen-Validierung).
+- **SMTP-Mailversand jetzt einrichten?** (Standard: Nein/überspringen). Bei „Ja": Host, Port
+  (Standard `587`), Benutzer, Passwort (maskierte Eingabe wie beim CouchDB-Admin-Passwort) und
+  Absender-Adresse (Standard wie in `.env.example`).
+
+`FRONTEND_URL` wird aus dem gewählten Port abgeleitet. Der tatsächlich wirksame Port wird danach
+**aus der Datei zurückgelesen** (nicht aus der Eingabevariable), damit `Start-Torball.cmd` bei einem
+erneuten Lauf (vorhandene `.env`, keine erneute Abfrage) trotzdem den richtigen Port zum
+Öffnen des Browsers verwendet.
+
+### 2. Konfiguration/Update im Standard-CLI-Tool (`backend/src/cli/torball.ts`)
+
+Drei neue Befehle im bestehenden `BEFEHLE`-Objekt (kein neues Tool, bewusst im etablierten
+"torball"-Einstiegspunkt):
+
+- `konfiguration:anzeigen` – gibt die aktuelle `backend/.env` aus, `COUCHDB_PASSWORD`/
+  `SMTP_PASSWORD` maskiert ("(gesetzt)"/"(leer)").
+- `konfiguration:setzen --schluessel="PORT" --wert="3005"` – ändert einen Wert in `backend/.env`
+  (Zeile ersetzt oder angehängt). Nur eine feste Allowlist ist änderbar (`PORT`, `HOST`,
+  `FRONTEND_URL`, `COOKIE_SECURE`, `SMTP_*`, `SERVE_FRONTEND`) – bewusst **ohne** `COUCHDB_*` (ein
+  Tippfehler würde die DB-Verbindung sofort kappen; diese Werte verwaltet der Installer bzw.
+  `deploy-instanz.sh`) und ohne `KANBAN_SYNC` (nur für die Entwicklungsinstanz relevant). Quotet
+  Werte mit Leerzeichen/`#` automatisch (gleiche Regel wie an anderer Stelle in CLAUDE.md
+  dokumentiert).
+- `aktualisieren` – `git pull` (nur falls `.git` im Projekt-Wurzelverzeichnis existiert), dann
+  `npm install` + Build (`shared` zuerst, dann alle Workspaces). Live-Ausgabe der Unterbefehle
+  (`stdio: "inherit"`).
+
+Beide `konfiguration:*`-Befehle **verifiziert** gegen eine Kopie der echten Dev-`.env` in einem
+Scratch-Verzeichnis (nicht gegen die echte Datei) – erlaubter Schlüssel wird korrekt gesetzt,
+gesperrter Schlüssel (`COUCHDB_PASSWORD`) korrekt mit Exit-Code 1 abgelehnt.
+
+Der Windows-Installer generiert dafür zusätzlich `Aktualisieren-Torball.cmd` (Doppelklick →
+`npm run torball -- aktualisieren`) neben dem bereits vorhandenen `Start-Torball.cmd` – beide sind
+individuelle, pro Installation generierte Artefakte im Projekt-Wurzelverzeichnis und deshalb neu in
+`.gitignore` gelistet (`/Start-Torball.cmd`, `/Aktualisieren-Torball.cmd`).
+
+### 3. Systemanforderungen / Speicherplatz dokumentiert
+
+In `docs/installation-konfiguration.md` (Abschnitt „Ein-Klick-Installer") ergänzt, mit an diesem
+Rechner tatsächlich gemessenen bzw. per Content-Length ermittelten Werten (nicht geschätzt):
+
+- Node.js 22 LTS (offizielles Windows-x64-Binary): **≈ 87 MB** (Content-Length 86.997.320 Bytes).
+- CouchDB-3.5.2-1-Windows-Installer (Neighbourhoodie-Download): **≈ 114 MB**
+  (Content-Length 119.607.296 Bytes).
+- `node_modules` des gesamten Monorepos (alle drei Workspaces, gehoisted): **≈ 162 MB**
+  (`Get-ChildItem -Recurse | Measure-Object Length -Sum`).
+- App-Quellcode + Build-Output (`*/dist`): **≈ 2 MB** (vernachlässigbar).
+
+Daraus grob **400–450 MB** für App + Laufzeitumgebung insgesamt, zzgl. CouchDB-eigener
+Installation. Systemanforderungen (Windows 10/11 64-bit, Admin-Rechte für die Installation, 2
+CPU-Kerne/2 GB RAM ausreichend, 4 GB empfohlen, Internet nur einmalig für die Downloads) ebenfalls
+ergänzt.
+
+### 4. README.md generalisiert + Installationswege ergänzt
+
+`README.md`: neuer Abschnitt „Installation" mit einer Übersichtstabelle der drei Wege
+(Entwicklung/Windows-Ein-Klick/Produktiv-Linux) inkl. Verweisen auf
+`docs/installation-konfiguration.md`; bisheriger „Schnellstart"-Inhalt darunter als Unterabschnitt
+„Schnellstart (Entwicklung)" erhalten, plus Hinweis, dass nach einmaliger Installation im Alltag nur
+noch die beiden `npm run dev:*`-Befehle nötig sind. „Konsolen-Tool"-Abschnitt erwähnt jetzt auch
+Konfiguration-Ändern/Aktualisieren, nicht nur das Entsperren gesperrter Admin-Konten.
+
+### Ausblick
+
+Der eigentliche Test auf einer echten Windows-Maschine bleibt zurückgestellt, bis ein Testrechner
+vorbereitet ist. Der Nutzer plant im Anschluss außerdem die **produktive Linux-Installation** live
+nach `docs/installation-konfiguration.md` (Abschnitt „Produktive Installation") durchzuführen – diese
+Doku wurde in dieser Sitzung inhaltlich nicht verändert, ist also unverändert Stand aus der vorigen
+Sitzung.

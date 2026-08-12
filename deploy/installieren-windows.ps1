@@ -1,6 +1,7 @@
 # Lokale Windows-Installation der Torball-Turniere-App ("Ein-Klick"-Installer, Option A).
 #
 # Voraussetzung: dieser Projektordner liegt bereits lokal vor (git clone oder ZIP entpackt).
+# Systemanforderungen und Speicherplatzbedarf: docs/installation-konfiguration.md.
 # Automatisiert die manuellen Schritte aus docs/installation-konfiguration.md:
 #   - Node.js LTS (winget), falls nicht vorhanden
 #   - Apache CouchDB als Windows-Dienst (offizieller MSI-Installer, unbeaufsichtigt), falls nicht
@@ -8,13 +9,18 @@
 #   - App-Datenbank + eigener, eingeschraenkter CouchDB-Benutzer (torball_backend) - analog zu
 #     deploy/deploy-instanz.sh auf der Linux-Seite
 #   - npm install + Build (shared zuerst)
-#   - backend/.env (nur wenn noch keine vorhanden ist - vorhandene Konfiguration bleibt unberuehrt)
-#   - Start-Torball.cmd + Desktop-Verknuepfung
+#   - backend/.env (nur wenn noch keine vorhanden ist - vorhandene Konfiguration bleibt unberuehrt;
+#     fragt bei einer Neuanlage Port + optionalen SMTP-Versand ab, jeweils mit Standardwert)
+#   - Start-Torball.cmd + Aktualisieren-Torball.cmd + Desktop-Verknuepfung
 #
 # Das Backend liefert dabei das gebaute Frontend selbst mit aus (SERVE_FRONTEND=true, siehe
-# backend/src/index.ts) - ein Prozess auf http://localhost:3000, kein separater Webserver noetig.
+# backend/src/index.ts) - ein Prozess, kein separater Webserver noetig.
 #
 # Idempotent: mehrfaches Ausfuehren aktualisiert (Build neu, .env/Verknuepfung bleiben erhalten).
+# Fuer eine spaetere Anpassung einzelner Werte (z.B. Port) bzw. zur Aktualisierung ohne die
+# CouchDB-/Node-Pruefungen erneut zu durchlaufen: "Aktualisieren-Torball.cmd" bzw. das
+# Konsolen-Tool torball ("npm run torball -- konfiguration:anzeigen|konfiguration:setzen|aktualisieren",
+# siehe backend/src/cli/torball.ts).
 # Verlangt Administratorrechte (Node-/CouchDB-Installation) - elevatiert bei Bedarf automatisch.
 
 $ErrorActionPreference = "Stop"
@@ -84,6 +90,22 @@ function Test-Couchdb {
 
 function New-ZufallsPasswort {
     -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 24 | ForEach-Object { [char]$_ })
+}
+
+# Fragt einen Wert ab; leere Eingabe (nur Enter) uebernimmt den vorgeschlagenen Standard.
+function Frage-MitDefault {
+    param([string]$Text, [string]$Standard)
+    $eingabe = Read-Host "$Text [$Standard]"
+    if ([string]::IsNullOrWhiteSpace($eingabe)) { return $Standard }
+    return $eingabe
+}
+
+function Frage-JaNein {
+    param([string]$Text, [bool]$StandardJa)
+    $hinweis = if ($StandardJa) { "J/n" } else { "j/N" }
+    $eingabe = Read-Host "$Text [$hinweis]"
+    if ([string]::IsNullOrWhiteSpace($eingabe)) { return $StandardJa }
+    return $eingabe -match '^[jJyY]'
 }
 
 if (Test-Couchdb) {
@@ -190,38 +212,78 @@ Write-Host "== [5/6] backend/.env =="
 $EnvFile = Join-Path $RepoRoot "backend\.env"
 if (Test-Path $EnvFile) {
     Write-Host "backend/.env existiert bereits - unveraendert gelassen."
+    Write-Host "Aenderungen (z.B. Port) spaeter per 'npm run torball -- konfiguration:setzen' in backend/."
 } else {
+    Write-Host "Ein paar Angaben zur Konfiguration (Enter uebernimmt den vorgeschlagenen Standardwert):"
+    $Port = Frage-MitDefault -Text "Port, unter dem die App laufen soll" -Standard "3000"
+    while ($Port -notmatch '^\d+$') {
+        Write-Host "Bitte eine Zahl eingeben."
+        $Port = Frage-MitDefault -Text "Port, unter dem die App laufen soll" -Standard "3000"
+    }
+
+    $SmtpHost = ""; $SmtpPort = "587"; $SmtpUser = ""; $SmtpPassword = ""
+    $SmtpFrom = '"Torball-Turniere" <noreply@example.com>'
+    $SmtpEinrichten = Frage-JaNein -Text "SMTP-Mailversand jetzt einrichten (Einladungs-/Passwort-Reset-Mails; ohne das erscheint der Link stattdessen im Server-Log)?" -StandardJa $false
+    if ($SmtpEinrichten) {
+        $SmtpHost = Frage-MitDefault -Text "SMTP-Host" -Standard ""
+        $SmtpPort = Frage-MitDefault -Text "SMTP-Port" -Standard "587"
+        $SmtpUser = Frage-MitDefault -Text "SMTP-Benutzer" -Standard ""
+        $secureSmtp = Read-Host "SMTP-Passwort" -AsSecureString
+        $SmtpPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureSmtp))
+        $SmtpFrom = Frage-MitDefault -Text "Absender-Adresse (Format: `"Name`" <adresse@beispiel.de>)" -Standard $SmtpFrom
+    }
+    # In Anfuehrungszeichen setzen, falls Sonderzeichen (v.a. #) enthalten sind - sonst wird beim
+    # Start alles ab dem # als Kommentar abgeschnitten (siehe CLAUDE.md, Betrieb/Infrastruktur).
+    if ($SmtpPassword -match '[\s#]' -and -not $SmtpPassword.StartsWith('"')) { $SmtpPassword = "`"$SmtpPassword`"" }
+
     @"
-PORT=3000
+PORT=$Port
 HOST=127.0.0.1
 COUCHDB_URL=http://127.0.0.1:5984
 COUCHDB_DB=$Db
 COUCHDB_USER=$DbUser
 COUCHDB_PASSWORD=$DbPass
 COOKIE_SECURE=false
-FRONTEND_URL=http://localhost:3000
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASSWORD=
-SMTP_FROM="Torball-Turniere" <noreply@example.com>
+FRONTEND_URL=http://localhost:$Port
+SMTP_HOST=$SmtpHost
+SMTP_PORT=$SmtpPort
+SMTP_USER=$SmtpUser
+SMTP_PASSWORD=$SmtpPassword
+SMTP_FROM=$SmtpFrom
 KANBAN_SYNC=false
 SERVE_FRONTEND=true
 "@ | Set-Content -Path $EnvFile -Encoding utf8
     Write-Host "backend/.env angelegt."
 }
 
-# --- [6/6] Start-Skript + Desktop-Verknuepfung ---------------------------------------------------
+# Port aus der (neu geschriebenen oder bereits vorhandenen) .env lesen - massgeblich fuer die
+# Start-Verknuepfung ist immer die tatsaechliche Datei, nicht die Eingabe von eben.
+$PortZeile = (Get-Content $EnvFile) | Where-Object { $_ -match '^PORT=' } | Select-Object -First 1
+$EffectivePort = if ($PortZeile) { ($PortZeile -split '=', 2)[1].Trim() } else { "3000" }
+
+# --- [6/6] Start-/Aktualisierungs-Skript + Desktop-Verknuepfung ------------------------------------
 Write-Host ""
-Write-Host "== [6/6] Start-Skript + Desktop-Verknuepfung =="
+Write-Host "== [6/6] Start-/Aktualisierungs-Skript + Desktop-Verknuepfung =="
 $StartCmd = Join-Path $RepoRoot "Start-Torball.cmd"
 @"
 @echo off
 cd /d "%~dp0backend"
 start "Torball-Turniere (Server - dieses Fenster offen lassen)" cmd /k node --env-file=.env dist\index.js
 timeout /t 3 /nobreak >nul
-start "" http://localhost:3000
+start "" http://localhost:$EffectivePort
 "@ | Set-Content -Path $StartCmd -Encoding ascii
+
+$UpdateCmd = Join-Path $RepoRoot "Aktualisieren-Torball.cmd"
+@"
+@echo off
+echo Aktualisiert Torball-Turniere (Git-Pull falls vorhanden, npm install, Neubau) ...
+echo Falls der Server laeuft (Fenster "Torball-Turniere (Server ...)"), dieses bitte vorher schliessen.
+echo.
+cd /d "%~dp0backend"
+call npm run torball -- aktualisieren
+echo.
+pause
+"@ | Set-Content -Path $UpdateCmd -Encoding ascii
 
 $WshShell = New-Object -ComObject WScript.Shell
 $Shortcut = $WshShell.CreateShortcut((Join-Path ([Environment]::GetFolderPath("Desktop")) "Torball-Turniere.lnk"))
@@ -232,5 +294,8 @@ $Shortcut.Save()
 
 Write-Host ""
 Write-Host "Fertig!"
-Write-Host "Ueber die Desktop-Verknuepfung 'Torball-Turniere' starten (oeffnet http://localhost:3000)."
+Write-Host "Ueber die Desktop-Verknuepfung 'Torball-Turniere' starten (oeffnet http://localhost:$EffectivePort)."
 Write-Host "Beim allerersten Start fuehrt die Anmeldeseite durch die einmalige Ersteinrichtung des ersten Admin-Kontos."
+Write-Host ""
+Write-Host "Spaeter aktualisieren: $UpdateCmd doppelklicken."
+Write-Host "Spaeter Konfiguration anpassen (z.B. Port, SMTP): in backend/ 'npm run torball -- konfiguration:anzeigen' bzw. 'konfiguration:setzen' (siehe --hilfe)."

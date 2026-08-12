@@ -145,3 +145,8 @@ scripts/.env
 
 # Doku-Archiv: nur lokal zur Versionierung/Nachschau, nicht im Repository verwalten.
 docs/Archiv/
+
+# Windows-Installer (deploy/installieren-windows.ps1): generierte Start-/Update-Skripte im
+# Projekt-Wurzelverzeichnis - je Installation individuell, nicht im Repository verwalten.
+/Start-Torball.cmd
+/Aktualisieren-Torball.cmd
