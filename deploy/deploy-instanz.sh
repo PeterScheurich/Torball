@@ -48,6 +48,10 @@ else
 fi
 
 echo "== Bauen (shared zuerst) =="
+# Instanzname als Vite-Build-Variable durchreichen, damit das Frontend bei jeder Nicht-Prod-Instanz
+# (z.B. "demo") einen auffaelligen Umgebungs-Banner anzeigen kann (siehe UmgebungsBanner.tsx) -
+# rein zur Build-Zeit, kein Laufzeit-API-Aufruf noetig. Wird bei jedem Lauf neu geschrieben.
+echo "VITE_INSTANZ_NAME=${NAME}" > "${DIR}/frontend/.env"
 ( cd "$DIR"
   npm ci
   npm run build --workspace=shared

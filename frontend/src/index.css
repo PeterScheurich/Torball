@@ -82,6 +82,27 @@ body {
   box-sizing: border-box;
 }
 
+/* Umgebungs-Banner (UmgebungsBanner.tsx): unuebersehbarer Hinweis auf Demo-/Entwicklungsumgebungen,
+   damit man dort nichts fuer echte Daten haelt. Negative Rand-Kompensation, damit der Banner trotz
+   des Innenabstands von #root bis an dessen Rand reicht (volle Breite der uebrigen Kopfzeile). */
+.umgebungs-banner {
+  margin: 0 -16px 16px;
+  padding: 8px 16px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.umgebungs-banner-demo {
+  background: var(--danger);
+  color: var(--bg);
+}
+
+.umgebungs-banner-dev {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
 /* Sichtbarer Fokus-Indikator fuer alle interaktiven Elemente (Abschnitt 24.1). */
 :focus-visible {
   outline: 3px solid var(--focus-ring);

@@ -675,6 +675,14 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   Pfad über `readlink -f "${BASH_SOURCE[0]}"` auf statt direkt über `BASH_SOURCE`, sonst würde es
   bei Aufruf über den Symlink `/usr/local/bin` (statt den echten `deploy/`-Ordner) als eigenen
   Ordner annehmen und `deploy-instanz.sh` nicht mehr finden.
+- **Umgebungs-Banner (`UmgebungsBanner.tsx`) markiert Nicht-Prod-Umgebungen unübersehbar** – gegen
+  versehentliches Pflegen von „echten" Daten auf einer Demo-/Entwicklungsinstanz (oder umgekehrt).
+  Rein build-zeit-gesteuert, **kein Laufzeit-API-Aufruf**: `import.meta.env.DEV` kommt direkt von
+  Vite (`npm run dev:frontend`); `VITE_INSTANZ_NAME` schreibt `deploy-instanz.sh` vor jedem Build
+  in ein `frontend/.env` (Wert = der Instanzname, den das Skript ohnehin schon als Parameter
+  bekommt, z. B. `demo`) – auf `prod` sowie beim Windows-Installer (kein `VITE_INSTANZ_NAME`
+  gesetzt) erscheint bewusst kein Banner. `frontend/.env` ist über die bestehende `.env`-Regel in
+  `.gitignore` automatisch mit abgedeckt, kein zusätzlicher Eintrag nötig.
 - **Interne LAN-Adressen gehören NICHT ins Repo** (Nutzer-Vorgabe): Dev-CouchDB,
   Gitea-Repo, BookStack usw. stehen im Repo nur als Platzhalter (`couchdb-host`,
   `gitea-host`, `bookstack-host`); die konkreten Adressen liegen im Claude-Memory.

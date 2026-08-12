@@ -28,6 +28,7 @@ import { HilfePage } from "./pages/HilfePage";
 import { UeberPage } from "./pages/UeberPage";
 import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
 import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
+import { UmgebungsBanner } from "./components/UmgebungsBanner";
 import { useAuth } from "./auth";
 import { APP_VERSION } from "./version";
 
@@ -170,6 +171,7 @@ function StartRoute() {
 function App() {
   return (
     <>
+      <UmgebungsBanner />
       <Kopfzeile />
       <main>
         <Routes>
