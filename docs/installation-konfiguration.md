@@ -1,8 +1,7 @@
 # Installation / Konfiguration
 
-Diese Seite beschreibt die lokale Installation zum Entwickeln/Testen und die
-Konfigurationswerte. Das produktive Deployment ist noch nicht umgesetzt – das
-Zielbild dafür steht in `docs/Protokolle/2026-08-11-zielbild-produktivumgebung.md`.
+Diese Seite beschreibt die Installation – **lokal (Windows)** zum Entwickeln/Testen und
+**produktiv (Debian-LXC)** – sowie die Konfigurationswerte.
 
 Zum reinen **Starten** der lokalen Umgebung siehe die kompaktere Anleitung
 `docs/testumgebung-starten.md`.
@@ -71,11 +70,60 @@ Turniere übernehmen die jeweils aktuelle Version, bestehende Turniere bleiben
 unverändert (jedes trägt seine eigene Kopie und ist im Reiter „Regeln" einzeln
 anpassbar).
 
-## Produktives Deployment
+## Produktive Installation (Debian-LXC/VM) – Schritt für Schritt
 
-Noch nicht umgesetzt. Vorgesehen ist ein Debian-LXC auf dem Proxmox-Host mit
-lokaler CouchDB (nur `127.0.0.1`), einer containerlokalen nginx (Frontend
-statisch + `/api`-Proxy zum Backend als systemd-Service) und der bestehenden
-nginx als öffentlichem TLS-Endpunkt für eine Subdomain. Dort ist
-`COOKIE_SECURE=true` zu setzen. Details und Begründung:
+Aufbau: lokale CouchDB (nur `127.0.0.1`), containerlokale nginx (Frontend statisch + `/api`-Proxy
+zum Backend als systemd-Service). Mehrere Instanzen (z. B. `prod` + `demo`) laufen über eigene
+Ports/DBs auf **einem** Host. Zwei Skripte im Ordner `deploy/` erledigen alles:
+
+Auf dem Server **als `root`** (auf minimalem Debian ist `sudo`/`curl`/`git` nicht vorinstalliert –
+`provision.sh` installiert sie mit):
+
+```bash
+# 0) nur falls git fehlt:
+apt-get update && apt-get install -y git
+
+# 1) Repo holen (Server muss das Git-Repo erreichen; SSH-Deploy-Key oder HTTP-Token)
+git clone <REPO_URL> /root/torball-src && cd /root/torball-src
+
+# 2) Basis installieren (Node LTS, CouchDB single-node/127.0.0.1, nginx, systemd-Template)
+bash deploy/provision.sh
+
+# 3) Instanz(en) ausrollen  ->  deploy-instanz.sh <name> <frontend_port> <backend_port>
+REPO_URL=<REPO_URL> bash deploy/deploy-instanz.sh prod 8080 3001
+REPO_URL=<REPO_URL> bash deploy/deploy-instanz.sh demo 8081 3002
+```
+
+Erreichbar (im Netz des Servers): `http://<server-ip>:8080` (prod), `:8081` (demo). **Update** einer
+Instanz = das Deploy-Skript erneut laufen lassen (git pull + Rebuild + Restart). Logs:
+`journalctl -u torball@prod -f`. Vollständige Erklärung, Zwei-Instanzen-Layout, Caveats (u. a.
+CouchDB-Apt-Repo für Debian 13) und die später folgende externe Erreichbarkeit (bestehende nginx als
+TLS-Endpunkt → dann `COOKIE_SECURE=true` + `FRONTEND_URL=https://…`):
+`docs/Protokolle/2026-08-12-produktiv-installation.md`. Zielbild/Begründung:
 `docs/Protokolle/2026-08-11-zielbild-produktivumgebung.md`.
+
+## Lokale Installation unter Windows
+
+Für einen lokalen Betrieb auf einem Windows-Rechner (z. B. offline am Spielort) aktuell manuell:
+
+1. **Node.js LTS** installieren (`winget install OpenJS.NodeJS.LTS` oder von nodejs.org).
+2. **CouchDB** installieren – Apache CouchDB bietet einen Windows-Installer (MSI); bei der Einrichtung
+   ein Admin-Passwort vergeben, CouchDB lauscht dann lokal (`http://127.0.0.1:5984`).
+3. **App holen und bauen** (im Projektordner):
+   ```powershell
+   npm install
+   npm run build --workspace=shared
+   npm run build
+   ```
+4. **`backend/.env`** aus `backend/.env.example` anlegen und auf die lokale CouchDB zeigen lassen
+   (`COUCHDB_URL=http://127.0.0.1:5984`, `COUCHDB_USER`/`COUCHDB_PASSWORD` = der CouchDB-Zugang;
+   `COUCHDB_DB=torball`). `COOKIE_SECURE` weglassen/`false` (lokal über HTTP).
+5. **Starten** (zwei Prozesse): `npm run dev:backend` und `npm run dev:frontend`, dann
+   `http://localhost:5173` im Browser öffnen. Beim ersten Start durch die Ersteinrichtung des
+   Admin-Kontos gehen.
+
+> **Geplant – einfacher Windows-Installer:** Für nicht-IT-affine Anwender soll das zu einer
+> Ein-Klick-Installation werden (Bündelung von Node + CouchDB + App, das Backend liefert dann das
+> Frontend gleich mit aus, Start per Verknüpfung/Autostart). Umsetzung als eigener Schritt – die
+> Richtung (PowerShell-Installer vs. kompiliertes MSI/EXE, Online- vs. Offline-Bundle) wird noch
+> festgelegt.
