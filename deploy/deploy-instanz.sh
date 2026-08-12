@@ -27,7 +27,7 @@ BE_PORT="${3:?backend_port fehlt (z. B. 3001)}"
 SERVER_NAME="${4:-_}"
 : "${REPO_URL:?REPO_URL muss gesetzt sein (Git-URL des Repos, vom Server erreichbar)}"
 
-[[ $EUID -eq 0 ]] || { echo "Bitte als root ausfuehren (sudo)."; exit 1; }
+[[ $EUID -eq 0 ]] || { echo "Bitte als root ausfuehren (sudo, falls installiert; sonst direkt als root)."; exit 1; }
 [[ -f "${CONF_DIR}/couchdb-admin" ]] || { echo "CouchDB-Admin fehlt - erst deploy/provision.sh ausfuehren."; exit 1; }
 
 DIR="${BASE_DIR}/${NAME}"

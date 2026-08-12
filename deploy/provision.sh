@@ -22,11 +22,14 @@ BASE_DIR="/opt/torball"
 CONF_DIR="/etc/torball"
 COUCH_ADMIN_FILE="${CONF_DIR}/couchdb-admin"
 
-[[ $EUID -eq 0 ]] || { echo "Bitte als root ausfuehren (sudo)."; exit 1; }
+# Als root ausfuehren. Auf einer minimalen Debian-Installation ist `sudo` NICHT vorhanden - dann
+# direkt als root anmelden (kein sudo noetig). Dieses Skript installiert sudo/curl/git selbst mit,
+# sodass sie danach zur Verfuegung stehen (apt-get ist auch minimal immer vorhanden).
+[[ $EUID -eq 0 ]] || { echo "Bitte als root ausfuehren (auf minimalem Debian ohne sudo direkt als root anmelden)."; exit 1; }
 
-echo "== [1/6] apt: Grundpakete =="
+echo "== [1/6] apt: Grundpakete (inkl. sudo/curl/git fuer minimale Installationen) =="
 apt-get update
-apt-get install -y ca-certificates curl gnupg git build-essential apt-transport-https lsb-release openssl
+apt-get install -y sudo ca-certificates curl gnupg git build-essential apt-transport-https lsb-release openssl
 
 echo "== [2/6] Node.js ${NODE_MAJOR}.x (NodeSource) =="
 if ! command -v node >/dev/null 2>&1 || [[ "$(node -v | sed 's/v\([0-9]*\).*/\1/')" -lt "$NODE_MAJOR" ]]; then

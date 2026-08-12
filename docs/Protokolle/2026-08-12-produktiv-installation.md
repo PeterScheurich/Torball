@@ -14,7 +14,7 @@ Alles über **`deploy/provision.sh`** (einmalig, als root):
 | **Node.js LTS** (NodeSource, Default v22) | Backend-Runtime + Build |
 | **Apache CouchDB** (single node, **nur `127.0.0.1`**) | Datenbank; je Instanz eine eigene DB |
 | **nginx** | serviert je Instanz das gebaute Frontend + proxied `/api` ans Backend |
-| **git, build-essential** | Checkout + Build auf dem Server |
+| **git, build-essential, sudo, curl** | Checkout + Build auf dem Server (auf minimalem Debian nicht vorinstalliert – werden mitinstalliert) |
 | Service-Benutzer `torball`, `/opt/torball`, systemd-Template `torball@.service` | Betrieb je Instanz |
 
 Backend läuft **API-only** als `node --env-file=.env dist/index.js` (kein tsx in Prod); nginx liefert
@@ -34,20 +34,29 @@ das statische Frontend. Kein Docker nötig.
 
 ## Installation Schritt für Schritt
 
-Auf dem Debian-13-Server (als root bzw. `sudo`):
+Alles **als `root`** ausführen. Auf einer minimalen Debian-Installation sind `sudo`, `curl` und `git`
+**nicht** vorinstalliert – deshalb zuerst als root anmelden (kein `sudo` nötig) und `git` per `apt`
+nachziehen (nur um an die Skripte zu kommen; `provision.sh` installiert `sudo`/`curl`/`git` danach
+ohnehin mit). `apt-get` selbst ist auch minimal immer vorhanden.
 
 ```bash
+# 0) Bootstrap (nur nötig, wenn git fehlt) – als root:
+apt-get update && apt-get install -y git
+
 # 1) Repo einmal holen, um die Skripte zu haben (der spätere per-Instanz-Checkout ist separat).
 #    Der Server muss das Git-Repo erreichen (Netz + SSH-Deploy-Key oder HTTP-Token).
 git clone <REPO_URL> /root/torball-src && cd /root/torball-src
 
-# 2) Basis installieren (Node, CouchDB, nginx, systemd-Template, Service-User).
-sudo bash deploy/provision.sh
+# 2) Basis installieren (Node, CouchDB, nginx, systemd-Template, Service-User; inkl. sudo/curl/git).
+bash deploy/provision.sh
 
 # 3) Instanzen ausrollen (REPO_URL wird zum Klonen der jeweiligen Instanz gebraucht).
-sudo REPO_URL=<REPO_URL> bash deploy/deploy-instanz.sh prod 8080 3001
-sudo REPO_URL=<REPO_URL> bash deploy/deploy-instanz.sh demo 8081 3002
+REPO_URL=<REPO_URL> bash deploy/deploy-instanz.sh prod 8080 3001
+REPO_URL=<REPO_URL> bash deploy/deploy-instanz.sh demo 8081 3002
 ```
+
+(Falls `sudo` bereits vorhanden ist und du dich nicht direkt als root anmeldest, jeweils `sudo`
+voranstellen: `sudo bash deploy/provision.sh` usw.)
 
 Danach erreichbar (aus dem Netz des Servers): `http://<server-ip>:8080` (prod), `:8081` (demo).
 Beim **Erststart** führt die Anmeldeseite durch die einmalige Ersteinrichtung des ersten Admin-Kontos.
