@@ -148,6 +148,13 @@ dabei bewusst `string` (nicht `string | null`), damit der `{ ...bestehend,
 darf – TS kennt den Laufzeit-`null` nicht. `TeamsVerwaltung.tsx` ist bewusst
 nicht betroffen: `Team` hat nur Pflichtfelder (`vereinId`, `name`).
 
+**Öffentliche Startseite (Root für Gäste):** Die Route `/` ist **öffentlich** und rendert über
+`StartRoute` (App.tsx) je nach Anmeldung: angemeldet → die Verwaltungs-`TurnierListePage`, sonst →
+`OeffentlicheStartseitePage`. Diese listet (Endpunkt `GET /oeffentlich/turniere`, kein Login) alle
+Turniere mit `oeffentlichTurnierinfos=true` – nur **Name/Datum/Spielort**, getrennt nach aktuell/
+abgeschlossen, plus Link zur Anmeldung. Damit landet ein Besucher der Server-Adresse nicht mehr auf
+`/login`, sondern auf dieser Übersicht. (Die übrigen geschützten Routen bleiben in `GeschuetzteRoute`.)
+
 **Öffentliche Turnierseite ohne Login** (`backend/src/routes/oeffentlich.ts`,
 `frontend/src/pages/OeffentlicheTurnierseitePage.tsx`, Route
 `/turniere/:id/oeffentlich`): Die Turnier-ID selbst ist die Adresse, anders

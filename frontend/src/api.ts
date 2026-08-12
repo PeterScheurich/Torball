@@ -729,6 +729,19 @@ export function getOeffentlicheTurnierseite(turnierId: string): Promise<Oeffentl
   return anfrage(`/oeffentlich/turniere/${turnierId}`);
 }
 
+/** Ein Turnier in der oeffentlichen Startseiten-Liste (nur Name/Datum/Spielort/Status). */
+export interface OeffentlichesTurnierListenElement {
+  turnierId: string;
+  name: string;
+  datum: string;
+  spielortName?: string;
+  status: string;
+}
+
+export function getOeffentlicheTurnierliste(): Promise<OeffentlichesTurnierListenElement[]> {
+  return anfrage("/oeffentlich/turniere");
+}
+
 // --- Kanban-Board (nur Admins, Entwicklungs-Organisation) ---
 
 export interface KanbanBoard {

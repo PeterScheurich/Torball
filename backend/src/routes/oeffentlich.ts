@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { MannschaftImTurnier, Spiel, Spielfeld, Turnier } from "@torball/shared";
-import { findAllBySelector, findById } from "../repository";
+import { findAllBySelector, findAllByType, findById } from "../repository";
 import { berechneGesamttabelle, berechneTabelle, type TabellenZeile } from "../ergebnisse/tabelle";
 
 /** Nie an die oeffentliche Seite ausliefern (Abschnitt 13: "Spielplan ... ohne
@@ -88,6 +88,24 @@ async function ladeWettbewerb(
 }
 
 export async function oeffentlichRoutes(app: FastifyInstance): Promise<void> {
+  /**
+   * Oeffentliche Startseite der Server-App (kein Login): listet alle Turniere, deren Turnierinfos
+   * oeffentlich freigegeben sind (`oeffentlichTurnierinfos`) - mit nur Name/Datum/Spielort/Status.
+   * Damit sind Datum/Ort ohnehin oeffentlich; mehr wird bewusst nicht ausgeliefert.
+   */
+  app.get("/oeffentlich/turniere", async () => {
+    const alle = await findAllByType<Turnier>("turnier");
+    return alle
+      .filter((t) => t.oeffentlichTurnierinfos)
+      .map((t) => ({
+        turnierId: t._id,
+        name: t.name,
+        datum: t.datum,
+        spielortName: t.spielortName,
+        status: t.status,
+      }));
+  });
+
   /**
    * Oeffentliche Turnierseite (Abschnitt 13) - kein Login, "frei verteilbarer
    * Link" je Turnier. Die Turnier-ID selbst dient als Adresse (anders als beim

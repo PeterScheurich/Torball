@@ -15,6 +15,7 @@ import { PasswortVergessenPage } from "./pages/PasswortVergessenPage";
 import { PasswortResetPage } from "./pages/PasswortResetPage";
 import { ErgebnisErfassungPage } from "./pages/ErgebnisErfassungPage";
 import { OeffentlicheTurnierseitePage } from "./pages/OeffentlicheTurnierseitePage";
+import { OeffentlicheStartseitePage } from "./pages/OeffentlicheStartseitePage";
 import { ProfilPage } from "./pages/ProfilPage";
 import { BenutzerverwaltungPage } from "./pages/BenutzerverwaltungPage";
 import { StammdatenPage } from "./pages/StammdatenPage";
@@ -145,6 +146,14 @@ function Kopfzeile() {
   );
 }
 
+/** Root-Route: fuer angemeldete Benutzer die Verwaltungs-Turnierliste, fuer Gaeste die
+ *  oeffentliche Startseite (freigegebene Turniere + Anmelde-Link). */
+function StartRoute() {
+  const { benutzer, laedt } = useAuth();
+  if (laedt) return <p>Lädt…</p>;
+  return benutzer ? <TurnierListePage /> : <OeffentlicheStartseitePage />;
+}
+
 /** Definiert alle Routen der Anwendung (siehe Modul-Kommentar oben zur Trennung
  *  oeffentlich / anmeldepflichtig). */
 function App() {
@@ -163,9 +172,10 @@ function App() {
           <Route path="/turniere/:id/oeffentlich/druck" element={<OeffentlicheDruckansichtPage />} />
           <Route path="/einstellungen" element={<EinstellungenPage />} />
           <Route path="/hilfe" element={<HilfePage />} />
+          {/* Root ist oeffentlich: Gaeste sehen die Startseite, Angemeldete die Verwaltungsliste. */}
+          <Route path="/" element={<StartRoute />} />
 
           <Route element={<GeschuetzteRoute />}>
-            <Route path="/" element={<TurnierListePage />} />
             <Route path="/profil" element={<ProfilPage />} />
             <Route path="/ueber" element={<UeberPage />} />
             <Route path="/benutzerverwaltung" element={<BenutzerverwaltungPage />} />
