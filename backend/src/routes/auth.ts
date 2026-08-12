@@ -6,6 +6,7 @@ import { hashePasswort, passwortRegelVerstoss, passwortStimmt } from "../auth/pa
 import { loescheSessionCookie, SESSION_COOKIE_NAME, setzeSessionCookie } from "../auth/plugin";
 import { erstelleSession, loescheSessionPerToken } from "../auth/session";
 import { totpCodeGueltig } from "../auth/totp";
+import { aktuelleSystemeinstellungen } from "../systemeinstellungen";
 
 // Anmelde-bezogene Routen: Login (inkl. optionaler 2FA), Logout, "wer bin ich" (/auth/me)
 // und die einmalige Ersteinrichtung des allerersten Admin-Kontos. Die eigentliche
@@ -35,6 +36,24 @@ interface BootstrapAdminBody {
 }
 
 const bootstrapAdminSchema = {
+  type: "object",
+  required: ["email", "passwort", "name"],
+  properties: {
+    email: { type: "string", minLength: 1 },
+    passwort: { type: "string", minLength: 1 },
+    name: { type: "string", minLength: 1 },
+    vorname: { type: "string" },
+  },
+} as const;
+
+interface RegistrierenBody {
+  email: string;
+  passwort: string;
+  name: string;
+  vorname?: string;
+}
+
+const registrierenSchema = {
   type: "object",
   required: ["email", "passwort", "name"],
   properties: {
@@ -132,6 +151,57 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         name: req.body.name,
         vorname: req.body.vorname?.trim() || undefined,
         globaleRolle: "admin",
+        sprache: "de",
+        zweiFaAktiv: false,
+        gesperrt: false,
+        erstelltAm: new Date().toISOString(),
+      };
+      const gespeichert = await insertDoc(benutzer);
+      return reply.code(201).send(oeffentlichesProfil(gespeichert));
+    },
+  );
+
+  /** Oeffentlich abrufbar (keine Anmeldung noetig), damit die Login-Seite bei aktivierter
+   *  Selbstregistrierung einen Registrieren-Link anzeigen kann. */
+  app.get("/auth/registrierung-verfuegbar", async () => {
+    const einstellungen = await aktuelleSystemeinstellungen();
+    return { verfuegbar: einstellungen.selbstregistrierungErlaubt };
+  });
+
+  /**
+   * Selbstregistrierung (Systemeinstellungen, nur wenn von einem Admin aktiviert). Anders als
+   * bootstrap-admin jederzeit nutzbar (nicht nur ohne bestehende Benutzer) und vergibt nie die
+   * Rolle "admin" - die Rolle kommt aus den Systemeinstellungen (selbstregistrierungStandardRolle,
+   * dort schon auf "benutzer"/"manager" beschraenkt).
+   */
+  app.post<{ Body: RegistrierenBody }>(
+    "/auth/registrieren",
+    { schema: { body: registrierenSchema } },
+    async (req, reply) => {
+      const einstellungen = await aktuelleSystemeinstellungen();
+      if (!einstellungen.selbstregistrierungErlaubt) {
+        return reply.code(403).send({ error: "Selbstregistrierung ist derzeit nicht aktiviert." });
+      }
+
+      const email = req.body.email.trim().toLowerCase();
+      const bestehende = await findAllByType<Benutzer>("benutzer");
+      if (bestehende.some((b) => b.email.toLowerCase() === email)) {
+        return reply.code(409).send({ error: "Ein Benutzer mit dieser E-Mail-Adresse existiert bereits." });
+      }
+
+      const verstoss = passwortRegelVerstoss(req.body.passwort);
+      if (verstoss) return reply.code(400).send({ error: verstoss });
+
+      const id = newId("benutzer");
+      const benutzer: Benutzer = {
+        _id: id,
+        docType: "benutzer",
+        benutzerId: id,
+        email,
+        passwortHash: await hashePasswort(req.body.passwort),
+        name: req.body.name,
+        vorname: req.body.vorname?.trim() || undefined,
+        globaleRolle: einstellungen.selbstregistrierungStandardRolle,
         sprache: "de",
         zweiFaAktiv: false,
         gesperrt: false,

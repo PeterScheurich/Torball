@@ -11,11 +11,13 @@ import type {
   MannschaftImTurnier,
   Protokollierungsart,
   SchiedsrichterImTurnier,
+  SelbstregistrierungsRolle,
   Spiel,
   Spielfeld,
   Spieler,
   SpielerStatus,
   Spielmodus,
+  Systemeinstellungen,
   Systemkonfiguration,
   Team,
   Theme,
@@ -160,6 +162,19 @@ export function updateSystemkonfiguration(
   daten: Turnierregeln & { forfaitErgebnis?: string; passwortMindestlaenge?: number; aenderungskommentar?: string },
 ): Promise<Systemkonfiguration> {
   return anfrage("/systemkonfiguration", { method: "PUT", body: JSON.stringify(daten) });
+}
+
+// --- Systemeinstellungen (u.a. Selbstregistrierung, nur Admin) ---
+
+export function getSystemeinstellungen(): Promise<Systemeinstellungen> {
+  return anfrage("/systemeinstellungen");
+}
+
+export function updateSystemeinstellungen(daten: {
+  selbstregistrierungErlaubt: boolean;
+  selbstregistrierungStandardRolle: SelbstregistrierungsRolle;
+}): Promise<Systemeinstellungen> {
+  return anfrage("/systemeinstellungen", { method: "PUT", body: JSON.stringify(daten) });
 }
 
 export interface NeueMannschaft {
@@ -452,6 +467,19 @@ export function bootstrapAdmin(
 
 export function bootstrapVerfuegbar(): Promise<{ verfuegbar: boolean }> {
   return anfrage("/auth/bootstrap-verfuegbar");
+}
+
+export function registrierungVerfuegbar(): Promise<{ verfuegbar: boolean }> {
+  return anfrage("/auth/registrierung-verfuegbar");
+}
+
+export function registrieren(
+  email: string,
+  passwort: string,
+  name: string,
+  vorname?: string,
+): Promise<BenutzerProfil> {
+  return anfrage("/auth/registrieren", { method: "POST", body: JSON.stringify({ email, passwort, name, vorname }) });
 }
 
 // --- Benutzerverwaltung ---

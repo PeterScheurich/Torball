@@ -20,6 +20,7 @@ import { ergebnisRoutes } from "./routes/ergebnis";
 import { ergebnisTokenRoutes } from "./routes/ergebnisToken";
 import { oeffentlichRoutes } from "./routes/oeffentlich";
 import { systemkonfigurationRoutes } from "./routes/systemkonfiguration";
+import { systemeinstellungenRoutes } from "./routes/systemeinstellungen";
 import { kanbanRoutes } from "./routes/kanban";
 
 // Einstiegspunkt des Backends: baut die Fastify-Instanz, registriert Cookie-Plugin, den
@@ -72,6 +73,7 @@ const start = async () => {
     server.register(ergebnisTokenRoutes);
     server.register(oeffentlichRoutes);
     server.register(systemkonfigurationRoutes);
+    server.register(systemeinstellungenRoutes);
     server.register(kanbanRoutes);
 
     if (serveFrontend) {

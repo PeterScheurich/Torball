@@ -10,6 +10,7 @@ import { DruckansichtPage } from "./pages/DruckansichtPage";
 import { OeffentlicheDruckansichtPage } from "./pages/OeffentlicheDruckansichtPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ErsteinrichtungPage } from "./pages/ErsteinrichtungPage";
+import { RegistrierenPage } from "./pages/RegistrierenPage";
 import { EinladungAnnehmenPage } from "./pages/EinladungAnnehmenPage";
 import { PasswortVergessenPage } from "./pages/PasswortVergessenPage";
 import { PasswortResetPage } from "./pages/PasswortResetPage";
@@ -20,6 +21,7 @@ import { ProfilPage } from "./pages/ProfilPage";
 import { BenutzerverwaltungPage } from "./pages/BenutzerverwaltungPage";
 import { StammdatenPage } from "./pages/StammdatenPage";
 import { StandardregelnPage } from "./pages/StandardregelnPage";
+import { SystemeinstellungenPage } from "./pages/SystemeinstellungenPage";
 import { KanbanBoardPage } from "./pages/KanbanBoardPage";
 import { EinstellungenPage } from "./pages/EinstellungenPage";
 import { HilfePage } from "./pages/HilfePage";
@@ -98,6 +100,11 @@ function Kopfzeile() {
                 </Link>
               )}
               {benutzer?.globaleRolle === "admin" && (
+                <Link to="/systemeinstellungen" className="kopfzeile-menue-eintrag" role="menuitem">
+                  Systemeinstellungen
+                </Link>
+              )}
+              {benutzer?.globaleRolle === "admin" && (
                 <Link to="/entwicklungs-board" className="kopfzeile-menue-eintrag" role="menuitem">
                   Entwicklungs-Board
                 </Link>
@@ -164,6 +171,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/ersteinrichtung" element={<ErsteinrichtungPage />} />
+          <Route path="/registrieren" element={<RegistrierenPage />} />
           <Route path="/einladung/:token" element={<EinladungAnnehmenPage />} />
           <Route path="/passwort-vergessen" element={<PasswortVergessenPage />} />
           <Route path="/passwort-reset/:token" element={<PasswortResetPage />} />
@@ -181,6 +189,7 @@ function App() {
             <Route path="/benutzerverwaltung" element={<BenutzerverwaltungPage />} />
             <Route path="/stammdaten" element={<StammdatenPage />} />
             <Route path="/standardregeln" element={<StandardregelnPage />} />
+            <Route path="/systemeinstellungen" element={<SystemeinstellungenPage />} />
             <Route path="/entwicklungs-board" element={<KanbanBoardPage />} />
             <Route path="/turniere/neu" element={<TurnierAnlegenPage />} />
             <Route path="/turniere/:id/regeln-erfassen" element={<SpielregelnErfassenPage />} />

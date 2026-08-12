@@ -4,6 +4,7 @@ export * from "./common";
 export * from "./benutzer";
 export * from "./session";
 export * from "./konfiguration";
+export * from "./systemeinstellungen";
 export * from "./stammdaten";
 export * from "./wettbewerb";
 export * from "./turnier";
@@ -23,6 +24,7 @@ export * from "./kanban";
 import type { Benutzer } from "./benutzer";
 import type { Session } from "./session";
 import type { Systemkonfiguration } from "./konfiguration";
+import type { Systemeinstellungen } from "./systemeinstellungen";
 import type { Verein, Team } from "./stammdaten";
 import type { Wettbewerb } from "./wettbewerb";
 import type { Turnier } from "./turnier";
@@ -47,6 +49,7 @@ export type TorballDokument =
   | Benutzer
   | Session
   | Systemkonfiguration
+  | Systemeinstellungen
   | Verein
   | Team
   | Wettbewerb

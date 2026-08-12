@@ -357,6 +357,23 @@ die UI fehlte). **Admin kann fremde 2FA deaktivieren** (admin-only Route
 `POST /benutzer/:id/2fa/deaktivieren`, eigenes Konto ausgenommen) – für
 ausgesperrte Nutzer mit verlorener Authenticator-App.
 
+**Systemeinstellungen (`docType: "systemeinstellungen"`, Route `/systemeinstellungen`,
+admin-only lesend wie schreibend):** ein **Singleton-Dokument** (feste `_id`
+`systemeinstellungen:global`, `backend/src/systemeinstellungen.ts`) für systemweite
+App-Einstellungen – bewusst **nicht versioniert** wie `Systemkonfiguration`/Turnierregeln,
+weil hier nichts in ein Turnier kopiert wird und es keinen Anwendungsfall für eine alte
+Version gibt. Gedacht als Erweiterungspunkt für künftige globale Schalter; aktuell nur die
+**Selbstregistrierung**: `selbstregistrierungErlaubt` (Default `false`) +
+`selbstregistrierungStandardRolle` (`benutzer`/`manager` – **„admin" ist im Schema bewusst
+nicht erlaubt**, sowohl Backend-Enum als auch Frontend-Select, damit eine offene
+Selbstregistrierung nie automatisch Admin-Rechte vergeben kann). Ist sie aktiviert, kann sich
+jede:r unter `/registrieren` ohne Einladung selbst einen Account anlegen (`POST
+/auth/registrieren`, öffentlich, prüft Duplikat-E-Mail wie der Einladungs-Flow); die
+Login-Seite zeigt dann zusätzlich einen „Jetzt registrieren"-Link (Abfrage
+`GET /auth/registrierung-verfuegbar`, öffentlich, analog zu `bootstrap-verfuegbar`). Gedacht
+u. a. für eine Demo-Instanz, an der mehrere Tester parallel eigene Accounts brauchen, ohne dass
+jemand sie einzeln einladen muss.
+
 **Entwicklungs-Kanban-Board (admin-only, kein Turnier-Bezug):** eigenständiges
 Werkzeug zur Organisation der Weiterentwicklung, `docType: "kanbanKarte"` in
 derselben CouchDB (`shared/src/types/kanban.ts`, `backend/src/routes/kanban.ts`,

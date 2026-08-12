@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { bootstrapVerfuegbar } from "../api";
+import { bootstrapVerfuegbar, registrierungVerfuegbar } from "../api";
 import { useAuth } from "../auth";
 
 /**
@@ -15,6 +15,7 @@ export function LoginPage() {
   const [totpCode, setTotpCode] = useState("");
   const [benoetigtTotp, setBenoetigtTotp] = useState(false);
   const [ersteinrichtungVerfuegbar, setErsteinrichtungVerfuegbar] = useState(false);
+  const [registrierungErlaubt, setRegistrierungErlaubt] = useState(false);
   const [fehler, setFehler] = useState<string | undefined>();
   const [sendet, setSendet] = useState(false);
   const navigate = useNavigate();
@@ -24,6 +25,9 @@ export function LoginPage() {
     bootstrapVerfuegbar()
       .then((r) => setErsteinrichtungVerfuegbar(r.verfuegbar))
       .catch(() => setErsteinrichtungVerfuegbar(false));
+    registrierungVerfuegbar()
+      .then((r) => setRegistrierungErlaubt(r.verfuegbar))
+      .catch(() => setRegistrierungErlaubt(false));
   }, []);
 
   // Meldet an; verlangt der Server 2FA, wird auf die Code-Eingabe umgeschaltet statt
@@ -105,6 +109,11 @@ export function LoginPage() {
       <p>
         <Link to="/passwort-vergessen">Passwort vergessen?</Link>
       </p>
+      {registrierungErlaubt && (
+        <p>
+          Noch keinen Account? <Link to="/registrieren">Jetzt registrieren</Link>
+        </p>
+      )}
     </>
   );
 }
