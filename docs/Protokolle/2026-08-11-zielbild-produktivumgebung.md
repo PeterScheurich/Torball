@@ -43,13 +43,13 @@ Vereinbarte Reihenfolge der nächsten Arbeitspakete:
 
 | Ebene | Test/Dev (bleibt unverändert) | Produktion (neu) |
 |---|---|---|
-| Ort | jetziges Setup, CouchDB `192.168.188.96` | neuer LXC auf dem MS-01 |
+| Ort | jetziges Setup, CouchDB `couchdb-host` | neuer LXC auf dem MS-01 |
 | CouchDB | offen im LAN | nur `127.0.0.1:5984`, eigene Instanz + eigener DB-Name |
 | Erreichbar | nur lokal | Subdomain von außen via bestehende nginx |
 
 Trennung erfolgt durch **eigene CouchDB-Instanz + eigenen Datenbanknamen**,
 nicht durch eine geteilte DB mit Namenspräfix. Die Dev-CouchDB auf
-`192.168.188.96` bleibt unangetastet.
+`couchdb-host` bleibt unangetastet.
 
 ## Aufbau innerhalb des Prod-Containers
 

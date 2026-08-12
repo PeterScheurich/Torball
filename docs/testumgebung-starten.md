@@ -9,7 +9,7 @@ nachzufragen.
 - Im Projektordner wurde einmal `npm install` ausgeführt.
 - `backend/.env` existiert und enthält die Zugangsdaten zur CouchDB-Datenbank
   (liegt nur lokal, nicht im Repository).
-- Der Rechner muss den Entwicklungsserver `192.168.188.96` erreichen können
+- Der Rechner muss den Entwicklungsserver `couchdb-host` erreichen können
   (dort läuft die CouchDB-Datenbank) – gleiches Netzwerk wie bisher.
 
 **Wichtig bei Änderungen an `backend/.env`:** Der laufende `npm run
@@ -36,7 +36,7 @@ Zwei Server laufen parallel, am einfachsten in zwei separaten Terminal-Fenstern
 (PowerShell oder Git Bash), jeweils im Projektordner:
 
 **Fenster 1 – Backend** (Fastify, Port 3000, verbindet sich mit der CouchDB auf
-`192.168.188.96`):
+`couchdb-host`):
 ```bash
 npm run dev:backend
 ```

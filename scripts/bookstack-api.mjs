@@ -2,7 +2,7 @@
  * Gemeinsame Hilfsfunktionen für den Zugriff auf die BookStack-API.
  *
  * Konfiguration über Umgebungsvariablen (siehe .env.example):
- *   BOOKSTACK_URL          z. B. http://192.168.188.114
+ *   BOOKSTACK_URL          z. B. http://bookstack-host
  *   BOOKSTACK_TOKEN_ID     Token-ID aus BookStack
  *   BOOKSTACK_TOKEN_SECRET Token-Secret aus BookStack
  *   BOOKSTACK_BOOK         Name des Buches, z. B. "Software-Entwicklung"

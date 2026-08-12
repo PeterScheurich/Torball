@@ -20,29 +20,29 @@ geschrieben/gepusht bzw. auf dem Entwicklungsserver gearbeitet werden kann.
 ```bash
 git remote -v
 ```
-→ Ergebnis: Repository liegt auf einem selbst gehosteten Gitea (`gitea@192.168.188.188`),
+→ Ergebnis: Repository liegt auf einem selbst gehosteten Gitea (`gitea@gitea-host`),
 nicht auf GitHub. Push/Pull über normale Git-Befehle funktionieren ohne weiteres Tooling.
 
 **Entwicklungsserver (`torball-dev`) erreichen:**
 
 Die hinterlegte SSH-Config (`~/.ssh/config`) verwies auf eine veraltete IP
-(`192.168.188.227`). Erreichbarkeitsprüfung:
+(`alt-host`). Erreichbarkeitsprüfung:
 
 ```powershell
-Test-NetConnection -ComputerName 192.168.188.227 -Port 22
-Test-NetConnection -ComputerName 192.168.188.227 -Port 5984
+Test-NetConnection -ComputerName alt-host -Port 22
+Test-NetConnection -ComputerName alt-host -Port 5984
 ```
 → beide nicht erreichbar, während Gitea (`.188`) und BookStack (`.114`) erreichbar waren.
-Der Nutzer nannte die korrekte IP (`192.168.188.96`):
+Der Nutzer nannte die korrekte IP (`couchdb-host`):
 
 ```powershell
-Test-NetConnection -ComputerName 192.168.188.96 -Port 22
-Test-NetConnection -ComputerName 192.168.188.96 -Port 5984
+Test-NetConnection -ComputerName couchdb-host -Port 22
+Test-NetConnection -ComputerName couchdb-host -Port 5984
 ```
 → beide erreichbar.
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=5 -i ~/.ssh/id_ed25519 root@192.168.188.96 "hostname && uptime"
+ssh -o BatchMode=yes -o ConnectTimeout=5 -i ~/.ssh/id_ed25519 root@couchdb-host "hostname && uptime"
 ```
 → Login erfolgreich, Hostname `torball-dev` bestätigt.
 
@@ -51,7 +51,7 @@ ssh -o BatchMode=yes -o ConnectTimeout=5 -i ~/.ssh/id_ed25519 root@192.168.188.9
 ```
 # ~/.ssh/config, Eintrag torball-dev
 Host torball-dev
-    HostName 192.168.188.96   # vorher: 192.168.188.227
+    HostName couchdb-host   # vorher: alt-host
     User root
     IdentityFile C:\Users\MultiMedia-PC\.ssh\id_ed25519
 ```
@@ -121,7 +121,7 @@ git push
 Admin-Authentifizierung – niemand kannte mehr das Passwort.
 
 ```bash
-curl -s http://192.168.188.96:5984/_membership
+curl -s http://couchdb-host:5984/_membership
 # → {"error":"unauthorized","reason":"You are not a server admin."}
 ```
 
@@ -143,7 +143,7 @@ Erst nachdem der Nutzer **beide** Dateien angepasst und CouchDB neu gestartet
 hatte (`systemctl restart couchdb`), funktionierte der Login:
 
 ```bash
-curl -s -u 'admin:<admin-passwort>' http://192.168.188.96:5984/_membership
+curl -s -u 'admin:<admin-passwort>' http://couchdb-host:5984/_membership
 # → {"all_nodes":["couchdb@127.0.0.1"], ...}
 ```
 
@@ -159,19 +159,19 @@ ganze CouchDB-System (`_users`, andere Datenbanken, Serverkonfiguration).
 **Service-User anlegen** (zufälliges Passwort erzeugt, keine Rolle zugewiesen):
 ```bash
 SERVICE_PW=$(openssl rand -base64 24 | tr -d '=+/' | head -c 32)
-curl -u 'admin:<admin-passwort>' -X PUT http://192.168.188.96:5984/_users/org.couchdb.user:torball_backend \
+curl -u 'admin:<admin-passwort>' -X PUT http://couchdb-host:5984/_users/org.couchdb.user:torball_backend \
   -H "Content-Type: application/json" \
   --data-binary "{\"name\":\"torball_backend\",\"password\":\"$SERVICE_PW\",\"roles\":[],\"type\":\"user\"}"
 ```
 
 **Datenbank anlegen:**
 ```bash
-curl -u 'admin:<admin-passwort>' -X PUT http://192.168.188.96:5984/torball
+curl -u 'admin:<admin-passwort>' -X PUT http://couchdb-host:5984/torball
 ```
 
 **Zugriff einschränken** über das `_security`-Dokument der Datenbank:
 ```bash
-curl -u 'admin:<admin-passwort>' -X PUT http://192.168.188.96:5984/torball/_security \
+curl -u 'admin:<admin-passwort>' -X PUT http://couchdb-host:5984/torball/_security \
   -H "Content-Type: application/json" \
   --data-binary '{"admins":{"names":["torball_backend"],"roles":[]},"members":{"names":[],"roles":[]}}'
 ```
@@ -187,10 +187,10 @@ diese eine Datenbank beschränkt (siehe Testergebnis unten).
 
 **Verifikation der Rechte:**
 ```bash
-curl -u "torball_backend:$SERVICE_PW" http://192.168.188.96:5984/torball
+curl -u "torball_backend:$SERVICE_PW" http://couchdb-host:5984/torball
 # → Zugriff erfolgreich
 
-curl -u "torball_backend:$SERVICE_PW" http://192.168.188.96:5984/_users/_all_docs
+curl -u "torball_backend:$SERVICE_PW" http://couchdb-host:5984/_users/_all_docs
 # → {"error":"unauthorized","reason":"You are not a server admin."}
 ```
 

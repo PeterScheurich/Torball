@@ -12,7 +12,7 @@ Zum reinen **Starten** der lokalen Umgebung siehe die kompaktere Anleitung
 - Visual Studio Code (empfohlen) oder ein anderer Editor
 - Node.js (aktuelles LTS) inklusive npm
 - Erreichbarkeit der CouchDB-Datenbank (Entwicklungsinstanz unter
-  `192.168.188.96`)
+  `couchdb-host`)
 
 ## Erstinstallation
 
@@ -45,7 +45,7 @@ Prozess neu starten.
 | Variable | Zweck |
 |---|---|
 | `PORT` / `HOST` | Port/Host des Backends (Default `3000` / `0.0.0.0`). Lokal weglassen; in Produktion je Instanz eigener `PORT` (mehrere Instanzen auf einem Host, siehe `deploy/`). |
-| `COUCHDB_URL` | URL der CouchDB (z. B. `http://192.168.188.96:5984`) |
+| `COUCHDB_URL` | URL der CouchDB (z. B. `http://couchdb-host:5984`) |
 | `COUCHDB_DB` | Datenbankname |
 | `COUCHDB_USER` / `COUCHDB_PASSWORD` | CouchDB-Zugang |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_FROM` | E-Mail-Versand (Einladungen, Passwort-Reset). Optional – ohne diese Werte fällt das Backend auf Link-in-Antwort/Server-Log zurück. |

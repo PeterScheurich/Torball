@@ -563,10 +563,10 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   `npm run dev:backend`-Prozesses (`--env-file` wird nur beim Start
   gelesen) - anders als Quelltext-Änderungen, die automatisch neu geladen
   werden.
-- Die CouchDB-Entwicklungsinstanz läuft unter `192.168.188.96` (siehe
-  `docs/testumgebung-starten.md`) - der Rechner, auf dem `npm run
-  dev:backend` läuft, muss dieses Netzwerk erreichen können, sonst schlagen
-  alle DB-Zugriffe fehl.
+- Die CouchDB-Entwicklungsinstanz läuft im LAN des Nutzers (die konkrete Adresse
+  steht im Claude-Memory, bewusst nicht im geteilten Repo) - der Rechner, auf dem
+  `npm run dev:backend` läuft, muss dieses Netzwerk erreichen können, sonst
+  schlagen alle DB-Zugriffe fehl.
 - Das Session-Cookie wird nur mit `Secure`-Flag ausgeliefert, wenn
   `COOKIE_SECURE=true` gesetzt ist (`backend/src/auth/plugin.ts`). In Produktion
   hinter HTTPS zwingend `true`; lokal (HTTP) weglassen/`false`, sonst setzt der
