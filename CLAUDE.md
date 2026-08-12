@@ -589,9 +589,11 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
 Beim Verifizieren von Frontend-Änderungen über die Browser-Vorschau-Tools
 sind hier mehrfach dieselben Stolperfallen aufgetreten:
 
-- **Backend bindet fix auf Port 3000** (`backend/src/index.ts`), der Vite-Proxy
-  zielt dorthin (`frontend/vite.config.ts`) – deshalb `autoPort: false` beim
-  Backend in `.claude/launch.json`. Läuft parallel schon ein Dev-Server auf 3000
+- **Backend-Port ist per `PORT`-Env konfigurierbar, Default 3000** (`backend/src/index.ts`;
+  `HOST` analog, Default `0.0.0.0`). In der Entwicklung ohne `PORT` bleibt es bei 3000, der
+  Vite-Proxy zielt dorthin (`frontend/vite.config.ts`) – deshalb `autoPort: false` beim Backend in
+  `.claude/launch.json`. In Produktion bekommt jede Instanz ihren eigenen `PORT` (mehrere Instanzen
+  auf einem Host, siehe `deploy/` + `docs/Protokolle/2026-08-12-produktiv-installation.md`). Läuft parallel schon ein Dev-Server auf 3000
   (z. B. eine andere Claude-Sitzung), lässt sich keine zweite isolierte Instanz
   starten; erst den belegenden Prozess stoppen. Das Backend braucht keine
   Browser-Erreichbarkeit (nur der Vite-Dev-Server spricht es über den Proxy an) –

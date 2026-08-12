@@ -44,6 +44,7 @@ Prozess neu starten.
 
 | Variable | Zweck |
 |---|---|
+| `PORT` / `HOST` | Port/Host des Backends (Default `3000` / `0.0.0.0`). Lokal weglassen; in Produktion je Instanz eigener `PORT` (mehrere Instanzen auf einem Host, siehe `deploy/`). |
 | `COUCHDB_URL` | URL der CouchDB (z. B. `http://192.168.188.96:5984`) |
 | `COUCHDB_DB` | Datenbankname |
 | `COUCHDB_USER` / `COUCHDB_PASSWORD` | CouchDB-Zugang |

@@ -20,8 +20,12 @@ import { systemkonfigurationRoutes } from "./routes/systemkonfiguration";
 import { kanbanRoutes } from "./routes/kanban";
 
 // Einstiegspunkt des Backends: baut die Fastify-Instanz, registriert Cookie-Plugin, den
-// Auth-Hook und alle Routen-Module und startet den Server. Der Port ist bewusst fest 3000
-// (der Vite-Dev-Proxy zielt dorthin, siehe CLAUDE.md).
+// Auth-Hook und alle Routen-Module und startet den Server. Port/Host kommen aus der Umgebung
+// (Default 3000/0.0.0.0) - in der Entwicklung bleibt es damit bei 3000 (der Vite-Dev-Proxy
+// zielt dorthin, siehe CLAUDE.md); in Produktion bekommt jede Instanz ihren eigenen PORT
+// (mehrere Instanzen auf einem Host, siehe docs/Protokolle/…-produktiv-installation.md).
+const PORT = Number(process.env.PORT ?? 3000);
+const HOST = process.env.HOST ?? "0.0.0.0";
 const server = Fastify({ logger: true });
 
 // Schlanker Health-Check (z.B. fuer Monitoring/Reverse-Proxy), ohne Anmeldung.
@@ -57,7 +61,7 @@ const start = async () => {
     server.register(kanbanRoutes);
 
     await ensureIndexes();
-    await server.listen({ port: 3000, host: "0.0.0.0" });
+    await server.listen({ port: PORT, host: HOST });
   } catch (err) {
     server.log.error(err);
     process.exit(1);
