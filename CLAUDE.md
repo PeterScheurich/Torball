@@ -560,6 +560,16 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
 
 ## Betrieb / Infrastruktur
 
+- **CouchDB verlangt fuer das Anlegen von Design-Dokumenten (u. a. Mango-Indizes,
+  `ensureIndexes()` in `backend/src/db.ts`) Admin-Rechte auf der jeweiligen Datenbank** – ein
+  Benutzer, der nur als `members` in `_security` eingetragen ist, bekommt beim ersten Start
+  `"Unknown error while saving the design document: forbidden"` und der Prozess stürzt sofort ab
+  (`exit-code`-Fehler in systemd). Live erlebt beim ersten echten Produktiv-Deploy: `deploy/
+  deploy-instanz.sh` und `deploy/installieren-windows.ps1` trugen den App-DB-Benutzer bisher nur
+  als `members` ein. Fix: denselben Benutzer zusätzlich in `admins` eintragen (bleibt trotzdem
+  strikt auf genau diese eine Datenbank beschränkt, kein CouchDB-Server-Admin) – in beiden
+  Skripten bereits so umgesetzt; bei einer künftigen dritten Provisionierungs-Stelle (weiterer
+  Installationsweg, Option B, …) dasselbe Muster verwenden.
 - Werte in `backend/.env` mit Sonderzeichen (z. B. `#`) immer in
   Anführungszeichen setzen - unquotiert wird alles ab einem `#` als
   Kommentar abgeschnitten (schwer zu findender Bug, einmal live erlebt:

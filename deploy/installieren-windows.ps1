@@ -187,8 +187,11 @@ try {
     $userBody = @{ name = $DbUser; password = $DbPass; roles = @(); type = "user" } | ConvertTo-Json
     Invoke-RestMethod -Method Put -Uri "http://127.0.0.1:5984/_users/org.couchdb.user:$DbUser" -Headers $authHeader -Body $userBody -ContentType "application/json" | Out-Null
 } catch { }
-# Nur diese eine Datenbank fuer den App-Benutzer freigeben (kein CouchDB-Admin-Zugriff der App).
-$securityBody = @{ admins = @{ names = @(); roles = @() }; members = @{ names = @($DbUser); roles = @() } } | ConvertTo-Json
+# Als admins (nicht nur members) eintragen: CouchDB verlangt fuer das Anlegen von Mango-Indizes
+# (ensureIndexes() in backend/src/db.ts, technisch ein Design-Dokument) Admin-Rechte auf der
+# jeweiligen Datenbank - ein reiner "member" bekommt beim Start "forbidden" und der Prozess
+# stuerzt ab. Bleibt trotzdem auf genau diese eine Datenbank beschraenkt (kein CouchDB-Server-Admin).
+$securityBody = @{ admins = @{ names = @($DbUser); roles = @() }; members = @{ names = @($DbUser); roles = @() } } | ConvertTo-Json
 Invoke-RestMethod -Method Put -Uri "http://127.0.0.1:5984/$Db/_security" -Headers $authHeader -Body $securityBody -ContentType "application/json" | Out-Null
 
 # --- [4/6] App bauen ---------------------------------------------------------------------------

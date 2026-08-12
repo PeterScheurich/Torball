@@ -57,8 +57,12 @@ curl "${AUTH[@]}" -X PUT "http://127.0.0.1:5984/${DB}" >/dev/null || true
 curl "${AUTH[@]}" -X PUT "http://127.0.0.1:5984/_users/org.couchdb.user:torball_${NAME}" \
   -d "{\"name\":\"torball_${NAME}\",\"password\":\"${DB_PASS}\",\"roles\":[],\"type\":\"user\"}" >/dev/null || true
 # Nur diese eine DB fuer den Instanz-Benutzer freigeben (Instanzen sehen sich gegenseitig nicht).
+# Als admins (nicht nur members) eintragen: CouchDB verlangt fuer das Anlegen von Mango-Indizes
+# (ensureIndexes() in backend/src/db.ts, technisch ein Design-Dokument) Admin-Rechte auf der
+# jeweiligen Datenbank - ein reiner "member" bekommt beim Start "forbidden" und der Service
+# stuerzt ab. Bleibt trotzdem auf genau diese eine DB beschraenkt (kein Server-Admin).
 curl "${AUTH[@]}" -X PUT "http://127.0.0.1:5984/${DB}/_security" \
-  -d "{\"admins\":{\"names\":[],\"roles\":[]},\"members\":{\"names\":[\"torball_${NAME}\"],\"roles\":[]}}" >/dev/null
+  -d "{\"admins\":{\"names\":[\"torball_${NAME}\"],\"roles\":[]},\"members\":{\"names\":[\"torball_${NAME}\"],\"roles\":[]}}" >/dev/null
 
 echo "== backend/.env schreiben =="
 cat > "${DIR}/backend/.env" <<EOF

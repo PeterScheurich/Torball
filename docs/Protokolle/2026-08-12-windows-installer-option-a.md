@@ -181,3 +181,74 @@ vorbereitet ist. Der Nutzer plant im Anschluss außerdem die **produktive Linux-
 nach `docs/installation-konfiguration.md` (Abschnitt „Produktive Installation") durchzuführen – diese
 Doku wurde in dieser Sitzung inhaltlich nicht verändert, ist also unverändert Stand aus der vorigen
 Sitzung.
+
+## Nachtrag: erster echter Produktiv-Deploy (selbe Sitzung) – zwei reale Probleme gefunden
+
+Der Nutzer hat direkt im Anschluss die produktive Linux-Installation live auf einem neuen
+Debian-13-LXC (`torball-prod`) durchgeführt, nach `docs/installation-konfiguration.md`. Dabei kamen
+zwei reale, bis dahin unbemerkte Probleme zum Vorschein:
+
+### 1. Falscher SSH-Benutzername in den Anweisungen (mein Fehler, kein Bug im Repo)
+
+Als Auth-Weg für `REPO_URL` (Git-Zugriff ohne interaktiven Login) wurde ein SSH-Deploy-Key
+empfohlen und angelegt (`ssh-keygen -t ed25519` auf dem Prod-Server, öffentlicher Schlüssel unter
+Gitea → Repo-Settings → Deploy Keys hinterlegt). Erster Versuch schlug mit Passwort-Prompt fehl,
+weil ich `git@<gitea-host>` als SSH-User genannt hatte – tatsächlich läuft diese Gitea-Instanz mit
+SSH-User `gitea` (siehe der bereits konfigurierte `origin`-Remote dieses Repos:
+`gitea@<gitea-host>:...`). Nach Korrektur des Benutzernamens weiterhin Passwort-Prompt; `ssh -vT`
+zeigte `Offering public key ... / Authentications that can continue: publickey,password` – der
+Schlüssel wurde angeboten, aber vom Server abgelehnt (Datei-Rechte waren in Ordnung, Fingerprint
+lokal via `ssh-keygen -lf` verifiziert). Ursache: der Deploy-Key war beim ersten Versuch nicht
+korrekt in Gitea gespeichert (vermutlich Übertragungsfehler beim Copy-Paste). Nach erneutem
+Eintragen des kompletten Schlüssels funktionierte `ssh -T gitea@<gitea-host>` (Gitea-typische
+Meldung „does not provide shell access" = Erfolg) und danach auch `git clone` ohne Passwort-Abfrage.
+
+### 2. Echter Bug im Deploy-Skript: CouchDB-Sicherheitsdoku zu restriktiv
+
+Nach erfolgreichem Deploy (`deploy-instanz.sh` lief fehlerfrei durch, Service wurde als „gestartet"
+gemeldet) zeigte die öffentliche Startseite `Backend antwortet nicht (Status 502)`. `journalctl -u
+torball@prod` zeigte den eigentlichen Absturz direkt beim Start:
+
+```
+Error: Unknown error while saving the design document: forbidden
+  ... errid: non_200, error: error_saving_ddoc, statusCode: 500 (CouchDB antwortete mit "forbidden")
+Main process exited, code=exited, status=1/FAILURE
+```
+
+**Ursache:** `ensureIndexes()` (`backend/src/db.ts`) legt beim jedem Start einen Mango-Index auf
+`docType` an – technisch ein CouchDB-Design-Dokument. CouchDB verlangt dafür **Admin-Rechte auf der
+Datenbank**, nicht nur normale Lese-/Schreibrechte. `deploy-instanz.sh` trug den App-Benutzer
+(`torball_<name>`) in `_security` bisher nur als `members` ein:
+
+```json
+{"admins":{"names":[],"roles":[]},"members":{"names":["torball_prod"],"roles":[]}}
+```
+
+**Sofort-Fix auf dem laufenden Server** (Nutzer unblockiert, bevor die Skript-Korrektur gepusht
+war):
+
+```bash
+COUCH_ADMIN_PASS=$(cat /etc/torball/couchdb-admin)
+curl -u admin:"$COUCH_ADMIN_PASS" -X PUT http://127.0.0.1:5984/torball_prod/_security \
+  -H "Content-Type: application/json" \
+  -d '{"admins":{"names":["torball_prod"],"roles":[]},"members":{"names":["torball_prod"],"roles":[]}}'
+systemctl restart torball@prod
+```
+
+**Dauerhafter Fix im Repo** (beide Provisionierungs-Skripte trugen denselben Fehler – der
+Windows-Installer war schlicht noch nie live getestet worden):
+
+- `deploy/deploy-instanz.sh`: `_security`-PUT trägt den Instanz-Benutzer jetzt zusätzlich in
+  `admins` ein.
+- `deploy/installieren-windows.ps1`: identische Korrektur (`$securityBody`).
+- Beides bleibt strikt auf **genau diese eine Datenbank** beschränkt (kein CouchDB-Server-Admin,
+  keine anderen Instanzen/Datenbanken sichtbar) – nur die Admin/Member-Unterscheidung *innerhalb*
+  dieser einen DB ändert sich.
+- Als Gotcha in `CLAUDE.md` (Betrieb/Infrastruktur) dokumentiert, damit ein künftiger dritter
+  Provisionierungsweg (z. B. Option B) denselben Fehler nicht wiederholt.
+
+**Für den Nutzer wichtig:** Ein erneutes Ausführen von `deploy/deploy-instanz.sh` auf dem
+Prod-Server **überschreibt** `_security` jedes Mal neu (kein `|| true` an dieser Stelle) – die
+manuelle Sofort-Korrektur würde also von der *alten* (noch nicht aktualisierten) Skriptversion
+wieder zurückgesetzt. Vor dem nächsten Lauf daher erst im `~/torball-src`-Checkout
+`git pull` ausführen, um die Korrektur zu übernehmen.
