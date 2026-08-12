@@ -14,10 +14,10 @@ function TurnierListe({ turniere, leerText }: { turniere: OeffentlichesTurnierLi
       {turniere.map((t) => (
         <li key={t.turnierId}>
           <Link to={`/turniere/${t.turnierId}/oeffentlich`}>{t.name}</Link>
-          <div className="turnier-meta">
+          <span className="startseite-zusatz">
             {formatiereDatum(t.datum)}
             {t.spielortName ? ` · ${t.spielortName}` : ""}
-          </div>
+          </span>
         </li>
       ))}
     </ul>

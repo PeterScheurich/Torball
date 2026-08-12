@@ -1,8 +1,9 @@
-import { useState } from "react";
-import type { Breite, Dichte, GlobaleRolle, Theme } from "@torball/shared";
+import { useEffect, useState } from "react";
+import type { Breite, Dichte, GlobaleRolle, Theme, Verein } from "@torball/shared";
 import {
   eigenesPasswortAendern,
   eigenesProfilAktualisieren,
+  getVereine,
   totpBestaetigen,
   totpDeaktivieren,
   totpEinrichten,
@@ -63,6 +64,14 @@ export function ProfilPage() {
   const [deaktivierenPasswort, setDeaktivierenPasswort] = useState("");
   const [fehler, setFehler] = useState<string | undefined>();
   const [hinweis, setHinweis] = useState<string | undefined>();
+  // Vereine aus den Stammdaten als Auswahlvorschlaege fuers Verein/Verband-Feld (freie Eingabe
+  // bleibt moeglich - datalist). Fehler beim Laden bewusst still: das Feld funktioniert auch ohne.
+  const [vereine, setVereine] = useState<Verein[]>([]);
+  useEffect(() => {
+    getVereine()
+      .then(setVereine)
+      .catch(() => setVereine([]));
+  }, []);
 
   if (!benutzer) return null;
 
@@ -387,9 +396,16 @@ export function ProfilPage() {
           <label htmlFor="stammVereinVerband">Verein/Verband</label>
           <input
             id="stammVereinVerband"
+            list="profil-vereine-liste"
             value={stammdaten.vereinVerband}
             onChange={(e) => setStammdaten((s) => ({ ...s, vereinVerband: e.target.value }))}
           />
+          <datalist id="profil-vereine-liste">
+            {[...new Set(vereine.map((v) => v.name))].sort((a, b) => a.localeCompare(b)).map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+          <span className="feld-hinweis">Aus den Vereins-Stammdaten wählbar oder frei eingeben.</span>
         </div>
         <div className="feld">
           <label htmlFor="stammAdresse">Adresse</label>

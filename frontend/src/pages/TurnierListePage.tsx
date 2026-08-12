@@ -74,7 +74,7 @@ function TurnierTabelle({
       <thead>
         <tr>
           <th scope="col">Name</th>
-          <th scope="col">Datum</th>
+          <th scope="col">Spieltag</th>
           <th scope="col">Status</th>
           <th scope="col">Aktionen</th>
         </tr>

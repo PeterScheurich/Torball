@@ -484,15 +484,24 @@ form {
   margin-top: 2px;
 }
 
-/* Turnierliste der oeffentlichen Startseite (Name + Datum/Ort je Eintrag). */
+/* Turnierliste der oeffentlichen Startseite: Name + Zusatzinfos (Spieltag/Ort) in EINER Zeile,
+   damit die Abstaende kompakt bleiben. Auf schmalen Schirmen darf die Zeile umbrechen. */
 .oeffentliche-turnierliste {
   list-style: none;
   padding: 0;
   margin: 0 0 16px;
 }
 .oeffentliche-turnierliste li {
-  padding: 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 5px 0;
   border-bottom: 1px solid var(--border);
+}
+.startseite-zusatz {
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 /* Kontakt-Angaben auf der "Über & Kontakt"-Seite (Begriff/Wert-Liste). */
