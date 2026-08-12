@@ -20,6 +20,7 @@
 | Erkenntnisse aus der Umsetzung (UI-Verfeinerung) | 10.08.2026 | Abschnitt 24.3 präzisiert: Zwei-Ebenen-Modell für Anzeige-Voreinstellungen (kontogebunden + geräteslokal), neue Zeilenabstand-Einstellung. Abschnitt 5.1 ergänzt: Geo-Referenz wird über Verlinkung zu Google Maps/OpenStreetMap erfasst, nicht über eine eingebettete Karte. Details siehe `docs/Protokolle/2026-08-10-ui-verfeinerung-stammdaten.md`. |
 | Erkenntnisse aus der Umsetzung (öffentliche Turnierseite) | 10.08.2026 | Abschnitt 13 umgesetzt und präzisiert: Turnier-ID selbst als Adresse (kein separater Token wie bei Abschnitt 14, da reiner Lesezugriff unkritisch ist); teilnehmende Mannschaften/Spielfelder werden unabhängig von den vier Sichtbarkeits-Schaltern immer mitgeliefert, da Spielplan/Ergebnisse ohne sie nicht lesbar wären. Details siehe `docs/Protokolle/2026-08-10-oeffentliche-turnierseite.md`. |
 | Erkenntnisse aus der Umsetzung (Turnier-Lebenszyklus) | 11.08.2026 | Abschnitt 10.3 + 26.4 aktualisiert: neuer Status **Abgeschlossen** zwischen Aktiv und Archiviert (Aktiv = nur noch „läuft"); Abschließen durch Turnierleitung/Schreibzugriff (nicht nur Admin), reversibel, Vorbedingung „alle Ergebnisse erfasst"; Schreibschutz im Zustand Abgeschlossen mit Ausnahme von Öffentlich-Freigabe/Teilen. Details siehe `docs/Protokolle/2026-08-11-turnier-abschliessen.md`. |
+| Erkenntnisse aus der Umsetzung (Selbstregistrierung) | 12.08.2026 | Abschnitt 10.2 präzisiert: entgegen der ursprünglichen Planung („kein Self-Service in der ersten Version") wurde eine optionale, von einem Admin aktivierbare Selbstregistrierung umgesetzt (Systemeinstellungen, standardmäßig aus) – u. a. für Demo-Instanzen, nie mit automatischer Admin-Rolle. Details siehe `docs/Protokolle/2026-08-12-selbstregistrierung.md`. |
 
 Dieses Dokument ersetzt die einzelnen Vorgängerdokumente inhaltlich (führt sie zusammen). Sie bleiben als Historie im Projekt erhalten.
 
@@ -337,7 +338,9 @@ Nach Spielabschluss automatisch berechnet: aktueller Tabellenstand, Torschützen
 | Turnierleitung | Verwaltet ein bestimmtes Turnier |
 | Spielleitung | Protokolliert Spiele eines Turniers |
 
-Rollen werden pro Turnier vergeben – dieselbe Person kann bei verschiedenen Turnieren verschiedene Rollen haben. Kein Self-Service für die Registrierung in der ersten Version; Benutzer und Rollen werden durch Admin/Manager angelegt.
+Rollen werden pro Turnier vergeben – dieselbe Person kann bei verschiedenen Turnieren verschiedene Rollen haben. Benutzer und Rollen werden im Regelfall durch Admin/Manager angelegt (Einladungs-Flow).
+
+**Erkenntnis aus der Umsetzung (12.08.2026):** Ursprünglich war für die erste Version kein Self-Service für die Registrierung vorgesehen. Umgesetzt wurde zusätzlich eine **optionale, von einem Admin aktivierbare Selbstregistrierung** (Systemeinstellungen, standardmäßig deaktiviert) – gedacht u. a. für eine Demo-Instanz, an der mehrere Tester parallel eigene Accounts brauchen, ohne einzeln eingeladen zu werden. Selbst registrierte Accounts erhalten nie automatisch die Rolle Admin (nur Benutzer/Manager wählbar). Details: `docs/Protokolle/2026-08-12-selbstregistrierung.md`.
 
 ### 10.3 Turnier-Status
 

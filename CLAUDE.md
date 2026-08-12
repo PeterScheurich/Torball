@@ -23,8 +23,8 @@ npm run build                       # baut danach alle Workspaces
 ```
 `shared` wird als CommonJS nach `shared/dist` kompiliert; `backend`/`frontend`
 lösen `@torball/shared` gegen dieses `dist` auf, nicht gegen die Quellen. Der
-Root-Build (`npm run build --workspaces`) läuft in der in der Wurzel-
-`package.json` deklarierten Workspace-Reihenfolge (`frontend`, `backend`,
+Root-Build (`npm run build --workspaces`) läuft in der Wurzel-`package.json` deklarierten
+Workspace-Reihenfolge (`frontend`, `backend`,
 `shared`) – **nicht** in Abhängigkeitsreihenfolge. Nach einer Typ-Änderung in
 `shared/src` zuerst `npm run build --workspace=shared` separat ausführen,
 sonst prüfen Backend/Frontend gegen einen veralteten Stand.
