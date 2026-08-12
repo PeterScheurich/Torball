@@ -3,6 +3,12 @@ import type { Klassifizierung, MannschaftImTurnier, Spieler, SpielerStatus, Turn
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth } from "../auth/plugin";
 import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
+import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
+
+/** Turnier eines Spielers ueber seine Mannschaft ermitteln (fuer die Bearbeitet-Markierung). */
+async function turnierIdVonMannschaft(mannschaftId: string): Promise<string | undefined> {
+  return (await findById<MannschaftImTurnier>(mannschaftId))?.turnierId;
+}
 
 // CRUD fuer Spieler/Kader. Spieler haengen an der MANNSCHAFT (mannschaftId), nicht direkt am
 // Turnier; der Zugriff wird deshalb ueber Mannschaft -> Turnier geprueft. Beim Loeschen einer
@@ -134,6 +140,7 @@ export async function spielerRoutes(app: FastifyInstance): Promise<void> {
         status: req.body.status ?? "aktiv",
       };
       const gespeichert = await insertDoc(spieler);
+      await markiereTurnierBearbeitet(mannschaft.turnierId, req.benutzer);
       return reply.code(201).send(gespeichert);
     },
   );
@@ -148,7 +155,10 @@ export async function spielerRoutes(app: FastifyInstance): Promise<void> {
       if (!bestehend) return;
 
       const aktualisiert: Spieler = { ...bestehend, ...req.body };
-      return insertDoc(aktualisiert);
+      const gespeichert = await insertDoc(aktualisiert);
+      const turnierId = await turnierIdVonMannschaft(bestehend.mannschaftId);
+      if (turnierId) await markiereTurnierBearbeitet(turnierId, req.benutzer);
+      return gespeichert;
     },
   );
 
@@ -158,6 +168,8 @@ export async function spielerRoutes(app: FastifyInstance): Promise<void> {
     const bestehend = await ladeSpielerMitZugriff(req.params.id, "schreiben", req, reply);
     if (!bestehend) return;
     await deleteDoc(bestehend._id, bestehend._rev!);
+    const turnierId = await turnierIdVonMannschaft(bestehend.mannschaftId);
+    if (turnierId) await markiereTurnierBearbeitet(turnierId, req.benutzer);
     return reply.code(204).send();
   });
 }

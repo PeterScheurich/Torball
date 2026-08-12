@@ -16,6 +16,7 @@ import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId
 import { requireAuth, requireRolle } from "../auth/plugin";
 import { hatMindestens, REGELN_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
 import { aktuelleTurnierregeln } from "../konfiguration";
+import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 import { berechneStartzeit } from "../spielplan/zeitplanung";
 
 // Felder, die auch bei einem abgeschlossenen Turnier noch geaendert werden duerfen (Nutzer-Vorgabe:
@@ -134,6 +135,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         turnierId: id,
         erstelltAm: new Date().toISOString(),
         erstelltVon: req.benutzer!._id,
+        erstelltVonName: req.benutzer!.name,
         erstelltMitKonfigVersion: version,
         ...turnierDefaults(regeln),
         ...req.body,
@@ -195,6 +197,8 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         ...bestehend,
         ...req.body,
         geaendertAm: new Date().toISOString(),
+        zuletztBearbeitetVon: req.benutzer!._id,
+        zuletztBearbeitetVonName: req.benutzer!.name,
       };
       return insertDoc(aktualisiert);
     },
@@ -216,7 +220,18 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     if (!(await hatMindestens(bestehend, req.benutzer, "schreiben"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }
-    return insertDoc({ ...bestehend, status: neuerStatus, geaendertAm: new Date().toISOString() });
+    // Wiederoeffnen zaehlt als Bearbeitung; die Abschluss-Metadaten werden dabei zurueckgesetzt
+    // (bei erneutem Abschliessen neu gesetzt).
+    return insertDoc({
+      ...bestehend,
+      status: neuerStatus,
+      geaendertAm: new Date().toISOString(),
+      zuletztBearbeitetVon: req.benutzer!._id,
+      zuletztBearbeitetVonName: req.benutzer!.name,
+      abgeschlossenAm: undefined,
+      abgeschlossenVon: undefined,
+      abgeschlossenVonName: undefined,
+    });
   }
 
   // Turnier abschliessen. Vorbedingung: jedes Spiel hat ein erfasstes Ergebnis (kein "offenes"
@@ -258,7 +273,15 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       await insertDoc({ ...t, widerrufen: true, widerrufenAm: new Date().toISOString() });
     }
 
-    return insertDoc({ ...bestehend, status: "abgeschlossen", geaendertAm: new Date().toISOString() });
+    const jetzt = new Date().toISOString();
+    return insertDoc({
+      ...bestehend,
+      status: "abgeschlossen",
+      geaendertAm: jetzt,
+      abgeschlossenAm: jetzt,
+      abgeschlossenVon: req.benutzer!._id,
+      abgeschlossenVonName: req.benutzer!.name,
+    });
   });
 
   // Macht ein abgeschlossenes Turnier wieder zu einem laufenden ("aktiv") - reversibel,
@@ -277,7 +300,13 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     if (!(await hatMindestens(bestehend, req.benutzer, "schreiben"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }
-    return insertDoc({ ...bestehend, regelnGesperrt: false, geaendertAm: new Date().toISOString() });
+    return insertDoc({
+      ...bestehend,
+      regelnGesperrt: false,
+      geaendertAm: new Date().toISOString(),
+      zuletztBearbeitetVon: req.benutzer!._id,
+      zuletztBearbeitetVonName: req.benutzer!.name,
+    });
   });
 
   // Neuen Spieltag aus einem abgeschlossenen Vorgaenger-Turnier ableiten (Datenuebernahme,
@@ -359,9 +388,15 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         spielplanGeaendertAm: jetzt,
         spielplanBasis: undefined,
         erstelltVon: req.benutzer!._id,
+        erstelltVonName: req.benutzer!.name,
         erstelltAm: jetzt,
         geaendertAm: undefined,
         geaendertVon: undefined,
+        zuletztBearbeitetVon: undefined,
+        zuletztBearbeitetVonName: undefined,
+        abgeschlossenVon: undefined,
+        abgeschlossenVonName: undefined,
+        abgeschlossenAm: undefined,
       };
       // Bewusst noch NICHT einfuegen - das Turnier-Dokument wird einmalig am Ende (inkl.
       // spielplanBasis) gespeichert; Mannschaften/Kader/Spiele referenzieren nur die neue ID.

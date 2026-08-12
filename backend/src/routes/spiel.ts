@@ -5,6 +5,7 @@ import { berechneStartzeit, spieldauerMinuten } from "../spielplan/zeitplanung";
 import { schlageSchiedsrichterVor } from "../spielplan/schiedsrichterZuordnung";
 import { requireAuth } from "../auth/plugin";
 import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
+import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 
 /** Nur diese Felder darf die Turnierleitung nachtraeglich anpassen (Abschnitt 8: "Reihenfolge,
  * Spielfeld und Startzeiten") sowie die Schiedsrichter-Zuordnung (Abschnitt 5.4, manuell aenderbar). */
@@ -103,7 +104,9 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
       if (!bestehend) return reply.code(404).send({ error: "Spiel nicht gefunden" });
       if (!(await pruefeSpielZugriff(bestehend, req, reply, "schreiben"))) return;
       const aktualisiert: Spiel = { ...bestehend, ...req.body };
-      return insertDoc(aktualisiert);
+      const gespeichert = await insertDoc(aktualisiert);
+      await markiereTurnierBearbeitet(bestehend.turnierId, req.benutzer);
+      return gespeichert;
     },
   );
 
@@ -167,6 +170,7 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
         aktualisiert.push(await insertDoc({ ...s, startzeitGeplant: neueStartzeit }));
       }
 
+      await markiereTurnierBearbeitet(spiel.turnierId, req.benutzer);
       return aktualisiert;
     },
   );
@@ -222,6 +226,7 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
         );
       }
 
+      await markiereTurnierBearbeitet(turnier._id, req.benutzer);
       return aktualisiert;
     },
   );
@@ -255,6 +260,7 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
         aktualisiert.push(await insertDoc({ ...spiel, schiedsrichterId: vorschlag.get(spiel._id) }));
       }
 
+      await markiereTurnierBearbeitet(turnier._id, req.benutzer);
       return aktualisiert;
     },
   );

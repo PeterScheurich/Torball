@@ -470,6 +470,14 @@ form {
   color: var(--text-muted);
 }
 
+/* Kleine Meta-Zeile unter dem Turniernamen in der Liste (angelegt/bearbeitet/abgeschlossen). */
+.turnier-meta {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
 /* Kontakt-Angaben auf der "Über & Kontakt"-Seite (Begriff/Wert-Liste). */
 .ueber-kontakt {
   margin: 0;

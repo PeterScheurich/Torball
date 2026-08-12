@@ -224,6 +224,8 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
         spielplanVersion: turnier.spielplanVersion + 1,
         spielplanGeaendertAm: new Date().toISOString(),
         spielplanBasis,
+        zuletztBearbeitetVon: req.benutzer?._id,
+        zuletztBearbeitetVonName: req.benutzer?.name,
       };
       await insertDoc(aktualisiertesTurnier);
 

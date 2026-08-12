@@ -157,7 +157,18 @@ export interface Turnier extends CouchMeta, Turnierregeln {
   zusatzinfo?: string;
 
   erstelltVon?: BenutzerId;
+  /** Denormalisierter Name des Erstellers (fuer die Anzeige in der Liste, ohne dass jeder Benutzer
+   *  die admin-only Benutzerliste braucht). */
+  erstelltVonName?: string;
   erstelltAm: Zeitstempel;
   geaendertVon?: BenutzerId;
   geaendertAm?: Zeitstempel;
+  /** Wer das Turnier zuletzt inhaltlich bearbeitet hat (alle Aenderungen AUSSER Ergebnis-Erfassung).
+   *  Denormalisierter Name, bewusst ohne Zeitpunkt (Nutzer-Vorgabe). */
+  zuletztBearbeitetVon?: BenutzerId;
+  zuletztBearbeitetVonName?: string;
+  /** Abschluss: wann und von wem (denormalisierter Name). */
+  abgeschlossenVon?: BenutzerId;
+  abgeschlossenVonName?: string;
+  abgeschlossenAm?: Zeitstempel;
 }

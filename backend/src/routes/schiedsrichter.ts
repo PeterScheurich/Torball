@@ -3,6 +3,7 @@ import type { SchiedsrichterImTurnier, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth } from "../auth/plugin";
 import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
+import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 
 // CRUD fuer turnierbezogene Schiedsrichter (SchiedsrichterImTurnier haengt am turnierId).
 // Zugriff laeuft ueber das Turnier (turnierZugriff); genau eine Person je Turnier ist
@@ -147,6 +148,7 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
         nurTurnierleitung: (req.body.istTurnierleitung ?? false) && (req.body.nurTurnierleitung ?? false),
       };
       const gespeichert = await insertDoc(schiedsrichter);
+      await markiereTurnierBearbeitet(turnier._id, req.benutzer);
       return reply.code(201).send(gespeichert);
     },
   );
@@ -163,7 +165,9 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
       const aktualisiert: SchiedsrichterImTurnier = { ...bestehend, ...req.body };
       // "nur Turnierleitung" ohne Turnierleitung ist bedeutungslos - konsequent zuruecksetzen.
       if (!aktualisiert.istTurnierleitung) aktualisiert.nurTurnierleitung = false;
-      return insertDoc(aktualisiert);
+      const gespeichert = await insertDoc(aktualisiert);
+      await markiereTurnierBearbeitet(bestehend.turnierId, req.benutzer);
+      return gespeichert;
     },
   );
 
@@ -173,6 +177,7 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
     const bestehend = await ladeSchiedsrichterMitZugriff(req.params.id, "schreiben", req, reply);
     if (!bestehend) return;
     await deleteDoc(bestehend._id, bestehend._rev!);
+    await markiereTurnierBearbeitet(bestehend.turnierId, req.benutzer);
     return reply.code(204).send();
   });
 }

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import type { Turnier, TurnierStatus } from "@torball/shared";
 import { deleteTurnier, getTurniere } from "../api";
 import { useAuth } from "../auth";
-import { formatiereDatum } from "../format";
+import { formatiereDatum, formatiereUhrzeit } from "../format";
 
 /** Anzeige-Labels der Status-Werte (das rohe Feld waere z.B. "entwurf" - hier lesbar gemacht). */
 const STATUS_LABEL: Record<TurnierStatus, string> = {
@@ -21,6 +21,35 @@ const STATUS_LABEL: Record<TurnierStatus, string> = {
  */
 function istAbgeschlossen(status: TurnierStatus): boolean {
   return status === "abgeschlossen" || status === "archiviert";
+}
+
+/** „am TT.MM.JJJJ um HH:MM" aus einem ISO-Zeitstempel. */
+function zeitpunkt(iso: string): string {
+  return `am ${formatiereDatum(iso.slice(0, 10))} um ${formatiereUhrzeit(iso)}`;
+}
+
+/**
+ * Kleine Meta-Zeile je Turnier: bei offenen Turnieren „angelegt … von …" plus „zuletzt bearbeitet
+ * von …" (Ergebnis-Erfassung zaehlt hier bewusst nicht mit); bei abgeschlossenen „abgeschlossen …
+ * von …". Aeltere Turniere ohne denormalisierte Namen fallen still auf den reinen Zeitpunkt zurueck.
+ */
+function TurnierMeta({ turnier }: { turnier: Turnier }) {
+  if (istAbgeschlossen(turnier.status)) {
+    if (!turnier.abgeschlossenAm) return null;
+    return (
+      <div className="turnier-meta">
+        Abgeschlossen {zeitpunkt(turnier.abgeschlossenAm)}
+        {turnier.abgeschlossenVonName ? ` von ${turnier.abgeschlossenVonName}` : ""}
+      </div>
+    );
+  }
+  return (
+    <div className="turnier-meta">
+      Angelegt {zeitpunkt(turnier.erstelltAm)}
+      {turnier.erstelltVonName ? ` von ${turnier.erstelltVonName}` : ""}
+      {turnier.zuletztBearbeitetVonName ? ` · zuletzt bearbeitet von ${turnier.zuletztBearbeitetVonName}` : ""}
+    </div>
+  );
 }
 
 /** Eine Turnier-Tabelle (fuer je eine Gruppe der Uebersicht). Zeigt eine eigene
@@ -55,6 +84,7 @@ function TurnierTabelle({
           <tr key={turnier._id}>
             <td>
               <Link to={`/turniere/${encodeURIComponent(turnier._id)}`}>{turnier.name}</Link>
+              <TurnierMeta turnier={turnier} />
             </td>
             <td>{formatiereDatum(turnier.datum)}</td>
             <td className="status-zelle">{STATUS_LABEL[turnier.status]}</td>

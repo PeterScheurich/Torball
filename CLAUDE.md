@@ -390,6 +390,21 @@ Controls melden `.disabled === false` (das IDL-Attribut spiegelt nur das eigene
 Attribut) – effektive Sperre mit `el.matches(':disabled')` prüfen. Details:
 `docs/Protokolle/2026-08-11-turnier-abschliessen.md`.
 
+**Turnier-Metadaten in der Liste (angelegt/bearbeitet/abgeschlossen):** `TurnierListePage` zeigt je
+Turnier eine Meta-Zeile – offen: „Angelegt am … von … · zuletzt bearbeitet von …"; abgeschlossen:
+„Abgeschlossen am … von …". Die Namen sind am `Turnier` **denormalisiert** (`erstelltVonName`,
+`zuletztBearbeitetVonName`, `abgeschlossenVonName`), weil `GET /benutzer` admin-only ist und jeder
+Benutzer die Liste sehen soll. **„Zuletzt bearbeitet" umfasst alle Turnier-Änderungen AUSSER der
+Ergebnis-Erfassung** (Nutzer-Vorgabe; bewusst **ohne** Zeitpunkt). Umsetzung: `markiereTurnierBearbeitet()`
+(`backend/src/turnier/bearbeitet.ts`, best-effort – Metadaten dürfen die eigentliche Operation nie
+scheitern lassen) wird von **allen** Schreib-Routen aufgerufen, die Turnierdaten ändern
+(mannschaft/spieler/schiedsrichter, spiel-Anpassung/Reihenfolge/Startzeit/Schiedsrichter-Zuordnung,
+turnier-PUT, spielplan-POST) – **nicht** aber von den Ergebnis-Pfaden (`ergebnis.ts`,
+`ergebnisToken.ts`, spiel `…/abschliessen`). **Wichtig:** jede NEUE turnierbezogene Schreib-Route (außer
+Ergebnisse) muss diesen Touch mitziehen, sonst „vergisst" die Liste die Bearbeitung. `abschliessen`
+setzt `abgeschlossenVon/Name/Am`; `wieder-oeffnen` setzt `zuletztBearbeitet` und räumt die
+Abschluss-Felder wieder ab.
+
 **Öffentliche Regeln:** fünftes `oeffentlich*`-Flag `oeffentlichRegeln` – zeigt
 die Turnierregeln auf der öffentlichen Seite in einem ein-/ausklappbaren Bereich
 (`<details>`, eigener Reiter „Regeln"). `forfaitErgebnis` fällt in der Anzeige

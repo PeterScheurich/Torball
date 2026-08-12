@@ -9,6 +9,7 @@ import {
   TURNIER_GESPERRT_FEHLER,
   turnierGesperrt,
 } from "../auth/turnierZugriff";
+import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 
 interface MannschaftBody {
   turnierId: string;
@@ -224,6 +225,7 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
         ...req.body,
       };
       const gespeichert = await insertDoc(mannschaft);
+      await markiereTurnierBearbeitet(turnier._id, req.benutzer);
       return reply.code(201).send(gespeichert);
     },
   );
@@ -242,7 +244,9 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const aktualisiert: MannschaftImTurnier = { ...bestehend, ...req.body };
-      return insertDoc(aktualisiert);
+      const gespeichert = await insertDoc(aktualisiert);
+      await markiereTurnierBearbeitet(bestehend.turnierId, req.benutzer);
+      return gespeichert;
     },
   );
 
@@ -280,6 +284,7 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
         aktualisiert.push(await insertDoc({ ...mannschaft, reihenfolge: index }));
       }
 
+      await markiereTurnierBearbeitet(req.params.turnierId, req.benutzer);
       return aktualisiert;
     },
   );
@@ -309,6 +314,7 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
     }
 
     await deleteDoc(bestehend._id, bestehend._rev!);
+    await markiereTurnierBearbeitet(bestehend.turnierId, req.benutzer);
     return reply.code(204).send();
   });
 }
