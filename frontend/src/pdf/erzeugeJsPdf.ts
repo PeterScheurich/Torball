@@ -102,8 +102,11 @@ export async function erzeugeJsPdf(dokument: PdfDokument): Promise<void> {
     } else {
       y += 8;
     }
-    // Seitenkopf (z.B. Turniername) oben auf jeder Schiedsrichter-Seite wiederholen.
-    if (abschnitt.seitenkopf) schreibe(abschnitt.seitenkopf, TEXT_GROESSE, "bold");
+    // Wiederholte Ueberschrift oben auf Folgeseiten - so prominent wie der Titel auf Seite 1.
+    if (abschnitt.seitenkopf) {
+      schreibe(abschnitt.seitenkopf, TITEL_GROESSE, "bold");
+      y += 4;
+    }
     if (abschnitt.ueberschrift) {
       platzPruefen(H2_GROESSE * 1.6);
       schreibe(abschnitt.ueberschrift, H2_GROESSE, "bold");

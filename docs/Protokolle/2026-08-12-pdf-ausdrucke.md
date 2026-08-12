@@ -66,8 +66,10 @@ QR-Ziele: Info → öffentliche Turnierseite; Spielplan/Schiedsrichter → öffe
 - **Spielplan-Tabelle:** Schriftgröße bleibt normal (war ausreichend); stattdessen die ersten beiden
   Spalten (Nr., Zeit) schmal (`PdfTabelle.schmaleFuehrungsspalten`) – jsPDF via `columnStyles`, HTML
   via `.druck-tabelle-spielplan`. Die Mannschaftsspalten werden dadurch breit.
-- **Schiedsrichter-Blatt:** der **Turniername** steht jetzt als Seitenkopf oben auf **jeder** Seite
-  (`PdfAbschnitt.seitenkopf`), zusätzlich zur Kontextzeile unter dem Namen.
+- **Schiedsrichter-Blatt:** die **Überschrift** „Schiedsrichter-Einteilung – <Turnier>" wiederholt
+  sich oben auf jeder Folgeseite (`PdfAbschnitt.seitenkopf`, ab Seite 2 – Seite 1 hat sie als
+  Titel/H1). Optisch wie das H1, semantisch ein laufender Kopf (kein zweites Überschrift-Tag). Der
+  zuvor testweise ergänzte reine Turniername ist wieder entfernt (steht in der Kontextzeile).
 
 ## Offen / später
 

@@ -27,8 +27,8 @@ export interface PdfQr {
 /** Ein Abschnitt mit eigener Ueberschrift (H2). Fuer die Schiedsrichter-Blaetter startet jeder
  *  Abschnitt eine neue Seite (seitenumbruchVor) und traegt seinen eigenen QR-Code. */
 export interface PdfAbschnitt {
-  /** Kleiner Kopf ueber der Ueberschrift, der bei seitenweisen Abschnitten (Schiedsrichter-Blaetter)
-   *  auf JEDER Seite den Turnierkontext wiederholt. */
+  /** Wiederholte Dokument-Ueberschrift oben auf Folgeseiten (Schiedsrichter-Blaetter): auf Seite 1
+   *  steht sie als Titel/H1, ab Seite 2 als dieser Kopf. */
   seitenkopf?: string;
   ueberschrift?: string;
   absaetze?: string[];
@@ -186,11 +186,12 @@ export function baueSchiedsrichterDokument(
   mehrereFelder: boolean,
   ergebnisSeiteUrl: string,
 ): PdfDokument {
+  const titel = `Schiedsrichter-Einteilung – ${g.name}`;
   const kontext = [g.name, g.datum].filter(Boolean).join(" · ");
   const abschnitte: PdfAbschnitt[] = schiedsrichter.map((sr, index) => ({
-    // Turniername als Kopf auf JEDER Seite (jede Person = eigene Seite), auch wenn der Kontext
-    // darunter noch einmal auftaucht.
-    seitenkopf: g.name,
+    // Ueberschrift ("Schiedsrichter-Einteilung – <Turnier>") ab Seite 2 als Kopf wiederholen;
+    // auf Seite 1 steht sie bereits als Titel (H1). Der Turnierkontext folgt darunter je Seite.
+    seitenkopf: index > 0 ? titel : undefined,
     ueberschrift: sr.name,
     seitenumbruchVor: index > 0,
     absaetze: kontext ? [`Turnier: ${kontext}`] : undefined,
@@ -201,7 +202,7 @@ export function baueSchiedsrichterDokument(
 
   return {
     dateiname: `schiedsrichter-einteilung-${dateinameTeil(g.name)}`,
-    titel: `Schiedsrichter-Einteilung – ${g.name}`,
+    titel,
     abschnitte:
       abschnitte.length > 0
         ? abschnitte
