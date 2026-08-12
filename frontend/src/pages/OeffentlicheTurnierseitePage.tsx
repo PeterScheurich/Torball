@@ -9,6 +9,7 @@ import {
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 import { QrCode } from "../components/QrCode";
 import { KontextHilfe } from "../components/KontextHilfe";
+import { TurnierLogo } from "../components/TurnierLogo";
 
 /** Intervall fuers automatische Aktualisieren der oeffentlichen Seite (Live-Ergebnisse/-Spielplan fuer Zuschauer). */
 const AKTUALISIER_INTERVALL_MS = 15_000;
@@ -318,7 +319,10 @@ export function OeffentlicheTurnierseitePage() {
 
   return (
     <>
-      <h1>{daten.name}</h1>
+      <div className="oeffentlich-kopf">
+        <TurnierLogo logoDataUrl={daten.logoDataUrl} hoehe={72} />
+        <h1>{daten.name}</h1>
+      </div>
 
       <KontextHilfe>
         <p>

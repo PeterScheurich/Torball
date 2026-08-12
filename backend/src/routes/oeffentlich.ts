@@ -125,6 +125,8 @@ export async function oeffentlichRoutes(app: FastifyInstance): Promise<void> {
       // sind nicht sensibel.
       mannschaften: mannschaften.map((m) => ({ _id: m._id, name: m.name, bundesland: m.bundesland })),
       felder: turnier.felder,
+      // Logo (Branding) immer mitliefern - nicht sensibel; fehlt es, zeigt die Seite das Standard-Logo.
+      logoDataUrl: turnier.logoDataUrl ?? null,
 
       turnierinfos: turnier.oeffentlichTurnierinfos
         ? {

@@ -258,6 +258,37 @@ header nav span.marke {
   display: none;
 }
 
+/* Turnier-Logo (Uebersicht + oeffentliche Seite). Hoehe kommt per Inline-Style; Breite proportional. */
+.turnier-logo {
+  width: auto;
+  max-width: 100%;
+  vertical-align: middle;
+}
+/* Logo-Bereich in der Turnier-Uebersicht: Vorschau + Aktionsknoepfe nebeneinander. */
+.logo-bereich {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.logo-aktionen {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+/* Kopf der oeffentlichen Turnierseite: Logo neben dem Titel. */
+.oeffentlich-kopf {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.oeffentlich-kopf h1 {
+  margin: 0;
+}
+
 h1 {
   font-size: 1.75rem;
   margin: 0 0 16px;

@@ -263,6 +263,17 @@ je eine Schiedsrichter-Seite. QR-Ziele: Info → öffentliche Turnierseite, Spie
 öffentliche Ergebnisseite (`?tab=ergebnisse`). Schiedsrichter-Blatt: eine Seite je pfeifender Person
 (`nurTurnierleitung` ausgeschlossen). Details: `docs/Protokolle/2026-08-12-pdf-ausdrucke.md`.
 
+**Turnier-Logo (je Turnier überschreibbar, als Data-URL):** `Turnier.logoDataUrl` – ein optionales
+Logo, das clientseitig verkleinert (`frontend/src/logoBild.ts`, Canvas, max. 256 px lange Kante,
+PNG-Data-URL) und **direkt am Turnier-Dokument** gespeichert wird (bewusst **keine** separate
+Dateiablage – die ist zurückgestellt, siehe [[project-offene-dateianhaenge]]). Fehlt es, zeigt die
+Komponente `TurnierLogo` das **Standard-Torball-Logo** (`frontend/public/images/torball-logo*.svg`,
+theme-abhängig über dieselbe `.logo-hell`/`.logo-dunkel`-Umschaltung wie die Kopfzeile). Angezeigt in
+der Turnier-Übersicht (dort auch Hochladen/Zurücksetzen, gesperrt bei abgeschlossenem Turnier) und
+auf der öffentlichen Seite (`oeffentlich.ts` liefert `logoDataUrl` immer mit – Branding, nicht
+sensibel). Gesetzt/geleert über `PUT /turniere/:id` (`logoDataUrl` bzw. `null`; das PUT hat kein
+Schema). **Bewusst (noch) nicht in den PDFs** – für ein späteres Release vorgesehen.
+
 **Turnierregeln als gemeinsamer Typ + Systemkonfiguration:** Die Regel-/
 Wertungsparameter (Spielzeit, Pausen, Timeouts, Wertung, `forfaitErgebnis`, …)
 liegen im gemeinsamen Typ `Turnierregeln` (`shared/src/types/turnier.ts`), den

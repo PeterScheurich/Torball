@@ -109,6 +109,11 @@ export interface Turnier extends CouchMeta, Turnierregeln {
   spielortAdresse?: string;
   spielortGeo?: string;
 
+  /** Optionales, je Turnier ueberschreibbares Logo als Data-URL (clientseitig verkleinert und im
+   *  Dokument abgelegt - keine separate Dateiablage). Fehlt es, wird das Standard-Torball-Logo
+   *  angezeigt. */
+  logoDataUrl?: string;
+
   felder: Spielfeld[];
 
   protokollierungsart: Protokollierungsart;

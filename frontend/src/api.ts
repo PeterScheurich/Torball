@@ -142,6 +142,8 @@ export function updateTurnier(
     ansprechpartnerName?: string | null;
     ansprechpartnerKontakt?: string | null;
     zusatzinfo?: string | null;
+    /** Data-URL des Turnier-Logos; null setzt auf das Standard-Logo zurück. */
+    logoDataUrl?: string | null;
   } & Partial<Turnierregeln>,
 ): Promise<Turnier> {
   return anfrage(`/turniere/${id}`, { method: "PUT", body: JSON.stringify(daten) });
@@ -670,6 +672,8 @@ export interface OeffentlicheTurnierseite {
   name: string;
   mannschaften: { _id: string; name: string; bundesland?: string }[];
   felder: Spielfeld[];
+  /** Turnier-Logo als Data-URL; null = Standard-Torball-Logo anzeigen. */
+  logoDataUrl: string | null;
   /** Nur gesetzt, wenn das Turnier zu einem Wettbewerb mit >= 2 oeffentlich freigegebenen Spieltagen
    *  gehoert: aktiviert die Unter-Navigation "Gesamt | Spieltag 1 | Spieltag 2" im Ergebnis-Reiter. */
   wettbewerb: {

@@ -18,6 +18,8 @@ import { SpielplanVerwaltung } from "../components/SpielplanVerwaltung";
 import { TurnierFreigabe } from "../components/TurnierFreigabe";
 import { TurnierPruefung } from "../components/TurnierPruefung";
 import { TurnierregelnFormular } from "../components/TurnierregelnFormular";
+import { TurnierLogo } from "../components/TurnierLogo";
+import { bildAlsLogoDataUrl } from "../logoBild";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 
 type Tab = "uebersicht" | "regeln" | "mannschaften" | "schiedsrichter" | "spielplan" | "ergebnisse";
@@ -122,6 +124,7 @@ export function TurnierVerwaltenPage() {
   const [allgemein, setAllgemein] = useState<AllgemeinBearbeitung | undefined>();
   const [fehler, setFehler] = useState<string | undefined>();
   const [linkHinweis, setLinkHinweis] = useState<string | undefined>();
+  const logoInputRef = useRef<HTMLInputElement>(null);
   // Aktiver Reiter steckt in der URL (?tab=...), nicht nur im lokalen State - sonst
   // springt ein Reload (F5) immer zurueck auf "Uebersicht", egal auf welchem Reiter
   // man gerade war.
@@ -290,6 +293,30 @@ export function TurnierVerwaltenPage() {
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Freigabe");
+    }
+  }
+
+  // Logo: gewaehlte Bilddatei clientseitig verkleinern und als Data-URL am Turnier speichern.
+  async function logoGewaehlt(event: React.ChangeEvent<HTMLInputElement>) {
+    const datei = event.target.files?.[0];
+    event.target.value = ""; // erlaubt erneutes Waehlen derselben Datei
+    if (!datei) return;
+    try {
+      const logoDataUrl = await bildAlsLogoDataUrl(datei);
+      setTurnier(await updateTurnier(turnierId, { logoDataUrl }));
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Logo konnte nicht verarbeitet werden");
+    }
+  }
+
+  // Eigenes Logo entfernen -> Standard-Torball-Logo (null setzt das Feld zurueck).
+  async function logoZuruecksetzen() {
+    try {
+      setTurnier(await updateTurnier(turnierId, { logoDataUrl: null }));
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Logo konnte nicht zurückgesetzt werden");
     }
   }
 
@@ -560,6 +587,32 @@ export function TurnierVerwaltenPage() {
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <h2>Logo</h2>
+        <p>
+          Wird in dieser Übersicht und auf der öffentlichen Turnierseite angezeigt. Ohne eigenes Logo erscheint das
+          Torball-Standardlogo. Das gewählte Bild wird automatisch verkleinert.
+        </p>
+        <div className="logo-bereich">
+          <TurnierLogo logoDataUrl={turnier.logoDataUrl} hoehe={80} />
+          <div className="logo-aktionen">
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={logoGewaehlt}
+            />
+            <button type="button" onClick={() => logoInputRef.current?.click()} disabled={istGesperrt}>
+              Logo wählen…
+            </button>{" "}
+            {turnier.logoDataUrl && (
+              <button type="button" onClick={logoZuruecksetzen} disabled={istGesperrt}>
+                Standard-Logo verwenden
+              </button>
+            )}
+          </div>
         </div>
 
         <h2>Öffentliche Turnierseite</h2>
