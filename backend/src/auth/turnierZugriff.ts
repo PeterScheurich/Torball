@@ -24,6 +24,12 @@ export async function turnierZugriffsstufe(
   });
   if (berechtigungen.some((b) => b.rolle === "turnierleitung" || b.rolle === "spielleitung")) return "schreiben";
   if (berechtigungen.some((b) => b.rolle === "lesen")) return "lesen";
+
+  // Pauschale Freigabe fuer ALLE angemeldeten Benutzer (turnier.zugriffFuerAlleBenutzer, z.B. fuer
+  // eine Demo-Instanz) - bewusst erst NACH den individuellen TurnierBerechtigung-Pruefungen, greift
+  // also nur, wenn fuer diesen Benutzer keine eigene Berechtigung existiert.
+  if (turnier.zugriffFuerAlleBenutzer) return turnier.zugriffFuerAlleBenutzer;
+
   return undefined;
 }
 

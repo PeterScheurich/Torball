@@ -147,6 +147,8 @@ export function updateTurnier(
     zusatzinfo?: string | null;
     /** Data-URL des Turnier-Logos; null setzt auf das Standard-Logo zurück. */
     logoDataUrl?: string | null;
+    /** Pauschale Freigabe für alle angemeldeten Benutzer; null nimmt sie zurück. */
+    zugriffFuerAlleBenutzer?: "lesen" | "schreiben" | null;
   } & Partial<Turnierregeln>,
 ): Promise<Turnier> {
   return anfrage(`/turniere/${id}`, { method: "PUT", body: JSON.stringify(daten) });

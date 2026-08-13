@@ -144,6 +144,19 @@ export interface Turnier extends CouchMeta, Turnierregeln {
   oeffentlichRegeln: boolean;
 
   /**
+   * Gibt PAUSCHAL allen angemeldeten Benutzern mindestens diese Zugriffsstufe auf das Turnier,
+   * unabhaengig von individuell vergebenen TurnierBerechtigung-Dokumenten (siehe
+   * backend/src/auth/turnierZugriff.ts). Anders als die oeffentlich*-Felder oben: die wirken nur
+   * auf der nicht angemeldeten, oeffentlichen Turnierseite (nur Lesezugriff auf ausgewaehlte
+   * Daten); dieses Feld wirkt in der normalen (angemeldeten) Verwaltungsoberflaeche. Gedacht u.a.
+   * fuer eine Demo-Instanz, auf der beliebige neu (selbst-)registrierte Tester ein Turnier sofort
+   * nutzen koennen sollen, ohne einzeln freigeschaltet zu werden - aber auch ausserhalb der Demo
+   * nutzbar. Fehlt das Feld (undefined), gilt wie bisher nur Admin/Ersteller-Manager/explizite
+   * TurnierBerechtigung.
+   */
+  zugriffFuerAlleBenutzer?: "lesen" | "schreiben";
+
+  /**
    * Rein informativ, keine Fremdschlüssel-Semantik: Die Systemkonfiguration
    * ist versioniert, der kopierte Wertesatz lebt unabhängig weiter
    * (Kopie-statt-Referenz-Prinzip, Abschnitt 20.2).

@@ -379,7 +379,13 @@ Planung als „nicht aktiviert").
 `TurnierBerechtigung` an andere Benutzer (Backend-Route existierte längst, nur
 die UI fehlte). **Admin kann fremde 2FA deaktivieren** (admin-only Route
 `POST /benutzer/:id/2fa/deaktivieren`, eigenes Konto ausgenommen) – für
-ausgesperrte Nutzer mit verlorener Authenticator-App.
+ausgesperrte Nutzer mit verlorener Authenticator-App. **Zusätzlich pauschaler Zugriff für ALLE
+angemeldeten Benutzer** (`Turnier.zugriffFuerAlleBenutzer`, `"lesen"|"schreiben"`, optional):
+anders als die einzeln vergebenen `TurnierBerechtigung`-Dokumente gilt das fuer jede angemeldete
+Person, auch fuer erst spaeter (z. B. per Selbstregistrierung) hinzukommende Konten – gedacht v. a.
+fuer die Demo-Instanz (siehe „Demo-Snapshot/Reset" unten), aber generisch nutzbar. Wird in
+`turnierZugriffsstufe()` (`backend/src/auth/turnierZugriff.ts`) **nach** den individuellen
+`TurnierBerechtigung`-Pruefungen als Fallback geprueft.
 
 **Systemeinstellungen (`docType: "systemeinstellungen"`, Route `/systemeinstellungen`,
 admin-only lesend wie schreibend):** ein **Singleton-Dokument** (feste `_id`

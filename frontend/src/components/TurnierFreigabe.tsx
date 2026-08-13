@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import type { TurnierBerechtigung, TurnierRolle } from "@torball/shared";
+import type { Turnier, TurnierBerechtigung, TurnierRolle } from "@torball/shared";
 import {
   getBenutzerListe,
   getTurnierBerechtigungen,
   turnierBerechtigungEntziehen,
   turnierBerechtigungVergeben,
+  updateTurnier,
   type BenutzerProfil,
 } from "../api";
 
@@ -14,14 +15,32 @@ const ROLLEN_LABEL: Record<TurnierRolle, string> = {
   lesen: "Nur lesen",
 };
 
+type AlleBenutzerZugriff = "kein" | "lesen" | "schreiben";
+
+const ALLE_BENUTZER_LABEL: Record<AlleBenutzerZugriff, string> = {
+  kein: "Kein pauschaler Zugriff",
+  lesen: "Alle angemeldeten Benutzer dürfen lesen",
+  schreiben: "Alle angemeldeten Benutzer dürfen lesen und bearbeiten",
+};
+
 /**
  * Freigabe eines Turniers fuer weitere angemeldete Benutzer (Abschnitt 21.2). Nutzt die
- * bestehenden TurnierBerechtigung-Routen. Der Ersteller/Admin hat ohnehin Vollzugriff und
- * muss sich hier nicht selbst eintragen. Die Benutzerliste (fuer die Auswahl) ist nur fuer
- * Administrator/Manager abrufbar - fehlt sie, bleibt die Anzeige bestehender Freigaben
+ * bestehenden TurnierBerechtigung-Routen fuer einzelne Personen, plus einen pauschalen Schalter
+ * (turnier.zugriffFuerAlleBenutzer) fuer ALLE angemeldeten Benutzer auf einmal - z.B. fuer eine
+ * Demo-Instanz, auf der beliebige (auch erst spaeter selbst-registrierte) Tester ein Turnier
+ * nutzen koennen sollen, ohne einzeln freigeschaltet zu werden. Der Ersteller/Admin hat ohnehin
+ * Vollzugriff und muss sich hier nicht selbst eintragen. Die Benutzerliste (fuer die Auswahl) ist
+ * nur fuer Administrator/Manager abrufbar - fehlt sie, bleibt die Anzeige bestehender Freigaben
  * moeglich, nur das Vergeben ist dann nicht angeboten.
  */
-export function TurnierFreigabe({ turnierId }: { turnierId: string }) {
+export function TurnierFreigabe({
+  turnier,
+  onGeaendert,
+}: {
+  turnier: Turnier;
+  onGeaendert: (turnier: Turnier) => void;
+}) {
+  const turnierId = turnier._id;
   const [berechtigungen, setBerechtigungen] = useState<TurnierBerechtigung[]>([]);
   const [benutzer, setBenutzer] = useState<BenutzerProfil[]>([]);
   const [benutzerListeFehlt, setBenutzerListeFehlt] = useState(false);
@@ -71,6 +90,17 @@ export function TurnierFreigabe({ turnierId }: { turnierId: string }) {
     }
   }
 
+  async function alleBenutzerZugriffAendern(wert: AlleBenutzerZugriff) {
+    setFehler(undefined);
+    try {
+      onGeaendert(
+        await updateTurnier(turnierId, { zugriffFuerAlleBenutzer: wert === "kein" ? null : wert }),
+      );
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Fehler beim Ändern der pauschalen Freigabe");
+    }
+  }
+
   return (
     <section>
       <h2>Freigabe für andere Benutzer</h2>
@@ -80,6 +110,27 @@ export function TurnierFreigabe({ turnierId }: { turnierId: string }) {
       </p>
 
       {fehler && <p role="alert">{fehler}</p>}
+
+      <div className="feld">
+        <label htmlFor="freigabe-alle-benutzer">Pauschaler Zugriff für alle angemeldeten Benutzer</label>
+        <select
+          id="freigabe-alle-benutzer"
+          value={turnier.zugriffFuerAlleBenutzer ?? "kein"}
+          onChange={(e) => alleBenutzerZugriffAendern(e.target.value as AlleBenutzerZugriff)}
+        >
+          {(Object.keys(ALLE_BENUTZER_LABEL) as AlleBenutzerZugriff[]).map((wert) => (
+            <option key={wert} value={wert}>
+              {ALLE_BENUTZER_LABEL[wert]}
+            </option>
+          ))}
+        </select>
+        <p className="feld-hinweis">
+          Gilt zusätzlich zu den unten einzeln vergebenen Freigaben - sinnvoll, wenn wirklich jede angemeldete Person
+          Zugriff haben soll (z. B. auf einer Demo-Instanz), nicht nur ausgewählte Benutzer.
+        </p>
+      </div>
+
+      <h3>Einzelne Freigaben</h3>
 
       {berechtigungen.length === 0 ? (
         <p className="platzhalter-zeile">Noch keine Freigaben vergeben.</p>

@@ -595,7 +595,7 @@ export function TurnierVerwaltenPage() {
 
         <TurnierPruefung turnier={turnier} />
 
-        <TurnierFreigabe turnierId={turnierId} />
+        <TurnierFreigabe turnier={turnier} onGeaendert={setTurnier} />
 
         <h2>Öffentliche Turnierseite</h2>
         <p>
