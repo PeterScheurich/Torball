@@ -63,7 +63,7 @@ function TurnierTabelle({
   turniere: Turnier[];
   beschriftung: string;
   leerText: string;
-  onLoeschen: (id: string) => void;
+  onLoeschen: (id: string, name: string) => void;
 }) {
   if (turniere.length === 0) {
     return <p>{leerText}</p>;
@@ -92,7 +92,7 @@ function TurnierTabelle({
               <button
                 type="button"
                 className="symbol-button"
-                onClick={() => onLoeschen(turnier._id)}
+                onClick={() => onLoeschen(turnier._id, turnier.name)}
                 aria-label={`${turnier.name} löschen`}
                 title="Löschen"
               >
@@ -126,8 +126,17 @@ export function TurnierListePage() {
     }
   }
 
-  /** Loescht ein Turnier (mit allen abhaengigen Daten, Kaskade im Backend) und laedt neu. */
-  async function loeschen(id: string) {
+  /** Loescht ein Turnier (mit allen abhaengigen Daten, Kaskade im Backend) und laedt neu.
+   *  Fragt vorher explizit nach, da die Loeschung unwiderruflich ist (kein Archiv/Papierkorb). */
+  async function loeschen(id: string, name: string) {
+    if (
+      !window.confirm(
+        `Turnier "${name}" wirklich unwiderruflich löschen? Alle Mannschaften, Kader, Schiedsrichter, ` +
+          `der Spielplan und alle Ergebnisse gehen dabei verloren. Das kann nicht rückgängig gemacht werden.`,
+      )
+    ) {
+      return;
+    }
     try {
       await deleteTurnier(id);
       await laden();
