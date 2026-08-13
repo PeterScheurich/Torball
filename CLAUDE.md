@@ -44,9 +44,21 @@ Einzelne Testdatei direkt ausführen (im Ordner `backend/`):
 ```bash
 npx tsx --test src/spielplan/planung.test.ts
 ```
-`turnier-delete.integration.test.ts` überspringt sich selbst, wenn die
-`COUCHDB_*`-Umgebungsvariablen nicht gesetzt sind (kein Mock/Fake-DB-Setup in
-diesem Projekt). Es gibt keine Frontend-Tests.
+Mehrere Testdateien (u. a. `turnier-delete.integration.test.ts`,
+`auth-sperre.test.ts`, `turnierSync.test.ts`) überspringen sich selbst, wenn
+die `COUCHDB_*`-Umgebungsvariablen nicht gesetzt sind (kein Mock/Fake-DB-Setup
+in diesem Projekt) – `npm run test --workspace=backend` allein deckt sie also
+nicht ab. Für den vollständigen Lauf (**vor jedem Release verpflichtend**)
+gibt es eine eigene, kleine CouchDB-Testdatenbank auf der Dev-CouchDB
+(analog `torball_backend`/`torball` – eigener eingeschränkter Benutzer,
+kein Server-Admin, siehe `docs/Protokolle/2026-08-10-couchdb-backend-setup.md`
+fürs Muster):
+```bash
+npm run test:integration --workspace=backend
+```
+Liest `backend/.env.test.local` (git-ignoriert, lokal einmalig anzulegen mit
+`COUCHDB_URL`/`COUCHDB_DB=torball_test`/`COUCHDB_USER=torball_test`/
+`COUCHDB_PASSWORD`). Es gibt keine Frontend-Tests.
 
 **Dev-Server** (niemals über Bash starten, siehe Hinweis zu Preview-Tools):
 ```bash
