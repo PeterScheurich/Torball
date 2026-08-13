@@ -7,8 +7,11 @@ import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 
 // CRUD fuer turnierbezogene Schiedsrichter (SchiedsrichterImTurnier haengt am turnierId).
 // Zugriff laeuft ueber das Turnier (turnierZugriff); genau eine Person je Turnier ist
-// istTurnierleitung (das Frontend erzwingt die Einzelauswahl). Beim Loeschen einer Mannschaft
-// wird nur die optionale mannschaftId-Referenz geloest, der Schiedsrichter bleibt.
+// istTurnierleitung (das Frontend erzwingt die Einzelauswahl). vereinId ist ein reiner
+// Herkunftsverweis (kein Live-Join, analog MannschaftImTurnier.vereinId) - das Loeschen einer
+// Mannschaft oder eines Vereins wirkt sich deshalb NICHT auf bestehende Schiedsrichter-
+// Eintraege aus (anders als frueher bei der mannschaftId-Referenz, die eine turnierlokale
+// Entitaet traf und beim Mannschaft-Loeschen extra geloest werden musste).
 
 interface SchiedsrichterBody {
   turnierId: string;
@@ -17,9 +20,13 @@ interface SchiedsrichterBody {
   telefon?: string;
   email?: string;
   lizenzVorhanden?: boolean;
-  mannschaftId?: string;
+  vereinId?: string;
   istTurnierleitung?: boolean;
   nurTurnierleitung?: boolean;
+  /** Gesetzt, wenn das Anlege-Formular aus den Schiedsrichter-Stammdaten vorbefuellt wurde
+   *  (siehe SchiedsrichterVerwaltung.tsx "aus Stammdaten übernehmen") - reiner Herkunftsverweis,
+   *  keine Live-Verknuepfung (analog teamId/vereinId bei MannschaftImTurnier). */
+  importiertAusStammdatenSchiedsrichterId?: string;
 }
 
 const schiedsrichterBodySchema = {
@@ -32,9 +39,10 @@ const schiedsrichterBodySchema = {
     telefon: { type: "string" },
     email: { type: "string" },
     lizenzVorhanden: { type: "boolean" },
-    mannschaftId: { type: "string" },
+    vereinId: { type: "string" },
     istTurnierleitung: { type: "boolean" },
     nurTurnierleitung: { type: "boolean" },
+    importiertAusStammdatenSchiedsrichterId: { type: "string" },
   },
 } as const;
 
@@ -44,12 +52,12 @@ interface SchiedsrichterAktualisierungBody {
   telefon?: string;
   email?: string;
   lizenzVorhanden: boolean;
-  mannschaftId?: string;
+  vereinId?: string;
   istTurnierleitung: boolean;
   nurTurnierleitung?: boolean;
 }
 
-// Optionale Freitextfelder (inkl. mannschaftId) akzeptieren beim Aktualisieren bewusst auch
+// Optionale Freitextfelder (inkl. vereinId) akzeptieren beim Aktualisieren bewusst auch
 // null, damit sie gezielt geleert werden koennen - undefined fiele via JSON.stringify aus dem
 // Body und der Merge liesse den alten Wert stehen (siehe CLAUDE.md).
 const schiedsrichterAktualisierungSchema = {
@@ -61,7 +69,7 @@ const schiedsrichterAktualisierungSchema = {
     telefon: { type: ["string", "null"] },
     email: { type: ["string", "null"] },
     lizenzVorhanden: { type: "boolean" },
-    mannschaftId: { type: ["string", "null"] },
+    vereinId: { type: ["string", "null"] },
     istTurnierleitung: { type: "boolean" },
     nurTurnierleitung: { type: "boolean" },
   },
@@ -142,10 +150,11 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
         telefon: req.body.telefon ?? undefined,
         email: req.body.email ?? undefined,
         lizenzVorhanden: req.body.lizenzVorhanden ?? false,
-        mannschaftId: req.body.mannschaftId ?? undefined,
+        vereinId: req.body.vereinId ?? undefined,
         istTurnierleitung: req.body.istTurnierleitung ?? false,
         // "nur Turnierleitung" ist nur sinnvoll, wenn die Person auch Turnierleitung ist.
         nurTurnierleitung: (req.body.istTurnierleitung ?? false) && (req.body.nurTurnierleitung ?? false),
+        importiertAusStammdatenSchiedsrichterId: req.body.importiertAusStammdatenSchiedsrichterId ?? undefined,
       };
       const gespeichert = await insertDoc(schiedsrichter);
       await markiereTurnierBearbeitet(turnier._id, req.benutzer);

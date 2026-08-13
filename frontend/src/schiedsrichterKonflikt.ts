@@ -1,9 +1,9 @@
-import type { Spiel } from "@torball/shared";
+import type { MannschaftImTurnier, Spiel } from "@torball/shared";
 
 export interface SchiedsrichterKonflikt {
-  /** P1 (hoechste Prioritaet): Schiedsrichter pfeift ein Spiel seiner eigenen Mannschaft. */
+  /** P1 (hoechste Prioritaet): Schiedsrichter pfeift ein Spiel einer Mannschaft seines eigenen Vereins. */
   eigeneMannschaft: boolean;
-  /** P2 (nachrangig): eigene Mannschaft spielt gleichzeitig in einem anderen Spiel desselben Slots. */
+  /** P2 (nachrangig): eine Mannschaft des eigenen Vereins spielt gleichzeitig in einem anderen Spiel desselben Slots. */
   gleichzeitig: boolean;
 }
 
@@ -11,16 +11,26 @@ export interface SchiedsrichterKonflikt {
  * Erkennt Schiedsrichter-Konflikte fuer die Warnhinweise im Spielplan. Bewusst dupliziert zur
  * Backend-Vorschlagslogik (`backend/src/spielplan/schiedsrichterZuordnung.ts`), weil `shared`
  * CommonJS ist und das Frontend daraus keine Laufzeit-Funktionen importieren kann (siehe CLAUDE.md).
+ *
+ * Vereins- statt Mannschafts-Bezug (2026-08-14 umgestellt): `schiedsrichterVereinId` wird ueber
+ * die Mannschaften des Turniers aufgeloest (`mannschaften`), nicht direkt mit einer Mannschafts-ID
+ * verglichen - erfasst dadurch automatisch auch mehrere Mannschaften desselben Vereins im selben
+ * Turnier. Mannschaften ohne vereinId (Ad-hoc-Erfassung ohne Stammdaten-Bezug) koennen dabei nie
+ * als "eigener Verein" erkannt werden.
  */
 export function schiedsrichterKonflikt(
   spiel: Spiel,
-  schiedsrichterMannschaftId: string | undefined,
+  schiedsrichterVereinId: string | undefined,
   alleSpiele: Spiel[],
+  mannschaften: Pick<MannschaftImTurnier, "_id" | "vereinId">[],
 ): SchiedsrichterKonflikt {
-  if (!schiedsrichterMannschaftId) return { eigeneMannschaft: false, gleichzeitig: false };
+  if (!schiedsrichterVereinId) return { eigeneMannschaft: false, gleichzeitig: false };
+
+  const vereinVonMannschaft = (mannschaftId: string) => mannschaften.find((m) => m._id === mannschaftId)?.vereinId;
 
   const eigeneMannschaft =
-    schiedsrichterMannschaftId === spiel.mannschaftAId || schiedsrichterMannschaftId === spiel.mannschaftBId;
+    vereinVonMannschaft(spiel.mannschaftAId) === schiedsrichterVereinId ||
+    vereinVonMannschaft(spiel.mannschaftBId) === schiedsrichterVereinId;
 
   const slot = Number(spiel.runde);
   const gleichzeitig =
@@ -29,7 +39,8 @@ export function schiedsrichterKonflikt(
       (s) =>
         s._id !== spiel._id &&
         Number(s.runde) === slot &&
-        (s.mannschaftAId === schiedsrichterMannschaftId || s.mannschaftBId === schiedsrichterMannschaftId),
+        (vereinVonMannschaft(s.mannschaftAId) === schiedsrichterVereinId ||
+          vereinVonMannschaft(s.mannschaftBId) === schiedsrichterVereinId),
     );
 
   return { eigeneMannschaft, gleichzeitig };

@@ -304,11 +304,41 @@ Schiedsrichtern aus diesen Flags ist deshalb eine Dedup nötig (noch offen).
 Spielplan (`SchiedsrichterVerwaltung.tsx`). Genau eine Person je Turnier hat
 `istTurnierleitung` – das Frontend erzwingt das per Radio-Single-Select (die
 bisherige Turnierleitung wird beim Wechsel zurückgesetzt). Kaskaden: beim
-Turnier-Löschen mitlöschen; beim Mannschaft-Löschen nur die optionale
-`mannschaftId`-Referenz lösen (der Schiedsrichter bleibt bestehen). Der
-`turnier.ts`-Delete löscht damit `mannschaftImTurnier` + `spieler` +
-`schiedsrichterImTurnier` + `spiel` kaskadierend (Integrationstest deckt das
-ab, überspringt aber ohne `COUCHDB_*`).
+Turnier-Löschen mitlöschen. Der `turnier.ts`-Delete löscht damit
+`mannschaftImTurnier` + `spieler` + `schiedsrichterImTurnier` + `spiel`
+kaskadierend (Integrationstest deckt das ab, überspringt aber ohne
+`COUCHDB_*`).
+
+**Vereins- statt Mannschafts-Bezug (2026-08-14 umgestellt, vorher `mannschaftId`):**
+`SchiedsrichterImTurnier.vereinId` referenziert einen Verein, nicht eine
+Turnier-Mannschaft – fachlich korrekter (ein Schiedsrichter gehört zu einem
+Verein) und erkennt dadurch automatisch auch eine zweite Mannschaft desselben
+Vereins im selben Turnier (z. B. I-/II-Mannschaft), was die vorherige direkte
+`mannschaftId`-Zuordnung nicht konnte. Nebeneffekt: eine Mannschaft ohne
+Stammdaten-Bezug (Ad-hoc-Erfassung ohne `vereinId`) kann dadurch nie als
+"eigener Verein" erkannt werden – bewusst hingenommene Einschränkung. Da
+Vereine (anders als die frühere `mannschaftId`) turnierübergreifend sind,
+entfällt die alte Kaskade "beim Mannschaft-Löschen die Referenz lösen"
+ersatzlos – ein Vereins-Bezug wird von einer Mannschafts-Löschung nicht
+berührt.
+
+**Schiedsrichter-Stammdaten (turnierübergreifend, analog Verein/Team):**
+`Schiedsrichter` (`docType: "schiedsrichter"`, eigener Typ + eigene Route
+`backend/src/routes/schiedsrichterStammdaten.ts`, `/schiedsrichter-stammdaten`)
+dient als wiederverwendbare Vorlage, gepflegt auf der Stammdaten-Seite unter
+„Vereine, Teams und Schiedsrichter" (`SchiedsrichterStammdatenVerwaltung.tsx`,
+gleiches Rechtemodell wie Vereine/Teams: Lesen für jede Anmeldung, Schreiben
+nur Admin/Manager). Referenziert wie die turnierbezogene Variante einen Verein
+(optional, neutrale Personen ohne Vereinsbindung sind zulässig). Bewusst
+**keine** Referenz-Prüfung beim Löschen (anders als Verein/Team) – die
+Übernahme in ein Turnier kopiert die Werte (`importiertAusStammdatenSchiedsrichterId`
+als reiner Herkunftsverweis), es gibt keine Live-Verknüpfung, die verwaisen
+könnte. In `SchiedsrichterVerwaltung.tsx` zusätzlich zum bestehenden „Meine
+Profildaten übernehmen"-Knopf eine Auswahl „Aus Stammdaten übernehmen" (füllt
+das Anlege-Formular mit einer beliebigen Stammdaten-Person vor, analog dem
+Profil-Knopf). War ursprünglich als Backlog-Punkt "akkreditierte
+Schiedsrichter" zurückgestellt, im Zuge des Vereins-Bezugs-Umbaus (siehe oben)
+gleich mit umgesetzt, da beide Aenderungen dieselbe Datengrundlage brauchen.
 
 **Schiedsrichter-Zuordnung ist ein bewusster Schritt, kein Automatismus:** ein
 Button in der Spielplan-Sicht „Schiedsrichter-Einteilung" ruft
@@ -316,9 +346,11 @@ Button in der Spielplan-Sicht „Schiedsrichter-Einteilung" ruft
 Spiel (`backend/src/spielplan/schiedsrichterZuordnung.ts`), danach je Spiel per
 Dropdown änderbar (`schiedsrichterId` an `Spiel`, via `PUT /spiele/:id`, per
 `null` lösbar). Gewichtung (Nutzer-Vorgabe): **P1** (höchste Priorität) – ein
-Schiedsrichter pfeift nie das Spiel der eigenen Mannschaft (wird nicht
-vorgeschlagen); **P2** (nachrangig) – möglichst nicht pfeifen, während eine
-eigene Mannschaft gleichzeitig auf einem Parallelfeld spielt. Beide Konflikte
+Schiedsrichter pfeift nie das Spiel einer Mannschaft seines eigenen Vereins
+(wird nicht vorgeschlagen); **P2** (nachrangig) – möglichst nicht pfeifen,
+während eine Mannschaft des eigenen Vereins gleichzeitig auf einem
+Parallelfeld spielt. Aufgelöst über die Mannschaften des Turniers (`mannschaftId`
+→ `vereinId`), nicht per direktem ID-Vergleich (siehe oben). Beide Konflikte
 werden im UI als Hinweis angezeigt (`schiedsrichterKonflikt.ts`).
 
 **Benutzer-Stammdaten → Turnier-Übernahme:** `Benutzer` trägt neben `name`/`email`/`telefon` auch

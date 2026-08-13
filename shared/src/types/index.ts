@@ -33,7 +33,7 @@ import type { Turnier } from "./turnier";
 import type { Turnierpause } from "./turnierpause";
 import type { MannschaftImTurnier } from "./mannschaft";
 import type { Spieler } from "./spieler";
-import type { SchiedsrichterImTurnier } from "./schiedsrichter";
+import type { Schiedsrichter, SchiedsrichterImTurnier } from "./schiedsrichter";
 import type { Spiel } from "./spiel";
 import type { Spielprotokoll } from "./spielprotokoll";
 import type { Event } from "./event";
@@ -61,6 +61,7 @@ export type TorballDokument =
   | Turnierpause
   | MannschaftImTurnier
   | Spieler
+  | Schiedsrichter
   | SchiedsrichterImTurnier
   | Spiel
   | Spielprotokoll

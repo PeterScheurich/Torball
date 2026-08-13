@@ -169,6 +169,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
               "Kader: werden übernommen, lassen sich aber am neuen Spieltag frei ändern, falls andere Spieler antreten.",
               "Regeln: werden übernommen und sind zunächst gesperrt (damit beide Spieltage nach denselben Regeln laufen); bei Bedarf lässt sich diese Sperre im Turnier wieder aufheben.",
               "Spielplan: wird gespiegelt (wer zuhause gespielt hat, spielt jetzt auswärts) und lässt sich danach wie gewohnt anpassen.",
+              "Schiedsrichter (inkl. Turnierleitung): werden übernommen und lassen sich danach wie gewohnt bearbeiten.",
             ],
           },
         ],
@@ -219,13 +220,13 @@ export const HILFE_THEMEN: HilfeThema[] = [
   },
   {
     id: "stammdaten",
-    titel: "Stammdaten: Vereine & Teams",
-    kurz: "Vereine und Teams zentral pflegen – sie stehen dann für alle Turniere zur Verfügung.",
+    titel: "Stammdaten: Vereine, Teams & Schiedsrichter",
+    kurz: "Vereine, Teams und Schiedsrichter zentral pflegen – sie stehen dann für alle Turniere zur Verfügung.",
     abschnitte: [
       {
         frage: "Was sind Stammdaten?",
         text: [
-          "Unter „Stammdaten“ pflegst du Vereine und ihre Teams turnierübergreifend an einer Stelle. Beim Erfassen einer Mannschaft in einem Turnier greifst du auf diese Liste zurück, statt jedes Mal alles neu einzutippen.",
+          "Unter „Stammdaten“ pflegst du Vereine, ihre Teams und Schiedsrichter turnierübergreifend an einer Stelle. Beim Erfassen einer Mannschaft bzw. eines Schiedsrichters in einem Turnier greifst du auf diese Liste zurück, statt jedes Mal alles neu einzutippen.",
         ],
       },
       {
@@ -283,13 +284,19 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wo trage ich Schiedsrichter ein?",
         text: [
-          "Das ist eine optionale Eingabe und erfolgt im Reiter „Schiedsrichter“. Schiedsrichter gehören zum Turnier; optional lässt sich eine Mannschaft zuordnen, der er angehört. Wenn das eingetragen ist, wird bei der automatischen Schiedsrichter-Zuordnung (im Spielplan) vermieden, dass ein Schiedsrichter seine eigene Mannschaft pfeift.",
+          "Das ist eine optionale Eingabe und erfolgt im Reiter „Schiedsrichter“. Schiedsrichter gehören zum Turnier; optional lässt sich ein Verein zuordnen, dem sie angehören. Wenn das eingetragen ist, wird bei der automatischen Schiedsrichter-Zuordnung (im Spielplan) vermieden, dass ein Schiedsrichter eine Mannschaft seines eigenen Vereins pfeift.",
         ],
       },
       {
         frage: "Wie lege ich die Turnierleitung fest?",
         text: [
           "Genau eine Person je Turnier ist die Turnierleitung. Die Auswahl erfolgt über ein Optionsfeld – wählst du eine andere Person, wird die bisherige automatisch zurückgesetzt.",
+        ],
+      },
+      {
+        frage: "Muss ich jeden Schiedsrichter jedes Mal neu eintippen?",
+        text: [
+          "Nein. Unter „Stammdaten“ lassen sich Schiedsrichter turnierübergreifend anlegen (analog Vereinen und Teams). Im Anlege-Formular des Turniers wählst du „Aus Stammdaten übernehmen“, um eine dort erfasste Person vorzubefüllen – oder „Meine Profildaten übernehmen“ für dich selbst. Beides füllt nur das Formular vor; erst der Klick auf „hinzufügen“ speichert die Person im Turnier.",
         ],
       },
     ],

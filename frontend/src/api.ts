@@ -15,6 +15,7 @@ import type {
   MailPostfachEinstellungenOeffentlich,
   MannschaftImTurnier,
   Protokollierungsart,
+  Schiedsrichter,
   SchiedsrichterImTurnier,
   SelbstregistrierungsRolle,
   Spiel,
@@ -286,9 +287,11 @@ export interface NeuerSchiedsrichter {
   telefon?: string;
   email?: string;
   lizenzVorhanden?: boolean;
-  mannschaftId?: string;
+  vereinId?: string;
   istTurnierleitung?: boolean;
   nurTurnierleitung?: boolean;
+  /** Gesetzt, wenn aus den Schiedsrichter-Stammdaten übernommen (reiner Herkunftsverweis). */
+  importiertAusStammdatenSchiedsrichterId?: string;
 }
 
 export interface SchiedsrichterAktualisierung {
@@ -298,8 +301,8 @@ export interface SchiedsrichterAktualisierung {
   telefon?: string | null;
   email?: string | null;
   lizenzVorhanden: boolean;
-  /** null loest die Mannschaftszugehoerigkeit ("— keine —"). */
-  mannschaftId?: string | null;
+  /** null loest die Vereinszugehoerigkeit ("— keine —"). */
+  vereinId?: string | null;
   istTurnierleitung: boolean;
   nurTurnierleitung?: boolean;
 }
@@ -398,7 +401,7 @@ export function spielStartzeitAendern(spielId: string, startzeitGeplant: string)
   });
 }
 
-// --- Stammdaten (Vereine und Teams, Abschnitt 15) ---
+// --- Stammdaten (Vereine, Teams und Schiedsrichter, Abschnitt 15/29) ---
 
 /** Optionale Felder duerfen explizit null sein, um sie zu leeren - JSON.stringify(undefined)
  * liesse den Schluessel aus dem Body fallen, das Backend behielte den alten Wert dann bei
@@ -447,6 +450,38 @@ export function updateTeam(id: string, daten: TeamAktualisierung): Promise<Team>
 
 export function deleteTeam(id: string): Promise<void> {
   return anfrage(`/teams/${id}`, { method: "DELETE" });
+}
+
+/** Optionale Felder duerfen explizit null sein, um sie zu leeren (gleiches Muster wie VereinAktualisierung). */
+export interface SchiedsrichterStammdatenAktualisierung {
+  name: string;
+  vorname?: string | null;
+  telefon?: string | null;
+  email?: string | null;
+  lizenzVorhanden?: boolean;
+  /** null loest die Vereinszugehoerigkeit ("— keine —", neutrale Person ohne Vereinsbindung). */
+  vereinId?: string | null;
+}
+
+export function getSchiedsrichterStammdaten(): Promise<Schiedsrichter[]> {
+  return anfrage("/schiedsrichter-stammdaten");
+}
+
+export function createSchiedsrichterStammdaten(
+  daten: SchiedsrichterStammdatenAktualisierung,
+): Promise<Schiedsrichter> {
+  return anfrage("/schiedsrichter-stammdaten", { method: "POST", body: JSON.stringify(daten) });
+}
+
+export function updateSchiedsrichterStammdaten(
+  id: string,
+  daten: SchiedsrichterStammdatenAktualisierung,
+): Promise<Schiedsrichter> {
+  return anfrage(`/schiedsrichter-stammdaten/${id}`, { method: "PUT", body: JSON.stringify(daten) });
+}
+
+export function deleteSchiedsrichterStammdaten(id: string): Promise<void> {
+  return anfrage(`/schiedsrichter-stammdaten/${id}`, { method: "DELETE" });
 }
 
 // --- Authentifizierung ---

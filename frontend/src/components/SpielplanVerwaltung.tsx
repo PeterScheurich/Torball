@@ -779,8 +779,9 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }
                         const anzeigeIndex = anzeigeZaehler++;
                         const konflikt = schiedsrichterKonflikt(
                           s,
-                          schiedsrichterNach(s.schiedsrichterId)?.mannschaftId,
+                          schiedsrichterNach(s.schiedsrichterId)?.vereinId,
                           spiele,
+                          mannschaften,
                         );
                         return (
                           <tr key={s._id}>

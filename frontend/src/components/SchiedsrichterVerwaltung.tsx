@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { MannschaftImTurnier, SchiedsrichterImTurnier } from "@torball/shared";
+import type { Schiedsrichter, SchiedsrichterImTurnier, Verein } from "@torball/shared";
 import {
   createSchiedsrichter,
   deleteSchiedsrichter,
-  getMannschaften,
   getSchiedsrichter,
+  getSchiedsrichterStammdaten,
+  getVereine,
   updateSchiedsrichter,
   type SchiedsrichterAktualisierung,
 } from "../api";
@@ -30,13 +31,14 @@ interface Props {
 /**
  * Schiedsrichter-Tab eines Turniers: Tabelle mit direkt editierbaren Feldern (Textfelder
  * speichern beim Verlassen, Auswahl/Checkbox sofort) plus Anlege-Formular. Genau eine Person
- * ist per Radio-Auswahl Turnierleitung; die Mannschaftszuordnung dient spaeter der
- * Schiedsrichter-Einteilung (kein Pfeifen der eigenen Mannschaft).
+ * ist per Radio-Auswahl Turnierleitung; die Vereinszuordnung dient spaeter der
+ * Schiedsrichter-Einteilung (kein Pfeifen einer Mannschaft des eigenen Vereins).
  */
 export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props) {
   const { benutzer } = useAuth();
   const [schiedsrichter, setSchiedsrichter] = useState<SchiedsrichterImTurnier[]>([]);
-  const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
+  const [vereine, setVereine] = useState<Verein[]>([]);
+  const [stammdaten, setStammdaten] = useState<Schiedsrichter[]>([]);
   const [bearbeitung, setBearbeitung] = useState<Record<string, TextBearbeitung>>({});
   const [fehler, setFehler] = useState<string | undefined>();
 
@@ -45,15 +47,19 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
   const [neuTelefon, setNeuTelefon] = useState("");
   const [neuEmail, setNeuEmail] = useState("");
   const [neuLizenz, setNeuLizenz] = useState(false);
-  const [neuMannschaftId, setNeuMannschaftId] = useState("");
+  const [neuVereinId, setNeuVereinId] = useState("");
+  const [neuHerkunftId, setNeuHerkunftId] = useState<string | undefined>();
+  const [stammdatenAuswahl, setStammdatenAuswahl] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
 
-  // Laedt Schiedsrichter und Mannschaften (letztere fuer die Zuordnungs-Auswahl) parallel.
+  // Laedt Schiedsrichter dieses Turniers, alle Vereine (fuer die Zuordnungs-Auswahl) und die
+  // Schiedsrichter-Stammdaten (fuer "aus Stammdaten übernehmen") parallel.
   const laden = useCallback(async () => {
     try {
-      const [s, m] = await Promise.all([getSchiedsrichter(turnierId), getMannschaften(turnierId)]);
+      const [s, v, st] = await Promise.all([getSchiedsrichter(turnierId), getVereine(), getSchiedsrichterStammdaten()]);
       setSchiedsrichter(s);
-      setMannschaften(m);
+      setVereine(v);
+      setStammdaten(st);
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden der Schiedsrichter");
@@ -86,7 +92,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
       telefon: b.telefon.trim() || null,
       email: b.email.trim() || null,
       lizenzVorhanden: s.lizenzVorhanden,
-      mannschaftId: s.mannschaftId ?? null,
+      vereinId: s.vereinId ?? null,
       istTurnierleitung: s.istTurnierleitung,
       nurTurnierleitung: s.nurTurnierleitung ?? false,
       ...override,
@@ -108,7 +114,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
       (payload.telefon ?? null) === (s.telefon ?? null) &&
       (payload.email ?? null) === (s.email ?? null) &&
       payload.lizenzVorhanden === s.lizenzVorhanden &&
-      (payload.mannschaftId ?? null) === (s.mannschaftId ?? null) &&
+      (payload.vereinId ?? null) === (s.vereinId ?? null) &&
       payload.istTurnierleitung === s.istTurnierleitung &&
       (payload.nurTurnierleitung ?? false) === (s.nurTurnierleitung ?? false);
     if (unveraendert) return;
@@ -153,7 +159,27 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
     setNeuTelefon(benutzer.telefon ?? "");
     setNeuEmail(benutzer.email ?? "");
     setNeuLizenz(benutzer.lizenzVorhanden ?? false);
-    setNeuMannschaftId("");
+    setNeuVereinId("");
+    setNeuHerkunftId(undefined);
+    setStammdatenAuswahl("");
+    setFehler(undefined);
+    nameRef.current?.focus();
+  }
+
+  /** Fuellt das Anlege-Formular mit einem ausgewaehlten Schiedsrichter aus den Stammdaten vor -
+   *  analog "Meine Profildaten übernehmen", nur mit einer beliebigen Person statt der eigenen. */
+  function ausStammdatenUebernehmen(id: string) {
+    setStammdatenAuswahl(id);
+    if (!id) return;
+    const gewaehlt = stammdaten.find((s) => s._id === id);
+    if (!gewaehlt) return;
+    setNeuName(gewaehlt.name);
+    setNeuVorname(gewaehlt.vorname ?? "");
+    setNeuTelefon(gewaehlt.telefon ?? "");
+    setNeuEmail(gewaehlt.email ?? "");
+    setNeuLizenz(gewaehlt.lizenzVorhanden ?? false);
+    setNeuVereinId(gewaehlt.vereinId ?? "");
+    setNeuHerkunftId(gewaehlt._id);
     setFehler(undefined);
     nameRef.current?.focus();
   }
@@ -169,14 +195,17 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
         telefon: neuTelefon.trim() || undefined,
         email: neuEmail.trim() || undefined,
         lizenzVorhanden: neuLizenz,
-        mannschaftId: neuMannschaftId || undefined,
+        vereinId: neuVereinId || undefined,
+        importiertAusStammdatenSchiedsrichterId: neuHerkunftId,
       });
       setNeuName("");
       setNeuVorname("");
       setNeuTelefon("");
       setNeuEmail("");
       setNeuLizenz(false);
-      setNeuMannschaftId("");
+      setNeuVereinId("");
+      setNeuHerkunftId(undefined);
+      setStammdatenAuswahl("");
       await laden();
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Anlegen des Schiedsrichters");
@@ -202,8 +231,8 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
     <div>
       <h2>Schiedsrichter</h2>
       <p>
-        Ein Schiedsrichter darf grundsätzlich nicht das Spiel seiner eigenen Mannschaft leiten (die Software warnt
-        später bei der Spielplan-Generierung). Genau eine Person ist Turnierleitung.
+        Ein Schiedsrichter darf grundsätzlich nicht das Spiel einer Mannschaft seines eigenen Vereins leiten (die
+        Software warnt später bei der Spielplan-Generierung). Genau eine Person ist Turnierleitung.
       </p>
       {fehler && <p role="alert">{fehler}</p>}
 
@@ -225,7 +254,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
                 <th scope="col">Telefon</th>
                 <th scope="col">E-Mail</th>
                 <th scope="col">Lizenz</th>
-                <th scope="col">Mannschaft</th>
+                <th scope="col">Verein</th>
                 <th scope="col">Turnierleitung</th>
                 <th scope="col">Aktionen</th>
               </tr>
@@ -304,18 +333,18 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
                     />
                   </td>
                   <td>
-                    <label className="sr-only" htmlFor={`sr-mannschaft-${s._id}`}>
-                      Mannschaft von {s.name}
+                    <label className="sr-only" htmlFor={`sr-verein-${s._id}`}>
+                      Verein von {s.name}
                     </label>
                     <select
-                      id={`sr-mannschaft-${s._id}`}
-                      value={s.mannschaftId ?? ""}
-                      onChange={(e) => speichern(s, { mannschaftId: e.target.value || null })}
+                      id={`sr-verein-${s._id}`}
+                      value={s.vereinId ?? ""}
+                      onChange={(e) => speichern(s, { vereinId: e.target.value || null })}
                     >
                       <option value="">— keine —</option>
-                      {mannschaften.map((m) => (
-                        <option key={m._id} value={m._id}>
-                          {m.name}
+                      {vereine.map((v) => (
+                        <option key={v._id} value={v._id}>
+                          {v.name}
                         </option>
                       ))}
                     </select>
@@ -362,16 +391,39 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
         </div>
       )}
 
-      {benutzer && (
-        <p>
+      <p>
+        {stammdaten.length > 0 && (
+          <>
+            <label htmlFor="sr-aus-stammdaten" className="sr-only">
+              Aus Schiedsrichter-Stammdaten übernehmen
+            </label>
+            <select
+              id="sr-aus-stammdaten"
+              value={stammdatenAuswahl}
+              onChange={(e) => ausStammdatenUebernehmen(e.target.value)}
+            >
+              <option value="">Aus Stammdaten übernehmen …</option>
+              {[...stammdaten]
+                .sort((a, b) => a.name.localeCompare(b.name) || (a.vorname ?? "").localeCompare(b.vorname ?? ""))
+                .map((s) => (
+                  <option key={s._id} value={s._id}>
+                    {s.name}
+                    {s.vorname ? `, ${s.vorname}` : ""}
+                  </option>
+                ))}
+            </select>{" "}
+          </>
+        )}
+        {benutzer && (
           <button type="button" onClick={profildatenUebernehmen}>
             Meine Profildaten übernehmen
-          </button>{" "}
-          <span className="feld-hinweis">
-            Füllt das Formular mit deinen Stammdaten aus „Mein Profil“ vor.
-          </span>
-        </p>
-      )}
+          </button>
+        )}
+      </p>
+      <p className="feld-hinweis">
+        Füllt das Formular vor - aus den Schiedsrichter-Stammdaten (Verwaltung unter „Stammdaten“) oder mit deinen
+        eigenen Daten aus „Mein Profil“.
+      </p>
 
       <form onSubmit={anlegen} className="schiedsrichter-formular">
         <div className="feld">
@@ -397,12 +449,12 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
           />
         </div>
         <div className="feld">
-          <label htmlFor="sr-neu-mannschaft">Mannschaft (optional)</label>
-          <select id="sr-neu-mannschaft" value={neuMannschaftId} onChange={(e) => setNeuMannschaftId(e.target.value)}>
+          <label htmlFor="sr-neu-verein">Verein (optional)</label>
+          <select id="sr-neu-verein" value={neuVereinId} onChange={(e) => setNeuVereinId(e.target.value)}>
             <option value="">— keine —</option>
-            {mannschaften.map((m) => (
-              <option key={m._id} value={m._id}>
-                {m.name}
+            {vereine.map((v) => (
+              <option key={v._id} value={v._id}>
+                {v.name}
               </option>
             ))}
           </select>

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spieler, Turnier } from "@torball/shared";
+import type { MannschaftImTurnier, Spieler, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireZugriff } from "../auth/plugin";
 import {
@@ -301,18 +301,9 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
       await deleteDoc(s._id, s._rev!);
     }
 
-    // Schiedsrichter existieren unabhaengig von der Mannschaft weiter (nur eine optionale
-    // Zugehoerigkeit) - daher nicht loeschen, sondern die Referenz loesen, damit sie nicht
-    // ins Leere zeigt (ON DELETE SET NULL).
-    const schiedsrichter = await findAllBySelector<SchiedsrichterImTurnier>({
-      docType: "schiedsrichterImTurnier",
-      mannschaftId: bestehend._id,
-    });
-    for (const s of schiedsrichter) {
-      // mannschaftId: undefined faellt beim JSON-Serialisieren aus dem Dokument (Referenz geloest).
-      await insertDoc({ ...s, mannschaftId: undefined });
-    }
-
+    // Schiedsrichter referenzieren seit der Umstellung auf vereinId (2026-08-14) keine
+    // turnierlokale Mannschaft mehr, sondern den (turnieruebergreifenden) Verein - eine
+    // Kaskade auf die Mannschaft ist deshalb nicht mehr noetig.
     await deleteDoc(bestehend._id, bestehend._rev!);
     await markiereTurnierBearbeitet(bestehend.turnierId, req.benutzer);
     return reply.code(204).send();

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { SchiedsrichterImTurnier, Spiel, Turnier } from "@torball/shared";
+import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spiel, Turnier } from "@torball/shared";
 import { findAllBySelector, findById, insertDoc } from "../repository";
 import { berechneStartzeit, spieldauerMinuten } from "../spielplan/zeitplanung";
 import { schlageSchiedsrichterVor } from "../spielplan/schiedsrichterZuordnung";
@@ -252,8 +252,12 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
         docType: "schiedsrichterImTurnier",
         turnierId: turnier._id,
       });
+      const mannschaften = await findAllBySelector<MannschaftImTurnier>({
+        docType: "mannschaftImTurnier",
+        turnierId: turnier._id,
+      });
 
-      const vorschlag = schlageSchiedsrichterVor(spiele, schiedsrichter);
+      const vorschlag = schlageSchiedsrichterVor(spiele, schiedsrichter, mannschaften);
       const aktualisiert: Spiel[] = [];
       for (const spiel of spiele) {
         // undefined faellt beim JSON-Serialisieren aus dem Dokument (= Zuordnung geloest).
