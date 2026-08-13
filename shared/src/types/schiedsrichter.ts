@@ -17,4 +17,5 @@ export interface SchiedsrichterImTurnier extends CouchMeta {
    *  Einteilung nicht als Kandidat vorgeschlagen. */
   nurTurnierleitung?: boolean;
   importiertAusTurnierId?: TurnierId;
+  importiertAusSchiedsrichterId?: SchiedsrichterId;
 }

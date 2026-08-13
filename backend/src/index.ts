@@ -52,6 +52,21 @@ const HOST = process.env.HOST ?? "0.0.0.0";
 const serveFrontend = process.env.SERVE_FRONTEND === "true";
 const server = Fastify({ logger: true });
 
+// Uebersetzt einen unbehandelten CouchDB-Versionskonflikt (409 - tritt auf, wenn zwei Anfragen
+// nahezu gleichzeitig dasselbe Dokument aendern, z.B. eine Ergebniserfassung intern UND parallel
+// ueber den externen Erfassungslink) in eine verstaendliche deutsche Meldung, statt die rohe
+// CouchDB-Antwort ("Conflict"/"Document update conflict.") an den Client durchzureichen - fiel
+// beim Systemtest 2026-08-14 auf der Token-Erfassungsseite auf, die dieses Wort unuebersetzt
+// angezeigt haette. Alle anderen Fehler unveraendert weiterreichen (Fastifys eigenes Verhalten).
+server.setErrorHandler((error, _req, reply) => {
+  if ((error as { statusCode?: number }).statusCode === 409) {
+    return reply.code(409).send({
+      error: "Das wurde soeben von anderer Stelle geändert. Bitte neu laden und erneut versuchen.",
+    });
+  }
+  reply.send(error);
+});
+
 // Schlanker Health-Check (z.B. fuer Monitoring/Reverse-Proxy), ohne Anmeldung.
 server.get("/health", async () => {
   return { status: "ok" };

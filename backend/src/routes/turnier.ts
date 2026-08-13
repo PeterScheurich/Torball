@@ -440,6 +440,28 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         }
       }
 
+      // Schiedsrichter (inkl. Turnierleitung) kopieren - mannschaftId ueber mannschaftMap
+      // remappen, da die Mannschaften oben frische IDs bekommen haben. Der Kommentar beim
+      // automatischen Turnierleitung-Eintrag in POST /turniere behauptet das schon laenger,
+      // tatsaechlich passierte es bisher nicht (Luecke, beim Systemtest 2026-08-14 aufgefallen).
+      const basisSchiedsrichter = await findAllBySelector<SchiedsrichterImTurnier>({
+        docType: "schiedsrichterImTurnier",
+        turnierId: basis._id,
+      });
+      for (const sr of basisSchiedsrichter) {
+        const nsrId = newId("schiedsrichterImTurnier");
+        await insertDoc<SchiedsrichterImTurnier>({
+          ...sr,
+          _id: nsrId,
+          _rev: undefined,
+          schiedsrichterId: nsrId,
+          turnierId: neuId,
+          mannschaftId: sr.mannschaftId ? mannschaftMap.get(sr.mannschaftId) : undefined,
+          importiertAusTurnierId: basis._id,
+          importiertAusSchiedsrichterId: sr._id,
+        });
+      }
+
       // Spielplan spiegeln: Heim/Auswaerts getauscht, Startzeiten auf den neuen Termin neu
       // berechnet, Ergebnisse/Schiedsrichter zurueckgesetzt (Status "geplant").
       const basisSpiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: basis._id });
