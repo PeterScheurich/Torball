@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import type { Session } from "@torball/shared";
+import type { BenutzerSession, Session, TurnierCodeSession, TurnierId, TurnierRolle } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc } from "../repository";
 
 // Server-seitige Sessions (kein JWT). Beim Login wird ein zufaelliger Klartext-Token erzeugt und
@@ -23,11 +23,36 @@ function sessionIdVon(token: string): string {
 export async function erstelleSession(benutzerId: string): Promise<{ token: string; session: Session }> {
   const token = randomBytes(32).toString("hex");
   const jetzt = new Date();
-  const session: Session = {
+  const session: BenutzerSession = {
     _id: sessionIdVon(token),
     docType: "session",
     sessionId: sessionIdVon(token),
+    sessionArt: "benutzer",
     benutzerId,
+    erstelltAm: jetzt.toISOString(),
+    laeuftAbAm: new Date(jetzt.getTime() + INAKTIVITAETS_FENSTER_MS).toISOString(),
+    letzteAktivitaetAm: jetzt.toISOString(),
+  };
+  await insertDoc(session);
+  return { token, session };
+}
+
+/** Legt eine neue Turnier-Code-Session an (Abschnitt 21.3, "Lokales Netzwerk") - kein
+ *  Benutzerkonto, stattdessen an ein Turnier + eine Schreibrolle gebunden. Gleiche
+ *  Cookie-/Ablauf-Mechanik wie erstelleSession. */
+export async function erstelleCodeSession(
+  turnierId: TurnierId,
+  rolle: Extract<TurnierRolle, "turnierleitung" | "spielleitung">,
+): Promise<{ token: string; session: Session }> {
+  const token = randomBytes(32).toString("hex");
+  const jetzt = new Date();
+  const session: TurnierCodeSession = {
+    _id: sessionIdVon(token),
+    docType: "session",
+    sessionId: sessionIdVon(token),
+    sessionArt: "code",
+    turnierId,
+    rolle,
     erstelltAm: jetzt.toISOString(),
     laeuftAbAm: new Date(jetzt.getTime() + INAKTIVITAETS_FENSTER_MS).toISOString(),
     letzteAktivitaetAm: jetzt.toISOString(),

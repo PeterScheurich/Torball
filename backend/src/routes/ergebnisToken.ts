@@ -2,8 +2,8 @@ import { randomBytes } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import type { ErgebnisAenderung, ErgebnisToken, MannschaftImTurnier, Spiel, Turnier } from "@torball/shared";
 import { findAllBySelector, findById, insertDoc, newId } from "../repository";
-import { requireAuth } from "../auth/plugin";
-import { hatMindestens } from "../auth/turnierZugriff";
+import { requireZugriff } from "../auth/plugin";
+import { hatMindestens, zuschreibung } from "../auth/turnierZugriff";
 
 /**
  * Abschnitt 14/20.14: Der Token-Wert selbst wird - anders als Einladungs-/
@@ -24,11 +24,15 @@ async function findeAktivenToken(turnierId: string): Promise<ErgebnisToken | und
 }
 
 export async function ergebnisTokenRoutes(app: FastifyInstance): Promise<void> {
+  // Nur ANSEHEN, ob ein externer Erfassungslink aktiv ist, braucht bewusst nur
+  // schreiben_spielbetrieb (nicht schreiben_voll): ErgebnisVerwaltung.tsx laedt das zusammen mit
+  // den Ergebnissen in einem Rutsch, auch fuer eine Spielleitung-Code-Session - Erzeugen/
+  // Widerrufen des Links bleibt dagegen der Turnierleitung vorbehalten (siehe unten).
   app.get<{ Params: { id: string } }>("/turniere/:id/ergebnis-token", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const turnier = await findById<Turnier>(req.params.id);
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-    if (!(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+    if (!(await hatMindestens(turnier, req, "schreiben_spielbetrieb"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }
     const aktiver = await findeAktivenToken(turnier._id);
@@ -37,10 +41,10 @@ export async function ergebnisTokenRoutes(app: FastifyInstance): Promise<void> {
 
   /** Erzeugt einen neuen Token; ein zuvor aktiver Token fuer dieses Turnier wird automatisch widerrufen. */
   app.post<{ Params: { id: string } }>("/turniere/:id/ergebnis-token", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const turnier = await findById<Turnier>(req.params.id);
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-    if (!(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+    if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }
 
@@ -56,7 +60,7 @@ export async function ergebnisTokenRoutes(app: FastifyInstance): Promise<void> {
       tokenId: id,
       turnierId: turnier._id,
       tokenWert: neuerTokenWert(),
-      erstelltVon: req.benutzer!._id,
+      erstelltVon: zuschreibung(req).benutzerId,
       erstelltAm: new Date().toISOString(),
       widerrufen: false,
     };
@@ -65,10 +69,10 @@ export async function ergebnisTokenRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.post<{ Params: { id: string } }>("/turniere/:id/ergebnis-token/widerrufen", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const turnier = await findById<Turnier>(req.params.id);
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-    if (!(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+    if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }
     const aktiver = await findeAktivenToken(turnier._id);

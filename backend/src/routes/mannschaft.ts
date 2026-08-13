@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spieler, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
-import { requireAuth } from "../auth/plugin";
+import { requireZugriff } from "../auth/plugin";
 import {
   hatMindestens,
   istAbgeleitet,
@@ -110,14 +110,14 @@ async function ladeMitLesezugriff(
   req: FastifyRequest,
   reply: FastifyReply,
 ): Promise<MannschaftImTurnier | undefined> {
-  if (!requireAuth(req, reply)) return undefined;
+  if (!requireZugriff(req, reply)) return undefined;
   const mannschaft = await findById<MannschaftImTurnier>(id);
   if (!mannschaft) {
     reply.code(404).send({ error: "Mannschaft nicht gefunden" });
     return undefined;
   }
   const turnier = await findById<Turnier>(mannschaft.turnierId);
-  if (!turnier || !(await hatMindestens(turnier, req.benutzer, "lesen"))) {
+  if (!turnier || !(await hatMindestens(turnier, req, "lesen"))) {
     reply.code(403).send({ error: "Kein Zugriff auf das zugehörige Turnier" });
     return undefined;
   }
@@ -141,14 +141,14 @@ async function ladeMitSchreibzugriff(
   req: FastifyRequest,
   reply: FastifyReply,
 ): Promise<MannschaftImTurnier | undefined> {
-  if (!requireAuth(req, reply)) return undefined;
+  if (!requireZugriff(req, reply)) return undefined;
   const mannschaft = await findById<MannschaftImTurnier>(id);
   if (!mannschaft) {
     reply.code(404).send({ error: "Mannschaft nicht gefunden" });
     return undefined;
   }
   const turnier = await findById<Turnier>(mannschaft.turnierId);
-  if (!turnier || !(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+  if (!turnier || !(await hatMindestens(turnier, req, "schreiben_voll"))) {
     reply.code(403).send({ error: "Kein Schreibzugriff auf das zugehörige Turnier" });
     return undefined;
   }
@@ -167,10 +167,10 @@ async function ladeMitSchreibzugriff(
 
 export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { turnierId: string } }>("/turniere/:turnierId/mannschaften", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const turnier = await findById<Turnier>(req.params.turnierId);
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-    if (!(await hatMindestens(turnier, req.benutzer, "lesen"))) {
+    if (!(await hatMindestens(turnier, req, "lesen"))) {
       return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
     }
     return findAllBySelector<MannschaftImTurnier>({
@@ -187,12 +187,12 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
     "/mannschaften",
     { schema: { body: mannschaftBodySchema } },
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
+      if (!requireZugriff(req, reply)) return;
       const turnier = await findById<Turnier>(req.body.turnierId);
       if (!turnier) {
         return reply.code(400).send({ error: "Referenziertes Turnier existiert nicht" });
       }
-      if (!(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+      if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
       }
       if (turnierGesperrt(turnier)) {
@@ -255,10 +255,10 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
     "/turniere/:turnierId/mannschaften/reihenfolge",
     { schema: { body: reihenfolgeSchema } },
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
+      if (!requireZugriff(req, reply)) return;
       const turnier = await findById<Turnier>(req.params.turnierId);
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-      if (!(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+      if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
       }
 

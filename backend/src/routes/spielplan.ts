@@ -4,8 +4,14 @@ import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../rep
 import { erzeugePaarungen } from "../spielplan/paarungen";
 import { erstelleSpielplanVorschlag, type SpielplanEintrag } from "../spielplan/planung";
 import { berechneStartzeit } from "../spielplan/zeitplanung";
-import { requireAuth } from "../auth/plugin";
-import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
+import { requireZugriff } from "../auth/plugin";
+import {
+  hatMindestens,
+  TURNIER_GESPERRT_FEHLER,
+  turnierGesperrt,
+  zuschreibung,
+  type Zugriffsstufe,
+} from "../auth/turnierZugriff";
 
 interface SpielplanQuery {
   /** 1 = einfaches Turnier (Jeder-gegen-Jeden), 2 = doppeltes Turnier. Default 1. */
@@ -56,14 +62,14 @@ async function ladeUndBerechneVorschlag(
   query: SpielplanQuery,
   req: FastifyRequest,
   reply: FastifyReply,
-  mindestens: "lesen" | "schreiben",
+  mindestens: Zugriffsstufe,
 ): Promise<VorschlagErgebnis | undefined> {
   const turnier = await findById<Turnier>(turnierId);
   if (!turnier) {
     reply.code(404).send({ error: "Turnier nicht gefunden" });
     return undefined;
   }
-  if (!(await hatMindestens(turnier, req.benutzer, mindestens))) {
+  if (!(await hatMindestens(turnier, req, mindestens))) {
     reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
     return undefined;
   }
@@ -110,7 +116,7 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { id: string }; Querystring: SpielplanQuery }>(
     "/turniere/:id/spielplan-vorschlag",
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
+      if (!requireZugriff(req, reply)) return;
       const ergebnis = await ladeUndBerechneVorschlag(req.params.id, req.query, req, reply, "lesen");
       if (!ergebnis) return;
       const { turnier, vorschlag, wiederholungen } = ergebnis;
@@ -125,7 +131,7 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Params: { id: string }; Querystring: SpielplanQuery; Body: SpielplanPersistierenBody }>(
     "/turniere/:id/spielplan",
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
+      if (!requireZugriff(req, reply)) return;
       let turnier: Turnier;
       let vorschlag: SpielplanEintrag[];
 
@@ -135,13 +141,13 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
         // Umsortierung des Nutzers zu verwerfen.
         const geladenesTurnier = await findById<Turnier>(req.params.id);
         if (!geladenesTurnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-        if (!(await hatMindestens(geladenesTurnier, req.benutzer, "schreiben"))) {
+        if (!(await hatMindestens(geladenesTurnier, req, "schreiben_voll"))) {
           return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
         }
         turnier = geladenesTurnier;
         vorschlag = req.body.eintraege;
       } else {
-        const ergebnis = await ladeUndBerechneVorschlag(req.params.id, req.query, req, reply, "schreiben");
+        const ergebnis = await ladeUndBerechneVorschlag(req.params.id, req.query, req, reply, "schreiben_voll");
         if (!ergebnis) return;
         turnier = ergebnis.turnier;
         vorschlag = ergebnis.vorschlag;
@@ -219,13 +225,14 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
         startzeit: turnier.startzeit,
       };
 
+      const zuschreiber = zuschreibung(req);
       const aktualisiertesTurnier: Turnier = {
         ...turnier,
         spielplanVersion: turnier.spielplanVersion + 1,
         spielplanGeaendertAm: new Date().toISOString(),
         spielplanBasis,
-        zuletztBearbeitetVon: req.benutzer?._id,
-        zuletztBearbeitetVonName: req.benutzer?.name,
+        zuletztBearbeitetVon: zuschreiber.benutzerId,
+        zuletztBearbeitetVonName: zuschreiber.name,
       };
       await insertDoc(aktualisiertesTurnier);
 

@@ -1,8 +1,8 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { SchiedsrichterImTurnier, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
-import { requireAuth } from "../auth/plugin";
-import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
+import { requireZugriff } from "../auth/plugin";
+import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt, type Zugriffsstufe } from "../auth/turnierZugriff";
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 
 // CRUD fuer turnierbezogene Schiedsrichter (SchiedsrichterImTurnier haengt am turnierId).
@@ -70,7 +70,7 @@ const schiedsrichterAktualisierungSchema = {
 /** Turnier laden und pruefen, ob req.benutzer die geforderte Zugriffsstufe hat. */
 async function ladeTurnierMitZugriff(
   turnierId: string,
-  stufe: "lesen" | "schreiben",
+  stufe: Zugriffsstufe,
   req: FastifyRequest,
   reply: FastifyReply,
 ): Promise<Turnier | undefined> {
@@ -79,11 +79,11 @@ async function ladeTurnierMitZugriff(
     reply.code(404).send({ error: "Turnier nicht gefunden" });
     return undefined;
   }
-  if (!(await hatMindestens(turnier, req.benutzer, stufe))) {
+  if (!(await hatMindestens(turnier, req, stufe))) {
     reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
     return undefined;
   }
-  if (stufe === "schreiben" && turnierGesperrt(turnier)) {
+  if (stufe !== "lesen" && turnierGesperrt(turnier)) {
     reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
     return undefined;
   }
@@ -93,7 +93,7 @@ async function ladeTurnierMitZugriff(
 /** Schiedsrichter laden und Zugriff ueber dessen Turnier pruefen. */
 async function ladeSchiedsrichterMitZugriff(
   id: string,
-  stufe: "lesen" | "schreiben",
+  stufe: Zugriffsstufe,
   req: FastifyRequest,
   reply: FastifyReply,
 ): Promise<SchiedsrichterImTurnier | undefined> {
@@ -112,7 +112,7 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
   app.get<{ Params: { turnierId: string } }>(
     "/turniere/:turnierId/schiedsrichter",
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
+      if (!requireZugriff(req, reply)) return;
       const turnier = await ladeTurnierMitZugriff(req.params.turnierId, "lesen", req, reply);
       if (!turnier) return;
       return findAllBySelector<SchiedsrichterImTurnier>({
@@ -127,8 +127,8 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
     "/schiedsrichter",
     { schema: { body: schiedsrichterBodySchema } },
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
-      const turnier = await ladeTurnierMitZugriff(req.body.turnierId, "schreiben", req, reply);
+      if (!requireZugriff(req, reply)) return;
+      const turnier = await ladeTurnierMitZugriff(req.body.turnierId, "schreiben_voll", req, reply);
       if (!turnier) return;
 
       const id = newId("schiedsrichterImTurnier");
@@ -158,8 +158,8 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
     "/schiedsrichter/:id",
     { schema: { body: schiedsrichterAktualisierungSchema } },
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
-      const bestehend = await ladeSchiedsrichterMitZugriff(req.params.id, "schreiben", req, reply);
+      if (!requireZugriff(req, reply)) return;
+      const bestehend = await ladeSchiedsrichterMitZugriff(req.params.id, "schreiben_voll", req, reply);
       if (!bestehend) return;
 
       const aktualisiert: SchiedsrichterImTurnier = { ...bestehend, ...req.body };
@@ -173,8 +173,8 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
 
   // Schiedsrichter loeschen.
   app.delete<{ Params: { id: string } }>("/schiedsrichter/:id", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
-    const bestehend = await ladeSchiedsrichterMitZugriff(req.params.id, "schreiben", req, reply);
+    if (!requireZugriff(req, reply)) return;
+    const bestehend = await ladeSchiedsrichterMitZugriff(req.params.id, "schreiben_voll", req, reply);
     if (!bestehend) return;
     await deleteDoc(bestehend._id, bestehend._rev!);
     await markiereTurnierBearbeitet(bestehend.turnierId, req.benutzer);

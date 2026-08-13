@@ -157,6 +157,17 @@ export interface Turnier extends CouchMeta, Turnierregeln {
   zugriffFuerAlleBenutzer?: "lesen" | "schreiben";
 
   /**
+   * Turnier-Codes (Abschnitt 21.3, Betriebsmodus "Lokales Netzwerk"): gehashte Zugangscodes
+   * (bcrypt, analog zu Benutzer.passwortHash), die ohne Benutzerkonto Zugriff auf GENAU dieses
+   * Turnier geben - turnierleitungCodeHash entspricht Zugriffsstufe "schreiben_voll",
+   * spielleitungCodeHash "schreiben_spielbetrieb" (siehe backend/src/auth/turnierZugriff.ts).
+   * Kein Klartext gespeichert, kein eigener docType (nie mehr als zwei Codes pro Turnier). Fehlt
+   * ein Feld, ist der jeweilige Code-Zugang deaktiviert.
+   */
+  turnierleitungCodeHash?: string;
+  spielleitungCodeHash?: string;
+
+  /**
    * Rein informativ, keine Fremdschlüssel-Semantik: Die Systemkonfiguration
    * ist versioniert, der kopierte Wertesatz lebt unabhängig weiter
    * (Kopie-statt-Referenz-Prinzip, Abschnitt 20.2).

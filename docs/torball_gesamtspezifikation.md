@@ -21,6 +21,7 @@
 | Erkenntnisse aus der Umsetzung (öffentliche Turnierseite) | 10.08.2026 | Abschnitt 13 umgesetzt und präzisiert: Turnier-ID selbst als Adresse (kein separater Token wie bei Abschnitt 14, da reiner Lesezugriff unkritisch ist); teilnehmende Mannschaften/Spielfelder werden unabhängig von den vier Sichtbarkeits-Schaltern immer mitgeliefert, da Spielplan/Ergebnisse ohne sie nicht lesbar wären. Details siehe `docs/Protokolle/2026-08-10-oeffentliche-turnierseite.md`. |
 | Erkenntnisse aus der Umsetzung (Turnier-Lebenszyklus) | 11.08.2026 | Abschnitt 10.3 + 26.4 aktualisiert: neuer Status **Abgeschlossen** zwischen Aktiv und Archiviert (Aktiv = nur noch „läuft"); Abschließen durch Turnierleitung/Schreibzugriff (nicht nur Admin), reversibel, Vorbedingung „alle Ergebnisse erfasst"; Schreibschutz im Zustand Abgeschlossen mit Ausnahme von Öffentlich-Freigabe/Teilen. Details siehe `docs/Protokolle/2026-08-11-turnier-abschliessen.md`. |
 | Erkenntnisse aus der Umsetzung (Selbstregistrierung) | 12.08.2026 | Abschnitt 10.2 präzisiert: entgegen der ursprünglichen Planung („kein Self-Service in der ersten Version") wurde eine optionale, von einem Admin aktivierbare Selbstregistrierung umgesetzt (Systemeinstellungen, standardmäßig aus) – u. a. für Demo-Instanzen, nie mit automatischer Admin-Rolle. Details siehe `docs/Protokolle/2026-08-12-selbstregistrierung.md`. |
+| Spezifikations-Schärfung (Offline-/Lokal-Betrieb, erste Ausbaustufe) | 13.08.2026 | Abschnitte 21.2/21.3 präzisiert: Umsetzungsreihenfolge der drei Betriebsmodi (Abschnitt 19) festgelegt – **zuerst „Lokales Netzwerk" per Turnier-Codes**, da ohne PouchDB/Sync auskommend (ein Host mit lebender CouchDB im LAN); die beiden anderen Ausprägungen (lokal ohne jede Verbindung planen + später hochladen; Sync-Resilienz der Zentralen Plattform per PouchDB↔CouchDB, Abschnitt 23) bleiben als **nächste, noch nicht im Detail spezifizierte Ausbauschritte vorgemerkt**, bewusst nicht verworfen. Zugriffsstufen dafür von einer binären „schreiben" auf eine dreistufige Abstufung geschärft (deckt eine bereits bestehende Ungenauigkeit im Berechtigungsmodell mit auf, siehe 21.2). Noch kein Code, reine Spezifikation.|
 
 Dieses Dokument ersetzt die einzelnen Vorgängerdokumente inhaltlich (führt sie zusammen). Sie bleiben als Historie im Projekt erhalten.
 
@@ -495,6 +496,11 @@ Internet
 ```
 Vollständige Benutzerverwaltung, automatische Synchronisation, öffentlich abrufbare Live-Ergebnisse.
 
+**Umsetzungsreihenfolge (Stand 13.08.2026, siehe 21.3):** „Lokales Netzwerk" zuerst (per
+Turnier-Codes, kommt ohne PouchDB/Sync aus), die Sync-Resilienz der „Zentralen Plattform" und der
+„Standalone"-Modus (beide brauchen voraussichtlich PouchDB↔CouchDB) sind als nächste Ausbauschritte
+vorgemerkt, aber noch nicht spezifiziert.
+
 ## 20. Datenmodell
 
 ### 20.1 Hierarchie
@@ -794,16 +800,62 @@ Kein zusätzliches Datenmodell-Element nötig: Ein Spieler gilt als ausgesetzt z
 
 ### 21.2 Turnierbezogene Berechtigungen
 
+**Schärfung 13.08.2026:** „Schreiben" war bisher ein einzelner, binärer Zugriffsstand – sowohl die
+Rolle „turnierleitung" als auch „spielleitung" (siehe 10.2) ergaben technisch identischen
+Vollzugriff. Das entspricht nicht der fachlichen Rollentrennung und wird im Zuge der
+Turnier-Codes-Umsetzung (21.3) korrigiert, gilt danach für **beide** Zugriffswege (individuell
+vergebene `TurnierBerechtigung` **und** Turnier-Codes) gleichermaßen:
+
 | Berechtigung | Beschreibung | Kann vergeben von |
 |---|---|---|
-| Schreiben | Vollzugriff auf Turnier | Admin, Manager (eigene Turniere) |
-| Lesen | Lesezugriff auf interne Daten | Jeder mit Schreibzugriff |
+| Schreiben (voll) | Vollzugriff auf Turnier – Grunddaten, Regeln, Mannschaften, Spieler, Schiedsrichter, Spielplan, Ergebnisse | Admin, Manager (eigene Turniere) |
+| Schreiben (Spielbetrieb) | Nur Spielplan (Status/Zeiten/Schiedsrichter-Zuordnung) und Ergebniserfassung – keine Mannschafts-, Regel- oder Grunddaten-Änderungen | Jeder mit „Schreiben (voll)" |
+| Lesen | Lesezugriff auf interne Daten | Jeder mit Schreibzugriff (voll oder Spielbetrieb) |
 
-Berechtigungen gelten pro Turnier. Wer Schreibrecht hat, kann anderen Schreib- oder Leserecht geben; wer nur Leserecht hat, kann nur Leserecht weitergeben. Schreibrechte können von jedem mit Schreibrecht entzogen werden. Manager behalten immer Zugriff auf eigene Turniere. Öffentliche Turnierdaten (Status aktiv) sind ohne Anmeldung sichtbar, gemäß den granularen Öffentlichkeits-Flags aus Abschnitt 20.5.
+Berechtigungen gelten pro Turnier. Wer Schreibrecht (voll) hat, kann anderen jede der drei Stufen
+geben; wer „Schreiben (Spielbetrieb)" hat, kann nur „Lesen" weitergeben. Schreibrechte können von
+jedem mit „Schreiben (voll)" entzogen werden. Manager behalten immer vollen Zugriff auf eigene
+Turniere. Öffentliche Turnierdaten (Status aktiv) sind ohne Anmeldung sichtbar, gemäß den
+granularen Öffentlichkeits-Flags aus Abschnitt 20.5.
 
 ### 21.3 Turnier-Codes (Offline/LAN-Modus)
 
-Beim Anlegen eines lokalen Turniers ohne Internetverbindung: Turniername, Datum, frei wählbarer Code für Turnierleitung, frei wählbarer Code für Spielleitung. Wer den Code kennt, erhält die entsprechende Rolle. Bei späterer Synchronisation: Benutzer mit Account meldet sich an → Turnier wird dem Account zugeordnet → Codes werden ungültig; ohne Account ordnet der Admin das Turnier manuell zu.
+**Erste Ausbaustufe (Spezifikations-Schärfung 13.08.2026)** – deckt gezielt den Betriebsmodus
+„Lokales Netzwerk" (Abschnitt 19) ab: ein Rechner hostet Backend + CouchDB **lebend** im LAN,
+weitere Geräte greifen per Turnier-Code statt eigenem Konto zu. Kein Offline-Datenmodell und keine
+Synchronisation nötig, da alle Geräte durchgehend gegen dieselbe, erreichbare Datenbank arbeiten –
+das unterscheidet dieses Szenario bewusst von den beiden noch offenen Ausprägungen (siehe unten).
+
+- **Voraussetzung:** Der Host-Rechner hat mindestens ein normales Benutzerkonto (die bestehende
+  einmalige Ersteinrichtung). Diese Person legt das Turnier ganz regulär angemeldet an und vergibt
+  danach Codes für weitere Geräte/Personen vor Ort, die selbst kein Konto brauchen. Ein
+  vollständig kontoloser Ablauf (auch das allererste Gerät ganz ohne Ersteinrichtung) ist bewusst
+  **nicht** Teil dieser ersten Ausbaustufe.
+- **Datenmodell:** zwei optionale, gehashte Felder direkt am Turnier-Dokument
+  (`turnierleitungCodeHash`, `spielleitungCodeHash`, analog zu `passwortHash` – kein Klartext
+  gespeichert, kein eigener docType nötig, da nie mehr als zwei Codes pro Turnier existieren).
+- **Rechte:** Turnierleitung-Code → „Schreiben (voll)", Spielleitung-Code → „Schreiben
+  (Spielbetrieb)" (siehe 21.2).
+- **Anmeldung:** neue öffentliche Route (analog zum bestehenden `ErgebnisToken`-Muster der
+  Ergebniserfassung ohne Login, Abschnitt 14), die einen Code gegen ein Turnier prüft und eine
+  Session ausstellt. Eine Session kann künftig entweder an ein Benutzerkonto **oder** an ein
+  Turnier+Rolle-Paar gebunden sein.
+- **Frontend:** neue öffentliche Seite „Turnier per Code betreten"; bei Spielleitung-Code eine auf
+  Spielplan/Ergebnisse eingeschränkte Ansicht, bei Turnierleitung-Code die volle Verwaltungsansicht.
+- **Synchronisation:** Wer den Code kennt, erhält die entsprechende Rolle, bis das Turnier
+  synchronisiert wird. Bei späterer Synchronisation: Benutzer mit Account meldet sich an → Turnier
+  wird dem Account zugeordnet → Codes werden ungültig; ohne Account ordnet der Admin das Turnier
+  manuell zu.
+
+**Vorgemerkt, noch nicht spezifiziert (nächste Ausbauschritte):**
+- Turnier komplett ohne jede Verbindung planen und erst später (bei Verbindung) auf den zentralen
+  Server hochladen/anlegen – vermutlich ohne echtes bidirektionales Sync lösbar (lokaler Entwurf im
+  Browser, Anlage über die bestehende API sobald online).
+- Echte Sync-Resilienz für die „Zentrale Plattform" (ein am Server angelegtes Turnier am Spielort
+  ohne Verbindung weiternutzen und später synchronisieren) sowie der ursprünglich spezifizierte
+  „Standalone"-Modus – beide vermutlich nur mit dem in Abschnitt 17/23 vorgesehenen PouchDB↔CouchDB
+  an Bord sauber lösbar. Bewusst zurückgestellt, bis der Bedarf (v. a. das noch nicht gebaute
+  digitale Live-Protokoll, Abschnitt 22) das verlangt – nicht verworfen.
 
 ### 21.4 Passwort-Richtlinien und -Reset
 

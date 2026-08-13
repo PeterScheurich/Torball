@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { MannschaftImTurnier, Spiel, Turnier } from "@torball/shared";
 import { findAllBySelector, findById, insertDoc } from "../repository";
-import { requireAuth } from "../auth/plugin";
+import { requireZugriff } from "../auth/plugin";
 import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
 import { berechneGesamttabelle, berechneTabelle } from "../ergebnisse/tabelle";
 import { pruefeSpielZugriff } from "./spiel";
@@ -34,10 +34,10 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
     "/spiele/:id/ergebnis",
     { schema: { body: ergebnisSchema } },
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
+      if (!requireZugriff(req, reply)) return;
       const spiel = await findById<Spiel>(req.params.id);
       if (!spiel) return reply.code(404).send({ error: "Spiel nicht gefunden" });
-      if (!(await pruefeSpielZugriff(spiel, req, reply, "schreiben"))) return;
+      if (!(await pruefeSpielZugriff(spiel, req, reply, "schreiben_spielbetrieb"))) return;
 
       const aktualisiert: Spiel = {
         ...spiel,
@@ -52,10 +52,10 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
 
   /** Einzelnes Spiel abschliessen (Abschnitt 14: "einzeln ... abschliessen"). */
   app.put<{ Params: { id: string } }>("/spiele/:id/abschliessen", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const spiel = await findById<Spiel>(req.params.id);
     if (!spiel) return reply.code(404).send({ error: "Spiel nicht gefunden" });
-    if (!(await pruefeSpielZugriff(spiel, req, reply, "schreiben"))) return;
+    if (!(await pruefeSpielZugriff(spiel, req, reply, "schreiben_spielbetrieb"))) return;
     if (spiel.ergebnisA == null || spiel.ergebnisB == null) {
       return reply.code(400).send({ error: "Spiel hat noch kein erfasstes Ergebnis." });
     }
@@ -64,10 +64,10 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
 
   /** Alle Spiele mit erfasstem Ergebnis auf einmal abschliessen (Abschnitt 14: "... oder gesammelt (Turnier)"). */
   app.put<{ Params: { turnierId: string } }>("/turniere/:turnierId/spiele/abschliessen", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const turnier = await findById<Turnier>(req.params.turnierId);
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-    if (!(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+    if (!(await hatMindestens(turnier, req, "schreiben_spielbetrieb"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }
     if (turnierGesperrt(turnier)) {
@@ -85,10 +85,10 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get<{ Params: { id: string } }>("/turniere/:id/tabelle", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const turnier = await findById<Turnier>(req.params.id);
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-    if (!(await hatMindestens(turnier, req.benutzer, "lesen"))) {
+    if (!(await hatMindestens(turnier, req, "lesen"))) {
       return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
     }
 

@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import "@fastify/cookie";
-import type { Benutzer, GlobaleRolle } from "@torball/shared";
+import type { Benutzer, GlobaleRolle, TurnierId, TurnierRolle } from "@torball/shared";
 import { findById } from "../repository";
 import { beruehreSession, findeSessionPerToken } from "./session";
 
@@ -9,6 +9,12 @@ declare module "fastify" {
     benutzer?: Benutzer;
     /** ID der aktuellen Session - z.B. damit eine Passwortaenderung alle ANDEREN Sessions beenden kann, ohne die gerade benutzte zu killen. */
     sessionId?: string;
+    /** Turnier-Code-Session (Abschnitt 21.3, "Lokales Netzwerk") - Zugriff auf GENAU dieses eine
+     *  Turnier, ohne Benutzerkonto. Nie gleichzeitig mit `benutzer` gesetzt (eine Session ist
+     *  entweder das eine oder das andere, siehe shared/src/types/session.ts). Wird NICHT von
+     *  requireAuth/requireRolle akzeptiert (die bedeuten weiterhin strikt "echtes Benutzerkonto") -
+     *  nur die turnierbezogenen Routen pruefen das gezielt ueber requireZugriff/turnierZugriff.ts. */
+    turnierCode?: { turnierId: TurnierId; rolle: Extract<TurnierRolle, "turnierleitung" | "spielleitung"> };
   }
 }
 
@@ -38,6 +44,13 @@ export async function authPreHandler(req: FastifyRequest): Promise<void> {
   const session = await findeSessionPerToken(token);
   if (!session) return;
 
+  if (session.sessionArt === "code") {
+    req.turnierCode = { turnierId: session.turnierId, rolle: session.rolle };
+    req.sessionId = session._id;
+    await beruehreSession(session);
+    return;
+  }
+
   const benutzer = await findById<Benutzer>(session.benutzerId);
   if (!benutzer || benutzer.gesperrt) return;
 
@@ -63,6 +76,24 @@ export function loescheSessionCookie(reply: FastifyReply): void {
 export function requireAuth(req: FastifyRequest, reply: FastifyReply): boolean {
   if (!req.benutzer) {
     reply.code(401).send({ error: "Anmeldung erforderlich" });
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Wie requireAuth, akzeptiert zusaetzlich eine Turnier-Code-Session (Abschnitt 21.3). Bewusst NUR
+ * in den turnierbezogenen Routen-Dateien verwendet (mannschaft.ts, spieler.ts, schiedsrichter.ts,
+ * spielplan.ts, spiel.ts, ergebnis.ts, ergebnisToken.ts, turnier.ts, turnierBerechtigung.ts,
+ * turnierCode.ts) - NICHT in benutzer.ts/kanban.ts/systemeinstellungen.ts/systemkonfiguration.ts/
+ * verein.ts/team.ts, die weiterhin ein echtes Benutzerkonto voraussetzen (requireAuth/requireRolle
+ * bleiben dort unveraendert). Die eigentliche turnierbezogene Zugriffspruefung (welche Stufe genau,
+ * stimmt die turnierId ueberhaupt) passiert danach immer noch separat ueber
+ * turnierZugriff.ts/hatMindestens - diese Funktion prueft nur "ueberhaupt irgendwie angemeldet".
+ */
+export function requireZugriff(req: FastifyRequest, reply: FastifyReply): boolean {
+  if (!req.benutzer && !req.turnierCode) {
+    reply.code(401).send({ error: "Anmeldung oder Turnier-Code erforderlich" });
     return false;
   }
   return true;

@@ -13,8 +13,8 @@ import type {
   Wettbewerb,
 } from "@torball/shared";
 import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
-import { requireAuth, requireRolle } from "../auth/plugin";
-import { hatMindestens, REGELN_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
+import { requireAuth, requireRolle, requireZugriff } from "../auth/plugin";
+import { hatMindestens, REGELN_GESPERRT_FEHLER, turnierGesperrt, zuschreibung } from "../auth/turnierZugriff";
 import { aktuelleTurnierregeln } from "../konfiguration";
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 import { berechneStartzeit } from "../spielplan/zeitplanung";
@@ -106,17 +106,17 @@ function mitDefaults(turnier: Turnier): Turnier {
 
 export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   app.get("/turniere", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const alle = (await findAllByType<Turnier>("turnier")).map(mitDefaults);
-    const zugriffe = await Promise.all(alle.map((t) => hatMindestens(t, req.benutzer, "lesen")));
+    const zugriffe = await Promise.all(alle.map((t) => hatMindestens(t, req, "lesen")));
     return alle.filter((_, i) => zugriffe[i]);
   });
 
   app.get<{ Params: { id: string } }>("/turniere/:id", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const turnier = await findById<Turnier>(req.params.id);
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-    if (!(await hatMindestens(turnier, req.benutzer, "lesen"))) {
+    if (!(await hatMindestens(turnier, req, "lesen"))) {
       return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
     }
     return mitDefaults(turnier);
@@ -170,10 +170,10 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   app.put<{ Params: { id: string }; Body: Partial<TurnierBody> }>(
     "/turniere/:id",
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
+      if (!requireZugriff(req, reply)) return;
       const bestehend = await findById<Turnier>(req.params.id);
       if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-      if (!(await hatMindestens(bestehend, req.benutzer, "schreiben"))) {
+      if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
       }
       // Bei abgeschlossenem Turnier nur noch die Veroeffentlichungs-Felder zulassen (siehe oben);
@@ -193,12 +193,13 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       if (bestehend.regelnGesperrt && Object.keys(req.body).some((k) => (REGEL_FELDER as string[]).includes(k))) {
         return reply.code(409).send({ error: REGELN_GESPERRT_FEHLER });
       }
+      const zuschreiber = zuschreibung(req);
       const aktualisiert: Turnier = {
         ...bestehend,
         ...req.body,
         geaendertAm: new Date().toISOString(),
-        zuletztBearbeitetVon: req.benutzer!._id,
-        zuletztBearbeitetVonName: req.benutzer!.name,
+        zuletztBearbeitetVon: zuschreiber.benutzerId,
+        zuletztBearbeitetVonName: zuschreiber.name,
       };
       return insertDoc(aktualisiert);
     },
@@ -214,20 +215,21 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     reply: FastifyReply,
     neuerStatus: TurnierStatus,
   ) {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const bestehend = await findById<Turnier>(req.params.id);
     if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-    if (!(await hatMindestens(bestehend, req.benutzer, "schreiben"))) {
+    if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }
     // Wiederoeffnen zaehlt als Bearbeitung; die Abschluss-Metadaten werden dabei zurueckgesetzt
     // (bei erneutem Abschliessen neu gesetzt).
+    const zuschreiber = zuschreibung(req);
     return insertDoc({
       ...bestehend,
       status: neuerStatus,
       geaendertAm: new Date().toISOString(),
-      zuletztBearbeitetVon: req.benutzer!._id,
-      zuletztBearbeitetVonName: req.benutzer!.name,
+      zuletztBearbeitetVon: zuschreiber.benutzerId,
+      zuletztBearbeitetVonName: zuschreiber.name,
       abgeschlossenAm: undefined,
       abgeschlossenVon: undefined,
       abgeschlossenVonName: undefined,
@@ -239,10 +241,10 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   // (abgeschlossen) gesetzt und das Turnier abgeschlossen - so ist ein abgeschlossenes Turnier
   // immer ein konsistenter Endstand. Schreibzugriff noetig (= Turnierleitung/Verwalter).
   app.post<{ Params: { id: string } }>("/turniere/:id/abschliessen", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const bestehend = await findById<Turnier>(req.params.id);
     if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-    if (!(await hatMindestens(bestehend, req.benutzer, "schreiben"))) {
+    if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }
 
@@ -274,13 +276,14 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const jetzt = new Date().toISOString();
+    const zuschreiber = zuschreibung(req);
     return insertDoc({
       ...bestehend,
       status: "abgeschlossen",
       geaendertAm: jetzt,
       abgeschlossenAm: jetzt,
-      abgeschlossenVon: req.benutzer!._id,
-      abgeschlossenVonName: req.benutzer!.name,
+      abgeschlossenVon: zuschreiber.benutzerId,
+      abgeschlossenVonName: zuschreiber.name,
     });
   });
 
@@ -294,18 +297,19 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   // die Regel-Felder wieder aenderbar. Bewusst als eigenstaendige, spaeter leicht entfernbare
   // Funktion angelegt (siehe Datenimport-Spec).
   app.post<{ Params: { id: string } }>("/turniere/:id/regeln-entsperren", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const bestehend = await findById<Turnier>(req.params.id);
     if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-    if (!(await hatMindestens(bestehend, req.benutzer, "schreiben"))) {
+    if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }
+    const zuschreiber = zuschreibung(req);
     return insertDoc({
       ...bestehend,
       regelnGesperrt: false,
       geaendertAm: new Date().toISOString(),
-      zuletztBearbeitetVon: req.benutzer!._id,
-      zuletztBearbeitetVonName: req.benutzer!.name,
+      zuletztBearbeitetVon: zuschreiber.benutzerId,
+      zuletztBearbeitetVonName: zuschreiber.name,
     });
   });
 
@@ -333,7 +337,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       if (!requireRolle(req, reply, ["admin", "manager"])) return;
       const basis = await findById<Turnier>(req.params.id);
       if (!basis) return reply.code(404).send({ error: "Vorgänger-Turnier nicht gefunden" });
-      if (!(await hatMindestens(basis, req.benutzer, "lesen"))) {
+      if (!(await hatMindestens(basis, req, "lesen"))) {
         return reply.code(403).send({ error: "Kein Zugriff auf das Vorgänger-Turnier" });
       }
       if (basis.status !== "abgeschlossen" && basis.status !== "archiviert") {
@@ -480,11 +484,14 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // Bewusst requireAuth statt requireZugriff: vollstaendiges Loeschen eines Turniers ist so
+  // weitreichend, dass dafuer ein echtes Benutzerkonto noetig bleibt, auch fuer eine sonst
+  // schreiben_voll-berechtigte Turnier-Code-Session (Turnierleitung-Code).
   app.delete<{ Params: { id: string } }>("/turniere/:id", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
     const bestehend = await findById<Turnier>(req.params.id);
     if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-    if (!(await hatMindestens(bestehend, req.benutzer, "schreiben"))) {
+    if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }
 

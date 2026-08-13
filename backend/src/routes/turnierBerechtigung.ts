@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import type { Turnier, TurnierBerechtigung, TurnierRolle } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
-import { requireAuth } from "../auth/plugin";
-import { hatMindestens, turnierZugriffsstufe } from "../auth/turnierZugriff";
+import { requireZugriff } from "../auth/plugin";
+import { hatMindestens, turnierZugriffsstufe, zuschreibung } from "../auth/turnierZugriff";
 
 // Vergabe/Entzug turnierbezogener Zugriffsrechte (TurnierBerechtigung) an andere Benutzer -
 // die Datenbasis fuer das Berechtigungsmodell (siehe turnierZugriff.ts). UI: TurnierFreigabe.
@@ -24,10 +24,10 @@ const berechtigungVergebenSchema = {
 export async function turnierBerechtigungRoutes(app: FastifyInstance): Promise<void> {
   // Alle fuer ein Turnier vergebenen Berechtigungen (nur mit Schreibzugriff einsehbar).
   app.get<{ Params: { turnierId: string } }>("/turniere/:turnierId/berechtigungen", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const turnier = await findById<Turnier>(req.params.turnierId);
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
-    if (!(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+    if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }
     return findAllBySelector<TurnierBerechtigung>({ docType: "turnierBerechtigung", turnierId: turnier._id });
@@ -42,14 +42,17 @@ export async function turnierBerechtigungRoutes(app: FastifyInstance): Promise<v
     "/turniere/:turnierId/berechtigungen",
     { schema: { body: berechtigungVergebenSchema } },
     async (req, reply) => {
-      if (!requireAuth(req, reply)) return;
+      if (!requireZugriff(req, reply)) return;
       const turnier = await findById<Turnier>(req.params.turnierId);
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
 
-      const eigeneStufe = await turnierZugriffsstufe(turnier, req.benutzer);
+      const eigeneStufe = await turnierZugriffsstufe(turnier, req);
       if (!eigeneStufe) return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
-      if (eigeneStufe === "lesen" && req.body.rolle !== "lesen") {
-        return reply.code(403).send({ error: "Mit Leserecht kann nur Leserecht vergeben werden." });
+      // Abschnitt 21.2 (dreistufig): nur mit vollem Schreibzugriff duerfen die beiden
+      // Schreibrollen (turnierleitung/spielleitung) vergeben werden - wer nur Spielbetrieb- oder
+      // Leserecht hat, kann ausschliesslich Leserecht weitergeben.
+      if (eigeneStufe !== "schreiben_voll" && req.body.rolle !== "lesen") {
+        return reply.code(403).send({ error: "Nur mit vollem Schreibzugriff können Schreibrechte vergeben werden." });
       }
 
       const zielBenutzer = await findById(req.body.benutzerId);
@@ -72,7 +75,7 @@ export async function turnierBerechtigungRoutes(app: FastifyInstance): Promise<v
         turnierId: turnier._id,
         benutzerId: req.body.benutzerId,
         rolle: req.body.rolle,
-        vergebenVon: req.benutzer!._id,
+        vergebenVon: zuschreibung(req).benutzerId,
         vergebenAm: new Date().toISOString(),
       };
       const gespeichert = await insertDoc(berechtigung);
@@ -82,12 +85,12 @@ export async function turnierBerechtigungRoutes(app: FastifyInstance): Promise<v
 
   /** Abschnitt 21.2: "Schreibrechte koennen von jedem mit Schreibrecht entzogen werden." */
   app.delete<{ Params: { id: string } }>("/berechtigungen/:id", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
+    if (!requireZugriff(req, reply)) return;
     const bestehend = await findById<TurnierBerechtigung>(req.params.id);
     if (!bestehend) return reply.code(404).send({ error: "Berechtigung nicht gefunden" });
 
     const turnier = await findById<Turnier>(bestehend.turnierId);
-    if (!turnier || !(await hatMindestens(turnier, req.benutzer, "schreiben"))) {
+    if (!turnier || !(await hatMindestens(turnier, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }
 

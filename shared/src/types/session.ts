@@ -1,4 +1,13 @@
-import { BenutzerId, CouchMeta, SessionId, Zeitstempel } from "./common";
+import { BenutzerId, CouchMeta, SessionId, TurnierId, Zeitstempel } from "./common";
+import { TurnierRolle } from "./berechtigung";
+
+interface SessionBasis extends CouchMeta {
+  docType: "session";
+  sessionId: SessionId;
+  erstelltAm: Zeitstempel;
+  laeuftAbAm: Zeitstempel;
+  letzteAktivitaetAm: Zeitstempel;
+}
 
 /**
  * Server-seitige Login-Session (Abschnitt 25.1: "Session-Management mit
@@ -7,11 +16,22 @@ import { BenutzerId, CouchMeta, SessionId, Zeitstempel } from "./common";
  * Request statt einer Selector-Abfrage ueber alle Sessions. Der Klartext-
  * Token selbst wird nie persistiert, nur sein Hash.
  */
-export interface Session extends CouchMeta {
-  docType: "session";
-  sessionId: SessionId;
+export interface BenutzerSession extends SessionBasis {
+  sessionArt: "benutzer";
   benutzerId: BenutzerId;
-  erstelltAm: Zeitstempel;
-  laeuftAbAm: Zeitstempel;
-  letzteAktivitaetAm: Zeitstempel;
 }
+
+/**
+ * Turnier-Codes (Abschnitt 21.3, "Lokales Netzwerk"): eine Session ohne Benutzerkonto, gebunden an
+ * genau ein Turnier + eine der beiden Schreibrollen ("turnierleitung"/"spielleitung" - "lesen"
+ * kommt hier bewusst nicht vor, dafuer gibt es keinen eigenen Code). Nutzt dieselbe
+ * Cookie-/Token-Infrastruktur wie BenutzerSession (ein Geraet ist entweder als Benutzer oder per
+ * Code angemeldet, nie beides gleichzeitig - ein zweites Cookie waere unnoetige Komplexitaet).
+ */
+export interface TurnierCodeSession extends SessionBasis {
+  sessionArt: "code";
+  turnierId: TurnierId;
+  rolle: Extract<TurnierRolle, "turnierleitung" | "spielleitung">;
+}
+
+export type Session = BenutzerSession | TurnierCodeSession;
