@@ -12,6 +12,7 @@ import {
   type KanbanImportVorschau,
   type KanbanKonfliktWahl,
 } from "../api";
+import { formatiereZeitstempel } from "../format";
 
 const SPALTEN: KanbanSpalte[] = ["offen", "inArbeit", "testen", "erledigt"];
 const SPALTEN_LABEL: Record<KanbanSpalte, string> = {
@@ -42,17 +43,6 @@ const LEERES_FORMULAR = {
   prioritaet: "mittel" as KanbanPrioritaet,
   spalte: "offen" as KanbanSpalte,
 };
-
-/** Zeitstempel (voll-ISO) mit 2-stelligem Datum + Uhrzeit, Reihenfolge/Trennung systemabhaengig. */
-function formatiereZeitstempel(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 /**
  * Entwicklungs-Kanban-Board (nur Admins). Eigenstaendiges Werkzeug zur Organisation der

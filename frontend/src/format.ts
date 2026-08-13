@@ -19,3 +19,16 @@ export function formatiereUhrzeit(zeitstempelIso: string | undefined): string {
   if (!zeitstempelIso) return "–";
   return new Date(zeitstempelIso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
+
+/** Voll-ISO-Zeitstempel (Datum + Uhrzeit, 2-stellig, systemabhaengig) - anders als
+ *  formatiereDatum() fuer echte Zeitstempel gedacht (erstelltAm, letzterKontaktAm, ...), nicht fuer
+ *  reine Datumsfelder (YYYY-MM-DD ohne Uhrzeitanteil). */
+export function formatiereZeitstempel(zeitstempelIso: string): string {
+  return new Date(zeitstempelIso).toLocaleString(undefined, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

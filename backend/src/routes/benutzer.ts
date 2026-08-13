@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import type { Benutzer, GlobaleRolle } from "@torball/shared";
-import { deleteDoc, findAllByType, findById, insertDoc, newId } from "../repository";
+import type { Benutzer, GlobaleRolle, VerbundeneInstanz } from "@torball/shared";
+import { deleteDoc, findAllBySelector, findAllByType, findById, insertDoc, newId } from "../repository";
 import { oeffentlichesProfil } from "../auth/benutzerProfil";
 import { hashePasswort, passwortRegelVerstoss, passwortStimmt } from "../auth/passwort";
 import { requireAuth, requireRolle } from "../auth/plugin";
@@ -13,6 +13,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
 
 const EINLADUNG_GUELTIG_MS = 7 * 24 * 60 * 60 * 1000; // 7 Tage
 const RESET_GUELTIG_MS = 24 * 60 * 60 * 1000; // Abschnitt 21.4: 24 Stunden
+const KOPPLUNG_GUELTIG_MS = 15 * 60 * 1000; // Turnier-Sync: Instanz-Kopplungscode, 15 Minuten
 
 /** Manager duerfen laut Abschnitt 21.1 nur "Benutzer" und "Manager" anlegen/bearbeiten, keine Admins. */
 function darfZielRolleVergeben(vergebendeRolle: GlobaleRolle, zielRolle: GlobaleRolle): boolean {
@@ -499,4 +500,41 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       return oeffentlichesProfil(aktualisiert);
     },
   );
+
+  // --- Instanz-Kopplung (Turnier-Sync, Abschnitt 21.3/23) ---
+  // Kurzlebiger Einmal-Code (Vorbild: Einladungs-Token oben), gegen den sich eine lokale
+  // Installation einmalig ein dauerhaftes Credential eintauscht (siehe routes/instanzSync.ts,
+  // POST /instanzen/kopplung-einloesen).
+
+  app.post("/benutzer/mich/instanz-kopplungscode", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    const { token, hash } = erzeugeToken();
+    await insertDoc({
+      ...req.benutzer!,
+      instanzKopplungscodeHash: hash,
+      instanzKopplungscodeAblauf: new Date(Date.now() + KOPPLUNG_GUELTIG_MS).toISOString(),
+    });
+    return reply.send({ kopplungscode: token, gueltigBis: new Date(Date.now() + KOPPLUNG_GUELTIG_MS).toISOString() });
+  });
+
+  app.get("/benutzer/mich/instanzen", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    const instanzen = await findAllBySelector<VerbundeneInstanz>({
+      docType: "verbundeneInstanz",
+      benutzerId: req.benutzer!._id,
+      widerrufen: false,
+    });
+    // instanzTokenHash nie an den Client zurueckgeben.
+    return instanzen.map(({ instanzTokenHash: _instanzTokenHash, ...oeffentlich }) => oeffentlich);
+  });
+
+  app.post<{ Params: { id: string } }>("/benutzer/mich/instanzen/:id/widerrufen", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    const instanz = await findById<VerbundeneInstanz>(req.params.id);
+    if (!instanz || instanz.benutzerId !== req.benutzer!._id) {
+      return reply.code(404).send({ error: "Instanz nicht gefunden" });
+    }
+    await insertDoc({ ...instanz, widerrufen: true, widerrufenAm: new Date().toISOString() });
+    return reply.code(204).send();
+  });
 }

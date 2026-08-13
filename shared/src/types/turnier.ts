@@ -168,6 +168,16 @@ export interface Turnier extends CouchMeta, Turnierregeln {
   spielleitungCodeHash?: string;
 
   /**
+   * Turnier-Sync (Grundlage, Abschnitt 21.3/23): rein lokale Buchführung DIESER Installation,
+   * welches serverseitige `TurnierCheckout` gerade fuer dieses (hier lokal gefuehrte) Turnier
+   * aktiv ist - steuert, ob der periodische Check-in (`backend/src/sync/checkin.ts`) fuer dieses
+   * Turnier Ergebnisse pusht. Wird beim Export NICHT gezielt herausgefiltert (harmlos, falls es
+   * doch mit uebertragen wird - auf der Zielinstanz bedeutungslos), aber auch nie absichtlich
+   * exportiert.
+   */
+  lokalerSyncCheckoutId?: string;
+
+  /**
    * Rein informativ, keine Fremdschlüssel-Semantik: Die Systemkonfiguration
    * ist versioniert, der kopierte Wertesatz lebt unabhängig weiter
    * (Kopie-statt-Referenz-Prinzip, Abschnitt 20.2).

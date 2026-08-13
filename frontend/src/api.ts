@@ -26,6 +26,7 @@ import type {
   Turnierregeln,
   TurnierRolle,
   Verein,
+  VerbundeneInstanz,
 } from "@torball/shared";
 
 // Zentraler API-Client des Frontends: duenne fetch-Wrapper um die Backend-Routen. Alle
@@ -894,4 +895,79 @@ export function kanbanImportAnwenden(
   wahlen: Record<string, KanbanKonfliktWahl>,
 ): Promise<KanbanImportErgebnis> {
   return anfrage("/kanban/import/anwenden", { method: "POST", body: JSON.stringify({ karten, wahlen }) });
+}
+
+// --- Turnier-Sync: lokale Instanz-Kopplung (Abschnitt 21.3/23, rein geraetelokal) ---
+
+export interface LokaleSyncStatus {
+  verbunden: boolean;
+  serverUrl?: string;
+  gekoppeltAm?: string;
+}
+
+export function getLokaleSyncStatus(): Promise<LokaleSyncStatus> {
+  return anfrage("/sync/status");
+}
+
+export function verbindeMitServer(
+  serverUrl: string,
+  kopplungscode: string,
+  bezeichnung?: string,
+): Promise<{ verbunden: true; serverUrl: string }> {
+  return anfrage("/sync/verbinden", { method: "POST", body: JSON.stringify({ serverUrl, kopplungscode, bezeichnung }) });
+}
+
+export function trenneVonServer(): Promise<void> {
+  return anfrage("/sync/trennen", { method: "POST" });
+}
+
+// --- Turnier-Sync: verbundene Instanzen verwalten (Konto-seitig, "Mein Profil") ---
+
+export type VerbundeneInstanzProfil = Omit<VerbundeneInstanz, "instanzTokenHash">;
+
+export function erzeugeInstanzKopplungscode(): Promise<{ kopplungscode: string; gueltigBis: string }> {
+  return anfrage("/benutzer/mich/instanz-kopplungscode", { method: "POST" });
+}
+
+export function getVerbundeneInstanzen(): Promise<VerbundeneInstanzProfil[]> {
+  return anfrage("/benutzer/mich/instanzen");
+}
+
+export function instanzWiderrufen(id: string): Promise<void> {
+  return anfrage(`/benutzer/mich/instanzen/${id}/widerrufen`, { method: "POST" });
+}
+
+// --- Turnier-Sync: Download/Upload/Freigabe je Turnier ---
+
+export interface TurnierCheckoutStatus {
+  ausgecheckt: boolean;
+  status?: "angefordert" | "aktiv" | "freigegeben";
+  bezeichnung?: string;
+  seit?: string;
+}
+
+export function getTurnierCheckoutStatus(turnierId: string): Promise<TurnierCheckoutStatus> {
+  return anfrage(`/turniere/${turnierId}/checkout-status`);
+}
+
+export function turnierDownloadAnfordern(
+  turnierId: string,
+  instanzId: string,
+  stammdatenMitnehmen: boolean,
+): Promise<void> {
+  return anfrage(`/turniere/${turnierId}/download-anfordern`, {
+    method: "POST",
+    body: JSON.stringify({ instanzId, stammdatenMitnehmen }),
+  }).then(() => undefined);
+}
+
+export function turnierCheckoutFreigeben(turnierId: string): Promise<void> {
+  return anfrage(`/turniere/${turnierId}/checkout-freigeben`, { method: "POST" });
+}
+
+export function turnierSyncUpload(
+  turnierId: string,
+  ersetzen?: boolean,
+): Promise<{ turnierId: string; checkoutId?: string; warnung?: string }> {
+  return anfrage(`/turniere/${turnierId}/sync-upload`, { method: "POST", body: JSON.stringify({ ersetzen }) });
 }

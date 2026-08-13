@@ -23,6 +23,10 @@ import { oeffentlichRoutes } from "./routes/oeffentlich";
 import { systemkonfigurationRoutes } from "./routes/systemkonfiguration";
 import { systemeinstellungenRoutes } from "./routes/systemeinstellungen";
 import { kanbanRoutes } from "./routes/kanban";
+import { instanzSyncRoutes } from "./routes/instanzSync";
+import { turnierSyncRoutes } from "./routes/turnierSync";
+import { syncRoutes } from "./routes/sync";
+import { starteCheckinTimer } from "./sync/checkin";
 
 // Einstiegspunkt des Backends: baut die Fastify-Instanz, registriert Cookie-Plugin, den
 // Auth-Hook und alle Routen-Module und startet den Server. Port/Host kommen aus der Umgebung
@@ -77,6 +81,9 @@ const start = async () => {
     server.register(systemkonfigurationRoutes);
     server.register(systemeinstellungenRoutes);
     server.register(kanbanRoutes);
+    server.register(instanzSyncRoutes);
+    server.register(turnierSyncRoutes);
+    server.register(syncRoutes);
 
     if (serveFrontend) {
       // Registrierungsreihenfolge egal: find-my-way (Fastifys Router) bevorzugt exakte
@@ -94,6 +101,7 @@ const start = async () => {
     }
 
     await ensureIndexes();
+    starteCheckinTimer(server.log);
     await server.listen({ port: PORT, host: HOST });
   } catch (err) {
     server.log.error(err);

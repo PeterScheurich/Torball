@@ -16,6 +16,7 @@ import { QrCode } from "../components/QrCode";
 import { SchiedsrichterVerwaltung } from "../components/SchiedsrichterVerwaltung";
 import { SpielplanVerwaltung } from "../components/SpielplanVerwaltung";
 import { TurnierFreigabe } from "../components/TurnierFreigabe";
+import { TurnierSync } from "../components/TurnierSync";
 import { TurnierPruefung } from "../components/TurnierPruefung";
 import { TurnierregelnFormular } from "../components/TurnierregelnFormular";
 import { TurnierLogo } from "../components/TurnierLogo";
@@ -596,6 +597,8 @@ export function TurnierVerwaltenPage() {
         <TurnierPruefung turnier={turnier} />
 
         <TurnierFreigabe turnier={turnier} onGeaendert={setTurnier} />
+
+        <TurnierSync turnierId={turnierId} />
 
         <h2>Öffentliche Turnierseite</h2>
         <p>

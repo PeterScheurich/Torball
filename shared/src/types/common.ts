@@ -27,3 +27,5 @@ export type ErgebnisTokenId = string;
 export type ErgebnisAenderungId = string;
 export type TurnierBerechtigungId = string;
 export type AuditLogId = string;
+export type VerbundeneInstanzId = string;
+export type TurnierCheckoutId = string;

@@ -62,4 +62,9 @@ export interface Benutzer extends CouchMeta {
   /** Passwort-Reset (Abschnitt 21.4), gleiches Prinzip wie die Einladung. */
   resetTokenHash?: string;
   resetAblauf?: Zeitstempel;
+
+  /** Instanz-Kopplung (Turnier-Sync, Abschnitt 21.3/23): kurzlebiger Einmal-Code, mit dem eine
+   *  lokale Installation sich dauerhaft mit diesem Konto koppelt (siehe VerbundeneInstanz). */
+  instanzKopplungscodeHash?: string;
+  instanzKopplungscodeAblauf?: Zeitstempel;
 }

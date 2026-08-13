@@ -1,14 +1,19 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Breite, Dichte, GlobaleRolle, Theme, Verein } from "@torball/shared";
 import {
   eigenesPasswortAendern,
   eigenesProfilAktualisieren,
+  erzeugeInstanzKopplungscode,
   getVereine,
+  getVerbundeneInstanzen,
+  instanzWiderrufen,
   totpBestaetigen,
   totpDeaktivieren,
   totpEinrichten,
   type TotpEinrichtung,
+  type VerbundeneInstanzProfil,
 } from "../api";
+import { formatiereZeitstempel } from "../format";
 import { useAuth } from "../auth";
 import { PasswortRegeln } from "../PasswortRegeln";
 import { themeAnwenden } from "../theme";
@@ -72,6 +77,40 @@ export function ProfilPage() {
       .then(setVereine)
       .catch(() => setVereine([]));
   }, []);
+
+  // Turnier-Sync (Abschnitt 21.3/23): mit diesem Konto gekoppelte lokale Installationen.
+  const [instanzen, setInstanzen] = useState<VerbundeneInstanzProfil[]>([]);
+  const [neuerKopplungscode, setNeuerKopplungscode] = useState<string | undefined>();
+  const instanzenLaden = useCallback(() => {
+    getVerbundeneInstanzen()
+      .then(setInstanzen)
+      .catch(() => setInstanzen([]));
+  }, []);
+  useEffect(() => {
+    instanzenLaden();
+  }, [instanzenLaden]);
+
+  async function kopplungscodeErzeugen() {
+    setFehler(undefined);
+    try {
+      const { kopplungscode } = await erzeugeInstanzKopplungscode();
+      setNeuerKopplungscode(kopplungscode);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Erzeugen des Kopplungscodes");
+    }
+  }
+
+  async function instanzEntfernen(id: string) {
+    if (!window.confirm("Diese Instanz widerrufen? Sie kann sich danach nicht mehr verbinden oder synchronisieren.")) {
+      return;
+    }
+    try {
+      await instanzWiderrufen(id);
+      instanzenLaden();
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Widerrufen der Instanz");
+    }
+  }
 
   if (!benutzer) return null;
 
@@ -469,6 +508,56 @@ export function ProfilPage() {
           </button>
         </>
       )}
+
+      <h2>Verbundene Instanzen</h2>
+      <p>
+        Lokale Installationen (Betriebsmodus „Lokales Netzwerk", Abschnitt 21.3), die per Kopplungscode dauerhaft mit
+        diesem Konto verbunden sind. Turniere lassen sich dorthin herunterladen und synchronisieren automatisch
+        zurück, solange eine Verbindung besteht.
+      </p>
+
+      {neuerKopplungscode && (
+        <p role="status">
+          Kopplungscode (15 Minuten gültig, nur jetzt sichtbar): <code>{neuerKopplungscode}</code> – auf der lokalen
+          Installation unter „Einstellungen" eingeben.
+        </p>
+      )}
+
+      {instanzen.length === 0 ? (
+        <p className="platzhalter-zeile">Noch keine Instanz verbunden.</p>
+      ) : (
+        <div className="tabellen-wrapper">
+          <table>
+            <caption className="sr-only">Verbundene Instanzen</caption>
+            <thead>
+              <tr>
+                <th scope="col">Bezeichnung</th>
+                <th scope="col">Verbunden seit</th>
+                <th scope="col">Zuletzt gesehen</th>
+                <th scope="col">Aktion</th>
+              </tr>
+            </thead>
+            <tbody>
+              {instanzen.map((instanz) => (
+                <tr key={instanz._id}>
+                  <td>{instanz.bezeichnung || "– ohne Bezeichnung –"}</td>
+                  <td>{formatiereZeitstempel(instanz.erstelltAm)}</td>
+                  <td>{instanz.letzterKontaktAm ? formatiereZeitstempel(instanz.letzterKontaktAm) : "noch nie"}</td>
+                  <td>
+                    <button type="button" onClick={() => instanzEntfernen(instanz._id)}>
+                      Widerrufen
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <button type="button" onClick={kopplungscodeErzeugen}>
+        Neue Instanz koppeln
+      </button>
     </>
   );
 }
