@@ -53,6 +53,17 @@ else
   git clone -b "$BRANCH" "$REPO_URL" "$DIR"
 fi
 
+echo "== Downloadbares Quellcode-ZIP (fuer die lokale Windows-Installation, siehe /hilfe) =="
+# Der Gitea-Server liegt nur im internen LAN - ohne diese Kopie waere der Quellcode fuer eine
+# lokale Installation an einem Turnierort ohne Zugriff auf dieses Netz gar nicht erreichbar.
+# "git archive" packt den aktuellen Stand (nur getrackte Dateien, kein .git/node_modules) neu -
+# bewusst bei JEDEM Deploy-Lauf neu erzeugt (nicht bei jedem Push), stabiler Dateiname statt
+# Versionierung, da immer nur der jeweils aktuelle Stand angeboten werden soll.
+DOWNLOAD_DIR="${DIR}/downloads"
+mkdir -p "$DOWNLOAD_DIR"
+git -c safe.directory="$DIR" -C "$DIR" archive --format=zip -o "${DOWNLOAD_DIR}/torball-quellcode.zip" HEAD
+chown -R "${SERVICE_USER}:${SERVICE_USER}" "$DOWNLOAD_DIR"
+
 echo "== Bauen (shared zuerst) =="
 # Instanzname als Vite-Build-Variable durchreichen, damit das Frontend bei jeder Nicht-Prod-Instanz
 # (z.B. "demo") einen auffaelligen Umgebungs-Banner anzeigen kann (siehe UmgebungsBanner.tsx) -
@@ -124,6 +135,11 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    # Downloadbares Quellcode-ZIP fuer die lokale Windows-Installation (siehe /hilfe#lokale-installation).
+    location /download/ {
+        alias ${DIR}/downloads/;
     }
 
     # SPA (React Router): unbekannte Pfade auf index.html.

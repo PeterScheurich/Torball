@@ -454,7 +454,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie richte ich eine lokale Installation ein?",
         text: [
-          "Unter Windows gibt es einen Ein-Klick-Installer: den Projektordner besorgen (z. B. als ZIP) und darin die Datei „Installieren-Windows.cmd“ per Doppelklick starten. Das Skript richtet alles Nötige automatisch ein.",
+          "Unter Windows gibt es einen Ein-Klick-Installer. Lade zunächst den Quellcode als ZIP herunter (Link: /download/torball-quellcode.zip, direkt auf diesem Server) und entpacke ihn. Starte darin die Datei „Installieren-Windows.cmd“ per Doppelklick – das Skript richtet alles Nötige automatisch ein.",
           {
             hinweis:
               "Dafür ist einmalig eine Internetverbindung nötig (für die Downloads) – danach läuft die lokale Installation komplett offline.",

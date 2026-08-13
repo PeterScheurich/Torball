@@ -153,8 +153,12 @@ Turnierdaten selbst sind klein (reines Text/JSON, keine Dateianhänge außer dem
 clientseitig auf max. 1 MB begrenzten Turnier-Logo je Turnier) – über eine Saison typischerweise nur
 einige weitere Megabyte.
 
-Voraussetzung: der Projektordner liegt bereits lokal vor (`git clone` oder ZIP entpackt).
-`deploy/Installieren-Windows.cmd` per Doppelklick starten (fragt bei Bedarf per UAC nach
+Voraussetzung: der Projektordner liegt bereits lokal vor. Da der Gitea-Server nur im internen LAN
+erreichbar ist, bietet jede über `deploy/deploy-instanz.sh` ausgerollte Instanz den aktuellen
+Quellcode zusätzlich als ZIP unter `/download/torball-quellcode.zip` an (bei jedem Deploy-Lauf neu
+erzeugt, `git archive` - nicht bei jedem Push, um den Server nicht unnötig zu belasten) -
+herunterladen und entpacken. Alternativ (wer Zugriff auf das interne Netz hat): `git clone`.
+Danach `deploy/Installieren-Windows.cmd` per Doppelklick starten (fragt bei Bedarf per UAC nach
 Administratorrechten – nötig für die Node-/CouchDB-Installation). Das Skript
 (`deploy/installieren-windows.ps1`) übernimmt automatisiert:
 
@@ -181,9 +185,12 @@ beim allerersten Start führt die Anmeldeseite durch die einmalige Ersteinrichtu
 **Einzelprozess-Modus (`SERVE_FRONTEND=true`):** Anders als beim Debian-Produktivbetrieb (nginx
 liefert das Frontend + proxied `/api`, siehe unten) liefert das Backend hier das gebaute Frontend
 selbst mit aus (`@fastify/static`, SPA-Fallback auf `index.html`) – ein einziger Prozess, kein
-separater Webserver nötig. Das Frontend ruft die API weiterhin unter `/api/*` auf; das Backend
-streift dieses Präfix in diesem Modus selbst ab (`rewriteUrl` in `backend/src/index.ts`), genau das,
-was sonst nginx bzw. der Vite-Dev-Proxy übernehmen.
+separater Webserver nötig. Das Frontend ruft die API weiterhin unter `/api/*` auf; die API-Routen
+laufen in diesem Modus deshalb selbst unter einem echten `/api`-Präfix
+(`server.register(registerApiRoutes, { prefix: "/api" })` in `backend/src/index.ts`), genau das,
+was sonst nginx bzw. der Vite-Dev-Proxy übernehmen – ein früherer `rewriteUrl`-Ansatz wurde ersetzt,
+weil er nur Anfragen mit `/api`-Präfix erkannte und eine volle Seiten-Navigation auf einen SPA-Pfad
+ohne dieses Präfix (z. B. `/turniere/:id`) mit der gleichnamigen Backend-Route kollidierte.
 
 **Konfiguration später anpassen oder die App aktualisieren:** Für Änderungen nach der Installation
 (z. B. Port oder SMTP nachträglich setzen) muss nicht der komplette Installer erneut durchlaufen
@@ -217,7 +224,8 @@ das Aktualisieren (Git-Pull falls Git-Repo, `npm install`, Neubau) auch ein Dopp
    `http://localhost:5173` im Browser öffnen. Beim ersten Start durch die Ersteinrichtung des
    Admin-Kontos gehen.
 
-> **Geplant – Option B, verteilbarer Installer:** Für eine spätere Bereitstellung als Download-Knopf
-> auf der Webseite ist zusätzlich ein kompiliertes MSI/EXE vorgesehen (z. B. Inno Setup, bündelt
-> portables Node + gebaute App), damit Anwender nicht erst den Quellcode besorgen müssen. Umsetzung
-> als eigener Schritt.
+> **Geplant – Option B, verteilbarer Installer:** Das Quellcode-ZIP unter `/download/` (s. o.) macht
+> den Ein-Klick-Installer erst öffentlich nutzbar, ersetzt Option B aber nicht: für eine spätere,
+> komfortablere Bereitstellung ist zusätzlich ein kompiliertes MSI/EXE vorgesehen (z. B. Inno Setup,
+> bündelt portables Node + gebaute App), damit Anwender nicht erst Node/CouchDB separat einrichten
+> bzw. den Quellcode überhaupt entpacken müssen. Umsetzung als eigener Schritt.
