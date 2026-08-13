@@ -3,6 +3,7 @@ import type {
   Benutzer,
   Klassifizierung,
   MannschaftImTurnier,
+  Schiedsrichter,
   SchiedsrichterImTurnier,
   Spiel,
   Spieler,
@@ -38,6 +39,7 @@ export async function erzeugeBeispieldaten(): Promise<void> {
 
   const ersteller = await demoKonto();
   const teams = await erzeugeVereineUndTeams();
+  await erzeugeSchiedsrichterStammdaten(teams);
   const team = (name: string): TeamMitVerein => {
     const treffer = teams.find((t) => t.team.name === name);
     if (!treffer) throw new Error(`Demo-Team "${name}" nicht gefunden - Beispieldaten inkonsistent.`);
@@ -306,8 +308,39 @@ async function erzeugeSpieler(mannschaftId: string): Promise<void> {
   }
 }
 
-/** Legt Turnierleitung + eine weitere pfeifende Person an (Demo-Namen, kein Bezug zu echten Personen). */
-async function erzeugeSchiedsrichter(turnierId: string): Promise<void> {
+/** Legt ein paar turnieruebergreifende Schiedsrichter-Stammdaten an (Demo-Namen, kein Bezug zu
+ *  echten Personen) - zwei mit Vereinsbindung, einer bewusst neutral (ohne Verein), damit die
+ *  Demo sowohl die Stammdaten-Uebernahme als auch die "keine (neutral)"-Option zeigt. */
+async function erzeugeSchiedsrichterStammdaten(teams: TeamMitVerein[]): Promise<void> {
+  const vereinId = (name: string) => teams.find((t) => t.verein.name === name)?.verein.vereinId;
+
+  const eintraege: { name: string; vorname: string; vereinName?: string }[] = [
+    { name: "Wagner", vorname: "Petra", vereinName: "BSV München" },
+    { name: "Krüger", vorname: "Manfred", vereinName: "FC St. Pauli" },
+    { name: "Neutral", vorname: "Norbert" },
+  ];
+
+  for (const e of eintraege) {
+    const id = newId("schiedsrichter");
+    await insertDoc<Schiedsrichter>({
+      _id: id,
+      docType: "schiedsrichter",
+      schiedsrichterId: id,
+      name: e.name,
+      vorname: e.vorname,
+      lizenzVorhanden: true,
+      vereinId: e.vereinName ? vereinId(e.vereinName) : undefined,
+    });
+  }
+}
+
+/** Legt Turnierleitung + eine weitere pfeifende Person fuer EIN Turnier an (Demo-Namen, kein
+ *  Bezug zu echten Personen). Die pfeifende Person bekommt - falls uebergeben - den Verein der
+ *  ersten teilnehmenden Mannschaft zugeordnet, damit die vereinsbasierte Konflikterkennung
+ *  (P1/P2, siehe CLAUDE.md) in der Demo tatsaechlich etwas zu zeigen hat: bei der automatischen
+ *  Schiedsrichter-Zuordnung wird "Schiedsrichter Beispiel" dann sichtbar nie fuer Spiele dieses
+ *  Vereins vorgeschlagen. */
+async function erzeugeSchiedsrichter(turnierId: string, ersteVereinId?: string): Promise<void> {
   const tlId = newId("schiedsrichterImTurnier");
   await insertDoc<SchiedsrichterImTurnier>({
     _id: tlId,
@@ -328,6 +361,7 @@ async function erzeugeSchiedsrichter(turnierId: string): Promise<void> {
     name: "Schiedsrichter Beispiel",
     lizenzVorhanden: true,
     istTurnierleitung: false,
+    vereinId: ersteVereinId,
   });
 }
 
@@ -389,7 +423,7 @@ async function erzeugeEinzelTurnier(opts: TurnierBauOptionen): Promise<Turnier> 
   };
   turnier = await insertDoc(turnier);
 
-  await erzeugeSchiedsrichter(turnier._id);
+  await erzeugeSchiedsrichter(turnier._id, opts.teams[0]?.verein.vereinId);
 
   const mannschaften: MannschaftImTurnier[] = [];
   for (const [i, { team, verein }] of opts.teams.entries()) {
@@ -502,12 +536,17 @@ async function erzeugeSpieltag2(
     abgeschlossenAm: undefined,
   };
 
-  await erzeugeSchiedsrichter(neuId);
-
   const basisMannschaften = await findAllBySelector<MannschaftImTurnier>({
     docType: "mannschaftImTurnier",
     turnierId: basisMitWettbewerb._id,
   });
+  // Gleicher Verein wie am ersten Spieltag (Vereinszugehoerigkeit aendert sich zwischen
+  // Spieltagen nicht) - sonst identisch zur Erst-Erzeugung in erzeugeEinzelTurnier. Nach
+  // reihenfolge sortieren: findAllBySelector liefert keine garantierte Reihenfolge, "erste
+  // Mannschaft" muss aber deterministisch dieselbe sein wie am ersten Spieltag.
+  const ersteMannschaft = [...basisMannschaften].sort((a, b) => (a.reihenfolge ?? 0) - (b.reihenfolge ?? 0))[0];
+  await erzeugeSchiedsrichter(neuId, ersteMannschaft?.vereinId);
+
   const mannschaftMap = new Map<string, string>();
   for (const m of basisMannschaften) {
     const neueMannschaftId = newId("mannschaftImTurnier");
