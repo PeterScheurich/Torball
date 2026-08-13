@@ -78,7 +78,9 @@ body {
 #root {
   max-width: 960px;
   margin: 0 auto;
-  padding: 0 16px 48px;
+  /* Bottom-Padding reserviert Platz fuer die fixierte Fusszeile (.fusszeile), damit sie nichts
+     vom eigentlichen Inhalt verdeckt. */
+  padding: 0 16px 64px;
   box-sizing: border-box;
 }
 
@@ -236,21 +238,63 @@ header nav span.marke {
   color: var(--text);
 }
 
-/* Kleines Versions-Badge neben der Marke (aktueller Build-Stand, z.B. "0.9 Beta"). Bewusst
-   dezent und klar vom Markennamen abgesetzt; text-decoration:none, damit es im Marken-<a>
-   nicht als Link-Unterstrich erscheint. */
+/* Kleines Versions-Badge (aktueller Build-Stand, z.B. "0.9 Beta"), seit der Fusszeile dort statt
+   neben der Marke. Bewusst transparenter Hintergrund (Nutzer-Vorgabe) - nur noch ein dezenter
+   Rahmen statt der fruehren farbigen Pille; text-decoration:none fuer den Fall, dass es je in
+   einem Link landet. */
 .marke-version {
   font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--accent-contrast);
-  background: var(--accent);
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
   padding: 1px 7px;
   border-radius: 999px;
   align-self: center;
   white-space: nowrap;
   text-decoration: none;
+}
+
+/* Globale Fusszeile (Fusszeile.tsx): angemeldeter Benutzer + Versions-Badge. Fixiert am unteren
+   Bildschirmrand (Nutzer-Vorgabe: immer sichtbar, nicht erst am Ende des Seiteninhalts) - dafuer
+   braucht #root oben ein passendes Bottom-Padding, damit der Inhalt nicht darunter verschwindet.
+   max-width/margin/padding/box-sizing bewusst identisch zu #root, damit die Fusszeile optisch
+   genau die Breite des Seiteninhalts einnimmt statt den ganzen Bildschirm (left:0/right:0 spannen
+   nur den verfuegbaren Rahmen auf, max-width + margin:auto zentrieren wie bei #root darin). */
+.fusszeile {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  z-index: 5;
+}
+
+:root[data-breite='breit'] .fusszeile {
+  max-width: 1400px;
+}
+
+/* Kopfzeilen-Eintraege, die nur aus einem Symbol bestehen (Einstellungen/Hilfe/Ueber) - etwas
+   groesser als normaler Fliesstext, damit das Symbol (v.a. das Fragezeichen) gut erkennbar ist,
+   und mittig statt an der Grundlinie ausgerichtet. */
+.kopfzeile-symbol {
+  font-size: 1.3rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
 }
 
 .logo {

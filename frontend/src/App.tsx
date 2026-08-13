@@ -29,8 +29,8 @@ import { UeberPage } from "./pages/UeberPage";
 import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
 import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { UmgebungsBanner } from "./components/UmgebungsBanner";
+import { Fusszeile } from "./components/Fusszeile";
 import { useAuth } from "./auth";
-import { APP_VERSION } from "./version";
 
 // Wurzelkomponente: globale Kopfzeile (Navigation) plus das komplette Routing der App.
 // Oeffentliche Routen (Login, Einladung, Passwort-Reset, Ergebnis-Erfassung per Link,
@@ -65,7 +65,6 @@ function Kopfzeile() {
             <img className="logo logo-hell" src="/images/torball-logo.svg" alt="" width="32" height="32" />
             <img className="logo logo-dunkel" src="/images/torball-logo-dark.svg" alt="" width="32" height="32" />
             Torball-Turniere
-            <span className="marke-version">{APP_VERSION}</span>
           </span>
         </nav>
       </header>
@@ -79,7 +78,6 @@ function Kopfzeile() {
           <img className="logo logo-hell" src="/images/torball-logo.svg" alt="" width="32" height="32" />
           <img className="logo logo-dunkel" src="/images/torball-logo-dark.svg" alt="" width="32" height="32" />
           Torball-Turniere
-          <span className="marke-version">{APP_VERSION}</span>
         </Link>
         <div className="marke">
           {benutzer && (
@@ -118,29 +116,38 @@ function Kopfzeile() {
           )}
           <NavLink
             to="/einstellungen"
-            className={({ isActive }) => (isActive ? "kopfzeile-link kopfzeile-link-aktiv" : "kopfzeile-link")}
+            className={({ isActive }) =>
+              isActive ? "kopfzeile-link kopfzeile-symbol kopfzeile-link-aktiv" : "kopfzeile-link kopfzeile-symbol"
+            }
+            aria-label="Einstellungen"
           >
-            Einstellungen
+            <span aria-hidden="true">⚙</span>
           </NavLink>
           <NavLink
             to="/hilfe"
-            className={({ isActive }) => (isActive ? "kopfzeile-link kopfzeile-link-aktiv" : "kopfzeile-link")}
+            className={({ isActive }) =>
+              isActive ? "kopfzeile-link kopfzeile-symbol kopfzeile-link-aktiv" : "kopfzeile-link kopfzeile-symbol"
+            }
+            aria-label="Hilfe"
           >
-            Hilfe
+            <span aria-hidden="true">?</span>
           </NavLink>
           {/* "Über" nur für angemeldete Nutzer - die Entwickler-Kontaktseite ist bewusst
               nicht öffentlich (Scam-/Spam-Schutz, siehe UeberPage). */}
           {benutzer && (
             <NavLink
               to="/ueber"
-              className={({ isActive }) => (isActive ? "kopfzeile-link kopfzeile-link-aktiv" : "kopfzeile-link")}
+              className={({ isActive }) =>
+                isActive ? "kopfzeile-link kopfzeile-symbol kopfzeile-link-aktiv" : "kopfzeile-link kopfzeile-symbol"
+              }
+              aria-label="Über"
             >
-              Über
+              <span aria-hidden="true">ℹ</span>
             </NavLink>
           )}
           {benutzer && (
             <KopfzeilenMenue
-              label={<><span aria-hidden="true">👤</span> {benutzer.name}</>}
+              label={<span aria-hidden="true">👤</span>}
               ariaLabel={`Benutzermenü für ${benutzer.name}`}
               aktiv={pathname.startsWith("/profil")}
             >
@@ -207,6 +214,7 @@ function App() {
           </Route>
         </Routes>
       </main>
+      <Fusszeile />
     </>
   );
 }
