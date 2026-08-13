@@ -70,7 +70,7 @@ After=network.target couchdb.service
 Type=oneshot
 User=torball
 WorkingDirectory=/opt/torball/%i/backend
-ExecStart=/opt/torball/%i/backend/node_modules/.bin/tsx --env-file=/opt/torball/%i/backend/.env /opt/torball/%i/backend/src/cli/torball.ts demo:snapshot:wiederherstellen
+ExecStart=/opt/torball/%i/node_modules/.bin/tsx --env-file=/opt/torball/%i/backend/.env /opt/torball/%i/backend/src/cli/torball.ts demo:snapshot:wiederherstellen
 UNIT
 
 cat > "/etc/systemd/system/torball-demo-reset@.timer" <<UNIT
@@ -89,8 +89,8 @@ systemctl daemon-reload
 systemctl enable --now "torball-demo-reset@${NAME}.timer"
 
 echo "== [4/4] Erstbefuellung: Beispieldaten anlegen + als Ausgangszustand sichern =="
-su -s /bin/bash "$SERVICE_USER" -c "cd '${DIR}/backend' && node_modules/.bin/tsx --env-file=.env src/cli/torball.ts demo:beispieldaten"
-su -s /bin/bash "$SERVICE_USER" -c "cd '${DIR}/backend' && node_modules/.bin/tsx --env-file=.env src/cli/torball.ts demo:snapshot:erstellen"
+su -s /bin/bash "$SERVICE_USER" -c "cd '${DIR}/backend' && ../node_modules/.bin/tsx --env-file=.env src/cli/torball.ts demo:beispieldaten"
+su -s /bin/bash "$SERVICE_USER" -c "cd '${DIR}/backend' && ../node_modules/.bin/tsx --env-file=.env src/cli/torball.ts demo:snapshot:erstellen"
 
 echo
 echo "Fertig. Naechtlicher Reset laeuft ab jetzt um ${STUNDE}:00 Uhr (systemd-Timer torball-demo-reset@${NAME})."
@@ -99,4 +99,4 @@ echo "  Manuell testen:  systemctl start torball-demo-reset@${NAME}.service"
 echo
 echo "Um die Demo-Inhalte spaeter zu aendern (z. B. Termine auffrischen) und als neuen"
 echo "Ausgangszustand festzuhalten:"
-echo "  su -s /bin/bash ${SERVICE_USER} -c \"cd ${DIR}/backend && node_modules/.bin/tsx --env-file=.env src/cli/torball.ts demo:snapshot:erstellen\""
+echo "  su -s /bin/bash ${SERVICE_USER} -c \"cd ${DIR}/backend && ../node_modules/.bin/tsx --env-file=.env src/cli/torball.ts demo:snapshot:erstellen\""
