@@ -136,6 +136,7 @@ export function updateTurnier(
       | "spielplanModus"
       | "protokollierungsart"
       | "name"
+      | "felder"
       | "oeffentlichTurnierinfos"
       | "oeffentlichAnfahrtDokumente"
       | "oeffentlichSpielplan"

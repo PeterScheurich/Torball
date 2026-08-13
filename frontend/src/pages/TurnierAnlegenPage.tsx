@@ -58,7 +58,7 @@ export function TurnierAnlegenPage() {
 
       const felder = Array.from({ length: anzahlFelder }, (_, i) => ({
         feldId: `feld:${i + 1}`,
-        name: `Feld ${i + 1}`,
+        name: ["Halle A", "Halle B"][i] ?? `Feld ${i + 1}`,
       }));
       const neu = await createTurnier({
         name,

@@ -123,6 +123,8 @@ export function TurnierVerwaltenPage() {
 
   const [turnier, setTurnier] = useState<Turnier | undefined>();
   const [allgemein, setAllgemein] = useState<AllgemeinBearbeitung | undefined>();
+  // Feldnamen-Entwuerfe je feldId, analog zu "allgemein" nur beim ersten Laden uebernommen.
+  const [feldNamen, setFeldNamen] = useState<Record<string, string> | undefined>();
   const [fehler, setFehler] = useState<string | undefined>();
   const [linkHinweis, setLinkHinweis] = useState<string | undefined>();
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -154,6 +156,12 @@ export function TurnierVerwaltenPage() {
     if (turnier && !allgemein) setAllgemein(allgemeinAusTurnier(turnier));
   }, [turnier, allgemein]);
 
+  useEffect(() => {
+    if (turnier && !feldNamen) {
+      setFeldNamen(Object.fromEntries(turnier.felder.map((f) => [f.feldId, f.name])));
+    }
+  }, [turnier, feldNamen]);
+
   async function allgemeinFeldSpeichern(feld: keyof AllgemeinBearbeitung) {
     if (!allgemein || !turnier) return;
     const wert = allgemein[feld].trim();
@@ -174,6 +182,29 @@ export function TurnierVerwaltenPage() {
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern");
+    }
+  }
+
+  /** Speichert den Namen eines einzelnen Spielfelds (onBlur, analog allgemeinFeldSpeichern). */
+  async function feldNameSpeichern(feldId: string) {
+    if (!feldNamen || !turnier) return;
+    const wert = feldNamen[feldId]?.trim() ?? "";
+    const aktuell = turnier.felder.find((f) => f.feldId === feldId)?.name ?? "";
+    if (wert === "") {
+      setFehler("Feldname darf nicht leer sein");
+      setFeldNamen((f) => (f ? { ...f, [feldId]: aktuell } : f));
+      return;
+    }
+    if (wert === aktuell) return;
+
+    try {
+      const neueFelder = turnier.felder.map((f) => (f.feldId === feldId ? { ...f, name: wert } : f));
+      const aktualisiert = await updateTurnier(turnierId, { felder: neueFelder });
+      setTurnier(aktualisiert);
+      setFeldNamen((f) => (f ? { ...f, [feldId]: wert } : f));
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern des Feldnamens");
     }
   }
 
@@ -473,14 +504,33 @@ export function TurnierVerwaltenPage() {
               </tr>
               <tr>
                 <th scope="row">
-                  <label htmlFor="uebersichtSpielfelder">Spielfelder</label>
+                  <span id="uebersichtSpielfelderLabel">Spielfelder</span>
                 </th>
                 <td>
-                  <input
-                    id="uebersichtSpielfelder"
-                    readOnly
-                    value={turnier.felder.map((f) => f.name).join(", ") || "keine"}
-                  />
+                  {turnier.felder.length === 0 ? (
+                    <input id="uebersichtSpielfelder" readOnly value="keine" aria-labelledby="uebersichtSpielfelderLabel" />
+                  ) : (
+                    turnier.felder.map((feld, index) => (
+                      <span key={feld.feldId} className="spielfeld-name-eingabe">
+                        <label className="sr-only" htmlFor={`spielfeldName-${feld.feldId}`}>
+                          Name Spielfeld {index + 1}
+                        </label>
+                        <input
+                          id={`spielfeldName-${feld.feldId}`}
+                          required
+                          disabled={istGesperrt}
+                          value={feldNamen?.[feld.feldId] ?? feld.name}
+                          onChange={(e) =>
+                            setFeldNamen((f) => (f ? { ...f, [feld.feldId]: e.target.value } : f))
+                          }
+                          onBlur={() => feldNameSpeichern(feld.feldId)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") e.currentTarget.blur();
+                          }}
+                        />
+                      </span>
+                    ))
+                  )}
                 </td>
               </tr>
               <tr>

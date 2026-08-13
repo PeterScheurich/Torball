@@ -175,7 +175,6 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }
   }, [laden]);
 
   const nameVon = (mannschaftId: string) => mannschaften.find((m) => m._id === mannschaftId)?.name ?? mannschaftId;
-  const feldName = (feldId: string | undefined) => turnier?.felder.find((f) => f.feldId === feldId)?.name ?? feldId ?? "";
   const schiedsrichterNach = (id: string | undefined) => schiedsrichter.find((sr) => sr._id === id);
   const schiedsrichterLabel = (sr: SchiedsrichterImTurnier) => (sr.vorname ? `${sr.name}, ${sr.vorname}` : sr.name);
 
@@ -491,7 +490,6 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }
                     <span className="sr-only">Reihenfolge</span>
                   </th>
                   <th scope="col" className="spalte-spiel">Nr.</th>
-                  {!mehrereFelder && <th scope="col" className="spalte-feld">Feld</th>}
                   <th scope="col" className="spalte-startzeit">Startzeit</th>
                   <th scope="col">Mannschaft A</th>
                   <th scope="col">Mannschaft B</th>
@@ -565,7 +563,6 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }
                           </button>
                         </td>
                         <td>{anzeigeIndex + 1}</td>
-                        {!mehrereFelder && <td>{feldName(eintrag.feldId)}</td>}
                         <td>
                           <label className="sr-only" htmlFor={`vorschau-zeit-${vollIndex}`}>
                             Startzeit von Spiel {anzeigeIndex + 1}
@@ -639,7 +636,6 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }
                         <span className="sr-only">Reihenfolge</span>
                       </th>
                       <th scope="col" className="spalte-spiel">Nr.</th>
-                      {!mehrereFelder && <th scope="col" className="spalte-feld">Feld</th>}
                       <th scope="col" className="spalte-startzeit">Startzeit</th>
                       <th scope="col">Mannschaft A</th>
                       <th scope="col">Mannschaft B</th>
@@ -714,7 +710,6 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }
                               </button>
                             </td>
                             <td>{anzeigeIndex + 1}</td>
-                            {!mehrereFelder && <td>{feldName(s.feldId)}</td>}
                             <td>
                               <label className="sr-only" htmlFor={`spiel-zeit-${s._id}`}>
                                 Startzeit von Spiel {anzeigeIndex + 1}
@@ -763,7 +758,6 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }
                   <thead>
                     <tr>
                       <th scope="col" className="spalte-spiel">Nr.</th>
-                      {!mehrereFelder && <th scope="col" className="spalte-feld">Feld</th>}
                       <th scope="col" className="spalte-startzeit">Startzeit</th>
                       <th scope="col">Mannschaft A</th>
                       <th scope="col">Mannschaft B</th>
@@ -777,7 +771,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }
                         if ("platzhalter" in zeile) {
                           return (
                             <tr key={`platzhalter-${zeilenIndex}`} className="platzhalter-zeile">
-                              <td colSpan={mehrereFelder ? 5 : 6}>Spielpause (anderes Feld spielt)</td>
+                              <td colSpan={5}>Spielpause (anderes Feld spielt)</td>
                             </tr>
                           );
                         }
@@ -791,7 +785,6 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }
                         return (
                           <tr key={s._id}>
                             <td>{anzeigeIndex + 1}</td>
-                            {!mehrereFelder && <td>{feldName(s.feldId)}</td>}
                             <td>{formatiereUhrzeit(s.startzeitGeplant)}</td>
                             <td>{nameVon(s.mannschaftAId)}</td>
                             <td>{nameVon(s.mannschaftBId)}</td>

@@ -410,9 +410,6 @@ table {
 .spielplan-tabelle .spalte-spiel {
   width: 3em;
 }
-.spielplan-tabelle .spalte-feld {
-  width: 4em;
-}
 .spielplan-tabelle .spalte-startzeit {
   width: 6.5em;
 }
@@ -847,7 +844,8 @@ label {
    ebenfalls das Sternchen. Bewusst auf .uebersicht-tabelle beschraenkt - andere Tabellen
    (Profil, Benutzerverwaltung) haben teils "required"-Felder in optionalen Aenderungsformularen
    (z.B. Passwort aendern), die NICHT als Pflicht der ganzen Seite gemeint sind. */
-.uebersicht-tabelle tr:has(td input:required, td select:required, td textarea:required) th[scope="row"] label::after {
+.uebersicht-tabelle tr:has(td input:required, td select:required, td textarea:required) th[scope="row"] label::after,
+.uebersicht-tabelle tr:has(td input:required, td select:required, td textarea:required) th[scope="row"] span::after {
   content: " *";
   color: var(--danger);
   font-weight: 700;
@@ -899,6 +897,16 @@ textarea {
 .uebersicht-tabelle td select {
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Mehrere Spielfeld-Namen stehen nebeneinander in derselben Zelle - schmaler als die sonst
+   vollbreiten Eingaben dieser Tabelle, mit Abstand zwischen den Feldern. */
+.spielfeld-name-eingabe {
+  display: inline-block;
+  margin-right: 0.5em;
+}
+.uebersicht-tabelle td .spielfeld-name-eingabe input {
+  width: 10em;
 }
 
 /* Nicht editierbare Werte in Label/Wert-Tabellen (Profil, Turnier-Uebersicht), die als
