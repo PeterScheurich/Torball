@@ -118,12 +118,19 @@ sichtbar machen, nicht in den als Geschwister-Plugins registrierten
 Routen-Dateien (`verein.ts`, `turnier.ts`, …).
 
 **Berechtigungsmodell:** `backend/src/auth/turnierZugriff.ts` berechnet pro
-Turnier eine Zugriffsstufe (`lesen`/`schreiben`) für den angemeldeten
-Benutzer: Admin hat immer Vollzugriff; Manager hat immer Vollzugriff auf
+Turnier eine **dreistufige** `Zugriffsstufe` (`lesen` < `schreiben_spielbetrieb`
+< `schreiben_voll`, seit Abschnitt 21.2/21.3 – vorher binär `lesen`/`schreiben`,
+in einer einzelnen Migration überall hochgezogen) für den anfragenden
+**Akteur** (`Zugriffsakteur` = `{ benutzer? , turnierCode? }`, s. u.):
+Admin hat immer `schreiben_voll`; Manager hat immer `schreiben_voll` auf
 selbst erstellte Turniere (`turnier.erstelltVon`); alle anderen Fälle richten
-sich nach explizit vergebenen `TurnierBerechtigung`-Dokumenten. Jede Route,
-die Turnier-/Mannschaft-/Spiel-/Spielplan-/Ergebnis-Daten anfasst, muss das
-prüfen; `verein`/`team` (Stammdaten) verlangen dagegen keine turnierbezogene
+sich nach explizit vergebenen `TurnierBerechtigung`-Dokumenten (`rolle` dort
+mappt 1:1 auf eine Stufe). `schreiben_spielbetrieb` deckt bewusst nur noch
+Spielplan (Status/Zeiten/Schiedsrichter-Zuordnung) und Ergebniserfassung ab,
+nicht Grunddaten/Mannschaften/Regeln – passend zur fachlichen Trennung
+Turnierleitung/Spielleitung. Jede Route, die Turnier-/Mannschaft-/Spiel-/
+Spielplan-/Ergebnis-Daten anfasst, muss das per `hatMindestens(turnier, req,
+<mindeststufe>)` prüfen; `verein`/`team` (Stammdaten) verlangen dagegen keine turnierbezogene
 Prüfung, sondern eine **globale** Rollenprüfung: Lesen (`GET`) genügt jede
 Anmeldung (wird z. B. bei der Mannschaftserfassung gebraucht, um aus den
 Stammdaten auszuwählen), Schreiben (`POST`/`PUT`/`DELETE`) ist auf
@@ -138,6 +145,68 @@ spiegelt das über ein `disabled`-`<fieldset>` in `VereineVerwaltung.tsx`/
 bleibt Admin-only; der Menüpunkt ist jetzt für alle angemeldeten Personen
 sichtbar (vorher admin-only versteckt), das Formular für Nicht-Admins über
 dasselbe `disabled`-`<fieldset>`-Muster gesperrt.
+
+**Turnier-Codes (Abschnitt 21.3, Betriebsmodus „Lokales Netzwerk", kontoloser
+Zugriff):** ein Rechner hostet Backend+CouchDB lebend im LAN; weitere Geräte
+greifen über einen geteilten Code statt eines eigenen Kontos auf **genau ein**
+Turnier zu – kein Offline-Datenmodell, keine Synchronisation nötig, da alle
+Geräte durchgehend gegen dieselbe erreichbare Datenbank arbeiten (anders als
+Turnier-Sync unten). Zwei optionale gehashte Felder direkt am `Turnier`-Dokument
+(`turnierleitungCodeHash`/`spielleitungCodeHash`, analog `passwortHash` – kein
+eigener docType, da nie mehr als zwei Codes pro Turnier). Setzen/Ändern der
+Codes braucht `schreiben_voll` (`PUT/GET /turniere/:id/codes`,
+`backend/src/routes/turnierCode.ts`); die Anmeldung selbst ist öffentlich
+(`POST /turniere/:id/code-anmeldung`, analog zum `ErgebnisToken`-Muster der
+Ergebniserfassung) und legt eine `TurnierCodeSession` an (`sessionArt: "code"`,
+`shared/src/types/session.ts`) – **dieselbe** Cookie-Infrastruktur wie eine
+normale `BenutzerSession`, ein Gerät ist entweder als Benutzer oder per Code
+angemeldet, nie beides. `authPreHandler` löst daraus `req.turnierCode`
+(statt `req.benutzer`) auf; `turnierZugriffsstufe()` prüft `req.turnierCode`
+**vor** den Benutzer-Pfaden (Turnierleitung-Code → `schreiben_voll`,
+Spielleitung-Code → `schreiben_spielbetrieb` – für „lesen" gibt es bewusst
+keinen eigenen Code). Ohne Benutzerkonto gibt es keine `BenutzerId` für
+Audit-/Denormalisierungs-Felder (`erstelltVon` etc.) – `zuschreibung()`
+liefert dafür einen erkennbaren Platzhalter-Namen („Turnierleitung-Code"/
+„Spielleitung-Code") statt daran zu scheitern. **Frontend-Besonderheit:** die
+Routen `/turniere/:id/code/turnierleitung` (volle `TurnierVerwaltenPage`) und
+`/turniere/:id/code/spielleitung` (`SpielleitungCodePage`, eingeschränkt auf
+Spielplan/Ergebnisse) liegen **außerhalb** von `GeschuetzteRoute` – die
+Zugriffskontrolle läuft rein serverseitig über das Cookie, nicht über
+`useAuth()`/`req.benutzer` im Frontend-State.
+
+**Turnier-Sync (Instanz-Kopplung, `docs/Protokolle/2026-08-13-turnier-sync-grundlage.md`):**
+deckt den Fall ab, dass ein Turnier auf der Zentralen Plattform geplant wurde,
+am Spieltag aber kein/unzuverlässiges Internet besteht – anders als
+Turnier-Codes oben arbeiten hier zwei **getrennte** CouchDB-Instanzen
+(Server + lokale Installation), die sich zeitweise synchronisieren müssen.
+Bewusst **kein** genereller Sync mit Merge-/Konfliktlogik, sondern eine
+strikte **1:1-Beziehung** („Checkout"): zu jedem Zeitpunkt ist ein
+Server-Turnier entweder frei oder an genau eine lokale Installation
+ausgecheckt (`TurnierCheckout`, Zustand `angefordert→aktiv→freigegeben`,
+`shared/src/types/sync.ts`). Kein manueller Datei-Download/-Upload, sondern
+eine dauerhafte **Instanz-Kopplung**: Download wird ausschließlich vom Server
+angestoßen, Upload ausschließlich vom Client. Die lokale Instanz meldet sich
+dabei aktiv per **Check-in** (alle 45s, `backend/src/sync/checkin.ts`, ein
+`setInterval` in `index.ts` – bewusst backend-seitig, nicht an einen offenen
+Browser-Tab gebunden) beim Server, da der Server die lokale Installation wegen
+NAT/Firewall i. d. R. nicht direkt erreichen kann; ein serverseitig
+angestoßener Download wird als Auftrag hinterlegt und beim nächsten Check-in
+im selben Response mitgeliefert (kein zweiter Roundtrip). Kopplung läuft über
+einen kurzlebigen **Kopplungscode** (im Profil erzeugt, `benutzer.ts`), den
+die lokale Installation einmalig gegen ein dauerhaftes, gehashtes
+Instanz-Token tauscht (`VerbundeneInstanz`); Check-in/Kopplung
+(`backend/src/routes/instanzSync.ts`) authentifizieren sich per
+`Authorization: Bearer <instanzToken>` – **kein** Cookie/Session, da hier zwei
+Backend-Prozesse statt Browser↔Server sprechen. Download/Freigabe/Upload
+(`backend/src/routes/turnierSync.ts`) laufen dagegen über die normale
+turnierbezogene `requireZugriff`+`hatMindestens`-Prüfung wie andere
+Turnier-Routen. Export/Import-Umfang (`backend/src/sync/export.ts` bzw.
+`import.ts`) orientiert sich an der bestehenden Kaskaden-Lösch-Logik in
+`turnier.ts`; `BenutzerId`-Referenzen werden beim Import verworfen (auf der
+Zielinstanz bedeutungslos), die denormalisierten `*Name`-Felder bleiben als
+Historie erhalten. Volle bidirektionale PouchDB↔CouchDB-Synchronisation
+(Abschnitt 17/23) bleibt bewusst zurückgestellt – deutlich komplexer, als für
+diesen (häufigeren) Anwendungsfall nötig.
 
 **Eigenes „Admin"-Menü in der Kopfzeile** (`App.tsx`, neben „Stammdaten"):
 bündelt Funktionen, die *ausschließlich* der Rolle Admin vorbehalten sind
@@ -742,11 +811,19 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   und deshalb in `.gitignore` gelistet. Dabei aktiviert (`SERVE_FRONTEND=true`) das Backend einen
   **Einzelprozess-Modus**: `backend/src/index.ts` registriert dann `@fastify/static` für
   `frontend/dist` (SPA-Fallback auf `index.html` im `notFoundHandler`, analog zu nginx'
-  `try_files`) und streift per `rewriteUrl` selbst das `/api`-Präfix ab, das `frontend/src/api.ts`
-  fest verdrahtet hat – das übernehmen sonst der Vite-Dev-Proxy bzw. die nginx-Site. **Bewusst
-  hinter einem Flag** (Default `false`), damit der bestehende Debian/nginx-Produktivbetrieb
-  unverändert bleibt. Ein verteilbares MSI/EXE (Option B, für einen späteren Download-Knopf auf der
-  Webseite) ist noch offen. Details: `docs/Protokolle/2026-08-12-windows-installer-option-a.md`.
+  `try_files`) und registriert alle API-Routen zusätzlich unter einem echten `/api`-Präfix
+  (`server.register(registerApiRoutes, { prefix: "/api" })`), das `frontend/src/api.ts` fest
+  verdrahtet hat – das übernehmen sonst der Vite-Dev-Proxy bzw. die nginx-Site. **Bewusst ein
+  echtes Präfix, kein `rewriteUrl`-Abstreifen** (frühere Umsetzung, per Bugfix ersetzt): ein
+  `rewriteUrl`-Hook entfernt das `/api`-Präfix nur bei Anfragen, die es tatsächlich tragen (dem
+  Frontend-Fetch-Wrapper) – eine volle Browser-Navigation/Reload auf einen SPA-Pfad ohne
+  `/api`-Präfix, der zufällig mit einer registrierten Backend-GET-Route übereinstimmt (z. B.
+  `/turniere/:id`), würde dann direkt die API-Route treffen und rohes JSON statt der SPA-Shell
+  liefern. Mit echtem `/api`-Präfix kann das strukturell nicht mehr passieren. **Bewusst hinter
+  einem Flag** (Default `false`), damit der bestehende Debian/nginx-Produktivbetrieb unverändert
+  bleibt. Ein verteilbares MSI/EXE (Option B, für einen späteren Download-Knopf auf der Webseite)
+  ist noch offen. Details: `docs/Protokolle/2026-08-12-windows-installer-option-a.md`,
+  Bugfix-Hintergrund: „Nebenbefunde" in `docs/Protokolle/2026-08-13-turnier-sync-grundlage.md`.
 
 ## Dokumentation
 
