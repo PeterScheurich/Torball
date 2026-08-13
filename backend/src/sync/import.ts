@@ -1,4 +1,4 @@
-import type { TorballDokument, Turnier } from "@torball/shared";
+import type { TorballDokument, Turnier, Wettbewerb } from "@torball/shared";
 import { findById, insertDoc } from "../repository";
 import type { TurnierExportPaket } from "./export";
 
@@ -39,7 +39,9 @@ export async function importiereTurnierExport(
     if (!(await findById(team._id))) await insertDoc(team);
   }
   if (paket.wettbewerb && !(await findById(paket.wettbewerb._id))) {
-    await insertDoc(paket.wettbewerb);
+    // erstelltVon ebenso verwerfen wie beim Turnier oben (Kommentar/CLAUDE.md versprechen das
+    // pauschal fuer alle BenutzerId-Referenzen im Paket - Wettbewerb wurde dabei vergessen).
+    await insertDoc<Wettbewerb>({ ...paket.wettbewerb, erstelltVon: undefined });
   }
 
   await schreibe(turnier);

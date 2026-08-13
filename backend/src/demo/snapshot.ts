@@ -32,6 +32,19 @@ const NIE_ZURUECKSETZEN = new Set<TorballDokument["docType"]>([
   "systemeinstellungen",
   "systemkonfiguration",
   "kanbanKarte",
+  // Mail-Postfach (dev-only, siehe CLAUDE.md): Einstellungen sind laut eigenem Typ-Kommentar
+  // "Singleton-Dokument ... analog Systemeinstellungen" - gehoerten also von Anfang an in
+  // dieselbe Kategorie wie systemeinstellungen/systemkonfiguration oben, wurden bei der
+  // Einfuehrung aber hier vergessen (beim Systemtest 2026-08-14 aufgefallen). Nachrichten/
+  // Berichte sind ebenfalls Instanz-Zustand (ein einziges geteiltes Feedback-Postfach), kein
+  // turnierbezogener Inhalt.
+  "mailPostfachEinstellungen",
+  "mailNachricht",
+  "mailBericht",
+  // Turnier-Sync: dauerhafte Kopplung einer lokalen Installation an diese Instanz - Instanz-,
+  // nicht Turnier-Zustand; ein naechtlicher Reset wuerde eine gekoppelte Installation sonst
+  // stillschweigend entkoppeln.
+  "verbundeneInstanz",
 ]);
 
 /** Ob ein Dokument vom Snapshot/Restore-Abgleich ausgenommen bleibt: Design-Dokumente, die

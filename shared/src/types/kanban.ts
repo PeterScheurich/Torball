@@ -17,8 +17,11 @@ export type KanbanPrioritaet = "hoch" | "mittel" | "niedrig";
  * Weiterentwicklung.
  *
  * Sync-Design (JSON-Export/-Import, siehe backend/src/routes/kanban.ts): `kanbanId` ist
- * die stabile fachliche ID ueber Instanzgrenzen hinweg, `aktualisiertAm` entscheidet beim
- * Zusammenfuehren (Last-Write-Wins je Karte). `erstelltVonName` wird bewusst denormalisiert
+ * die stabile fachliche ID ueber Instanzgrenzen hinweg. Inhaltliche Konflikte fuehren NICHT
+ * automatisch zu Last-Write-Wins ueber `aktualisiertAm` (fruehere Design-Idee, so nie
+ * umgesetzt) - stattdessen entscheidet die einladende Person je Karte manuell im UI
+ * (lokal/eingehend uebernehmen), `aktualisiertAm` dient dabei nur als Orientierung, welcher
+ * Stand neuer ist (siehe backend/src/kanban/importMerge.ts). `erstelltVonName` wird bewusst denormalisiert
  * mitgefuehrt, damit ein Import auf einer anderen Instanz den Autor auch dann anzeigen kann,
  * wenn es den Benutzer dort gar nicht gibt.
  */

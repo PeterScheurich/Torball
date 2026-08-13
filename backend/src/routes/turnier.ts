@@ -401,6 +401,17 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         abgeschlossenVon: undefined,
         abgeschlossenVonName: undefined,
         abgeschlossenAm: undefined,
+        // Turnier-Codes NICHT vom Vorgaenger uebernehmen: der Spread oben wuerde sonst
+        // stillschweigend denselben Zugangscode fuer den neuen Spieltag gueltig lassen - wer
+        // den alten Code kennt (z.B. vom Aushang des ersten Spieltags), haette damit
+        // ungewollt Zugriff auf den neuen. Muss die Turnierleitung bewusst neu vergeben.
+        turnierleitungCodeHash: undefined,
+        spielleitungCodeHash: undefined,
+        // Ebenso keinen Sync-Checkout vom Vorgaenger erben - das abgeleitete Turnier ist neu
+        // entstanden und war nie selbst ausgecheckt; sonst wuerde der periodische Check-in
+        // (backend/src/sync/checkin.ts) Daten dieses Turniers faelschlich unter dem Checkout-
+        // Kontext des Vorgaengers pushen.
+        lokalerSyncCheckoutId: undefined,
       };
       // Bewusst noch NICHT einfuegen - das Turnier-Dokument wird einmalig am Ende (inkl.
       // spielplanBasis) gespeichert; Mannschaften/Kader/Spiele referenzieren nur die neue ID.
