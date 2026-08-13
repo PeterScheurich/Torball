@@ -1,6 +1,5 @@
 import path from "node:path";
-import type { IncomingMessage } from "node:http";
-import Fastify from "fastify";
+import Fastify, { type FastifyInstance } from "fastify";
 import fastifyCookie from "@fastify/cookie";
 import fastifyStatic from "@fastify/static";
 import { authPreHandler } from "./auth/plugin";
@@ -38,20 +37,50 @@ const HOST = process.env.HOST ?? "0.0.0.0";
 // Einzelprozess-Modus (z.B. Windows-Lokalinstallation, siehe deploy/installieren-windows.ps1):
 // das Backend liefert das gebaute Frontend gleich mit aus, kein separater nginx/Vite-Proxy
 // noetig. Das Frontend ruft die API weiterhin unter /api/* auf (siehe frontend/src/api.ts) -
-// rewriteUrl streift das Praefix vor dem Routing ab, genau das, was in den anderen Betriebs-
-// arten der Vite-Dev-Proxy bzw. die nginx-Site uebernehmen (siehe CLAUDE.md).
+// in diesem Modus werden die API-Routen deshalb unten tatsaechlich unter dem Praefix /api
+// registriert (statt es nur per rewriteUrl vor dem Routing abzustreifen). Ein rewriteUrl-
+// Ansatz strippt das Praefix nur bei Anfragen, die es auch tragen (dem Frontend-Fetch-
+// Wrapper) - eine volle Browser-Navigation/Reload auf einen SPA-Pfad ohne /api-Praefix, der
+// zufaellig mit einem registrierten Backend-GET-Pfad kollidiert (z.B. /turniere/:id), traf
+// dann direkt die API-Route statt des SPA-Fallbacks unten und lieferte rohes JSON statt der
+// App aus (live reproduziert, siehe docs/Protokolle/2026-08-13-turnier-sync-grundlage.md).
+// In den anderen Betriebsarten (Vite-Dev-Proxy, nginx-Site) bleiben die Routen unpraefigiert
+// an der Wurzel, weil Proxy/nginx das /api-Praefix bereits vor der Weiterleitung abstreifen
+// (siehe CLAUDE.md) - das aendert sich hier bewusst nicht mit.
 const serveFrontend = process.env.SERVE_FRONTEND === "true";
-const server = Fastify({
-  logger: true,
-  ...(serveFrontend
-    ? { rewriteUrl: (req: IncomingMessage) => (req.url?.startsWith("/api/") ? req.url.slice(4) : (req.url ?? "/")) }
-    : {}),
-});
+const server = Fastify({ logger: true });
 
 // Schlanker Health-Check (z.B. fuer Monitoring/Reverse-Proxy), ohne Anmeldung.
 server.get("/health", async () => {
   return { status: "ok" };
 });
+
+// Buendelt alle API-Routen-Plugins, damit sie sowohl direkt auf der Root-Instanz (normale
+// Betriebsarten, siehe Kommentar oben) als auch unter einem /api-Praefix (Einzelprozess-
+// Modus) registriert werden koennen, ohne die Liste zu duplizieren.
+const registerApiRoutes = async (instance: FastifyInstance): Promise<void> => {
+  instance.register(authRoutes);
+  instance.register(benutzerRoutes);
+  instance.register(vereinRoutes);
+  instance.register(teamRoutes);
+  instance.register(turnierRoutes);
+  instance.register(turnierBerechtigungRoutes);
+  instance.register(turnierCodeRoutes);
+  instance.register(mannschaftRoutes);
+  instance.register(spielerRoutes);
+  instance.register(schiedsrichterRoutes);
+  instance.register(spielplanRoutes);
+  instance.register(spielRoutes);
+  instance.register(ergebnisRoutes);
+  instance.register(ergebnisTokenRoutes);
+  instance.register(oeffentlichRoutes);
+  instance.register(systemkonfigurationRoutes);
+  instance.register(systemeinstellungenRoutes);
+  instance.register(kanbanRoutes);
+  instance.register(instanzSyncRoutes);
+  instance.register(turnierSyncRoutes);
+  instance.register(syncRoutes);
+};
 
 // Registriert alles in der richtigen Reihenfolge und startet den Listener.
 const start = async () => {
@@ -63,33 +92,14 @@ const start = async () => {
     await server.register(fastifyCookie);
     server.addHook("preHandler", authPreHandler);
 
-    server.register(authRoutes);
-    server.register(benutzerRoutes);
-    server.register(vereinRoutes);
-    server.register(teamRoutes);
-    server.register(turnierRoutes);
-    server.register(turnierBerechtigungRoutes);
-    server.register(turnierCodeRoutes);
-    server.register(mannschaftRoutes);
-    server.register(spielerRoutes);
-    server.register(schiedsrichterRoutes);
-    server.register(spielplanRoutes);
-    server.register(spielRoutes);
-    server.register(ergebnisRoutes);
-    server.register(ergebnisTokenRoutes);
-    server.register(oeffentlichRoutes);
-    server.register(systemkonfigurationRoutes);
-    server.register(systemeinstellungenRoutes);
-    server.register(kanbanRoutes);
-    server.register(instanzSyncRoutes);
-    server.register(turnierSyncRoutes);
-    server.register(syncRoutes);
-
     if (serveFrontend) {
-      // Registrierungsreihenfolge egal: find-my-way (Fastifys Router) bevorzugt exakte
-      // Routen-Treffer ohnehin vor dem Static-Plugin-Wildcard. Fallback fuer clientseitiges
-      // Routing (React Router) im notFoundHandler unten - identisch zu nginx' "try_files
-      // $uri /index.html" in deploy/deploy-instanz.sh.
+      // API-Routen laufen hier tatsaechlich unter /api (siehe Kommentar oben), damit sie nie
+      // mit einem SPA-Pfad kollidieren koennen. Registrierungsreihenfolge zu fastifyStatic
+      // egal: find-my-way (Fastifys Router) bevorzugt exakte Routen-Treffer ohnehin vor dem
+      // Static-Plugin-Wildcard. Fallback fuer clientseitiges Routing (React Router) im
+      // notFoundHandler unten - identisch zu nginx' "try_files $uri /index.html" in
+      // deploy/deploy-instanz.sh.
+      await server.register(registerApiRoutes, { prefix: "/api" });
       await server.register(fastifyStatic, { root: path.join(__dirname, "../../frontend/dist") });
       server.setNotFoundHandler((request, reply) => {
         if (request.method === "GET") {
@@ -98,6 +108,8 @@ const start = async () => {
         }
         reply.code(404).send({ error: "Nicht gefunden" });
       });
+    } else {
+      await registerApiRoutes(server);
     }
 
     await ensureIndexes();
