@@ -335,6 +335,11 @@ export function KanbanBoardPage() {
                       <span className={`kanban-badge prioritaet-${karte.prioritaet}`}>
                         {PRIORITAET_LABEL[karte.prioritaet]}
                       </span>
+                      {karte.kiErstellt && (
+                        <span className="kanban-badge" title="Automatisch aus dem Mail-Postfach erstellt, noch nicht geprüft">
+                          KI · ungeprüft
+                        </span>
+                      )}
                     </div>
                     <h3 className="kanban-karte-titel">{karte.titel}</h3>
                     {karte.beschreibung && <p className="kanban-karte-text">{karte.beschreibung}</p>}

@@ -8,6 +8,11 @@ import type {
   KanbanPrioritaet,
   KanbanSpalte,
   Klassifizierung,
+  MailBericht,
+  MailKategorie,
+  MailManuellerStatus,
+  MailNachricht,
+  MailPostfachEinstellungenOeffentlich,
   MannschaftImTurnier,
   Protokollierungsart,
   SchiedsrichterImTurnier,
@@ -978,4 +983,84 @@ export function turnierSyncUpload(
   ersetzen?: boolean,
 ): Promise<{ turnierId: string; checkoutId?: string; warnung?: string }> {
   return anfrage(`/turniere/${turnierId}/sync-upload`, { method: "POST", body: JSON.stringify({ ersetzen }) });
+}
+
+// --- Mail-Postfach (nur Admins, nur Entwicklungsinstanz) ---
+
+export function mailPostfachVerfuegbar(): Promise<{ verfuegbar: boolean }> {
+  return anfrage("/mail-postfach/verfuegbar");
+}
+
+export interface MailNachrichtenFilter {
+  suchtext?: string;
+  kategorie?: MailKategorie;
+  manuellerStatus?: MailManuellerStatus;
+}
+
+export function getMailNachrichten(filter: MailNachrichtenFilter = {}): Promise<MailNachricht[]> {
+  const params = new URLSearchParams();
+  if (filter.suchtext) params.set("suchtext", filter.suchtext);
+  if (filter.kategorie) params.set("kategorie", filter.kategorie);
+  if (filter.manuellerStatus) params.set("manuellerStatus", filter.manuellerStatus);
+  const query = params.toString();
+  return anfrage(`/mail-postfach/nachrichten${query ? `?${query}` : ""}`);
+}
+
+export function updateMailNachricht(id: string, manuellerStatus: MailManuellerStatus | null): Promise<MailNachricht> {
+  return anfrage(`/mail-postfach/nachrichten/${id}`, { method: "PUT", body: JSON.stringify({ manuellerStatus }) });
+}
+
+export function erstelleKarteAusMail(id: string): Promise<{ mail: MailNachricht; karte: unknown }> {
+  return anfrage(`/mail-postfach/nachrichten/${id}/karte`, { method: "POST" });
+}
+
+export function getMailPostfachEinstellungen(): Promise<MailPostfachEinstellungenOeffentlich> {
+  return anfrage("/mail-postfach/einstellungen");
+}
+
+/** Alle Felder ausser berichtszeit sind optional: fehlend = unveraendert lassen, null = gezielt
+ *  loeschen (wichtig fuer imapPasswort/anthropicApiKey, deren aktueller Wert dem Formular nie
+ *  angezeigt wird - siehe CLAUDE.md, "Optionale Textfelder leeren"). */
+export interface MailPostfachEinstellungenEingabe {
+  berichtszeit: string;
+  berichtEmpfaenger?: string | null;
+  imapHost?: string | null;
+  imapPort?: number | null;
+  imapUser?: string | null;
+  imapPasswort?: string | null;
+  anthropicApiKey?: string | null;
+}
+
+export function updateMailPostfachEinstellungen(
+  daten: MailPostfachEinstellungenEingabe,
+): Promise<MailPostfachEinstellungenOeffentlich> {
+  return anfrage("/mail-postfach/einstellungen", { method: "PUT", body: JSON.stringify(daten) });
+}
+
+export interface MailTestErgebnis {
+  ok: boolean;
+  fehler?: string;
+}
+
+/** Testet die IMAP-Verbindung mit den uebergebenen Werten; ein weggelassenes Passwort faellt auf
+ *  den bereits gespeicherten Wert zurueck (so laesst sich auch ohne erneute Eingabe testen). */
+export function testeImapVerbindung(daten: {
+  host?: string;
+  port?: number;
+  user?: string;
+  passwort?: string;
+}): Promise<MailTestErgebnis> {
+  return anfrage("/mail-postfach/einstellungen/imap-testen", { method: "POST", body: JSON.stringify(daten) });
+}
+
+export function testeAnthropicApiKey(apiKey?: string): Promise<MailTestErgebnis> {
+  return anfrage("/mail-postfach/einstellungen/anthropic-testen", { method: "POST", body: JSON.stringify({ apiKey }) });
+}
+
+export function erstelleMailBericht(): Promise<MailBericht> {
+  return anfrage("/mail-postfach/bericht", { method: "POST" });
+}
+
+export function getMailBerichte(): Promise<MailBericht[]> {
+  return anfrage("/mail-postfach/berichte");
 }

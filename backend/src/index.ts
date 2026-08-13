@@ -25,7 +25,9 @@ import { kanbanRoutes } from "./routes/kanban";
 import { instanzSyncRoutes } from "./routes/instanzSync";
 import { turnierSyncRoutes } from "./routes/turnierSync";
 import { syncRoutes } from "./routes/sync";
+import { mailPostfachRoutes } from "./routes/mailPostfach";
 import { starteCheckinTimer } from "./sync/checkin";
+import { starteMailBerichtTimer } from "./mail/scheduler";
 
 // Einstiegspunkt des Backends: baut die Fastify-Instanz, registriert Cookie-Plugin, den
 // Auth-Hook und alle Routen-Module und startet den Server. Port/Host kommen aus der Umgebung
@@ -80,6 +82,7 @@ const registerApiRoutes = async (instance: FastifyInstance): Promise<void> => {
   instance.register(instanzSyncRoutes);
   instance.register(turnierSyncRoutes);
   instance.register(syncRoutes);
+  instance.register(mailPostfachRoutes);
 };
 
 // Registriert alles in der richtigen Reihenfolge und startet den Listener.
@@ -114,6 +117,7 @@ const start = async () => {
 
     await ensureIndexes();
     starteCheckinTimer(server.log);
+    starteMailBerichtTimer(server.log);
     await server.listen({ port: PORT, host: HOST });
   } catch (err) {
     server.log.error(err);

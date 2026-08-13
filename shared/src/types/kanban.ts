@@ -39,6 +39,14 @@ export interface KanbanKarte extends CouchMeta {
    * Rueckfragen, auch instanzuebergreifend (die Benutzer-ID `erstelltVon` ist nur auf der
    * Quell-Instanz aufloesbar). Die Funktion laeuft stets angemeldet, also immer gesetzt. */
   erstelltVonEmail?: string;
+  /** Herkunft ausserhalb der manuellen Board-Pflege, aktuell nur das Mail-Postfach
+   * (backend/src/mail/bericht.ts). Fehlt bei ganz normal von Hand angelegten Karten. */
+  herkunft?: "mailPostfach";
+  /** true = automatisch von der KI-Klassifikation angelegt (ungeprueft) statt von Hand -
+   * im UI als "KI · ungeprüft" markieren, damit sie nicht ungeprueft weiterbearbeitet wird. */
+  kiErstellt?: boolean;
+  /** Bei herkunft "mailPostfach": Referenz zurueck auf die ausloesende MailNachricht. */
+  quellMailId?: string;
   erstelltAm: Zeitstempel;
   aktualisiertAm: Zeitstempel;
 }

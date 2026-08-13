@@ -16,6 +16,7 @@ import type { Benutzer } from "@torball/shared";
 import { findAllByType, insertDoc } from "../repository";
 import { erzeugeBeispieldaten } from "../demo/beispieldaten";
 import { erstelleSnapshot, stelleSnapshotWiederher } from "../demo/snapshot";
+import { erstelleMailBericht } from "../mail/bericht";
 
 type Optionen = Record<string, string>;
 type Befehl = (optionen: Optionen) => Promise<void>;
@@ -85,6 +86,13 @@ const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
       "automatisch über einen systemd-Timer, nicht von Hand.",
     ausfuehren: demoSnapshotWiederherstellen,
   },
+  "mail:bericht:erstellen": {
+    beschreibung:
+      "Ruft neue Mails aus dem Feedback-Postfach per IMAP ab, laesst sie per KI klassifizieren, " +
+      'legt fuer erkannte Anforderungen Kanban-Karten an ("KI-erstellt/ungeprueft") und verschickt ' +
+      "den Bericht. Nur bei MAIL_POSTFACH_AKTIV=true, Konsolen-Fallback zum Knopf in der Oberflaeche.",
+    ausfuehren: mailBerichtErstellen,
+  },
 };
 
 async function demoBeispieldaten(): Promise<void> {
@@ -100,6 +108,18 @@ async function demoSnapshotErstellen(): Promise<void> {
 async function demoSnapshotWiederherstellen(): Promise<void> {
   const { anzahlDokumente } = await stelleSnapshotWiederher();
   console.log(`Snapshot wiederhergestellt: ${anzahlDokumente} Dokumente aus der "_golden"-Datenbank übernommen.`);
+}
+
+async function mailBerichtErstellen(): Promise<void> {
+  if (process.env.MAIL_POSTFACH_AKTIV !== "true") {
+    console.error('Mail-Postfach ist deaktiviert (MAIL_POSTFACH_AKTIV ist nicht "true" in backend/.env).');
+    process.exitCode = 1;
+    return;
+  }
+  const bericht = await erstelleMailBericht("manuell");
+  console.log(
+    `Bericht erstellt: ${bericht.anzahlMails} Mail(s) beruecksichtigt, ${bericht.erstellteKartenIds.length} Kanban-Karte(n) angelegt.`,
+  );
 }
 
 async function benutzerListe(): Promise<void> {

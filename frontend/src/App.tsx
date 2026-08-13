@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { TurnierListePage } from "./pages/TurnierListePage";
 import { TurnierAnlegenPage } from "./pages/TurnierAnlegenPage";
@@ -25,6 +26,7 @@ import { StammdatenPage } from "./pages/StammdatenPage";
 import { StandardregelnPage } from "./pages/StandardregelnPage";
 import { SystemeinstellungenPage } from "./pages/SystemeinstellungenPage";
 import { KanbanBoardPage } from "./pages/KanbanBoardPage";
+import { MailPostfachPage } from "./pages/MailPostfachPage";
 import { EinstellungenPage } from "./pages/EinstellungenPage";
 import { HilfePage } from "./pages/HilfePage";
 import { UeberPage } from "./pages/UeberPage";
@@ -33,6 +35,7 @@ import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { UmgebungsBanner } from "./components/UmgebungsBanner";
 import { Fusszeile } from "./components/Fusszeile";
 import { useAuth } from "./auth";
+import { mailPostfachVerfuegbar } from "./api";
 
 // Wurzelkomponente: globale Kopfzeile (Navigation) plus das komplette Routing der App.
 // Oeffentliche Routen (Login, Einladung, Passwort-Reset, Ergebnis-Erfassung per Link,
@@ -46,6 +49,16 @@ function Kopfzeile() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const darfBenutzerVerwalten = benutzer?.globaleRolle === "admin" || benutzer?.globaleRolle === "manager";
+
+  // Mail-Postfach ist nur auf der Entwicklungsinstanz aktiv (MAIL_POSTFACH_AKTIV, siehe
+  // backend/src/mail/postfach.ts) - der Menuepunkt wird nur gezeigt, wenn die oeffentliche
+  // Verfuegbarkeits-Abfrage das bestaetigt (kein Admin-Login noetig, um das zu pruefen).
+  const [mailPostfachDaAktiv, setMailPostfachDaAktiv] = useState(false);
+  useEffect(() => {
+    mailPostfachVerfuegbar()
+      .then((r) => setMailPostfachDaAktiv(r.verfuegbar))
+      .catch(() => setMailPostfachDaAktiv(false));
+  }, []);
 
   async function abmelden() {
     await logout();
@@ -108,7 +121,11 @@ function Kopfzeile() {
           {benutzer?.globaleRolle === "admin" && (
             <KopfzeilenMenue
               label="Admin"
-              aktiv={pathname.startsWith("/systemeinstellungen") || pathname.startsWith("/entwicklungs-board")}
+              aktiv={
+                pathname.startsWith("/systemeinstellungen") ||
+                pathname.startsWith("/entwicklungs-board") ||
+                pathname.startsWith("/mail-postfach")
+              }
             >
               <Link to="/systemeinstellungen" className="kopfzeile-menue-eintrag" role="menuitem">
                 Systemeinstellungen
@@ -116,6 +133,11 @@ function Kopfzeile() {
               <Link to="/entwicklungs-board" className="kopfzeile-menue-eintrag" role="menuitem">
                 Entwicklungs-Board
               </Link>
+              {mailPostfachDaAktiv && (
+                <Link to="/mail-postfach" className="kopfzeile-menue-eintrag" role="menuitem">
+                  Mail-Postfach
+                </Link>
+              )}
             </KopfzeilenMenue>
           )}
           <NavLink
@@ -214,6 +236,7 @@ function App() {
             <Route path="/standardregeln" element={<StandardregelnPage />} />
             <Route path="/systemeinstellungen" element={<SystemeinstellungenPage />} />
             <Route path="/entwicklungs-board" element={<KanbanBoardPage />} />
+            <Route path="/mail-postfach" element={<MailPostfachPage />} />
             <Route path="/turniere/neu" element={<TurnierAnlegenPage />} />
             <Route path="/turniere/:id/regeln-erfassen" element={<SpielregelnErfassenPage />} />
             <Route path="/turniere/:id/mannschaften-erfassen" element={<MannschaftenErfassenPage />} />

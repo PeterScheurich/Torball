@@ -996,6 +996,13 @@ button:disabled {
 .regeln-tabelle {
   max-width: 30em;
 }
+/* Standardmaessig richten th/td vertikal mittig aus - faellt bei einzeiligem Inhalt nicht auf,
+   schiebt das Label aber sichtbar zwischen Eingabefeld und Hinweistext, sobald die Wert-Zelle
+   mehrzeilig wird (z.B. Eingabefeld + .feld-hinweis darunter, siehe Mail-Postfach-Passwort/
+   API-Key-Felder). Oben ausrichten, damit das Label immer neben dem Eingabefeld steht. */
+.regeln-tabelle th {
+  vertical-align: top;
+}
 /* Von einer Option abhaengige Zeile (z.B. Tordifferenz-Grenze unter dem Abbruch-Schalter,
    silbernes Tor unter der Verlaengerung) leicht eingerueckt, damit die Abhaengigkeit erkennbar
    bleibt wie zuvor bei der Nicht-Tabellen-Darstellung. */

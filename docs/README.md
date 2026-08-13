@@ -12,6 +12,8 @@ Checkout dieses Repos hat sie nicht.
 
 - [Installation / Konfiguration](installation-konfiguration.md)
 - [Testumgebung starten](testumgebung-starten.md)
+- [Besonderheiten der Entwicklungs-Umgebung](entwicklungs-umgebung.md)
+- [Besonderheiten der Demo-Umgebung](demo-umgebung.md)
 - [Torball – Gesamtspezifikation (fachlich & technisch)](torball_gesamtspezifikation.md)
 
 ## Weitere Ordner

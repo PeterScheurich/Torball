@@ -520,6 +520,28 @@ nur markiert. Reine Logik + Tests in
 CouchDB-Replikation: `docs/kanban-board.md`. Löschungen syncen bewusst nicht
 (kein Tombstone).
 
+**Mail-Postfach (admin-only, nur Entwicklungsinstanz, `backend/src/mail/`):** liest per IMAP ein
+zentrales Feedback-Postfach der Software (Fehlermeldungen/Lob/Anregungen/Kritik/Spam), fasst neue
+Mails per KI (Anthropic, Modell `claude-sonnet-5`) zusammen und legt erkannte Anforderungen
+automatisch, aber klar als `kiErstellt: true`/„KI · ungeprüft" markiert (`KanbanKarte`-Felder
+`herkunft`/`kiErstellt`/`quellMailId`), im Entwicklungs-Kanban-Board an – zusätzlich ein manueller
+„Als Kanban-Karte übernehmen"-Knopf pro Mail, auch ohne KI-Treffer. **Freischaltung nur über das
+Env-Flag `MAIL_POSTFACH_AKTIV`** (analog `KANBAN_SYNC`) – bewusst NICHT über die Oberfläche
+umschaltbar, weil ein UI-Schalter versehentlich auch auf Prod/Demo aktivierbar wäre. **Alle
+übrigen Konfigurationsdaten (IMAP-Host/Port/Benutzer/Passwort, Anthropic-API-Key,
+Bericht-Empfänger, Berichtszeit) dagegen bewusst über die Oberfläche** (Singleton-Dokument
+`mailPostfachEinstellungen`, `MailPostfachPage.tsx`) statt in `backend/.env` – Nutzer-Vorgabe.
+IMAP-Passwort/API-Key liegen unverschlüsselt in CouchDB, write-only (nie über GET zurückgegeben,
+gleiches Muster wie das TOTP-Secret) – zwei Test-Knöpfe („Verbindung testen"/„API-Key testen")
+prüfen die aktuell im Formular stehenden Werte gegen den echten Server, ohne zu speichern. Die
+IMAP-UID wird bewusst **sofort nach dem Einlesen** fortgeschrieben, noch vor der KI-Klassifikation
+(`mail/bericht.ts`) – schlägt die Klassifikation fehl, werden Mails beim nächsten Lauf erneut
+klassifiziert, aber nicht nochmal per IMAP abgerufen. Täglicher Berichtslauf über `mail/scheduler.ts`
+(`setInterval`-Uhrzeitvergleich, keine Cron-Abstraktion im Projekt, analog `sync/checkin.ts`) oder
+manuell per Knopf/CLI-Befehl `mail:bericht:erstellen`. `MailBericht` speichert `kiInputTokens`/
+`kiOutputTokens` aus `response.usage` für eine grobe Kostenabschätzung direkt im Bericht. Details:
+`docs/Protokolle/2026-08-13-mail-postfach.md`.
+
 **Turnier-Lebenszyklus / Abschließen:** `TurnierStatus` ist
 `entwurf | aktiv | abgeschlossen | archiviert` (Spez 10.3 entsprechend
 aktualisiert). Die Turnierübersicht (`TurnierListePage`) trennt **geplant**
