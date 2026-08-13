@@ -103,7 +103,7 @@ function Kopfzeile() {
               aktiv={pathname.startsWith("/stammdaten") || pathname.startsWith("/benutzerverwaltung")}
             >
               <Link to="/stammdaten" className="kopfzeile-menue-eintrag" role="menuitem">
-                Vereine &amp; Teams
+                Vereine, Teams &amp; Schiedsrichter
               </Link>
               {darfBenutzerVerwalten && (
                 <Link to="/benutzerverwaltung" className="kopfzeile-menue-eintrag" role="menuitem">
