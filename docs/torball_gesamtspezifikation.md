@@ -1105,7 +1105,6 @@ Ergänzend zu den verteilten „Umsetzungsstand"-Notizen hier die wesentlichen z
 - **In-App-Hilfe (neu).** `/hilfe` mit gegliederten, aufklappbaren Themen; auf öffentlichen/externen Seiten stattdessen kontextbezogene Hilfe.
 - **Barrierefreiheit (Abschnitt 24).** Pflichtfelder werden durchgängig gekennzeichnet (Formulare und Datentabellen).
 - **Sicherheit (Abschnitt 25.1).** Das Session-Cookie erhält das `Secure`-Flag umgebungsgesteuert über `COOKIE_SECURE` (in Produktion hinter HTTPS zwingend `true`).
-- **Fürs nächste Release vorgesehen.** `passwortMindestlaenge` und weitere reine Systemeinstellungen tatsächlich verdrahten und in die Oberfläche aufnehmen.
 
 ---
 
