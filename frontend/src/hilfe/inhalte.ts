@@ -220,13 +220,13 @@ export const HILFE_THEMEN: HilfeThema[] = [
   },
   {
     id: "stammdaten",
-    titel: "Stammdaten: Vereine, Teams & Schiedsrichter",
-    kurz: "Vereine, Teams und Schiedsrichter zentral pflegen – sie stehen dann für alle Turniere zur Verfügung.",
+    titel: "Stammdaten: Vereine & Teams",
+    kurz: "Vereine und ihre Teams zentral pflegen – sie stehen dann für alle Turniere zur Verfügung.",
     abschnitte: [
       {
         frage: "Was sind Stammdaten?",
         text: [
-          "Unter „Stammdaten“ pflegst du Vereine, ihre Teams und Schiedsrichter turnierübergreifend an einer Stelle. Beim Erfassen einer Mannschaft bzw. eines Schiedsrichters in einem Turnier greifst du auf diese Liste zurück, statt jedes Mal alles neu einzutippen.",
+          "Unter „Stammdaten“ pflegst du Vereine und ihre Teams turnierübergreifend an einer Stelle. Beim Erfassen einer Mannschaft in einem Turnier greifst du auf diese Liste zurück, statt jedes Mal alles neu einzutippen.",
         ],
       },
       {
@@ -247,6 +247,25 @@ export const HILFE_THEMEN: HilfeThema[] = [
         frage: "Ändern sich laufende Turniere mit, wenn ich Stammdaten anpasse?",
         text: [
           "Nein. Beim Anlegen einer Turnier-Mannschaft werden die Stammdaten kopiert, nicht dauerhaft verknüpft. Eine spätere Änderung hier wirkt sich nicht auf bereits laufende oder abgeschlossene Turniere aus.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "schiedsrichter-stammdaten",
+    titel: "Stammdaten: Schiedsrichter",
+    kurz: "Schiedsrichter turnierübergreifend pflegen – ein eigener Menüpunkt unter „Stammdaten“.",
+    abschnitte: [
+      {
+        frage: "Was sind Schiedsrichter-Stammdaten?",
+        text: [
+          "Unter „Stammdaten → Schiedsrichter“ pflegst du Schiedsrichter turnierübergreifend an einer Stelle, unabhängig von Vereinen und Teams. Optional lässt sich ein Verein zuordnen. Beim Erfassen eines Schiedsrichters in einem Turnier greifst du über „Aus Stammdaten übernehmen“ auf diese Liste zurück.",
+        ],
+      },
+      {
+        frage: "Ändern sich laufende Turniere mit, wenn ich diese Stammdaten anpasse?",
+        text: [
+          "Nein. Beim Übernehmen in ein Turnier werden die Werte kopiert, nicht dauerhaft verknüpft. Eine spätere Änderung hier wirkt sich nicht auf bereits laufende oder abgeschlossene Turniere aus.",
         ],
       },
     ],
@@ -296,7 +315,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Muss ich jeden Schiedsrichter jedes Mal neu eintippen?",
         text: [
-          "Nein. Unter „Stammdaten“ lassen sich Schiedsrichter turnierübergreifend anlegen (analog Vereinen und Teams). Im Anlege-Formular des Turniers wählst du „Aus Stammdaten übernehmen“, um eine dort erfasste Person vorzubefüllen – oder „Meine Profildaten übernehmen“ für dich selbst. Beides füllt nur das Formular vor; erst der Klick auf „hinzufügen“ speichert die Person im Turnier.",
+          "Nein. Unter „Stammdaten → Schiedsrichter“ lassen sich Schiedsrichter turnierübergreifend anlegen. Im Anlege-Formular des Turniers wählst du „Aus Stammdaten übernehmen“, um eine dort erfasste Person vorzubefüllen – oder „Meine Profildaten übernehmen“ für dich selbst. Beides füllt nur das Formular vor; erst der Klick auf „hinzufügen“ speichert die Person im Turnier.",
         ],
       },
     ],

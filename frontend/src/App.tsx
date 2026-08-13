@@ -23,6 +23,7 @@ import { OeffentlicheStartseitePage } from "./pages/OeffentlicheStartseitePage";
 import { ProfilPage } from "./pages/ProfilPage";
 import { BenutzerverwaltungPage } from "./pages/BenutzerverwaltungPage";
 import { StammdatenPage } from "./pages/StammdatenPage";
+import { SchiedsrichterStammdatenPage } from "./pages/SchiedsrichterStammdatenPage";
 import { StandardregelnPage } from "./pages/StandardregelnPage";
 import { SystemeinstellungenPage } from "./pages/SystemeinstellungenPage";
 import { KanbanBoardPage } from "./pages/KanbanBoardPage";
@@ -100,10 +101,17 @@ function Kopfzeile() {
           {benutzer && (
             <KopfzeilenMenue
               label="Stammdaten"
-              aktiv={pathname.startsWith("/stammdaten") || pathname.startsWith("/benutzerverwaltung")}
+              aktiv={
+                pathname.startsWith("/stammdaten") ||
+                pathname.startsWith("/schiedsrichter-stammdaten") ||
+                pathname.startsWith("/benutzerverwaltung")
+              }
             >
               <Link to="/stammdaten" className="kopfzeile-menue-eintrag" role="menuitem">
-                Vereine, Teams &amp; Schiedsrichter
+                Vereine &amp; Teams
+              </Link>
+              <Link to="/schiedsrichter-stammdaten" className="kopfzeile-menue-eintrag" role="menuitem">
+                Schiedsrichter
               </Link>
               {darfBenutzerVerwalten && (
                 <Link to="/benutzerverwaltung" className="kopfzeile-menue-eintrag" role="menuitem">
@@ -233,6 +241,7 @@ function App() {
             <Route path="/ueber" element={<UeberPage />} />
             <Route path="/benutzerverwaltung" element={<BenutzerverwaltungPage />} />
             <Route path="/stammdaten" element={<StammdatenPage />} />
+            <Route path="/schiedsrichter-stammdaten" element={<SchiedsrichterStammdatenPage />} />
             <Route path="/standardregeln" element={<StandardregelnPage />} />
             <Route path="/systemeinstellungen" element={<SystemeinstellungenPage />} />
             <Route path="/entwicklungs-board" element={<KanbanBoardPage />} />

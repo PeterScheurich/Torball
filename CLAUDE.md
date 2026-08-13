@@ -325,10 +325,13 @@ berührt.
 **Schiedsrichter-Stammdaten (turnierübergreifend, analog Verein/Team):**
 `Schiedsrichter` (`docType: "schiedsrichter"`, eigener Typ + eigene Route
 `backend/src/routes/schiedsrichterStammdaten.ts`, `/schiedsrichter-stammdaten`)
-dient als wiederverwendbare Vorlage, gepflegt auf der Stammdaten-Seite unter
-„Vereine, Teams und Schiedsrichter" (`SchiedsrichterStammdatenVerwaltung.tsx`,
-gleiches Rechtemodell wie Vereine/Teams: Lesen für jede Anmeldung, Schreiben
-nur Admin/Manager). Referenziert wie die turnierbezogene Variante einen Verein
+dient als wiederverwendbare Vorlage, gepflegt auf einer **eigenen** Stammdaten-Seite
+(`SchiedsrichterStammdatenPage.tsx` + `SchiedsrichterStammdatenVerwaltung.tsx`, eigener
+Menüpunkt „Stammdaten → Schiedsrichter" in `App.tsx`) – bewusst **nicht** als Unterabschnitt
+der Vereine/Teams-Seite (`StammdatenPage.tsx`), da keine zwingende fachliche Abhängigkeit
+besteht (Nutzer-Vorgabe 2026-08-14: erster Wurf hatte es dort mit eingebaut, war nicht
+gelungen). Gleiches Rechtemodell wie Vereine/Teams: Lesen für jede Anmeldung, Schreiben
+nur Admin/Manager. Referenziert wie die turnierbezogene Variante einen Verein
 (optional, neutrale Personen ohne Vereinsbindung sind zulässig). Bewusst
 **keine** Referenz-Prüfung beim Löschen (anders als Verein/Team) – die
 Übernahme in ein Turnier kopiert die Werte (`importiertAusStammdatenSchiedsrichterId`
