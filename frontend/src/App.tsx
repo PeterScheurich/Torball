@@ -15,6 +15,8 @@ import { EinladungAnnehmenPage } from "./pages/EinladungAnnehmenPage";
 import { PasswortVergessenPage } from "./pages/PasswortVergessenPage";
 import { PasswortResetPage } from "./pages/PasswortResetPage";
 import { ErgebnisErfassungPage } from "./pages/ErgebnisErfassungPage";
+import { TurnierCodeAnmeldenPage } from "./pages/TurnierCodeAnmeldenPage";
+import { SpielleitungCodePage } from "./pages/SpielleitungCodePage";
 import { OeffentlicheTurnierseitePage } from "./pages/OeffentlicheTurnierseitePage";
 import { OeffentlicheStartseitePage } from "./pages/OeffentlicheStartseitePage";
 import { ProfilPage } from "./pages/ProfilPage";
@@ -50,13 +52,15 @@ function Kopfzeile() {
     navigate("/login");
   }
 
-  // Oeffentliche/externe Seiten (oeffentliche Turnierseite, Ergebnis-Erfassung per Link) sind fuer
-  // nicht angemeldete Besucher gedacht. Dort blenden wir die App-Navigation (inkl. globaler Hilfe)
-  // bewusst aus und zeigen die Marke als reinen Text - ein Klick darauf fuehrte sonst ueber "/" in
-  // die Anmeldung (GeschuetzteRoute). Angemeldete Nutzer (z.B. Vorschau durch die Turnierleitung)
-  // behalten die volle Kopfzeile.
+  // Oeffentliche/externe Seiten (oeffentliche Turnierseite, Ergebnis-Erfassung per Link,
+  // Turnier-Code-Anmeldung/-Sitzung) sind fuer nicht angemeldete Besucher gedacht. Dort blenden
+  // wir die App-Navigation (inkl. globaler Hilfe) bewusst aus und zeigen die Marke als reinen Text
+  // - ein Klick darauf fuehrte sonst ueber "/" in die Anmeldung (GeschuetzteRoute). Angemeldete
+  // Nutzer (z.B. Vorschau durch die Turnierleitung) behalten die volle Kopfzeile.
   const oeffentlicheAnsicht =
-    /^\/turniere\/[^/]+\/oeffentlich$/.test(pathname) || pathname.startsWith("/ergebnis-erfassung/");
+    /^\/turniere\/[^/]+\/oeffentlich$/.test(pathname) ||
+    pathname.startsWith("/ergebnis-erfassung/") ||
+    /^\/turniere\/[^/]+\/code(\/|$)/.test(pathname);
   if (oeffentlicheAnsicht && !benutzer) {
     return (
       <header>
@@ -189,6 +193,12 @@ function App() {
           <Route path="/passwort-vergessen" element={<PasswortVergessenPage />} />
           <Route path="/passwort-reset/:token" element={<PasswortResetPage />} />
           <Route path="/ergebnis-erfassung/:tokenWert" element={<ErgebnisErfassungPage />} />
+          <Route path="/turniere/:id/code" element={<TurnierCodeAnmeldenPage />} />
+          {/* Turnierleitung-Code: volle Verwaltungsansicht ausserhalb von GeschuetzteRoute - die
+              Komponente selbst und die darin eingebundenen Tab-Komponenten haengen nicht an
+              useAuth(), nur diese Route-Einbettung entscheidet ueber die Anmeldepflicht. */}
+          <Route path="/turniere/:id/code/turnierleitung" element={<TurnierVerwaltenPage />} />
+          <Route path="/turniere/:id/code/spielleitung" element={<SpielleitungCodePage />} />
           <Route path="/turniere/:id/oeffentlich" element={<OeffentlicheTurnierseitePage />} />
           <Route path="/turniere/:id/oeffentlich/druck" element={<OeffentlicheDruckansichtPage />} />
           <Route path="/einstellungen" element={<EinstellungenPage />} />

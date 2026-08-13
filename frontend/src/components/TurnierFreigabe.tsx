@@ -3,10 +3,13 @@ import type { Turnier, TurnierBerechtigung, TurnierRolle } from "@torball/shared
 import {
   getBenutzerListe,
   getTurnierBerechtigungen,
+  getTurnierCodes,
   turnierBerechtigungEntziehen,
   turnierBerechtigungVergeben,
+  turnierCodesSetzen,
   updateTurnier,
   type BenutzerProfil,
+  type TurnierCodesStatus,
 } from "../api";
 
 const ROLLEN_LABEL: Record<TurnierRolle, string> = {
@@ -48,6 +51,12 @@ export function TurnierFreigabe({
   const [rolle, setRolle] = useState<TurnierRolle>("turnierleitung");
   const [fehler, setFehler] = useState<string | undefined>();
 
+  const [codesStatus, setCodesStatus] = useState<TurnierCodesStatus | undefined>();
+  const [turnierleitungCodeEingabe, setTurnierleitungCodeEingabe] = useState("");
+  const [spielleitungCodeEingabe, setSpielleitungCodeEingabe] = useState("");
+  const [codesFehler, setCodesFehler] = useState<string | undefined>();
+  const [codesHinweis, setCodesHinweis] = useState<string | undefined>();
+
   const laden = useCallback(async () => {
     try {
       setBerechtigungen(await getTurnierBerechtigungen(turnierId));
@@ -57,12 +66,34 @@ export function TurnierFreigabe({
     }
   }, [turnierId]);
 
+  const codesLaden = useCallback(async () => {
+    try {
+      setCodesStatus(await getTurnierCodes(turnierId));
+    } catch (err) {
+      setCodesFehler(err instanceof Error ? err.message : "Fehler beim Laden der Codes");
+    }
+  }, [turnierId]);
+
   useEffect(() => {
     laden();
+    codesLaden();
     getBenutzerListe()
       .then(setBenutzer)
       .catch(() => setBenutzerListeFehlt(true));
-  }, [laden]);
+  }, [laden, codesLaden]);
+
+  async function codeSetzen(feld: "turnierleitungCode" | "spielleitungCode", wert: string | null) {
+    setCodesFehler(undefined);
+    setCodesHinweis(undefined);
+    try {
+      setCodesStatus(await turnierCodesSetzen(turnierId, { [feld]: wert }));
+      if (feld === "turnierleitungCode") setTurnierleitungCodeEingabe("");
+      else setSpielleitungCodeEingabe("");
+      setCodesHinweis(wert ? "Code gespeichert." : "Code gelöscht.");
+    } catch (err) {
+      setCodesFehler(err instanceof Error ? err.message : "Fehler beim Speichern des Codes");
+    }
+  }
 
   const nameVon = (id: string) => benutzer.find((b) => b._id === id)?.name ?? id;
   const vergebbareBenutzer = benutzer.filter((b) => !berechtigungen.some((x) => x.benutzerId === b._id));
@@ -199,6 +230,90 @@ export function TurnierFreigabe({
           </button>
         </form>
       )}
+
+      <h3>Codes für Lokales Netzwerk</h3>
+      <p className="feld-hinweis">
+        Alternativer Zugriff ohne eigenes Konto für Geräte im selben Netzwerk wie der Turnier-Server (Betriebsmodus
+        „Lokales Netzwerk", Abschnitt 21.3). Wer den Code kennt, meldet sich unter{" "}
+        <code>{`${window.location.origin}/turniere/${turnierId}/code`}</code> an.
+      </p>
+
+      {codesFehler && <p role="alert">{codesFehler}</p>}
+      {codesHinweis && <p>{codesHinweis}</p>}
+
+      <div className="tabellen-wrapper">
+        <table>
+          <caption className="sr-only">Turnier-Codes</caption>
+          <thead>
+            <tr>
+              <th scope="col">Rolle</th>
+              <th scope="col">Status</th>
+              <th scope="col">Neuer Code</th>
+              <th scope="col">Aktion</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Turnierleitung (Vollzugriff)</th>
+              <td>{codesStatus?.turnierleitungCodeAktiv ? "Aktiv" : "Nicht gesetzt"}</td>
+              <td>
+                <label className="sr-only" htmlFor="code-turnierleitung">
+                  Neuer Turnierleitung-Code
+                </label>
+                <input
+                  id="code-turnierleitung"
+                  autoComplete="off"
+                  value={turnierleitungCodeEingabe}
+                  onChange={(e) => setTurnierleitungCodeEingabe(e.target.value)}
+                />
+              </td>
+              <td>
+                <button
+                  type="button"
+                  onClick={() => codeSetzen("turnierleitungCode", turnierleitungCodeEingabe.trim())}
+                  disabled={!turnierleitungCodeEingabe.trim()}
+                >
+                  Speichern
+                </button>{" "}
+                {codesStatus?.turnierleitungCodeAktiv && (
+                  <button type="button" onClick={() => codeSetzen("turnierleitungCode", null)}>
+                    Löschen
+                  </button>
+                )}
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Spielleitung (Spielplan &amp; Ergebnisse)</th>
+              <td>{codesStatus?.spielleitungCodeAktiv ? "Aktiv" : "Nicht gesetzt"}</td>
+              <td>
+                <label className="sr-only" htmlFor="code-spielleitung">
+                  Neuer Spielleitung-Code
+                </label>
+                <input
+                  id="code-spielleitung"
+                  autoComplete="off"
+                  value={spielleitungCodeEingabe}
+                  onChange={(e) => setSpielleitungCodeEingabe(e.target.value)}
+                />
+              </td>
+              <td>
+                <button
+                  type="button"
+                  onClick={() => codeSetzen("spielleitungCode", spielleitungCodeEingabe.trim())}
+                  disabled={!spielleitungCodeEingabe.trim()}
+                >
+                  Speichern
+                </button>{" "}
+                {codesStatus?.spielleitungCodeAktiv && (
+                  <button type="button" onClick={() => codeSetzen("spielleitungCode", null)}>
+                    Löschen
+                  </button>
+                )}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

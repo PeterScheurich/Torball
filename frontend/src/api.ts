@@ -594,6 +594,46 @@ export function turnierBerechtigungEntziehen(id: string): Promise<void> {
   return anfrage(`/berechtigungen/${id}`, { method: "DELETE" });
 }
 
+// --- Turnier-Codes (Lokales Netzwerk, Abschnitt 21.3) ---
+
+export type TurnierCodeRolle = Extract<TurnierRolle, "turnierleitung" | "spielleitung">;
+
+export interface TurnierCodeSitzung {
+  turnierId: string;
+  turnierName: string;
+  rolle: TurnierCodeRolle;
+}
+
+/** Pendant zu getMe() fuer Code-Sessions - das Backend liefert 401, wenn keine aktive
+ *  Code-Session besteht; wird vom Aufrufer analog zu getMe() in auth.tsx abgefangen. */
+export function getTurnierCodeMe(): Promise<TurnierCodeSitzung> {
+  return anfrage("/turnier-code/me");
+}
+
+export function turnierCodeAnmeldung(
+  turnierId: string,
+  code: string,
+): Promise<{ rolle: TurnierCodeRolle; turnierName: string }> {
+  return anfrage(`/turniere/${turnierId}/code-anmeldung`, { method: "POST", body: JSON.stringify({ code }) });
+}
+
+export interface TurnierCodesStatus {
+  turnierleitungCodeAktiv: boolean;
+  spielleitungCodeAktiv: boolean;
+}
+
+export function getTurnierCodes(turnierId: string): Promise<TurnierCodesStatus> {
+  return anfrage(`/turniere/${turnierId}/codes`);
+}
+
+/** null loescht den jeweiligen Code (gleiche Konvention wie ueberall sonst, siehe updateTurnier). */
+export function turnierCodesSetzen(
+  turnierId: string,
+  daten: { turnierleitungCode?: string | null; spielleitungCode?: string | null },
+): Promise<TurnierCodesStatus> {
+  return anfrage(`/turniere/${turnierId}/codes`, { method: "PUT", body: JSON.stringify(daten) });
+}
+
 // --- Ergebniserfassung (Abschnitt 9/14) ---
 
 export interface ErgebnisEingabe {
