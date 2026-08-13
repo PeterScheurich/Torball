@@ -25,7 +25,17 @@ Turnierseite und einer barrierefreien Bedienung.
 - **Öffentliche Turnierseite** je Turnier (ohne Login), Bereiche einzeln
   freischaltbar, mit QR-Code zum Öffnen auf dem Smartphone – plus eine
   **öffentliche Startseite**, die alle freigegebenen Turniere auflistet.
-- **Benutzerverwaltung** mit Rollen, Einladungs-Flow, Zwei-Faktor-Anmeldung; die
+- **Turnier-Codes** für den kontolosen Zugriff im lokalen Netzwerk: weitere
+  Geräte am Spielort greifen über einen geteilten Code statt eines eigenen
+  Kontos auf genau ein Turnier zu (getrennt für Turnier- und Spielleitung).
+- **Turnier-Sync für echten Offline-Betrieb**: ein auf der zentralen Plattform
+  geplantes Turnier lässt sich auf eine **lokale Installation** herunterladen
+  und dort auch ohne (oder mit unzuverlässiger) Internetverbindung am
+  Spielort weiterverwalten – Ergebnisse laufen automatisch zurück, sobald
+  wieder eine Verbindung besteht (siehe „Lokal auf einem Windows-Rechner
+  nutzen" unten).
+- **Benutzerverwaltung** mit Rollen, Einladungs-Flow, Zwei-Faktor-Anmeldung,
+  optionaler Selbstregistrierung sowie Login-Sperre nach Fehlversuchen; die
   Turnierliste zeigt, wer ein Turnier angelegt/zuletzt bearbeitet/abgeschlossen hat.
 - **In-App-Hilfe** unter `/hilfe` sowie kontextbezogene Hilfe auf öffentlichen
   Seiten.
@@ -56,6 +66,12 @@ Je nach Zweck gibt es drei Wege – ausführlich beschrieben in
 | Entwickeln/Beitragen (jede Plattform) | Abschnitt „Schnellstart" unten | `docs/installation-konfiguration.md` |
 | Lokal auf einem Windows-Rechner nutzen (z. B. offline am Spielort) | `deploy/Installieren-Windows.cmd` doppelklicken | Abschnitt „Lokale Installation unter Windows" |
 | Produktiv auf einem Linux-Server betreiben | `deploy/provision.sh` + `deploy/deploy-instanz.sh` | Abschnitt „Produktive Installation (Debian-LXC/VM)" |
+
+Für die lokale Windows-Installation wird der Quellcode benötigt: mit Zugriff
+auf das interne Repo per `git clone`, sonst bietet jede laufende Instanz ihn
+zusätzlich als ZIP-Download unter `/download/torball-quellcode.zip` an (bei
+jedem Deploy neu erzeugt) – entpacken und danach wie gewohnt
+`Installieren-Windows.cmd` starten.
 
 ### Schnellstart (Entwicklung)
 
