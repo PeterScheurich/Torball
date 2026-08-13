@@ -911,9 +911,13 @@ textarea {
 
 /* Mail-Postfach: Liste mit Spaltenkoepfen oben (scope="col") statt Zeilen-Labels wie sonst bei
    .uebersicht-tabelle - der Browser-Standard fuer <th> ist zentriert, hier aber wie die Zellen
-   linksbuendig gewuenscht. */
-.mail-nachrichten-tabelle th {
+   linksbuendig gewuenscht. Zusaetzlich oben ausgerichtet statt vertikal mittig (Browser-Standard):
+   die KI-Zusammenfassung-Spalte ist oft mehrzeilig und macht die Zeile hoch, wodurch die kurzen
+   Zellen (Datum, Kategorie, Status, ...) sonst sichtbar in der Zeilenmitte "schweben" wuerden. */
+.mail-nachrichten-tabelle th,
+.mail-nachrichten-tabelle td {
   text-align: left;
+  vertical-align: top;
 }
 
 /* Nicht editierbare Werte in Label/Wert-Tabellen (Profil, Turnier-Uebersicht), die als
