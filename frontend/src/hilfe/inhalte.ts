@@ -95,9 +95,9 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
-        frage: "Geht auch ein spontanes Turnier ohne Verbindung zum zentralen Server?",
+        frage: "Können auch Helfer ohne eigenes Konto am Turnier mitarbeiten?",
         text: [
-          "Ja. Ist die Software lokal installiert, kannst du auch ohne Verbindung zum zentralen Server ein „schnelles“ Turnier anlegen und protokollieren – zum Beispiel für ein spontan angesetztes Turnier oder wenn vor Ort kein Netz verfügbar ist.",
+          "Ja, dafür gibt es zwei eigene Wege: einen Erfassungslink für die Ergebniserfassung ohne Login (siehe Thema „Ergebnisse erfassen“) sowie – für ein Turnier im lokalen Netzwerk, z. B. in einer Sporthalle – geteilte Codes, mit denen weitere Geräte ohne eigenes Konto auf genau dieses eine Turnier zugreifen können (siehe Thema „Anmelden & Einladung annehmen“).",
         ],
       },
     ],
@@ -122,7 +122,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Was bedeutet die Anzahl der Spielfelder?",
         text: [
-          "Sie bestimmt, wie viele Spiele gleichzeitig laufen können. Der Normalfall ist ein Spielfeld, als Ausnahme sind zwei möglich.",
+          "Sie bestimmt, wie viele Spiele gleichzeitig laufen können. Der Normalfall ist ein Spielfeld, als Ausnahme sind zwei möglich. Die Felder bekommen zunächst Vorschlagsnamen („Halle A“, „Halle B“); im Reiter „Übersicht“ des angelegten Turniers lassen sie sich jederzeit umbenennen, zum Beispiel auf die tatsächlichen Hallennamen.",
         ],
       },
       {
@@ -138,6 +138,80 @@ export const HILFE_THEMEN: HilfeThema[] = [
           {
             hinweis:
               "Die Option „Digital“ (Live-Protokollierung jedes Wurfs) ist bereits vorgesehen, aber noch nicht umgesetzt. Wähle vorerst „Manuell“.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "turnier-uebernehmen",
+    titel: "Turnier aus einem vorherigen übernehmen",
+    kurz: "Für Wettbewerbe mit zwei Spieltagen (z. B. Hin- und Rückspiel): Mannschaften, Kader und Regeln aus einem abgeschlossenen Turnier übernehmen, statt alles neu einzugeben.",
+    abschnitte: [
+      {
+        frage: "Wann ist das nützlich?",
+        text: [
+          "Wenn es zu einem Wettbewerb zwei Spieltage mit denselben Mannschaften gibt – zum Beispiel Hin- und Rückspiel in einer Liga. Statt Mannschaften und Kader für den zweiten Spieltag komplett neu zu erfassen, übernimmst du sie aus dem bereits abgeschlossenen ersten Spieltag.",
+        ],
+      },
+      {
+        frage: "Wie übernehme ich ein Turnier?",
+        text: [
+          "Beim Anlegen eines neuen Turniers beantwortest du die Frage „Daten übernehmen?“ mit einem bereits abgeschlossenen Turnier als Vorlage. Danach musst du nur noch Name, Datum und Startzeit angeben – der Rest wird für dich vorbereitet.",
+        ],
+      },
+      {
+        frage: "Was genau wird übernommen?",
+        text: [
+          {
+            liste: [
+              "Mannschaften: werden übernommen und können nicht mehr umbenannt, hinzugefügt oder entfernt werden – so bleibt der Wettbewerb über beide Spieltage vergleichbar.",
+              "Kader: werden übernommen, lassen sich aber am neuen Spieltag frei ändern, falls andere Spieler antreten.",
+              "Regeln: werden übernommen und sind zunächst gesperrt (damit beide Spieltage nach denselben Regeln laufen); bei Bedarf lässt sich diese Sperre im Turnier wieder aufheben.",
+              "Spielplan: wird gespiegelt (wer zuhause gespielt hat, spielt jetzt auswärts) und lässt sich danach wie gewohnt anpassen.",
+            ],
+          },
+        ],
+      },
+      {
+        frage: "Wie sehe ich den Gesamtstand über beide Spieltage?",
+        text: [
+          "Turnierverwaltung und – falls freigegeben – die öffentliche Turnierseite zeigen eine gemeinsame Tabelle über beide Spieltage. Auf der öffentlichen Seite lässt sich zusätzlich zwischen „Gesamt“ und den einzelnen Spieltagen umschalten, sobald beide Spieltage einzeln freigegeben sind.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "turnier-verwalten",
+    titel: "Turnier verwalten: Freigabe, Logo & Abschließen",
+    kurz: "Im Reiter „Übersicht“ eines Turniers: für andere Benutzer freigeben, ein eigenes Logo hinterlegen und das Turnier abschließen.",
+    abschnitte: [
+      {
+        frage: "Wie gebe ich mein Turnier für eine andere Person frei?",
+        text: [
+          "Im Reiter „Übersicht“ trägst du unter „Freigabe für andere Benutzer“ die Person und die gewünschte Zugriffsstufe ein. Es gibt drei Stufen: Lesen (nur ansehen), Schreiben für Spielbetrieb (Spielplan und Ergebnisse bearbeiten) und volles Schreiben (zusätzlich Grunddaten, Mannschaften und Regeln bearbeiten).",
+          {
+            hinweis:
+              "Wer das Turnier selbst angelegt hat sowie Administratoren haben ohnehin immer vollen Zugriff – die Freigabe ist nur für zusätzliche Personen nötig.",
+          },
+        ],
+      },
+      {
+        frage: "Was hat es mit dem Turnier-Logo auf sich?",
+        text: [
+          "Ohne eigenes Logo zeigt die Anwendung das Standard-Torball-Logo. Im Reiter „Übersicht“ lässt sich stattdessen ein eigenes Bild hochladen (z. B. das Vereins- oder Verbandslogo), das dann in der Turnierübersicht und auf der öffentlichen Turnierseite erscheint. Ein Rücksetzen auf das Standard-Logo ist jederzeit möglich.",
+        ],
+      },
+      {
+        frage: "Wie schließe ich ein Turnier ab, und was ändert sich dann?",
+        text: [
+          "Über den Knopf „Turnier abschließen“ im Reiter „Übersicht“ – das geht erst, wenn zu jedem Spiel ein Ergebnis erfasst ist. Ein abgeschlossenes Turnier ist gegen versehentliche Änderungen geschützt: Grunddaten, Mannschaften, Schiedsrichter, Spielplan und Ergebnisse lassen sich nicht mehr bearbeiten.",
+          {
+            liste: [
+              "Weiterhin möglich bleiben: die öffentliche Freigabe ändern und das Turnier für andere Benutzer freigeben.",
+              "Ein zuvor erzeugter Erfassungslink wird beim Abschließen automatisch ungültig.",
+              "Bei Bedarf lässt sich ein abgeschlossenes Turnier über „Wieder öffnen“ erneut bearbeitbar machen.",
+            ],
           },
         ],
       },
@@ -298,6 +372,43 @@ export const HILFE_THEMEN: HilfeThema[] = [
     ],
   },
   {
+    id: "ausdrucke",
+    titel: "Ausdrucke (PDF)",
+    kurz: "Turnierinfos, Spielplan, Ergebnisse und Schiedsrichter-Einteilung als PDF erzeugen – zum Aushang oder Mitnehmen.",
+    abschnitte: [
+      {
+        frage: "Welche Dokumente kann ich ausdrucken?",
+        text: [
+          "Vier Dokumente stehen zur Verfügung: Turnierinfos, Spielplan, Ergebnisse und Schiedsrichter-Einteilung (eine eigene Seite je pfeifender Person). Das Ergebnis-Dokument zeigt die Spiele des aktuellen Spieltags mit Ergebnis sowie die Gesamttabelle.",
+        ],
+      },
+      {
+        frage: "Wo finde ich die Ausdrucke?",
+        text: [
+          "Im Turnier über den entsprechenden Knopf in der Druckansicht. Öffentlich freigegebene Turniere bieten dieselben Dokumente zusätzlich auf der öffentlichen Turnierseite an – dort natürlich nur mit den freigegebenen Inhalten.",
+        ],
+      },
+      {
+        frage: "Was ist der Unterschied zwischen „Als PDF speichern“ und „PDF herunterladen“?",
+        text: [
+          {
+            liste: [
+              "„Als PDF speichern“ öffnet den Druckdialog des Browsers und erzeugt ein besonders barrierefreies PDF (z. B. für Screenreader vorgelesen).",
+              "„PDF herunterladen“ lädt sofort eine fertige Datei herunter, ohne Umweg über den Druckdialog.",
+            ],
+          },
+          "Beide Wege liefern denselben Inhalt – wähle, was dir lieber ist.",
+        ],
+      },
+      {
+        frage: "Wozu ist der QR-Code auf den Ausdrucken?",
+        text: [
+          "Er führt zur passenden Online-Ansicht (z. B. zur öffentlichen Ergebnisseite), damit jemand mit dem Smartphone direkt vom ausgedruckten Blatt aus dorthin gelangt.",
+        ],
+      },
+    ],
+  },
+  {
     id: "oeffentliche-seite",
     titel: "Öffentliche Turnierseite",
     kurz: "Eine Seite zum Mitlesen freischalten – ohne Login, jede Sektion einzeln steuerbar.",
@@ -333,8 +444,8 @@ export const HILFE_THEMEN: HilfeThema[] = [
           {
             liste: [
               "Administrator: voller Zugriff auf alles.",
-              "Manager: voller Zugriff auf selbst erstellte und freigegebene Turniere; kann Benutzer verwalten.",
-              "Weitere Zugriffe werden pro Turnier gezielt vergeben (Lesen oder Schreiben).",
+              "Manager: voller Zugriff auf selbst erstellte Turniere; kann außerdem Benutzer verwalten.",
+              "Weitere Zugriffe auf ein einzelnes Turnier werden gezielt freigegeben (siehe Thema „Turnier verwalten“) – in drei Stufen: Lesen, Schreiben für den Spielbetrieb (Spielplan/Ergebnisse) oder volles Schreiben (zusätzlich Grunddaten/Mannschaften/Regeln).",
             ],
           },
         ],
@@ -359,6 +470,20 @@ export const HILFE_THEMEN: HilfeThema[] = [
           {
             hinweis:
               "Wichtig: Ein vergessenes Passwort kannst du dir über „Passwort vergessen“ selbst neu setzen. Verlierst du aber den Zugang zu deiner Authenticator-App, ist eine Anmeldung derzeit nicht mehr möglich – auch ein Administrator kann die Zwei-Faktor-Anmeldung aktuell nicht zurücksetzen. Bewahre den Zugang daher sicher auf.",
+          },
+          {
+            hinweis:
+              "Nach 10 falschen Passwort-Versuchen hintereinander wird ein Konto zum Schutz vor Missbrauch automatisch gesperrt. „Passwort vergessen“ hebt eine so entstandene Sperre wieder auf.",
+          },
+        ],
+      },
+      {
+        frage: "Ich habe einen Code für ein Turnier bekommen, statt eines eigenen Kontos – was mache ich damit?",
+        text: [
+          "Für ein Turnier im lokalen Netzwerk (z. B. in einer Sporthalle) kann die Turnierleitung statt einzelner Konten geteilte Codes ausgeben – einen für die Turnierleitung, einen für die Spielleitung. Über den mitgeteilten Link meldest du dich mit diesem Code direkt für genau dieses eine Turnier an, ganz ohne eigenes Konto.",
+          {
+            hinweis:
+              "Ein Gerät ist entweder mit einem eigenen Konto oder mit einem Code angemeldet, nie beides gleichzeitig.",
           },
         ],
       },
@@ -420,7 +545,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
   {
     id: "einstellungen",
     titel: "Darstellung & Einstellungen",
-    kurz: "Farbschema und Zeilenabstand nach deinen Bedürfnissen einstellen.",
+    kurz: "Farbschema, Zeilenabstand und Inhaltsbreite nach deinen Bedürfnissen einstellen.",
     abschnitte: [
       {
         frage: "Wie stelle ich Hell-/Dunkelmodus ein?",
@@ -436,6 +561,12 @@ export const HILFE_THEMEN: HilfeThema[] = [
             hinweis:
               "Diese Anzeige-Einstellungen gelten nur für das aktuelle Gerät bzw. den Browser. Angemeldete Benutzer können im Profil zusätzlich einen kontogebundenen Standardwert hinterlegen.",
           },
+        ],
+      },
+      {
+        frage: "Was bewirkt die Inhaltsbreite?",
+        text: [
+          "Sie steuert, wie breit sich der Inhalt auf großen Bildschirmen ausdehnt („Standard“ oder „Breit“). „Breit“ eignet sich vor allem für große Monitore, damit z. B. Tabellen mit vielen Spalten mehr Platz bekommen.",
         ],
       },
     ],
@@ -489,6 +620,33 @@ export const HILFE_THEMEN: HilfeThema[] = [
         frage: "Wie gebe ich ein Turnier wieder frei?",
         text: [
           "Im „Turnier-Sync“-Abschnitt auf dem Server über „Freigabe aufheben“. Danach gilt ausschließlich der Serverstand als gültig – die lokale Installation kann keine Ergebnisse mehr automatisch übertragen. Das ist eine bewusste Aktion, die nur die Turnierleitung selbst auslöst.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "geplante-funktionen",
+    titel: "Noch geplante Funktionen",
+    kurz: "Ein Überblick über Erweiterungen, die für spätere Versionen der Anwendung vorgesehen, aber noch nicht umgesetzt sind.",
+    abschnitte: [
+      {
+        frage: "Was ist für spätere Versionen geplant?",
+        text: [
+          "Diese Anwendung wird nach und nach weiterentwickelt. Die folgenden Erweiterungen sind für spätere Versionen vorgesehen – für einen festen Zeitpunkt gibt es aber noch keine Zusage:",
+          {
+            liste: [
+              "Eine Möglichkeit, die Anwendung komplett eigenständig auf einem einzelnen Computer zu nutzen, ganz ohne Internetzugang und ohne zentralen Server im Hintergrund – ergänzend zur bereits vorhandenen lokalen Installation (siehe oben).",
+              "Ein ausführlicheres, digitales Live-Protokoll: Statt nur das Endergebnis einzutragen, sollen sich künftig auch einzelne Ereignisse während des Spiels erfassen lassen, zum Beispiel jedes Tor einzeln – inklusive einer Liste der Torschützinnen und Torschützen.",
+              "Passend dazu ein eigener, eingeschränkter Zugang für die Person, die während des Spiels protokolliert, ohne dass diese die komplette Turnierverwaltung sehen oder bedienen können muss.",
+              "Die Anwendung zusätzlich auf Italienisch, Französisch und Englisch nutzen können, nicht nur auf Deutsch.",
+              "Dateien direkt am Turnier hinterlegen können, zum Beispiel eine Ausschreibung, einen Hallenplan oder eine Anfahrtsskizze, sichtbar für alle Beteiligten.",
+              "Zusätzliche Regeln speziell für Wettbewerbe mit mehreren Spieltagen (zum Beispiel eine Bundesliga-Saison): etwa, dass eine Person innerhalb einer Saison nicht für zwei verschiedene Vereine spielen darf, oder dass sich der Kader einer Mannschaft nach ihrem ersten Spiel nur noch eingeschränkt ändern lässt.",
+            ],
+          },
+          {
+            hinweis:
+              "Rückmeldungen und Wünsche dazu sind jederzeit willkommen – Kontaktmöglichkeiten stehen auf der Seite „Über“.",
+          },
         ],
       },
     ],
