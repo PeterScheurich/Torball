@@ -82,11 +82,16 @@ Konfliktauflösung), als für diesen Anwendungsfall nötig.
   vorgeschlagen (`task_26404952`).
 - **`SERVE_FRONTEND`-Einzelprozess-Modus** (Windows-Installer, Abschnitt 18.4): direkte Browser-
   Navigation (bzw. Reload) auf einen Seitenpfad, der zufällig mit einem registrierten Backend-
-  GET-Route-Muster übereinstimmt (z. B. `/turniere/:id`), liefert die rohe API-Antwort statt der
-  SPA-Shell – `rewriteUrl` entfernt nur das `/api`-Präfix von XHR-Aufrufen, eine volle
-  Seiten-Navigation auf denselben Pfad ohne `/api`-Präfix kollidiert mit der gleichnamigen
+  GET-Route-Muster übereinstimmt (z. B. `/turniere/:id`), lieferte die rohe API-Antwort statt der
+  SPA-Shell – `rewriteUrl` entfernte nur das `/api`-Präfix von XHR-Aufrufen, eine volle
+  Seiten-Navigation auf denselben Pfad ohne `/api`-Präfix kollidierte mit der gleichnamigen
   Backend-Route. Beim Testen dieser Ausbaustufe entdeckt (zwei parallele Instanzen, eine davon im
-  `SERVE_FRONTEND`-Modus), nicht Teil dieses Plans – noch nicht behoben.
+  `SERVE_FRONTEND`-Modus), nicht Teil dieses Plans. **Inzwischen behoben** (`backend/src/index.ts`):
+  im `SERVE_FRONTEND`-Modus laufen die API-Routen jetzt tatsächlich unter einem echten `/api`-Präfix
+  (`server.register(registerApiRoutes, { prefix: "/api" })`), nicht mehr nur per `rewriteUrl`
+  abgestreift – dadurch können sie strukturell nicht mehr mit SPA-Pfaden kollidieren. Die anderen
+  Betriebsarten (Vite-Dev-Proxy, nginx-Site) bleiben unverändert, dort registrieren die Routen wie
+  bisher unpräfigiert an der Wurzel.
 
 ## Bewusst zurückgestellt
 
