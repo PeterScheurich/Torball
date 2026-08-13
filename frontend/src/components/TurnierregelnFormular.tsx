@@ -107,104 +107,168 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
   return (
     <form onSubmit={speichern} className="regeln-formular">
       <h3>Spielzeit</h3>
-      <div className="regeln-gruppe">
-        <div className="feld">
-          <label htmlFor="spielzeitMinuten">Spielzeit je Halbzeit (Minuten)</label>
-          <input id="spielzeitMinuten" type="number" min={1} required value={r.spielzeitMinuten}
-            onChange={(e) => zahl("spielzeitMinuten", e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="anzahlHalbzeiten">Anzahl Halbzeiten</label>
-          <input id="anzahlHalbzeiten" type="number" min={1} required value={r.anzahlHalbzeiten}
-            onChange={(e) => zahl("anzahlHalbzeiten", e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="pauseMinuten">Pause zwischen Halbzeiten (Minuten)</label>
-          <input id="pauseMinuten" type="number" min={0} required value={r.pauseMinuten}
-            onChange={(e) => zahl("pauseMinuten", e.target.value)} />
-        </div>
-        <label className="schiedsrichter-lizenz">
-          <input type="checkbox" checked={r.seitenwechsel} onChange={(e) => schalter("seitenwechsel", e.target.checked)} />
-          Seitenwechsel zur Halbzeit
-        </label>
+      <div className="tabellen-wrapper">
+        <table className="uebersicht-tabelle regeln-tabelle">
+          <caption className="sr-only">Spielzeit</caption>
+          <tbody>
+            <tr>
+              <th scope="row"><label htmlFor="spielzeitMinuten">Spielzeit je Halbzeit (Minuten)</label></th>
+              <td>
+                <input id="spielzeitMinuten" type="number" min={1} required value={r.spielzeitMinuten}
+                  onChange={(e) => zahl("spielzeitMinuten", e.target.value)} />
+              </td>
+            </tr>
+            <tr>
+              <th scope="row"><label htmlFor="anzahlHalbzeiten">Anzahl Halbzeiten</label></th>
+              <td>
+                <input id="anzahlHalbzeiten" type="number" min={1} required value={r.anzahlHalbzeiten}
+                  onChange={(e) => zahl("anzahlHalbzeiten", e.target.value)} />
+              </td>
+            </tr>
+            <tr>
+              <th scope="row"><label htmlFor="pauseMinuten">Pause zwischen Halbzeiten (Minuten)</label></th>
+              <td>
+                <input id="pauseMinuten" type="number" min={0} required value={r.pauseMinuten}
+                  onChange={(e) => zahl("pauseMinuten", e.target.value)} />
+              </td>
+            </tr>
+            <tr>
+              <th scope="row"><label htmlFor="seitenwechsel">Seitenwechsel zur Halbzeit</label></th>
+              <td>
+                <input id="seitenwechsel" type="checkbox" checked={r.seitenwechsel}
+                  onChange={(e) => schalter("seitenwechsel", e.target.checked)} />
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <h3>Timeouts &amp; Wechsel</h3>
-      <div className="regeln-gruppe">
-        <div className="feld">
-          <label htmlFor="timeoutsJeHalbzeit">Timeouts je Halbzeit</label>
-          <input id="timeoutsJeHalbzeit" type="number" min={0} required value={r.timeoutsJeHalbzeit}
-            onChange={(e) => zahl("timeoutsJeHalbzeit", e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="timeoutDauerSekunden">Timeout-Dauer (Sekunden)</label>
-          <input id="timeoutDauerSekunden" type="number" min={0} required value={r.timeoutDauerSekunden}
-            onChange={(e) => zahl("timeoutDauerSekunden", e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="auswechslungenJeHalbzeit">Auswechslungen je Halbzeit</label>
-          <input id="auswechslungenJeHalbzeit" type="number" min={0} required value={r.auswechslungenJeHalbzeit}
-            onChange={(e) => zahl("auswechslungenJeHalbzeit", e.target.value)} />
-        </div>
+      <div className="tabellen-wrapper">
+        <table className="uebersicht-tabelle regeln-tabelle">
+          <caption className="sr-only">Timeouts &amp; Wechsel</caption>
+          <tbody>
+            <tr>
+              <th scope="row"><label htmlFor="timeoutsJeHalbzeit">Timeouts je Halbzeit</label></th>
+              <td>
+                <input id="timeoutsJeHalbzeit" type="number" min={0} required value={r.timeoutsJeHalbzeit}
+                  onChange={(e) => zahl("timeoutsJeHalbzeit", e.target.value)} />
+              </td>
+            </tr>
+            <tr>
+              <th scope="row"><label htmlFor="timeoutDauerSekunden">Timeout-Dauer (Sekunden)</label></th>
+              <td>
+                <input id="timeoutDauerSekunden" type="number" min={0} required value={r.timeoutDauerSekunden}
+                  onChange={(e) => zahl("timeoutDauerSekunden", e.target.value)} />
+              </td>
+            </tr>
+            <tr>
+              <th scope="row"><label htmlFor="auswechslungenJeHalbzeit">Auswechslungen je Halbzeit</label></th>
+              <td>
+                <input id="auswechslungenJeHalbzeit" type="number" min={0} required value={r.auswechslungenJeHalbzeit}
+                  onChange={(e) => zahl("auswechslungenJeHalbzeit", e.target.value)} />
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <h3>Abbruch &amp; Verlängerung</h3>
-      <div className="regeln-gruppe">
-        <label className="schiedsrichter-lizenz">
-          <input type="checkbox" checked={r.tordifferenzAbbruch} onChange={(e) => schalter("tordifferenzAbbruch", e.target.checked)} />
-          Abbruch bei hoher Tordifferenz
-        </label>
-        <div className="feld regeln-abhaengig">
-          <label htmlFor="tordifferenzLimit">Tordifferenz-Grenze</label>
-          <input id="tordifferenzLimit" type="number" min={1} required value={r.tordifferenzLimit}
-            onChange={(e) => zahl("tordifferenzLimit", e.target.value)} disabled={!r.tordifferenzAbbruch} />
-        </div>
-        <label className="schiedsrichter-lizenz">
-          <input type="checkbox" checked={r.verlaengerungAktiv} onChange={(e) => schalter("verlaengerungAktiv", e.target.checked)} />
-          Verlängerung bei Unentschieden
-        </label>
-        <label className="schiedsrichter-lizenz regeln-abhaengig">
-          <input type="checkbox" checked={r.silbernesTor} onChange={(e) => schalter("silbernesTor", e.target.checked)} disabled={!r.verlaengerungAktiv} />
-          Silbernes Tor in der Verlängerung
-        </label>
+      <div className="tabellen-wrapper">
+        <table className="uebersicht-tabelle regeln-tabelle">
+          <caption className="sr-only">Abbruch &amp; Verlängerung</caption>
+          <tbody>
+            <tr>
+              <th scope="row"><label htmlFor="tordifferenzAbbruch">Abbruch bei hoher Tordifferenz</label></th>
+              <td>
+                <input id="tordifferenzAbbruch" type="checkbox" checked={r.tordifferenzAbbruch}
+                  onChange={(e) => schalter("tordifferenzAbbruch", e.target.checked)} />
+              </td>
+            </tr>
+            <tr className="regeln-abhaengig-zeile">
+              <th scope="row"><label htmlFor="tordifferenzLimit">Tordifferenz-Grenze</label></th>
+              <td>
+                <input id="tordifferenzLimit" type="number" min={1} required value={r.tordifferenzLimit}
+                  onChange={(e) => zahl("tordifferenzLimit", e.target.value)} disabled={!r.tordifferenzAbbruch} />
+              </td>
+            </tr>
+            <tr>
+              <th scope="row"><label htmlFor="verlaengerungAktiv">Verlängerung bei Unentschieden</label></th>
+              <td>
+                <input id="verlaengerungAktiv" type="checkbox" checked={r.verlaengerungAktiv}
+                  onChange={(e) => schalter("verlaengerungAktiv", e.target.checked)} />
+              </td>
+            </tr>
+            <tr className="regeln-abhaengig-zeile">
+              <th scope="row"><label htmlFor="silbernesTor">Silbernes Tor in der Verlängerung</label></th>
+              <td>
+                <input id="silbernesTor" type="checkbox" checked={r.silbernesTor}
+                  onChange={(e) => schalter("silbernesTor", e.target.checked)} disabled={!r.verlaengerungAktiv} />
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <h3>Weitere Regeln</h3>
-      <div className="regeln-gruppe">
-        <div className="feld">
-          <label htmlFor="maxSehendeSpieler">Max. sehende Spieler je Mannschaft</label>
-          <input id="maxSehendeSpieler" type="number" min={0} required value={r.maxSehendeSpieler}
-            onChange={(e) => zahl("maxSehendeSpieler", e.target.value)} />
-        </div>
-        <label className="schiedsrichter-lizenz">
-          <input type="checkbox" checked={r.einstelligeTrikotnummern} onChange={(e) => schalter("einstelligeTrikotnummern", e.target.checked)} />
-          Nur einstellige Trikotnummern
-        </label>
+      <div className="tabellen-wrapper">
+        <table className="uebersicht-tabelle regeln-tabelle">
+          <caption className="sr-only">Weitere Regeln</caption>
+          <tbody>
+            <tr>
+              <th scope="row"><label htmlFor="maxSehendeSpieler">Max. sehende Spieler je Mannschaft</label></th>
+              <td>
+                <input id="maxSehendeSpieler" type="number" min={0} required value={r.maxSehendeSpieler}
+                  onChange={(e) => zahl("maxSehendeSpieler", e.target.value)} />
+              </td>
+            </tr>
+            <tr>
+              <th scope="row"><label htmlFor="einstelligeTrikotnummern">Nur einstellige Trikotnummern</label></th>
+              <td>
+                <input id="einstelligeTrikotnummern" type="checkbox" checked={r.einstelligeTrikotnummern}
+                  onChange={(e) => schalter("einstelligeTrikotnummern", e.target.checked)} />
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <h3>Wertung</h3>
-      <div className="regeln-gruppe">
-        <div className="feld">
-          <label htmlFor="punkteSieg">Punkte für Sieg</label>
-          <input id="punkteSieg" type="number" min={0} required value={r.punkteSieg}
-            onChange={(e) => zahl("punkteSieg", e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="punkteUnentschieden">Punkte für Unentschieden</label>
-          <input id="punkteUnentschieden" type="number" min={0} required value={r.punkteUnentschieden}
-            onChange={(e) => zahl("punkteUnentschieden", e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="punkteNiederlage">Punkte für Niederlage</label>
-          <input id="punkteNiederlage" type="number" min={0} required value={r.punkteNiederlage}
-            onChange={(e) => zahl("punkteNiederlage", e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="forfaitErgebnis">Wertung bei Nichtantreten (Sieger:Verlierer)</label>
-          <input id="forfaitErgebnis" type="text" inputMode="numeric" pattern="\d+:\d+" placeholder="3:0" required
-            className="forfait-eingabe" value={r.forfaitErgebnis} onChange={(e) => text("forfaitErgebnis", e.target.value)} />
-          <span className="feld-hinweis">Wird bei „nicht angetreten" gesetzt (z.B. 3:0 für die angetretene Mannschaft).</span>
-        </div>
+      <div className="tabellen-wrapper">
+        <table className="uebersicht-tabelle regeln-tabelle">
+          <caption className="sr-only">Wertung</caption>
+          <tbody>
+            <tr>
+              <th scope="row"><label htmlFor="punkteSieg">Punkte für Sieg</label></th>
+              <td>
+                <input id="punkteSieg" type="number" min={0} required value={r.punkteSieg}
+                  onChange={(e) => zahl("punkteSieg", e.target.value)} />
+              </td>
+            </tr>
+            <tr>
+              <th scope="row"><label htmlFor="punkteUnentschieden">Punkte für Unentschieden</label></th>
+              <td>
+                <input id="punkteUnentschieden" type="number" min={0} required value={r.punkteUnentschieden}
+                  onChange={(e) => zahl("punkteUnentschieden", e.target.value)} />
+              </td>
+            </tr>
+            <tr>
+              <th scope="row"><label htmlFor="punkteNiederlage">Punkte für Niederlage</label></th>
+              <td>
+                <input id="punkteNiederlage" type="number" min={0} required value={r.punkteNiederlage}
+                  onChange={(e) => zahl("punkteNiederlage", e.target.value)} />
+              </td>
+            </tr>
+            <tr>
+              <th scope="row"><label htmlFor="forfaitErgebnis">Wertung bei Nichtantreten (Sieger:Verlierer)</label></th>
+              <td>
+                <input id="forfaitErgebnis" type="text" inputMode="numeric" pattern="\d+:\d+" placeholder="3:0" required
+                  value={r.forfaitErgebnis} onChange={(e) => text("forfaitErgebnis", e.target.value)} />
+                <span className="feld-hinweis">Wird bei „nicht angetreten" gesetzt (z.B. 3:0 für die angetretene Mannschaft).</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <h3>Tabellen-Kriterien (Reihenfolge bei Gleichstand)</h3>

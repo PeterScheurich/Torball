@@ -987,28 +987,25 @@ button:disabled {
   text-decoration: none;
 }
 
-/* Regeln-Formular (Turnier-Reiter „Regeln" und Systemkonfiguration): Felder je Gruppe
-   nebeneinander, umbrechend auf schmalen Schirmen. */
+/* Regeln-Formular (Turnier-Reiter „Regeln" und Systemkonfiguration): jede Gruppe (Spielzeit,
+   Timeouts & Wechsel, ...) als eigene Label/Wert-Tabelle (.uebersicht-tabelle-Muster, siehe dort -
+   liefert automatische Pflichtfeld-Markierung + schmale Label-Spalte "for free"). */
 .regeln-formular {
   max-width: none;
 }
-/* Optionen bewusst untereinander (nicht nebeneinander), damit sie sich klar abgrenzen. */
-.regeln-gruppe {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 12px;
+.regeln-tabelle {
+  max-width: 30em;
 }
-.regeln-gruppe .feld {
-  max-width: 22em;
+/* Von einer Option abhaengige Zeile (z.B. Tordifferenz-Grenze unter dem Abbruch-Schalter,
+   silbernes Tor unter der Verlaengerung) leicht eingerueckt, damit die Abhaengigkeit erkennbar
+   bleibt wie zuvor bei der Nicht-Tabellen-Darstellung. */
+.regeln-abhaengig-zeile th {
+  padding-left: 28px;
 }
-/* Von einer Option abhaengiges Feld leicht eingerueckt (z.B. Tordifferenz-Grenze unter dem
-   Abbruch-Schalter, silbernes Tor unter der Verlaengerung). */
-.regeln-abhaengig {
-  margin-left: 24px;
-}
-.forfait-eingabe {
+/* Gewinnt gegen ".uebersicht-tabelle td input:not(...) { width: 100% }" (hoehere Spezifitaet durch
+   die zwei :not()-Ketten dort) nur ueber die ID - die "Wertung bei Nichtantreten"-Eingabe (Format
+   "3:0") soll trotz der Tabellen-Automatik schmal bleiben. */
+#forfaitErgebnis {
   width: 5em;
 }
 .regeln-knoepfe {
