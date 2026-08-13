@@ -46,6 +46,11 @@ const bootstrapAdminSchema = {
   },
 } as const;
 
+/** Brute-Force-Schutz: nach so vielen falschen Passwoertern in Folge wird der Account gesperrt
+ *  (gesperrtGrund: "fehlversuche") - nur ein Admin (oder ein erfolgreicher Passwort-Reset, siehe
+ *  benutzer.ts) hebt das wieder auf. */
+const MAX_LOGIN_VERSUCHE = 10;
+
 interface RegistrierenBody {
   email: string;
   passwort: string;
@@ -83,6 +88,16 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(403).send({ error: "Dieser Account ist gesperrt." });
     }
     if (!(await passwortStimmt(req.body.passwort, benutzer.passwortHash))) {
+      const versuche = (benutzer.fehlgeschlageneLoginVersuche ?? 0) + 1;
+      const gesperrtWegenVersuchen = versuche >= MAX_LOGIN_VERSUCHE;
+      await insertDoc({
+        ...benutzer,
+        fehlgeschlageneLoginVersuche: versuche,
+        ...(gesperrtWegenVersuchen ? { gesperrt: true, gesperrtGrund: "fehlversuche" as const } : {}),
+      });
+      // Bewusst weiterhin die generische Meldung, auch bei der jetzt greifenden Sperre - sonst
+      // liesse sich ueber eine abweichende Antwort auf dem letzten Versuch ausprobieren, ob die
+      // Zaehlung ueberhaupt existiert. Der naechste Versuch liefert dann ohnehin den 403 oben.
       return reply.code(401).send({ error: ANMELDE_FEHLER });
     }
 
@@ -98,7 +113,11 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const { token } = await erstelleSession(benutzer._id);
     setzeSessionCookie(reply, token);
 
-    const aktualisiert = await insertDoc({ ...benutzer, letzteAnmeldung: new Date().toISOString() });
+    const aktualisiert = await insertDoc({
+      ...benutzer,
+      letzteAnmeldung: new Date().toISOString(),
+      fehlgeschlageneLoginVersuche: 0,
+    });
     return oeffentlichesProfil(aktualisiert);
   });
 

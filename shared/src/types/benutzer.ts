@@ -63,6 +63,19 @@ export interface Benutzer extends CouchMeta {
   resetTokenHash?: string;
   resetAblauf?: Zeitstempel;
 
+  /**
+   * Brute-Force-Schutz fuer die oeffentlich erreichbare Zentrale Plattform: bei jedem falschen
+   * Passwort hochgezaehlt, bei erfolgreichem Login zurueckgesetzt. Ab
+   * MAX_LOGIN_VERSUCHE (backend/src/routes/auth.ts) wird `gesperrt` automatisch gesetzt.
+   */
+  fehlgeschlageneLoginVersuche?: number;
+  /**
+   * Unterscheidet, WARUM `gesperrt` gesetzt ist - wichtig, damit ein Passwort-Reset nur eine
+   * automatische Fehlversuche-Sperre aufhebt, nie eine bewusste Admin-Sperre (die haette sich
+   * sonst ueber den Reset-Link aushebeln lassen). Vom Server gesetzt, nie vom Client.
+   */
+  gesperrtGrund?: "manuell" | "fehlversuche";
+
   /** Instanz-Kopplung (Turnier-Sync, Abschnitt 21.3/23): kurzlebiger Einmal-Code, mit dem eine
    *  lokale Installation sich dauerhaft mit diesem Konto koppelt (siehe VerbundeneInstanz). */
   instanzKopplungscodeHash?: string;

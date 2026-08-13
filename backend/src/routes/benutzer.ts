@@ -318,10 +318,71 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(403).send({ error: "Diese Rolle darfst du nicht vergeben." });
       }
 
-      const aktualisiert = await insertDoc({ ...bestehend, ...req.body });
+      // gesperrtGrund wird vom Server gesetzt, nie vom Client: ein manuelles (Ent-)Sperren hier
+      // ist immer "manuell" - das unterscheidet es von einer automatischen Fehlversuche-Sperre,
+      // die auch ueber einen Passwort-Reset aufgehoben werden darf (siehe passwort-reset unten).
+      // Ein Entsperren setzt zugleich den Fehlversuche-Zaehler zurueck, sonst waere der Account
+      // nach nur noch wenigen weiteren Fehlversuchen sofort wieder gesperrt.
+      const sperrPatch =
+        "gesperrt" in req.body
+          ? req.body.gesperrt
+            ? { gesperrtGrund: "manuell" as const }
+            : { gesperrtGrund: undefined, fehlgeschlageneLoginVersuche: 0 }
+          : {};
+
+      const aktualisiert = await insertDoc({ ...bestehend, ...req.body, ...sperrPatch });
       return oeffentlichesProfil(aktualisiert);
     },
   );
+
+  /**
+   * Admin/Manager loest einen Passwort-Reset fuer eine ANDERE Person aus - Ergaenzung zum
+   * Self-Service-Link (POST /benutzer/passwort-vergessen), fuer Faelle, in denen die Person den
+   * E-Mail-Weg selbst nicht gehen kann (z.B. eine lokale Installation ohne Internetverbindung).
+   * Nutzt denselben Reset-Token/-Endpunkt wie der Self-Service-Weg - die Person setzt ihr neues
+   * Passwort weiterhin selbst, der/die Auslösende sieht/setzt es nie direkt. Ist kein Mailversand
+   * konfiguriert (der Normalfall auf einer lokalen Installation) oder schlaegt der Versand fehl
+   * (z.B. kein Internet trotz konfiguriertem SMTP), wird der Token in der Antwort zurueckgegeben -
+   * analog zum Einladungs-Link-Fallback oben.
+   */
+  app.post<{ Params: { id: string } }>("/benutzer/:id/passwort-reset-ausloesen", async (req, reply) => {
+    if (!requireRolle(req, reply, ["admin", "manager"])) return;
+    const ziel = await findById<Benutzer>(req.params.id);
+    if (!ziel) return reply.code(404).send({ error: "Benutzer nicht gefunden" });
+    if (!darfZielRolleVergeben(req.benutzer!.globaleRolle, ziel.globaleRolle)) {
+      return reply.code(403).send({ error: "Diesen Benutzer darfst du nicht bearbeiten." });
+    }
+
+    const { token, hash } = erzeugeToken();
+    await insertDoc({
+      ...ziel,
+      resetTokenHash: hash,
+      resetAblauf: new Date(Date.now() + RESET_GUELTIG_MS).toISOString(),
+    });
+
+    if (mailKonfiguriert()) {
+      try {
+        await sendeMail({
+          an: ziel.email,
+          betreff: "Passwort zurücksetzen - Torball-Turniere",
+          text:
+            `Hallo ${ziel.name},\n\n` +
+            `für dein Konto wurde von der Turnierleitung/einem Admin ein Passwort-Reset ausgelöst. ` +
+            `Falls das nicht erwartet war, wende dich bitte an sie/ihn.\n\n` +
+            `Neues Passwort setzen (Link 24 Stunden gültig):\n` +
+            `${FRONTEND_URL}/passwort-reset/${token}`,
+        });
+        return reply.send({ email: ziel.email });
+      } catch (err) {
+        // Fallback auf den Link in der Antwort, statt die Aktion wirkungslos verpuffen zu lassen
+        // (z.B. SMTP konfiguriert, aber gerade kein Internet auf einer lokalen Installation).
+        app.log.error(err, "Passwort-Reset-Mail konnte nicht versendet werden");
+        return reply.send({ email: ziel.email, resetToken: token });
+      }
+    }
+
+    return reply.send({ email: ziel.email, resetToken: token });
+  });
 
   /**
    * Admin deaktiviert die 2FA eines ANDEREN Benutzers. Hintergrund: Verliert jemand den
@@ -449,11 +510,18 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       const verstoss = passwortRegelVerstoss(req.body.neuesPasswort);
       if (verstoss) return reply.code(400).send({ error: verstoss });
 
+      // Ein erfolgreicher Reset hebt eine automatische Fehlversuche-Sperre mit auf (wer den Link
+      // oeffnen konnte, hat sich ueber die E-Mail-Adresse legitimiert) - eine BEWUSSTE Admin-Sperre
+      // (gesperrtGrund "manuell") bleibt davon unberuehrt, sonst liesse sie sich darueber aushebeln.
+      const hebtFehlversucheSperreAuf = benutzer.gesperrtGrund === "fehlversuche";
+
       await insertDoc({
         ...benutzer,
         passwortHash: await hashePasswort(req.body.neuesPasswort),
         resetTokenHash: undefined,
         resetAblauf: undefined,
+        fehlgeschlageneLoginVersuche: 0,
+        ...(hebtFehlversucheSperreAuf ? { gesperrt: false, gesperrtGrund: undefined } : {}),
       });
       // Abschnitt 21.4: "alle aktiven Sessions beendet".
       await loescheAlleSessionenVonBenutzer(benutzer._id);

@@ -1,9 +1,17 @@
 import type { Benutzer } from "@torball/shared";
 
-/** Nie ueber die API zurueckgeben: Passwort-Hash, 2FA-Secret, Einladungs-/Reset-Token-Hashes. */
+/** Nie ueber die API zurueckgeben: Passwort-Hash, 2FA-Secret, Einladungs-/Reset-/
+ *  Instanz-Kopplungscode-Token-Hashes. */
 export type OeffentlichesBenutzerProfil = Omit<
   Benutzer,
-  "passwortHash" | "zweiFaSecret" | "einladungTokenHash" | "einladungAblauf" | "resetTokenHash" | "resetAblauf"
+  | "passwortHash"
+  | "zweiFaSecret"
+  | "einladungTokenHash"
+  | "einladungAblauf"
+  | "resetTokenHash"
+  | "resetAblauf"
+  | "instanzKopplungscodeHash"
+  | "instanzKopplungscodeAblauf"
 > & {
   /** Ersetzt passwortHash nach aussen: erlaubt der Benutzerverwaltung, "Einladung noch offen" anzuzeigen, ohne den Hash selbst preiszugeben. */
   hatPasswort: boolean;
@@ -19,6 +27,8 @@ export function oeffentlichesProfil(benutzer: Benutzer): OeffentlichesBenutzerPr
     einladungAblauf,
     resetTokenHash,
     resetAblauf,
+    instanzKopplungscodeHash,
+    instanzKopplungscodeAblauf,
     ...rest
   } = benutzer;
   return { ...rest, hatPasswort: Boolean(passwortHash) };

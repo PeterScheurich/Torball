@@ -109,7 +109,12 @@ async function benutzerListe(): Promise<void> {
     return;
   }
   for (const b of alle) {
-    console.log(`${b.email}\tRolle: ${b.globaleRolle}\t${b.gesperrt ? "GESPERRT" : "aktiv"}`);
+    const status = !b.gesperrt
+      ? "aktiv"
+      : b.gesperrtGrund === "fehlversuche"
+        ? "GESPERRT (zu viele Fehlversuche)"
+        : "GESPERRT";
+    console.log(`${b.email}\tRolle: ${b.globaleRolle}\t${status}`);
   }
 }
 
@@ -133,7 +138,7 @@ async function benutzerEntsperren(optionen: Optionen): Promise<void> {
     return;
   }
 
-  await insertDoc({ ...benutzer, gesperrt: false });
+  await insertDoc({ ...benutzer, gesperrt: false, gesperrtGrund: undefined, fehlgeschlageneLoginVersuche: 0 });
   console.log(`"${email}" ist jetzt entsperrt.`);
 }
 

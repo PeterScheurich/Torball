@@ -511,6 +511,14 @@ export function benutzerAktualisieren(
   return anfrage(`/benutzer/${id}`, { method: "PUT", body: JSON.stringify(daten) });
 }
 
+/** Loest fuer eine andere Person einen Passwort-Reset aus (z.B. weil sie den Self-Service-Weg
+ * ueber "Passwort vergessen" nicht selbst gehen kann). Ist Mailversand konfiguriert, geht der
+ * Link direkt an die Adresse und resetToken fehlt in der Antwort - sonst (z.B. lokale
+ * Installation ohne Internet) kommt der Klartext-Token direkt zurueck, analog zur Einladung. */
+export function benutzerPasswortResetAusloesen(id: string): Promise<{ email: string; resetToken?: string }> {
+  return anfrage(`/benutzer/${id}/passwort-reset-ausloesen`, { method: "POST" });
+}
+
 /** Admin deaktiviert die 2FA eines anderen Benutzers (z.B. bei verlorener Authenticator-App). */
 export function benutzerZweiFaDeaktivieren(id: string): Promise<BenutzerProfil> {
   return anfrage(`/benutzer/${id}/2fa/deaktivieren`, { method: "POST" });

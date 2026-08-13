@@ -3,6 +3,7 @@ import type { GlobaleRolle } from "@torball/shared";
 import {
   benutzerAktualisieren,
   benutzerEinladen,
+  benutzerPasswortResetAusloesen,
   benutzerZweiFaDeaktivieren,
   getBenutzerListe,
   type BenutzerProfil,
@@ -30,6 +31,7 @@ export function BenutzerverwaltungPage() {
   const [rolle, setRolle] = useState<GlobaleRolle>("benutzer");
   const [einladungslink, setEinladungslink] = useState<string | undefined>();
   const [einladungPerMail, setEinladungPerMail] = useState(false);
+  const [resetHinweis, setResetHinweis] = useState<{ email: string; link?: string } | undefined>();
   const [fehler, setFehler] = useState<string | undefined>();
 
   const laden = useCallback(async () => {
@@ -92,6 +94,24 @@ export function BenutzerverwaltungPage() {
       await laden();
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Sperrung");
+    }
+  }
+
+  // Loest fuer eine andere Person einen Passwort-Reset aus - Ergaenzung zum Self-Service-Link,
+  // v.a. fuer eine lokale Installation ohne Internet (dort kommt der Link direkt zurueck statt per
+  // Mail). Hebt bei der Zielperson nur eine automatische Fehlversuche-Sperre auf, nie eine
+  // manuelle Admin-Sperre.
+  async function passwortResetAusloesen(b: BenutzerProfil) {
+    setFehler(undefined);
+    setResetHinweis(undefined);
+    try {
+      const { email, resetToken } = await benutzerPasswortResetAusloesen(b._id);
+      setResetHinweis({
+        email,
+        link: resetToken ? `${window.location.origin}/passwort-reset/${resetToken}` : undefined,
+      });
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Auslösen des Passwort-Resets");
     }
   }
 
@@ -158,7 +178,15 @@ export function BenutzerverwaltungPage() {
                     ))}
                   </select>
                 </td>
-                <td>{b.gesperrt ? "Gesperrt" : !b.hatPasswort ? "Einladung offen" : "Aktiv"}</td>
+                <td>
+                  {b.gesperrt
+                    ? b.gesperrtGrund === "fehlversuche"
+                      ? "Gesperrt (zu viele Fehlversuche)"
+                      : "Gesperrt"
+                    : !b.hatPasswort
+                      ? "Einladung offen"
+                      : "Aktiv"}
+                </td>
                 <td className="mannschaft-aktionen">
                   <button
                     type="button"
@@ -167,6 +195,11 @@ export function BenutzerverwaltungPage() {
                   >
                     {b.gesperrt ? "Entsperren" : "Sperren"}
                   </button>
+                  {b._id !== angemeldeter?._id && (
+                    <button type="button" onClick={() => passwortResetAusloesen(b)}>
+                      Passwort-Reset auslösen
+                    </button>
+                  )}
                   {angemeldeter?.globaleRolle === "admin" && b.zweiFaAktiv && b._id !== angemeldeter?._id && (
                     <button type="button" onClick={() => zweiFaDeaktivieren(b)}>
                       2FA deaktivieren
@@ -210,6 +243,18 @@ export function BenutzerverwaltungPage() {
           <input type="text" readOnly value={einladungslink} onFocus={(e) => e.target.select()} />
         </p>
       )}
+
+      {resetHinweis &&
+        (resetHinweis.link ? (
+          <p>
+            Passwort-Reset für {resetHinweis.email} ausgelöst. Kein E-Mail-Versand konfiguriert (oder gerade nicht
+            erreichbar, z. B. auf einer lokalen Installation ohne Internet) - Link bitte manuell weitergeben:
+            <br />
+            <input type="text" readOnly value={resetHinweis.link} onFocus={(e) => e.target.select()} />
+          </p>
+        ) : (
+          <p>Passwort-Reset für {resetHinweis.email} ausgelöst und per E-Mail verschickt.</p>
+        ))}
     </>
   );
 }
