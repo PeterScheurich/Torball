@@ -55,7 +55,15 @@ export async function sammleTurnierExport(
   let vereine: Verein[] = [];
   let teams: Team[] = [];
   if (optionen.stammdatenMitnehmen) {
-    const vereinIds = new Set(mannschaften.map((m) => m.vereinId).filter((id): id is string => !!id));
+    // Vereins-IDs sowohl aus den Mannschaften als auch aus den Schiedsrichtern sammeln: ein
+    // Schiedsrichter kann einem Verein angehoeren, der selbst keine Mannschaft in diesem Turnier
+    // stellt (z.B. eine neutrale, von auswaerts eingeladene Person) - dessen Verein wuerde sonst
+    // fehlen und auf der Zielinstanz zu einer haengenden vereinId-Referenz fuehren.
+    const vereinIds = new Set(
+      [...mannschaften.map((m) => m.vereinId), ...schiedsrichter.map((s) => s.vereinId)].filter(
+        (id): id is string => !!id,
+      ),
+    );
     const teamIds = new Set(mannschaften.map((m) => m.teamId).filter((id): id is string => !!id));
     vereine = (await Promise.all([...vereinIds].map((id) => findById<Verein>(id)))).filter(
       (v): v is Verein => v !== null,

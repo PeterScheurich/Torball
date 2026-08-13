@@ -212,6 +212,53 @@ test(
 );
 
 test(
+  "sammleTurnierExport nimmt auch den Verein eines Schiedsrichters mit, der keine eigene Mannschaft im Turnier hat",
+  { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
+  async () => {
+    // Regressionstest fuer den Vereins- statt Mannschafts-Bezug bei Schiedsrichtern
+    // (2026-08-14): ein neutraler, von auswaerts eingeladener Schiedsrichter kann einem Verein
+    // angehoeren, der selbst keine Mannschaft in diesem Turnier stellt - dessen Verein muss
+    // trotzdem mitexportiert werden, sonst haette die Zielinstanz eine haengende vereinId.
+    const { insertDoc, newId } = await import("../repository");
+    const { sammleTurnierExport } = await import("../sync/export");
+
+    const benutzerId = await neuerBenutzer();
+    const turnierId = await neuesTurnier(benutzerId);
+    const vereinIdSchiedsrichter = newId("verein");
+    await insertDoc({
+      _id: vereinIdSchiedsrichter,
+      docType: "verein",
+      vereinId: vereinIdSchiedsrichter,
+      name: "Verein des Schiedsrichters (keine eigene Mannschaft)",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    const schiedsrichterId = newId("schiedsrichterImTurnier");
+    await insertDoc({
+      _id: schiedsrichterId,
+      docType: "schiedsrichterImTurnier",
+      schiedsrichterId,
+      turnierId,
+      name: "Neutraler Schiedsrichter",
+      lizenzVorhanden: true,
+      vereinId: vereinIdSchiedsrichter,
+      istTurnierleitung: false,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    try {
+      const paket = await sammleTurnierExport(turnierId, { stammdatenMitnehmen: true });
+      assert.equal(paket.mannschaften.length, 0, "keine Mannschaft im Turnier - Kontrolle des Testaufbaus");
+      assert.ok(
+        paket.vereine.some((v) => v._id === vereinIdSchiedsrichter),
+        "Verein des Schiedsrichters fehlt im Export, obwohl keine Mannschaft ihn referenziert",
+      );
+    } finally {
+      await aufraeumen([schiedsrichterId, vereinIdSchiedsrichter, turnierId, benutzerId]);
+    }
+  },
+);
+
+test(
   "sync-import: neu anlegen erfolgreich, zweiter Import ohne ersetzen liefert 409",
   { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
   async () => {
