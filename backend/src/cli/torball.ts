@@ -14,6 +14,8 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Benutzer } from "@torball/shared";
 import { findAllByType, insertDoc } from "../repository";
+import { erzeugeBeispieldaten } from "../demo/beispieldaten";
+import { erstelleSnapshot, stelleSnapshotWiederher } from "../demo/snapshot";
 
 type Optionen = Record<string, string>;
 type Befehl = (optionen: Optionen) => Promise<void>;
@@ -32,6 +34,7 @@ const ERLAUBTE_KONFIGURATIONS_SCHLUESSEL = [
   "SMTP_PASSWORD",
   "SMTP_FROM",
   "SERVE_FRONTEND",
+  "DEMO_SNAPSHOT_ERLAUBT",
 ];
 
 const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
@@ -60,7 +63,44 @@ const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
       "(shared zuerst, dann alle Workspaces). Laufende Server-Prozesse danach neu starten.",
     ausfuehren: aktualisieren,
   },
+  "demo:beispieldaten": {
+    beschreibung:
+      "Legt Demo-Stammdaten (Vereine/Teams) und mehrere Beispiel-Turniere an, im Besitz eines " +
+      'eigenen "Demo-Datenpflege"-Kontos (kein Login möglich). Nur bei DEMO_SNAPSHOT_ERLAUBT=true ' +
+      "(siehe konfiguration:setzen). Gedacht als einmaliger Aufbau vor demo:snapshot:erstellen - " +
+      "mehrfacher Aufruf legt weitere, zusätzliche Beispieldaten an statt vorhandene zu ersetzen.",
+    ausfuehren: demoBeispieldaten,
+  },
+  "demo:snapshot:erstellen": {
+    beschreibung:
+      'Übernimmt den aktuellen Datenbestand 1:1 in die "_golden"-Datenbank (Grundlage für den ' +
+      "täglichen Reset). Nur bei DEMO_SNAPSHOT_ERLAUBT=true, Voraussetzung: die _golden-Datenbank " +
+      "wurde bereits eingerichtet (siehe deploy/demo-snapshot-einrichten.sh).",
+    ausfuehren: demoSnapshotErstellen,
+  },
+  "demo:snapshot:wiederherstellen": {
+    beschreibung:
+      'Gleicht den aktuellen Datenbestand an die "_golden"-Datenbank an und verwirft damit alle ' +
+      "Änderungen seit dem letzten Snapshot. Nur bei DEMO_SNAPSHOT_ERLAUBT=true - läuft normalerweise " +
+      "automatisch über einen systemd-Timer, nicht von Hand.",
+    ausfuehren: demoSnapshotWiederherstellen,
+  },
 };
+
+async function demoBeispieldaten(): Promise<void> {
+  await erzeugeBeispieldaten();
+  console.log("Demo-Stammdaten und Beispiel-Turniere angelegt.");
+}
+
+async function demoSnapshotErstellen(): Promise<void> {
+  const { anzahlDokumente } = await erstelleSnapshot();
+  console.log(`Snapshot erstellt: ${anzahlDokumente} Dokumente in die "_golden"-Datenbank übernommen.`);
+}
+
+async function demoSnapshotWiederherstellen(): Promise<void> {
+  const { anzahlDokumente } = await stelleSnapshotWiederher();
+  console.log(`Snapshot wiederhergestellt: ${anzahlDokumente} Dokumente aus der "_golden"-Datenbank übernommen.`);
+}
 
 async function benutzerListe(): Promise<void> {
   const alle = await findAllByType<Benutzer>("benutzer");

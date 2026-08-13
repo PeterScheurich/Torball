@@ -404,6 +404,38 @@ Login-Seite zeigt dann zusätzlich einen „Jetzt registrieren"-Link (Abfrage
 u. a. für eine Demo-Instanz, an der mehrere Tester parallel eigene Accounts brauchen, ohne dass
 jemand sie einzeln einladen muss.
 
+**Demo-Snapshot/Reset (`backend/src/demo/`, CLI-Befehle `demo:*`):** die Demo-Instanz bekommt einen
+nächtlichen Reset auf CouchDB-Ebene statt eines App-seitigen Löschens. `beispieldaten.ts` erzeugt
+einmalig einen festen Satz Demo-Stammdaten (Vereine/Teams, mehrere Turniere inkl. einer
+zweigleisigen Bundesliga-Saison mit echter Spieltag-Spiegelung wie bei `/ableiten`, siehe
+Datenimport oben) im Besitz eines eigenen **„Demo-Datenpflege"-Kontos** (`docType: "benutzer"`,
+Rolle `manager`, bewusst **ohne** `passwortHash` – kann sich nie einloggen, dient nur als
+`erstelltVon`-Referenz). `snapshot.ts` (`erstelleSnapshot`/`stelleSnapshotWiederher`) gleicht den
+Inhalt der Live-Datenbank mit einer zweiten CouchDB-Datenbank `<COUCHDB_DB>_golden` ab (per-Dokument
+`_bulk_docs` mit korrekten `_rev`s statt Loeschen+Neuanlage, um CouchDB-Tombstone-Konflikte zu
+vermeiden) – **kein** App-Code loescht/erzeugt hier taeglich Turniere neu, nur zwei Datenbanken
+werden angeglichen. Nächtlich per systemd-Timer aufgerufen (`deploy/demo-snapshot-einrichten.sh`).
+Alle drei Befehle sind hinter `DEMO_SNAPSHOT_ERLAUBT=true` (`backend/.env`, `schutz.ts`) gesperrt –
+**bewusst nie automatisch auf Prod aktiv**, diese Befehle ersetzen/loeschen ganze Datenbestaende.
+**Wichtig: `istGeschuetzt()` in `snapshot.ts` entscheidet, was vom Abgleich ausgenommen bleibt** –
+zwei unabhängige Regeln: (1) die Instanz-Einstellungs-`docType`s in `NIE_ZURUECKSETZEN` (`session`,
+`systemeinstellungen`, `systemkonfiguration`, `kanbanKarte`); (2) **nur** `benutzer`-Dokumente mit
+`globaleRolle: "admin"` (Nutzer-Vorgabe, 2026-08-13: ursprünglich waren ALLE Benutzer-Konten
+ausgenommen – bewusst verworfen, weil sonst bei aktivierter Selbstregistrierung liegen gebliebene
+Spam-/Scam-Accounts sich dauerhaft ansammeln könnten). Dadurch bleibt **nur** der eigene
+Admin-Account der Demo-Instanz über jeden Reset hinweg bestehen; das „Demo-Datenpflege"-Konto und
+jedes selbst-registrierte Tester-Konto werden wie normaler Inhalt täglich mitzurückgesetzt (das
+Demo-Datenpflege-Konto also aus der `_golden`-Datenbank neu erzeugt, sofern es vor dem letzten
+`demo:snapshot:erstellen` bereits existierte). `NIE_ZURUECKSETZEN` bewusst als **Ausschluss**- statt
+Einschluss-Liste für die Instanz-Einstellungen: ein künftig neuer Inhalts-`docType` landet
+automatisch im Reset, ohne diese Liste pflegen zu müssen – nur echte Instanz-Einstellungen müssen
+hier bewusst ergänzt werden. **Bei
+Änderungen am Datenmodell (`shared/src/types/*`) oder an Business-Logik, die `beispieldaten.ts`
+mitnutzt (Spielplan-Erzeugung, `aktuelleTurnierregeln()`, `turnierZugriffsstufe()`), prüfen, ob das
+Seed-Skript mitgezogen werden muss** – es baut Dokumente direkt über das Repository auf (nicht über
+die HTTP-Routen) und bekommt Typ-/Schema-Änderungen daher nicht automatisch mit, nur über
+`tsc`-Fehler beim nächsten Build.
+
 **Entwicklungs-Kanban-Board (admin-only, kein Turnier-Bezug):** eigenständiges
 Werkzeug zur Organisation der Weiterentwicklung, `docType: "kanbanKarte"` in
 derselben CouchDB (`shared/src/types/kanban.ts`, `backend/src/routes/kanban.ts`,

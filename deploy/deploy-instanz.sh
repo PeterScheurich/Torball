@@ -99,6 +99,10 @@ SMTP_USER=
 SMTP_PASSWORD=
 SMTP_FROM="Torball-Turniere" <noreply@example.com>
 KANBAN_SYNC=false
+# Schaltet die demo:*-CLI-Befehle frei (Snapshot/Restore, siehe backend/src/demo/snapshot.ts) -
+# bleibt fuer jede Instanz false, bis deploy/demo-snapshot-einrichten.sh gezielt fuer eine
+# Demo-Instanz durchlaeuft. Nie versehentlich gegen Produktivdaten aktivieren.
+DEMO_SNAPSHOT_ERLAUBT=false
 EOF
 chmod 600 "${DIR}/backend/.env"
 chown -R "${SERVICE_USER}:${SERVICE_USER}" "$DIR"
