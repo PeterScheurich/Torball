@@ -387,6 +387,11 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         oeffentlichSpielplan: false,
         oeffentlichErgebnisse: false,
         oeffentlichRegeln: false,
+        // Pauschale Freigabe fuer alle angemeldeten Benutzer ist eine bewusste Entscheidung der
+        // Turnierleitung fuer GENAU dieses Turnier, kein automatisch weitervererbtes Merkmal der
+        // Veranstaltungsreihe - die neue Turnierleitung des abgeleiteten Spieltags soll das
+        // aktiv neu entscheiden (Nutzer-Vorgabe 2026-08-14), nicht durch den Spread erben.
+        zugriffFuerAlleBenutzer: undefined,
         spielplanFreigegeben: false,
         spielplanVersion: 1,
         spielplanGeaendertAm: jetzt,

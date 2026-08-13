@@ -43,10 +43,11 @@ export function normalisiereImportKarte(roh: unknown): KanbanKarte | null {
 }
 
 /**
- * Inhaltlicher Vergleich zweier Karten. Bewusst nur die redaktionellen Felder (nicht
- * reihenfolge/Provenienz/_rev): stimmen diese überein, gilt die Karte als unverändert und
- * loest keinen Konflikt aus - insbesondere soll blosses Umsortieren auf einer Instanz nicht
- * als Konflikt erscheinen.
+ * Inhaltlicher Vergleich zweier Karten. Bewusst NICHT `reihenfolge`/`_rev` (blosses Umsortieren
+ * auf einer Instanz soll keinen Konflikt ausloesen), aber inklusive Herkunft/KI-Kennzeichen/
+ * Quell-Mail-Referenz (2026-08-14 ergaenzt) - sonst koennte z.B. ein nachtraeglich per Mail-
+ * Postfach gesetztes `kiErstellt`/`quellMailId` nie ueber den Import synchronisiert werden, ohne
+ * dass sich auch ein redaktionelles Feld mit aendert.
  */
 export function inhaltGleich(a: KanbanKarte, b: KanbanKarte): boolean {
   return (
@@ -54,7 +55,10 @@ export function inhaltGleich(a: KanbanKarte, b: KanbanKarte): boolean {
     (a.beschreibung ?? "") === (b.beschreibung ?? "") &&
     a.spalte === b.spalte &&
     a.kategorie === b.kategorie &&
-    a.prioritaet === b.prioritaet
+    a.prioritaet === b.prioritaet &&
+    (a.herkunft ?? null) === (b.herkunft ?? null) &&
+    Boolean(a.kiErstellt) === Boolean(b.kiErstellt) &&
+    (a.quellMailId ?? null) === (b.quellMailId ?? null)
   );
 }
 
