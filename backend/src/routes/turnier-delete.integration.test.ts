@@ -19,16 +19,39 @@ test(
   "DELETE /turniere/:id loescht auch zugehoerige Mannschaften, Spieler, Schiedsrichter und Spiele (Kaskade)",
   { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
   async () => {
-    const { findAllBySelector, findById, insertDoc, newId } = await import("../repository");
+    const { findAllBySelector, findById, insertDoc, newId, deleteDoc } = await import("../repository");
     const Fastify = (await import("fastify")).default;
+    const fastifyCookie = (await import("@fastify/cookie")).default;
+    const { authPreHandler, SESSION_COOKIE_NAME } = await import("../auth/plugin");
+    const { erstelleSession } = await import("../auth/session");
     const { turnierRoutes } = await import("./turnier");
     const { mannschaftRoutes } = await import("./mannschaft");
     const { spielRoutes } = await import("./spiel");
 
     const app = Fastify();
+    // Cookie-Plugin + Auth-Hook auf der Root-Instanz registrieren, genau wie in index.ts -
+    // die DELETE-Route verlangt requireAuth, ein Request ohne Session bekommt sonst 401
+    // statt 204 (siehe Kommentar oben zur Test-Historie).
+    await app.register(fastifyCookie);
+    app.addHook("preHandler", authPreHandler);
     await app.register(turnierRoutes);
     await app.register(mannschaftRoutes);
     await app.register(spielRoutes);
+
+    const benutzerId = newId("benutzer");
+    await insertDoc({
+      _id: benutzerId,
+      docType: "benutzer",
+      benutzerId,
+      email: `${benutzerId}@test.invalid`,
+      name: "Test-Admin",
+      globaleRolle: "admin",
+      sprache: "de",
+      zweiFaAktiv: false,
+      gesperrt: false,
+      erstelltAm: new Date().toISOString(),
+    } as unknown as Parameters<typeof insertDoc>[0]);
+    const { token: sessionToken, session } = await erstelleSession(benutzerId);
 
     const turnierId = newId("turnier");
     await insertDoc({
@@ -124,7 +147,11 @@ test(
     } as unknown as Parameters<typeof insertDoc>[0]);
 
     try {
-      const response = await app.inject({ method: "DELETE", url: `/turniere/${turnierId}` });
+      const response = await app.inject({
+        method: "DELETE",
+        url: `/turniere/${turnierId}`,
+        headers: { cookie: `${SESSION_COOKIE_NAME}=${sessionToken}` },
+      });
       assert.equal(response.statusCode, 204);
 
       assert.equal(await findById(turnierId), null, "Turnier haette geloescht sein muessen");
@@ -155,9 +182,18 @@ test(
       );
     } finally {
       // Aufraeumen falls der Test selbst fehlschlaegt, bevor die Kaskade greifen konnte.
-      for (const id of [turnierId, mannschaftAId, mannschaftBId, spielId, spielerId, schiedsrichterId]) {
+      for (const id of [
+        turnierId,
+        mannschaftAId,
+        mannschaftBId,
+        spielId,
+        spielerId,
+        schiedsrichterId,
+        benutzerId,
+        session._id,
+      ]) {
         const doc = await findById(id);
-        if (doc) await import("../repository").then((r) => r.deleteDoc(id, (doc as { _rev: string })._rev));
+        if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
       }
       await app.close();
     }
