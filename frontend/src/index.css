@@ -909,6 +909,13 @@ textarea {
   width: 10em;
 }
 
+/* Mail-Postfach: Liste mit Spaltenkoepfen oben (scope="col") statt Zeilen-Labels wie sonst bei
+   .uebersicht-tabelle - der Browser-Standard fuer <th> ist zentriert, hier aber wie die Zellen
+   linksbuendig gewuenscht. */
+.mail-nachrichten-tabelle th {
+  text-align: left;
+}
+
 /* Nicht editierbare Werte in Label/Wert-Tabellen (Profil, Turnier-Uebersicht), die als
    readOnly-Input statt reinem Text ausgegeben werden: uebernehmen Rahmen/Padding eines
    normalen Eingabefelds, damit sie in derselben Tabellenspalte buendig mit echten

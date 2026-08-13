@@ -995,7 +995,8 @@ export function mailPostfachVerfuegbar(): Promise<{ verfuegbar: boolean }> {
 export interface MailNachrichtenFilter {
   suchtext?: string;
   kategorie?: MailKategorie;
-  manuellerStatus?: MailManuellerStatus;
+  /** "offen" ist kein gespeicherter Status, sondern das Filter-Gegenstueck zu "kein Status gesetzt". */
+  manuellerStatus?: MailManuellerStatus | "offen";
 }
 
 export function getMailNachrichten(filter: MailNachrichtenFilter = {}): Promise<MailNachricht[]> {

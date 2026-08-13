@@ -23,6 +23,14 @@ const KATEGORIE_LABEL: Record<MailKategorie, string> = {
   sonstiges: "Sonstiges",
 };
 
+/** "offen" ist kein gespeicherter Status (nur erledigt/ignoriert sind das), sondern das
+ *  Anzeige-/Filter-Gegenstueck zu "noch kein manueller Status gesetzt". */
+const STATUS_LABEL: Record<MailManuellerStatus | "offen", string> = {
+  offen: "Offen",
+  erledigt: "Erledigt",
+  ignoriert: "Ignoriert",
+};
+
 const LEERES_EINSTELLUNGEN_FORMULAR = {
   berichtszeit: "07:00",
   berichtEmpfaenger: "",
@@ -59,7 +67,7 @@ export function MailPostfachPage() {
 
   const [suchtext, setSuchtext] = useState("");
   const [kategorieFilter, setKategorieFilter] = useState<MailKategorie | "">("");
-  const [statusFilter, setStatusFilter] = useState<MailManuellerStatus | "">("");
+  const [statusFilter, setStatusFilter] = useState<MailManuellerStatus | "offen" | "">("");
 
   const laden = useCallback(async () => {
     try {
@@ -425,9 +433,10 @@ export function MailPostfachPage() {
             <select
               id="mail-status-filter"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as MailManuellerStatus | "")}
+              onChange={(e) => setStatusFilter(e.target.value as MailManuellerStatus | "offen" | "")}
             >
               <option value="">Alle</option>
+              <option value="offen">Offen</option>
               <option value="erledigt">Erledigt</option>
               <option value="ignoriert">Ignoriert</option>
             </select>
@@ -437,7 +446,7 @@ export function MailPostfachPage() {
         {!geladen && <p>Lädt…</p>}
         {geladen && mails.length === 0 && <p>Keine Mails gefunden.</p>}
         {geladen && mails.length > 0 && (
-          <table className="uebersicht-tabelle">
+          <table className="uebersicht-tabelle mail-nachrichten-tabelle">
             <thead>
               <tr>
                 <th>Empfangen</th>
@@ -457,7 +466,7 @@ export function MailPostfachPage() {
                   <td>{mail.betreff}</td>
                   <td>{mail.kategorie ? KATEGORIE_LABEL[mail.kategorie] : "noch nicht klassifiziert"}</td>
                   <td>{mail.kiZusammenfassung ?? "–"}</td>
-                  <td>{mail.manuellerStatus ?? "–"}</td>
+                  <td>{STATUS_LABEL[mail.manuellerStatus ?? "offen"]}</td>
                   <td>
                     {mail.kanbanKartenId ? (
                       <span>Kanban-Karte angelegt</span>

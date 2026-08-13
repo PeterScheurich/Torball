@@ -49,7 +49,10 @@ export async function mailPostfachRoutes(app: FastifyInstance): Promise<void> {
 
       const gefiltert = alle.filter((mail) => {
         if (kategorie && mail.kategorie !== kategorie) return false;
-        if (manuellerStatus && mail.manuellerStatus !== manuellerStatus) return false;
+        // "offen" ist kein gespeicherter Status (nur "erledigt"/"ignoriert" sind das), sondern
+        // das Filter-Gegenstueck fuer "noch kein manueller Status gesetzt".
+        if (manuellerStatus === "offen" && mail.manuellerStatus) return false;
+        if (manuellerStatus && manuellerStatus !== "offen" && mail.manuellerStatus !== manuellerStatus) return false;
         if (
           suchtextKlein &&
           !mail.betreff.toLowerCase().includes(suchtextKlein) &&
