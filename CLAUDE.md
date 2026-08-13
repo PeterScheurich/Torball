@@ -851,7 +851,13 @@ dieser Version gilt der folgende Ablauf:
   (pull + rebuild + restart). **`REPO_URL` nur beim allerersten Deploy einer neuen Instanz
   nötig** – danach steckt die Git-Adresse im `origin`-Remote des bestehenden Checkouts und wird
   automatisch wiederverwendet (Nutzer-Vorgabe: Update soll ohne wiederholte Repo-Angabe
-  funktionieren). Prod läuft **API-only** über `npm start`
+  funktionieren). **`backend/.env` wird nur bei dieser Erstanlage geschrieben, ein Update lässt
+  eine bereits vorhandene Datei unverändert** – live erlebt: das Skript schrieb sie ursprünglich
+  bei *jedem* Lauf komplett neu aus einem festen Template (u. a. `DEMO_SNAPSHOT_ERLAUBT=false`,
+  `COOKIE_SECURE=false`), wodurch ein `torball-aktualisieren demo` unbemerkt das zuvor von
+  `demo-snapshot-einrichten.sh` gesetzte `DEMO_SNAPSHOT_ERLAUBT=true` wieder zurückdrehte. Wer
+  einzelne Werte nachträglich ändern will, nutzt `torball konfiguration:setzen` (siehe „Befehle“
+  oben) oder bearbeitet die Datei direkt. Prod läuft **API-only** über `npm start`
   (`node --env-file=.env dist/index.js`), nginx serviert das Frontend statisch +
   proxied `/api`. Mehrere Instanzen (prod/demo) auf einem Host über eigenen `PORT`
   + eigene DB. Backend-Routen liegen an der Wurzel (nicht unter `/api`) – der

@@ -16,8 +16,12 @@
 #   server_name    optional: Domain fuer spaeteres externes Routing (Default: _  = alle Hosts)
 #
 # Legt/aktualisiert an: Git-Checkout + Build unter /opt/torball/<name>, eine eigene CouchDB-
-# Datenbank torball_<name> mit eigenem DB-Benutzer, backend/.env, eine nginx-Site und den
-# systemd-Service torball@<name>. Wiederholtes Ausfuehren = Update (git pull + rebuild + restart).
+# Datenbank torball_<name> mit eigenem DB-Benutzer, eine nginx-Site und den systemd-Service
+# torball@<name>. Wiederholtes Ausfuehren = Update (git pull + rebuild + restart).
+# backend/.env wird NUR beim allerersten Deploy geschrieben - ein Update laesst eine bereits
+# vorhandene Datei unveraendert, damit spaeter manuell gesetzte Werte (COOKIE_SECURE,
+# FRONTEND_URL, SMTP, DEMO_SNAPSHOT_ERLAUBT, per "torball konfiguration:setzen" geaenderte Werte,
+# ...) nicht bei jedem Update wieder auf den Bootstrap-Default zurueckfallen.
 set -euo pipefail
 
 BASE_DIR="/opt/torball"
@@ -90,8 +94,16 @@ curl "${AUTH[@]}" -X PUT "http://127.0.0.1:5984/_users/org.couchdb.user:torball_
 curl "${AUTH[@]}" -X PUT "http://127.0.0.1:5984/${DB}/_security" \
   -d "{\"admins\":{\"names\":[\"torball_${NAME}\"],\"roles\":[]},\"members\":{\"names\":[\"torball_${NAME}\"],\"roles\":[]}}" >/dev/null
 
-echo "== backend/.env schreiben =="
-cat > "${DIR}/backend/.env" <<EOF
+if [[ -f "${DIR}/backend/.env" ]]; then
+  # NUR beim allerersten Deploy neu schreiben - ein Update wuerde sonst jeden manuell gesetzten
+  # Wert (COOKIE_SECURE/FRONTEND_URL fuer HTTPS, SMTP-Zugangsdaten, DEMO_SNAPSHOT_ERLAUBT, ...)
+  # stillschweigend auf den Bootstrap-Default zuruecksetzen. Live erlebt: ein "torball-
+  # aktualisieren demo" hat DEMO_SNAPSHOT_ERLAUBT so unbemerkt wieder auf false gedreht, obwohl
+  # deploy/demo-snapshot-einrichten.sh es zuvor gezielt auf true gesetzt hatte.
+  echo "== backend/.env existiert bereits - unveraendert gelassen (Update) =="
+else
+  echo "== backend/.env schreiben (Erstanlage) =="
+  cat > "${DIR}/backend/.env" <<EOF
 PORT=${BE_PORT}
 HOST=127.0.0.1
 COUCHDB_URL=http://127.0.0.1:5984
@@ -115,7 +127,8 @@ KANBAN_SYNC=false
 # Demo-Instanz durchlaeuft. Nie versehentlich gegen Produktivdaten aktivieren.
 DEMO_SNAPSHOT_ERLAUBT=false
 EOF
-chmod 600 "${DIR}/backend/.env"
+  chmod 600 "${DIR}/backend/.env"
+fi
 chown -R "${SERVICE_USER}:${SERVICE_USER}" "$DIR"
 
 echo "== nginx-Site (Port ${FE_PORT}) =="
