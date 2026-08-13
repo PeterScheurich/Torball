@@ -135,5 +135,6 @@ Die führende Projektdokumentation liegt unter [`docs/`](docs/README.md); die
 verbindliche fachliche Referenz ist
 [`docs/torball_gesamtspezifikation.md`](docs/torball_gesamtspezifikation.md).
 Größere Entscheidungen sind als datierte Protokolle unter `docs/Protokolle/`
-festgehalten. Hinweise speziell für die Arbeit mit Claude Code stehen in
+festgehalten. Änderungen je Version stehen im [`CHANGELOG.md`](CHANGELOG.md).
+Hinweise speziell für die Arbeit mit Claude Code stehen in
 [`CLAUDE.md`](CLAUDE.md).

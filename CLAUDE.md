@@ -656,6 +656,34 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
   Repos) bzw. in die git-ignorierte `backend/.env`, nie ins Repository. Vor dem
   Committen im Zweifel kurz prüfen (`git grep`/`git log -S` nach dem Geheimwert).
 
+## Release-Prozess
+
+Versionsnummer folgt Semantic Versioning (`Major.Minor.Patch`, z. B. `0.9.1`), aktuell mit
+`-beta`-Zusatz (`0.9.0-beta`) – der Zusatz fällt erst weg, wenn die Software nicht mehr als
+Beta/Produktiv-Test gilt (Nutzer-Entscheidung, kein rein technisches Kriterium). Bislang **kein**
+förmlicher Release-Prozess (keine Git-Tags, kein `CHANGELOG.md` vor Version `0.9.0-beta`) – ab
+dieser Version gilt der folgende Ablauf:
+
+1. **Versionsnummer festlegen** (Patch = nur Bugfixes, Minor = neue Funktionen, Major =
+   einschneidende Änderungen).
+2. **Version an beiden Stellen synchron ändern** (sonst zeigt die Kopfzeile eine andere Version
+   als die `package.json`s): den vier `package.json` (Root, `shared`, `backend`, `frontend`) sowie
+   `frontend/src/version.ts` (`APP_VERSION`, menschenlesbar z. B. „0.9.1 Beta“).
+3. **`CHANGELOG.md`** den Abschnitt „Unveröffentlicht“ in einen datierten Versionsabschnitt
+   umwandeln, Einträge in einfachen, nutzerverständlichen Worten (kein Rohauszug aus Commit-
+   Messages).
+4. **Alle Prüfungen grün:** `npm run build`, `npm run lint --workspace=frontend`,
+   `npm run test --workspace=backend` **und zusätzlich** `npm run test:integration --workspace=backend`
+   (braucht `backend/.env.test.local`, siehe Abschnitt „Befehle“ oben – deckt Tests ab, die
+   `npm test` allein mangels CouchDB-Zugang überspringt).
+5. **Committen + pushen** (z. B. „Version 0.9.1“).
+6. **Git-Tag setzen:** `git tag v0.9.1 && git push --tags` – markiert den Release-Commit
+   nachvollziehbar, unabhängig vom jeweils aktuellen `main`-Stand.
+7. **Deployen:** `torball-aktualisieren <name> <fe_port> <be_port>` je Instanz bzw. das lokale
+   Sammel-Skript für Prod+Demo (siehe „Betrieb / Infrastruktur“ unten).
+8. **Verifizieren:** Versions-Badge in der Kopfzeile der laufenden Instanz prüfen, kurzer
+   Rauchtest der Kernfunktionen.
+
 ## Testdaten
 
 - Eigene Testdaten (Turniere, Mannschaften, Spiele) dürfen jederzeit frei
