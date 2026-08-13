@@ -440,4 +440,57 @@ export const HILFE_THEMEN: HilfeThema[] = [
       },
     ],
   },
+  {
+    id: "lokale-installation",
+    titel: "Lokale Installation & Turnier-Sync",
+    kurz: "Ein Turnier bei fehlendem oder unzuverlässigem Internet vor Ort auf einem eigenen Rechner weiterverwalten.",
+    abschnitte: [
+      {
+        frage: "Was bringt mir eine lokale Installation?",
+        text: [
+          "Eine lokale Installation ist eine eigene Kopie der Anwendung auf einem Rechner, den du zum Turnier mitnimmst. Ein Turnier lässt sich dorthin herunterladen und dort auch ohne (oder mit unzuverlässiger) Internetverbindung vor Ort weiterverwalten. Ergebnisse übertragen sich automatisch zurück zum Server, sobald wieder eine Verbindung besteht.",
+        ],
+      },
+      {
+        frage: "Wie richte ich eine lokale Installation ein?",
+        text: [
+          "Unter Windows gibt es einen Ein-Klick-Installer: den Projektordner besorgen (z. B. als ZIP) und darin die Datei „Installieren-Windows.cmd“ per Doppelklick starten. Das Skript richtet alles Nötige automatisch ein.",
+          {
+            hinweis:
+              "Dafür ist einmalig eine Internetverbindung nötig (für die Downloads) – danach läuft die lokale Installation komplett offline.",
+          },
+          "Für andere Betriebssysteme oder Fragen dazu wende dich an deine Turnierleitung bzw. die technische Betreuung.",
+        ],
+      },
+      {
+        frage: "Wie verbinde ich die lokale Installation mit dem Server?",
+        text: [
+          "Auf dem Server (dort, wo das Turnier normalerweise verwaltet wird) erzeugst du unter „Mein Profil“ → „Verbundene Instanzen“ einen Kopplungscode (15 Minuten gültig).",
+          "Auf der lokalen Installation gibst du unter „Einstellungen“ → „Turnier-Sync“ die Server-Adresse und diesen Code ein. Ab dann sind beide dauerhaft verbunden und die lokale Installation meldet sich automatisch regelmäßig beim Server.",
+        ],
+      },
+      {
+        frage: "Wie bekomme ich ein Turnier auf die lokale Installation?",
+        text: [
+          "In der Turnier-Übersicht (Reiter „Übersicht“) findest du den Abschnitt „Turnier-Sync“. Dort wählst du die verbundene Instanz aus und klickst „Für lokale Nutzung herunterladen“ – optional mit den Vereins-/Team-Stammdaten. Der Download kommt binnen kurzer Zeit automatisch auf der lokalen Installation an, ganz ohne Datei-Transfer.",
+          {
+            hinweis:
+              "Ein Turnier kann immer nur an eine lokale Installation gleichzeitig heruntergeladen werden. Erst wenn die Freigabe dort wieder aufgehoben wird, ist ein erneuter Download möglich.",
+          },
+        ],
+      },
+      {
+        frage: "Was passiert mit Ergebnissen, während das Turnier lokal verwaltet wird?",
+        text: [
+          "Ergebnisse, die auf der lokalen Installation erfasst werden, übertragen sich automatisch zum Server, sobald eine Verbindung besteht – auch nach einem zwischenzeitlichen Verbindungsausfall.",
+        ],
+      },
+      {
+        frage: "Wie gebe ich ein Turnier wieder frei?",
+        text: [
+          "Im „Turnier-Sync“-Abschnitt auf dem Server über „Freigabe aufheben“. Danach gilt ausschließlich der Serverstand als gültig – die lokale Installation kann keine Ergebnisse mehr automatisch übertragen. Das ist eine bewusste Aktion, die nur die Turnierleitung selbst auslöst.",
+        ],
+      },
+    ],
+  },
 ];

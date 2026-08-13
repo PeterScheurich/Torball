@@ -134,8 +134,9 @@ export function TurnierSync({ turnierId }: { turnierId: string }) {
         </form>
       ) : (
         <p className="feld-hinweis">
-          Keine verbundene Instanz. Unter <a href="/profil">„Mein Profil"</a> lässt sich eine lokale Installation per
-          Kopplungscode verbinden.
+          Keine verbundene Instanz. Unter <a href="/profil">„Mein Profil"</a> lässt sich eine bereits eingerichtete
+          lokale Installation per Kopplungscode verbinden. Noch keine lokale Installation vorhanden? In der{" "}
+          <a href="/hilfe#lokale-installation">Hilfe</a> steht Schritt für Schritt, wie du eine einrichtest.
         </p>
       )}
 

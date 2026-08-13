@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { HILFE_THEMEN, type HilfeBlock } from "../hilfe/inhalte";
@@ -51,9 +53,18 @@ function Block({ block }: { block: HilfeBlock }) {
  */
 export function HilfePage() {
   const { benutzer } = useAuth();
+  const { hash } = useLocation();
   // Die Gesamtspezifikation ist fuer Administratoren UND Manager sichtbar (beide betreuen
   // Turniere/Anwendung), nicht fuer normale Benutzer oder nicht angemeldete Besucher.
   const darfSpezSehen = benutzer?.globaleRolle === "admin" || benutzer?.globaleRolle === "manager";
+
+  // React Router scrollt bei einer frischen Seiten-Navigation (z.B. Link von einer anderen Seite
+  // mit #anker) anders als ein normaler Browser NICHT automatisch zum Anker - das muss hier explizit
+  // nachgeholt werden, sonst landet man immer oben auf der Seite.
+  useEffect(() => {
+    if (!hash) return;
+    document.getElementById(hash.slice(1))?.scrollIntoView();
+  }, [hash]);
 
   return (
     <>
