@@ -398,9 +398,9 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
-        frage: "Was bedeuten „A n. a.“ und „B n. a.“?",
+        frage: "Was bedeutet der Knopf „n. a.“?",
         text: [
-          "„n. a.“ steht für „nicht angetreten“. „A n. a.“ trägst du ein, wenn Mannschaft A nicht angetreten ist – das Spiel wird dann als Ausfall gewertet: mit dem in den Turnierregeln festgelegten Forfait-Ergebnis (Standard 3:0) für die angetretene Mannschaft. „B n. a.“ gilt entsprechend, wenn Mannschaft B nicht angetreten ist.",
+          "„n. a.“ steht für „nicht angetreten“ und steht direkt neben dem Tore-Feld der jeweiligen Mannschaft. Ein Klick speichert sofort das in den Turnierregeln festgelegte Forfait-Ergebnis für die andere, angetretene Mannschaft – kein weiterer Klick zum Speichern nötig.",
         ],
       },
       {
