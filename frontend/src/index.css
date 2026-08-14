@@ -1675,6 +1675,13 @@ button:hover:not(:disabled) {
   background: transparent;
   color: var(--danger);
   border-color: var(--danger);
+  border-width: 2px;
+}
+/* Hoehere Spezifitaet noetig, um gegen ".kanban-karte-aktionen button { font-size: 0.8rem }"
+   zu gewinnen (mehr Klassen im Selektor schlagen die Deklarationsreihenfolge). */
+.kanban-karte-aktionen .kanban-loeschen {
+  font-size: 1.1rem;
+  font-weight: 700;
 }
 
 /* .kanban-sync-aktionen wird auch von MailPostfachPage.tsx (IMAP-/API-Key-Test-Knopfreihen)
