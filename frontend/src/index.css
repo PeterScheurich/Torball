@@ -533,6 +533,14 @@ form {
   margin-bottom: 16px;
 }
 
+/* Kontakt- und Stammdaten-Formular im Profil: nutzt (wie die Turnier-Uebersicht) das
+   .uebersicht-tabelle-Muster statt einzelner .feld-Bloecke - dafuer doppelt so breit wie das
+   fuer schmale .feld-Formulare gedachte Standard-max-width, sonst wirken die Eingabefelder in der
+   Wert-Spalte gestaucht (Nutzer-Vorgabe). */
+.stammdaten-formular {
+  max-width: 840px;
+}
+
 .feld {
   display: flex;
   flex-direction: column;

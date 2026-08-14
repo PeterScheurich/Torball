@@ -407,64 +407,96 @@ export function ProfilPage() {
         Diese Angaben lassen sich beim Anlegen bzw. in der Schiedsrichter-Verwaltung eines Turniers als
         Turnierleitung/Schiedsrichter übernehmen – einmal pflegen, mehrfach nutzen.
       </p>
-      <form onSubmit={stammdatenSpeichern}>
-        <div className="feld">
-          <label htmlFor="stammName">Name</label>
-          <input
-            id="stammName"
-            required
-            value={stammdaten.name}
-            onChange={(e) => setStammdaten((s) => ({ ...s, name: e.target.value }))}
-          />
-        </div>
-        <div className="feld">
-          <label htmlFor="stammVorname">Vorname</label>
-          <input
-            id="stammVorname"
-            value={stammdaten.vorname}
-            onChange={(e) => setStammdaten((s) => ({ ...s, vorname: e.target.value }))}
-          />
-        </div>
-        <div className="feld">
-          <label htmlFor="stammTelefon">Telefon</label>
-          <input
-            id="stammTelefon"
-            type="tel"
-            value={stammdaten.telefon}
-            onChange={(e) => setStammdaten((s) => ({ ...s, telefon: e.target.value }))}
-          />
-        </div>
-        <label className="feld-checkbox">
-          <input
-            type="checkbox"
-            checked={stammdaten.lizenzVorhanden}
-            onChange={(e) => setStammdaten((s) => ({ ...s, lizenzVorhanden: e.target.checked }))}
-          />{" "}
-          Schiedsrichter-Lizenz vorhanden
-        </label>
-        <div className="feld">
-          <label htmlFor="stammVereinVerband">Verein/Verband</label>
-          <input
-            id="stammVereinVerband"
-            list="profil-vereine-liste"
-            value={stammdaten.vereinVerband}
-            onChange={(e) => setStammdaten((s) => ({ ...s, vereinVerband: e.target.value }))}
-          />
-          <datalist id="profil-vereine-liste">
-            {[...new Set(vereine.map((v) => v.name))].sort((a, b) => a.localeCompare(b)).map((name) => (
-              <option key={name} value={name} />
-            ))}
-          </datalist>
-          <span className="feld-hinweis">Aus den Vereins-Stammdaten wählbar oder frei eingeben.</span>
-        </div>
-        <div className="feld">
-          <label htmlFor="stammAdresse">Adresse</label>
-          <textarea
-            id="stammAdresse"
-            rows={2}
-            value={stammdaten.adresse}
-            onChange={(e) => setStammdaten((s) => ({ ...s, adresse: e.target.value }))}
-          />
+      <form onSubmit={stammdatenSpeichern} className="stammdaten-formular">
+        <div className="tabellen-wrapper">
+          <table className="uebersicht-tabelle">
+            <caption className="sr-only">Kontakt- und Stammdaten</caption>
+            <tbody>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="stammName">Name</label>
+                </th>
+                <td>
+                  <input
+                    id="stammName"
+                    required
+                    value={stammdaten.name}
+                    onChange={(e) => setStammdaten((s) => ({ ...s, name: e.target.value }))}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="stammVorname">Vorname</label>
+                </th>
+                <td>
+                  <input
+                    id="stammVorname"
+                    value={stammdaten.vorname}
+                    onChange={(e) => setStammdaten((s) => ({ ...s, vorname: e.target.value }))}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="stammTelefon">Telefon</label>
+                </th>
+                <td>
+                  <input
+                    id="stammTelefon"
+                    type="tel"
+                    value={stammdaten.telefon}
+                    onChange={(e) => setStammdaten((s) => ({ ...s, telefon: e.target.value }))}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="stammLizenzVorhanden">Schiedsrichter-Lizenz vorhanden</label>
+                </th>
+                <td>
+                  <input
+                    id="stammLizenzVorhanden"
+                    type="checkbox"
+                    checked={stammdaten.lizenzVorhanden}
+                    onChange={(e) => setStammdaten((s) => ({ ...s, lizenzVorhanden: e.target.checked }))}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" style={{ verticalAlign: "top" }}>
+                  <label htmlFor="stammVereinVerband">Verein/Verband</label>
+                </th>
+                <td>
+                  <input
+                    id="stammVereinVerband"
+                    list="profil-vereine-liste"
+                    value={stammdaten.vereinVerband}
+                    onChange={(e) => setStammdaten((s) => ({ ...s, vereinVerband: e.target.value }))}
+                  />
+                  <datalist id="profil-vereine-liste">
+                    {[...new Set(vereine.map((v) => v.name))].sort((a, b) => a.localeCompare(b)).map((name) => (
+                      <option key={name} value={name} />
+                    ))}
+                  </datalist>
+                  <p className="feld-hinweis">Aus den Vereins-Stammdaten wählbar oder frei eingeben.</p>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="stammAdresse">Adresse</label>
+                </th>
+                <td>
+                  <textarea
+                    id="stammAdresse"
+                    rows={2}
+                    value={stammdaten.adresse}
+                    onChange={(e) => setStammdaten((s) => ({ ...s, adresse: e.target.value }))}
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         <button type="submit">Stammdaten speichern</button>
       </form>
