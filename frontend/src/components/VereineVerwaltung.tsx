@@ -30,8 +30,12 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
   const [fehler, setFehler] = useState<string | undefined>();
   const [neu, setNeu] = useState<VereinAktualisierung>(LEERES_FORMULAR);
   const [bearbeitung, setBearbeitung] = useState<Record<string, VereinAktualisierung>>({});
-  const [formularOffen, setFormularOffen] = useState(true);
-  const autoZugeklappt = useRef(false);
+  // Default zu: der haeufigere Fall (Seite erneut aufgerufen, Vereine existieren schon) zeigt das
+  // Formular dann nie kurz auf, um gleich darauf wieder zuzuklappen. Nur die einmalige Ersterfassung
+  // (unten, erstLadungFertig-Effekt) klappt es bei Bedarf wieder auf.
+  const [formularOffen, setFormularOffen] = useState(false);
+  const [erstLadungFertig, setErstLadungFertig] = useState(false);
+  const autoEntschieden = useRef(false);
   const nameRef = useRef<HTMLInputElement>(null);
 
   const laden = useCallback(async () => {
@@ -42,6 +46,8 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden der Vereine");
+    } finally {
+      setErstLadungFertig(true);
     }
     // onGeaendert absichtlich nicht in den Dependencies: soll bei jedem Laden aufgerufen werden,
     // aber kein Neuladen ausloesen, wenn der Elternteil eine neue Funktionsreferenz uebergibt.
@@ -69,16 +75,17 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
     });
   }, [vereine]);
 
-  // Anlege-Formular automatisch einklappen, sobald (beim ersten Laden) bereits Vereine
-  // existieren - dann ist die Vereins-Liste und die Team-Uebersicht darunter gleich sichtbar.
-  // Ohne Vereine bleibt es offen (Erst-Erfassung). Nur einmal automatisch; danach entscheidet
-  // der Nutzer per Umschalter.
+  // Anlege-Formular nur bei der allerersten, echten Ersterfassung (noch gar keine Vereine
+  // vorhanden) automatisch aufklappen - sonst bleibt es beim Default zu (siehe oben). Erst nach
+  // erstLadungFertig entscheiden, sonst wuerde das leere Array vor dem ersten Laden faelschlich
+  // schon als "keine Vereine" durchgehen. Nur einmal automatisch; danach entscheidet der Nutzer
+  // per Umschalter.
   useEffect(() => {
-    if (!autoZugeklappt.current && vereine.length > 0) {
-      autoZugeklappt.current = true;
-      setFormularOffen(false);
+    if (erstLadungFertig && !autoEntschieden.current) {
+      autoEntschieden.current = true;
+      if (vereine.length === 0) setFormularOffen(true);
     }
-  }, [vereine]);
+  }, [erstLadungFertig, vereine]);
 
   const vereineSortiert = [...vereine].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -322,60 +329,91 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
         </button>
       </p>
       {formularOffen && (
-      <form id="verein-anlegen" onSubmit={anlegen}>
-        <div className="feld">
-          <label htmlFor="vereinName">Vereinsname</label>
-          <input
-            id="vereinName"
-            ref={nameRef}
-            required
-            value={neu.name}
-            onChange={(e) => setNeu((n) => ({ ...n, name: e.target.value }))}
-          />
-        </div>
-        <div className="feld">
-          <label htmlFor="vereinBundesland">Bundesland (optional)</label>
-          <input
-            id="vereinBundesland"
-            list="bundeslaender-liste"
-            value={neu.bundesland ?? ""}
-            onChange={(e) => setNeu((n) => ({ ...n, bundesland: e.target.value }))}
-          />
-        </div>
-        <div className="feld">
-          <label htmlFor="vereinAnsprechpartner">Ansprechpartner (optional)</label>
-          <input
-            id="vereinAnsprechpartner"
-            value={neu.ansprechpartnerName ?? ""}
-            onChange={(e) => setNeu((n) => ({ ...n, ansprechpartnerName: e.target.value }))}
-          />
-        </div>
-        <div className="feld">
-          <label htmlFor="vereinTelefon">Ansprechpartner-Telefon (optional)</label>
-          <input
-            id="vereinTelefon"
-            type="tel"
-            value={neu.ansprechpartnerTelefon ?? ""}
-            onChange={(e) => setNeu((n) => ({ ...n, ansprechpartnerTelefon: e.target.value }))}
-          />
-        </div>
-        <div className="feld">
-          <label htmlFor="vereinEmail">Ansprechpartner-E-Mail (optional)</label>
-          <input
-            id="vereinEmail"
-            type="email"
-            value={neu.ansprechpartnerEmail ?? ""}
-            onChange={(e) => setNeu((n) => ({ ...n, ansprechpartnerEmail: e.target.value }))}
-          />
-        </div>
-        <div className="feld">
-          <label htmlFor="vereinLogo">Logo-URL (optional)</label>
-          <input
-            id="vereinLogo"
-            type="url"
-            value={neu.logo ?? ""}
-            onChange={(e) => setNeu((n) => ({ ...n, logo: e.target.value }))}
-          />
+      <form id="verein-anlegen" onSubmit={anlegen} className="stammdaten-formular">
+        <div className="tabellen-wrapper">
+          <table className="uebersicht-tabelle">
+            <caption className="sr-only">Neuen Verein anlegen</caption>
+            <tbody>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="vereinName">Vereinsname</label>
+                </th>
+                <td>
+                  <input
+                    id="vereinName"
+                    ref={nameRef}
+                    required
+                    value={neu.name}
+                    onChange={(e) => setNeu((n) => ({ ...n, name: e.target.value }))}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="vereinBundesland">Bundesland</label>
+                </th>
+                <td>
+                  <input
+                    id="vereinBundesland"
+                    list="bundeslaender-liste"
+                    value={neu.bundesland ?? ""}
+                    onChange={(e) => setNeu((n) => ({ ...n, bundesland: e.target.value }))}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="vereinAnsprechpartner">Ansprechpartner</label>
+                </th>
+                <td>
+                  <input
+                    id="vereinAnsprechpartner"
+                    value={neu.ansprechpartnerName ?? ""}
+                    onChange={(e) => setNeu((n) => ({ ...n, ansprechpartnerName: e.target.value }))}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="vereinTelefon">Ansprechpartner-Telefon</label>
+                </th>
+                <td>
+                  <input
+                    id="vereinTelefon"
+                    type="tel"
+                    value={neu.ansprechpartnerTelefon ?? ""}
+                    onChange={(e) => setNeu((n) => ({ ...n, ansprechpartnerTelefon: e.target.value }))}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="vereinEmail">Ansprechpartner-E-Mail</label>
+                </th>
+                <td>
+                  <input
+                    id="vereinEmail"
+                    type="email"
+                    value={neu.ansprechpartnerEmail ?? ""}
+                    onChange={(e) => setNeu((n) => ({ ...n, ansprechpartnerEmail: e.target.value }))}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="vereinLogo">Logo-URL</label>
+                </th>
+                <td>
+                  <input
+                    id="vereinLogo"
+                    type="url"
+                    value={neu.logo ?? ""}
+                    onChange={(e) => setNeu((n) => ({ ...n, logo: e.target.value }))}
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         <button type="submit">Verein anlegen</button>
       </form>

@@ -197,33 +197,48 @@ export function TeamsVerwaltung({ vereine, darfBearbeiten }: Props) {
       )}
 
       {vereine.length > 0 && (
-        <form onSubmit={anlegen}>
-          <div className="feld">
-            <label htmlFor="teamVerein">Verein</label>
-            <select id="teamVerein" value={neuerVereinId} onChange={(e) => setNeuerVereinId(e.target.value)}>
-              {vereine.map((v) => (
-                <option key={v._id} value={v._id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>{" "}
-            <button
-              type="button"
-              onClick={() => setNeuerName(nameVonVerein(neuerVereinId))}
-              disabled={!neuerVereinId}
-            >
-              als Teamname übernehmen
-            </button>
-          </div>
-          <div className="feld">
-            <label htmlFor="teamName">Teamname (z.B. „I", „II")</label>
-            <input
-              id="teamName"
-              ref={nameRef}
-              required
-              value={neuerName}
-              onChange={(e) => setNeuerName(e.target.value)}
-            />
+        <form onSubmit={anlegen} className="stammdaten-formular">
+          <div className="tabellen-wrapper">
+            <table className="uebersicht-tabelle">
+              <caption className="sr-only">Neues Team anlegen</caption>
+              <tbody>
+                <tr>
+                  <th scope="row">
+                    <label htmlFor="teamVerein">Verein</label>
+                  </th>
+                  <td>
+                    <select id="teamVerein" value={neuerVereinId} onChange={(e) => setNeuerVereinId(e.target.value)}>
+                      {vereine.map((v) => (
+                        <option key={v._id} value={v._id}>
+                          {v.name}
+                        </option>
+                      ))}
+                    </select>{" "}
+                    <button
+                      type="button"
+                      onClick={() => setNeuerName(nameVonVerein(neuerVereinId))}
+                      disabled={!neuerVereinId}
+                    >
+                      als Teamname übernehmen
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    <label htmlFor="teamName">Teamname (z.B. „I", „II")</label>
+                  </th>
+                  <td>
+                    <input
+                      id="teamName"
+                      ref={nameRef}
+                      required
+                      value={neuerName}
+                      onChange={(e) => setNeuerName(e.target.value)}
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
           <button type="submit">Team anlegen</button>
         </form>
