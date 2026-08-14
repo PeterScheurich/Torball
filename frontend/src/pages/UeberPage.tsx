@@ -1,4 +1,5 @@
 import { APP_VERSION } from "../version";
+import { ENTWICKLER } from "../entwicklerKontakt";
 
 /**
  * "Über & Kontakt" – kurze Info zur Idee/Entstehung der Anwendung und Kontaktdaten des
@@ -7,13 +8,6 @@ import { APP_VERSION } from "../version";
  * sein (Scam-/Spam-Schutz). Eine spätere öffentliche Variante mit verschleierter E-Mail ist
  * möglich, aber bewusst zurückgestellt.
  */
-
-// Kontaktdaten des Entwicklers – vom Betreiber auszufüllen (bewusst nicht von der KI vorbelegt,
-// damit klar ist, welche Adresse hier steht). `email` leer lassen blendet den Mail-Link aus.
-const ENTWICKLER = {
-  name: "Peter Scheurich",
-  email: "software@blindentorball.de",
-};
 
 export function UeberPage() {
   return (
@@ -42,7 +36,7 @@ export function UeberPage() {
 
       <h2>Kontakt</h2>
       <dl className="ueber-kontakt">
-        <dt>Entwicklung</dt>
+        <dt>Konzeption und Entwicklung</dt>
         <dd>{ENTWICKLER.name}</dd>
         <dt>E-Mail</dt>
         <dd>
