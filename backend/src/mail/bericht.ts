@@ -1,6 +1,6 @@
 import type { KanbanKarte, MailBericht, MailBerichtAusloeser, MailNachricht } from "@torball/shared";
 import { deleteDoc, findAllByType, findAllBySelector, insertDoc, newId } from "../repository";
-import { istVeraltet, kanbanKategorieFuer, naechsteReihenfolgeOffen } from "./berichtHilfen";
+import { istVeraltet, kanbanKategorieFuer, naechsteReihenfolgeOffen, STANDARD_AUFBEWAHRUNG_TAGE } from "./berichtHilfen";
 import { holeNeueMails } from "./imapClient";
 import { klassifiziereMails } from "./klassifikation";
 import { aktuelleMailPostfachEinstellungen, MAIL_POSTFACH_EINSTELLUNGEN_ID } from "./postfach";
@@ -156,7 +156,7 @@ export async function erstelleMailBericht(
   }
 
   try {
-    await raeumeAlteMailsAuf();
+    await raeumeAlteMailsAuf(einstellungen.aufbewahrungTage ?? STANDARD_AUFBEWAHRUNG_TAGE);
   } catch (err) {
     // Best effort, gleiches Muster wie oben beim Mailversand - ein fehlgeschlagenes Aufraeumen
     // darf den eigentlichen Berichtslauf nicht ungueltig machen.
@@ -172,10 +172,10 @@ export async function erstelleMailBericht(
  * (automatisch taeglich UND bei "Bericht jetzt erstellen") mit, kein eigener Zeitplan noetig.
  * Betrifft nur die hier gespeicherte Kopie/Klassifikation, nicht die Original-Mail im Postfach.
  */
-async function raeumeAlteMailsAuf(): Promise<number> {
+async function raeumeAlteMailsAuf(aufbewahrungTage: number): Promise<number> {
   const alle = await findAllByType<MailNachricht>("mailNachricht");
   const jetzt = new Date();
-  const veraltet = alle.filter((mail) => istVeraltet(mail, jetzt));
+  const veraltet = alle.filter((mail) => istVeraltet(mail, jetzt, aufbewahrungTage));
   for (const mail of veraltet) {
     await deleteDoc(mail._id, mail._rev!);
   }

@@ -59,18 +59,24 @@ function mail(manuellerStatus: MailNachricht["manuellerStatus"], aktualisiertAm:
 const JETZT = new Date("2026-08-20T12:00:00.000Z");
 
 test("istVeraltet: 'offene' (kein manueller Status) Mails veralten nie, egal wie alt", () => {
-  assert.equal(istVeraltet(mail(undefined, "2020-01-01T00:00:00.000Z"), JETZT), false);
+  assert.equal(istVeraltet(mail(undefined, "2020-01-01T00:00:00.000Z"), JETZT, 7), false);
 });
 
-test("istVeraltet: erledigt/ignoriert vor weniger als 7 Tagen ist noch nicht veraltet", () => {
+test("istVeraltet: erledigt/ignoriert vor weniger als 7 Tagen ist bei 7 Tagen Frist noch nicht veraltet", () => {
   const vorSechsTagen = new Date(JETZT.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString();
-  assert.equal(istVeraltet(mail("erledigt", vorSechsTagen), JETZT), false);
-  assert.equal(istVeraltet(mail("ignoriert", vorSechsTagen), JETZT), false);
+  assert.equal(istVeraltet(mail("erledigt", vorSechsTagen), JETZT, 7), false);
+  assert.equal(istVeraltet(mail("ignoriert", vorSechsTagen), JETZT, 7), false);
 });
 
-test("istVeraltet: erledigt/ignoriert vor mindestens 7 Tagen ist veraltet", () => {
+test("istVeraltet: erledigt/ignoriert vor mindestens 7 Tagen ist bei 7 Tagen Frist veraltet", () => {
   const vorSiebenTagen = new Date(JETZT.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const vorZehnTagen = new Date(JETZT.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString();
-  assert.equal(istVeraltet(mail("erledigt", vorSiebenTagen), JETZT), true);
-  assert.equal(istVeraltet(mail("ignoriert", vorZehnTagen), JETZT), true);
+  assert.equal(istVeraltet(mail("erledigt", vorSiebenTagen), JETZT, 7), true);
+  assert.equal(istVeraltet(mail("ignoriert", vorZehnTagen), JETZT, 7), true);
+});
+
+test("istVeraltet: die Frist ist konfigurierbar, nicht fest auf 7 Tage", () => {
+  const vorZweiTagen = new Date(JETZT.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString();
+  assert.equal(istVeraltet(mail("erledigt", vorZweiTagen), JETZT, 1), true);
+  assert.equal(istVeraltet(mail("erledigt", vorZweiTagen), JETZT, 30), false);
 });

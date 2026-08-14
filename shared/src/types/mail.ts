@@ -75,6 +75,11 @@ export interface MailPostfachEinstellungen extends CouchMeta {
   /** Datum (YYYY-MM-DD) des letzten automatischen Laufs, verhindert einen doppelten Lauf am
    *  selben Tag. */
   letzterAutomatischerLaufDatum?: string;
+  /** Erledigte/ignorierte Mails werden nach so vielen Tagen automatisch geraeumt (nur die lokale
+   *  Kopie, die Original-Mail bleibt im Postfach) - siehe mail/berichtHilfen.ts::istVeraltet().
+   *  Optional, damit bereits bestehende Einstellungen-Dokumente ohne dieses Feld weiter gueltig
+   *  bleiben; STANDARD_AUFBEWAHRUNG_TAGE dient dafuer als Fallback. */
+  aufbewahrungTage?: number;
 }
 
 /** Sicht auf MailPostfachEinstellungen ohne die beiden Geheimwerte - stattdessen nur ein
@@ -88,4 +93,5 @@ export interface MailPostfachEinstellungenOeffentlich {
   imapUser?: string;
   imapPasswortGesetzt: boolean;
   anthropicApiKeyGesetzt: boolean;
+  aufbewahrungTage: number;
 }

@@ -1069,6 +1069,7 @@ export function getMailPostfachEinstellungen(): Promise<MailPostfachEinstellunge
  *  angezeigt wird - siehe CLAUDE.md, "Optionale Textfelder leeren"). */
 export interface MailPostfachEinstellungenEingabe {
   berichtszeit: string;
+  aufbewahrungTage: number;
   berichtEmpfaenger?: string | null;
   imapHost?: string | null;
   imapPort?: number | null;

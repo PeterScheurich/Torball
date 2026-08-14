@@ -1,5 +1,6 @@
 import type { MailPostfachEinstellungen, MailPostfachEinstellungenOeffentlich } from "@torball/shared";
 import { findById } from "../repository";
+import { STANDARD_AUFBEWAHRUNG_TAGE } from "./berichtHilfen";
 
 /** Singleton-Dokument, feste ID (analog SYSTEMEINSTELLUNGEN_ID). */
 export const MAIL_POSTFACH_EINSTELLUNGEN_ID = "mailPostfachEinstellungen:global";
@@ -8,6 +9,7 @@ export const STANDARD_MAIL_POSTFACH_EINSTELLUNGEN: MailPostfachEinstellungen = {
   _id: MAIL_POSTFACH_EINSTELLUNGEN_ID,
   docType: "mailPostfachEinstellungen",
   berichtszeit: "07:00",
+  aufbewahrungTage: STANDARD_AUFBEWAHRUNG_TAGE,
 };
 
 /**
@@ -40,5 +42,6 @@ export function oeffentlicheMailPostfachEinstellungen(
     imapUser: einstellungen.imapUser,
     imapPasswortGesetzt: Boolean(einstellungen.imapPasswort),
     anthropicApiKeyGesetzt: Boolean(einstellungen.anthropicApiKey),
+    aufbewahrungTage: einstellungen.aufbewahrungTage ?? STANDARD_AUFBEWAHRUNG_TAGE,
   };
 }

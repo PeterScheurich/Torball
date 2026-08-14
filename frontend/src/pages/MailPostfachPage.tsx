@@ -34,6 +34,7 @@ const STATUS_LABEL: Record<MailManuellerStatus | "offen", string> = {
 
 const LEERES_EINSTELLUNGEN_FORMULAR = {
   berichtszeit: "07:00",
+  aufbewahrungTage: "7",
   berichtEmpfaenger: "",
   imapHost: "",
   imapPort: "",
@@ -86,6 +87,7 @@ export function MailPostfachPage() {
       setMails(nachrichten);
       setEinstellungenForm({
         berichtszeit: einstellungen.berichtszeit,
+        aufbewahrungTage: String(einstellungen.aufbewahrungTage),
         berichtEmpfaenger: einstellungen.berichtEmpfaenger ?? "",
         imapHost: einstellungen.imapHost ?? "",
         imapPort: einstellungen.imapPort ? String(einstellungen.imapPort) : "",
@@ -156,6 +158,7 @@ export function MailPostfachPage() {
     try {
       const ergebnis = await updateMailPostfachEinstellungen({
         berichtszeit: einstellungenForm.berichtszeit,
+        aufbewahrungTage: Number(einstellungenForm.aufbewahrungTage),
         berichtEmpfaenger: einstellungenForm.berichtEmpfaenger.trim() || null,
         imapHost: einstellungenForm.imapHost.trim() || null,
         imapPort: einstellungenForm.imapPort.trim() ? Number(einstellungenForm.imapPort) : null,
@@ -176,6 +179,7 @@ export function MailPostfachPage() {
     try {
       const ergebnis = await updateMailPostfachEinstellungen({
         berichtszeit: einstellungenForm.berichtszeit,
+        aufbewahrungTage: Number(einstellungenForm.aufbewahrungTage),
         berichtEmpfaenger: einstellungenForm.berichtEmpfaenger.trim() || null,
         imapHost: einstellungenForm.imapHost.trim() || null,
         imapPort: einstellungenForm.imapPort.trim() ? Number(einstellungenForm.imapPort) : null,
@@ -278,6 +282,25 @@ export function MailPostfachPage() {
                       value={einstellungenForm.berichtEmpfaenger}
                       onChange={(e) => setEinstellungenForm((f) => ({ ...f, berichtEmpfaenger: e.target.value }))}
                     />
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    <label htmlFor="mail-aufbewahrung">Aufbewahrung erledigter/ignorierter Mails (Tage)</label>
+                  </th>
+                  <td>
+                    <input
+                      id="mail-aufbewahrung"
+                      type="number"
+                      min={1}
+                      required
+                      value={einstellungenForm.aufbewahrungTage}
+                      onChange={(e) => setEinstellungenForm((f) => ({ ...f, aufbewahrungTage: e.target.value }))}
+                    />
+                    <p className="feld-hinweis">
+                      Als „Erledigt"/„Ignoriert" markierte Mails werden danach automatisch aus dieser Liste entfernt –
+                      betrifft nur die hier gespeicherte Kopie, die Original-Mail bleibt im Postfach erhalten.
+                    </p>
                   </td>
                 </tr>
               </tbody>

@@ -153,6 +153,7 @@ export async function mailPostfachRoutes(app: FastifyInstance): Promise<void> {
 
   interface MailEinstellungenBody {
     berichtszeit: string;
+    aufbewahrungTage: number;
     berichtEmpfaenger?: string | null;
     imapHost?: string | null;
     imapPort?: number | null;
@@ -176,9 +177,10 @@ export async function mailPostfachRoutes(app: FastifyInstance): Promise<void> {
       schema: {
         body: {
           type: "object",
-          required: ["berichtszeit"],
+          required: ["berichtszeit", "aufbewahrungTage"],
           properties: {
             berichtszeit: { type: "string", pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" },
+            aufbewahrungTage: { type: "number", minimum: 1 },
             berichtEmpfaenger: { type: ["string", "null"] },
             imapHost: { type: ["string", "null"] },
             imapPort: { type: ["number", "null"] },
@@ -197,6 +199,7 @@ export async function mailPostfachRoutes(app: FastifyInstance): Promise<void> {
         _id: MAIL_POSTFACH_EINSTELLUNGEN_ID,
         docType: "mailPostfachEinstellungen",
         berichtszeit: req.body.berichtszeit,
+        aufbewahrungTage: req.body.aufbewahrungTage,
         berichtEmpfaenger: feldOderBisherig(req.body.berichtEmpfaenger, bisherige.berichtEmpfaenger),
         imapHost: feldOderBisherig(req.body.imapHost, bisherige.imapHost),
         imapPort: feldOderBisherig(req.body.imapPort, bisherige.imapPort),
