@@ -220,6 +220,17 @@ Historie erhalten. Volle bidirektionale PouchDB↔CouchDB-Synchronisation
 (Abschnitt 17/23) bleibt bewusst zurückgestellt – deutlich komplexer, als für
 diesen (häufigeren) Anwendungsfall nötig.
 
+**Offline-/Lokal-Betrieb ist laut Spezifikation (Abschnitt 17/19) ein
+Kernfeature mit drei Betriebsmodi (Standalone, Lokales Netzwerk, Zentrale
+Plattform), kein optionales Extra** – bei neuen Architektur-Entscheidungen
+(neue Auth-Pfade, neue Datenzugriffs-Patterns) mitdenken, ob sie den noch
+offenen dritten Modus erschweren würden, statt online-only als
+selbstverständliche Annahme zu behandeln. „Lokales Netzwerk" (Turnier-Codes,
+oben) und diese Instanz-Kopplung decken die ersten beiden Ausprägungen ab;
+der reine **Standalone-Modus** (ein Rechner, kein externer Server, volle
+PouchDB-Synchronisation im Browser) ist für ein kommendes Release fest
+eingeplant, aber noch nicht gebaut.
+
 **`GET /sync/status` liefert zusätzlich `istLokaleInstallation`** (`= SERVE_FRONTEND === "true"`,
 siehe `backend/src/index.ts`): `EinstellungenPage.tsx`s Kopplungsformular ("Turnier-Sync (Lokale
 Installation)") blendet sich damit komplett aus, wenn diese Instanz keine echte lokale
@@ -330,6 +341,16 @@ entfällt die alte Kaskade "beim Mannschaft-Löschen die Referenz lösen"
 ersatzlos – ein Vereins-Bezug wird von einer Mannschafts-Löschung nicht
 berührt.
 
+**„Verein" in den Stammdaten ist nicht zwingend ein realer Sportverein:**
+Eine Spielgemeinschaft (SG) ohne eigenen Trägerverein wird bewusst als
+eigener „Verein"-Eintrag erfasst (Name z. B. „SG Hoffeld/Landshut"), damit
+darunter ein `Team` angelegt werden kann – `Team.vereinId` ist ein
+Pflichtfeld, jedes Team braucht also einen Verein-Datensatz. Nutzer-Vorgabe
+(2026-08-11): bewusst keine Modelländerung (kein team-ohne-verein), der
+Verein-Eintrag ist konzeptionell ohnehin „die Trägerorganisation hinter dem
+Team" und eine SG passt dort hinein. Beim Umgang mit Vereinen/Teams also
+nicht annehmen, dass jeder „Verein"-Datensatz ein echter Sportverein ist.
+
 **Schiedsrichter-Stammdaten (turnierübergreifend, analog Verein/Team):**
 `Schiedsrichter` (`docType: "schiedsrichter"`, eigener Typ + eigene Route
 `backend/src/routes/schiedsrichterStammdaten.ts`, `/schiedsrichter-stammdaten`)
@@ -428,7 +449,8 @@ je eine Schiedsrichter-Seite. QR-Ziele: Info → öffentliche Turnierseite, Spie
 Logo, das clientseitig verkleinert (`frontend/src/logoBild.ts`, Canvas, max. 256 px lange Kante,
 PNG-Data-URL; Upload auf 1 MB begrenzt, Seitenverhältnis bleibt erhalten) und **direkt am
 Turnier-Dokument** gespeichert wird (bewusst **keine** separate
-Dateiablage – die ist zurückgestellt, siehe [[project-offene-dateianhaenge]]). Fehlt es, zeigt die
+Dateiablage – ein allgemeines Datei-Anhänge-Feature am Turnier (z. B. Ausschreibung, Hallenplan)
+ist spezifiziert, aber bewusst auf ein späteres Release zurückgestellt). Fehlt es, zeigt die
 Komponente `TurnierLogo` das **Standard-Torball-Logo** (`frontend/public/images/torball-logo*.svg`,
 theme-abhängig über dieselbe `.logo-hell`/`.logo-dunkel`-Umschaltung wie die Kopfzeile). Angezeigt in
 der Turnier-Übersicht (dort auch Hochladen/Zurücksetzen, gesperrt bei abgeschlossenem Turnier) und
