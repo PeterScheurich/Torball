@@ -463,7 +463,14 @@ td {
   padding: 4px 8px;
 }
 
-:root[data-dichte='schmal'] button {
+/* .kopfzeile-menue-eintrag/-knopf ausgenommen: das sind Elemente der globalen Kopfzeilen-
+   Navigation, keine Formular-/Tabellen-Buttons - sie sollen sich nicht mit der Dichte-Einstellung
+   verkleinern. Ohne diese Ausnahme gewinnt diese Regel gegen .kopfzeile-menue-eintrags eigenes
+   padding (hoehere Selektor-Spezifitaet durch :root[...]), aber NUR fuer den <button>-Eintrag
+   ("Abmelden") - der als <Link> gerenderte Eintrag ("Mein Profil") bleibt unberuehrt, da er kein
+   <button> ist. Die zwei Eintraege driften dadurch bei "schmal" sichtbar in Hoehe UND linkem
+   Innenabstand auseinander (live beim Nutzer reproduziert). */
+:root[data-dichte='schmal'] button:not(.kopfzeile-menue-eintrag):not(.kopfzeile-menue-knopf) {
   padding: 2px 6px;
 }
 
