@@ -18,19 +18,12 @@ import { ENTWICKLER } from "../entwicklerKontakt";
  *  Seiten (Login, oeffentliche Turnierseite) ohne GeschuetzteRoute - die E-Mail soll dort aus
  *  Scam-/Spam-Schutz nicht fuer jeden Besucher/Crawler abgreifbar sein (gleiche Regel wie auf
  *  der "Über"-Seite). */
-// Vorausgefuellter Mail-Text: gibt Testenden ohne Rueckfrage vor, welche Angaben bei einer
-// Fehlermeldung helfen (Nutzer-Vorgabe) - oben Platz fuer den eigentlichen Text, die Fragen
-// darunter nur als Orientierung, gelten erkennbar nicht fuer reines Lob/Anregungen.
+// Vorausgefuellter Mail-Text fuer freies Feedback (Lob/Anregungen/allgemeine Rueckmeldung).
+// Die Fehlermeldungs-spezifische Checkliste ist raus (Nutzer-Vorgabe) - dafuer gibt es jetzt
+// das strukturierte Formular unter "Fehler melden" (FehlerMeldenPage).
 const MAIL_VORLAGE = `Kurz zu meinem Anliegen:
 
-
----
-Bei einer Fehlermeldung helfen zusätzlich folgende Angaben:
-- Bei welcher Aufgabe ist der Fehler aufgetreten?
-- Wie hat sich der Fehler gezeigt?
-- Ist er schon öfter aufgetreten?
-- Mit welcher Version wird gearbeitet (Server-Instanz oder lokale Installation)?
-- Screenshot(s) beigefügt?`;
+`;
 
 export function Fusszeile() {
   const { benutzer } = useAuth();
