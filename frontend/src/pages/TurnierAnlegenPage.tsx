@@ -115,8 +115,9 @@ export function TurnierAnlegenPage() {
           <input id="datum" type="date" required value={datum} onChange={(e) => setDatum(e.target.value)} />
         </div>
         <div className="feld">
-          <label htmlFor="startzeit">Startzeit (optional)</label>
-          <input id="startzeit" type="time" value={startzeit} onChange={(e) => setStartzeit(e.target.value)} />
+          <label htmlFor="startzeit">Startzeit</label>
+          <input id="startzeit" type="time" required value={startzeit} onChange={(e) => setStartzeit(e.target.value)} />
+          <span className="feld-hinweis">Lässt sich nach dem Anlegen nicht mehr ändern.</span>
         </div>
 
         {/* Diese Felder kommen bei einer Datenübernahme aus dem Vorgänger - dann ausgeblendet. */}

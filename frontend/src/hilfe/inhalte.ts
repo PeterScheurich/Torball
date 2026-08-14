@@ -123,7 +123,11 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Welche Grunddaten trage ich im ersten Schritt ein?",
         text: [
-          "Pflicht sind Name und Datum. Optional ist eine Startzeit. Dazu wählst du die Anzahl der Spielfelder, den Spielmodus und die Protokollierung.",
+          "Pflicht sind Name, Datum und Startzeit. Dazu wählst du die Anzahl der Spielfelder, den Spielmodus und die Protokollierung.",
+          {
+            hinweis:
+              "Die Startzeit lässt sich nach dem Anlegen nirgends mehr ändern – trage sie deshalb gleich korrekt ein.",
+          },
         ],
       },
       {

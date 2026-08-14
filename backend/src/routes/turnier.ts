@@ -57,14 +57,19 @@ const REGEL_FELDER: ReadonlyArray<keyof Turnierregeln> = [
 
 /** Felder, die der Client beim Anlegen setzen kann; alles andere bekommt einen Default (Abschnitt 20.5). */
 type TurnierBody = Partial<Omit<Turnier, "_id" | "_rev" | "docType" | "turnierId">> &
-  Pick<Turnier, "name" | "datum">;
+  Pick<Turnier, "name" | "datum"> &
+  Required<Pick<Turnier, "startzeit">>;
 
+// Startzeit ist Pflicht (nicht nur beim Datenmodell optional): sie laesst sich nach dem Anlegen
+// nirgends im Programm mehr aendern (Datum/Startzeit sind in der Turnier-Uebersicht readOnly) -
+// ohne sie beim Anlegen zu erzwingen, koennte sie nie mehr nachgetragen werden.
 const turnierBodySchema = {
   type: "object",
-  required: ["name", "datum"],
+  required: ["name", "datum", "startzeit"],
   properties: {
     name: { type: "string", minLength: 1 },
     datum: { type: "string", minLength: 1 },
+    startzeit: { type: "string", minLength: 1 },
     status: { type: "string", enum: ["entwurf", "aktiv", "abgeschlossen", "archiviert"] },
     protokollierungsart: { type: "string", enum: ["digital", "manuell"] },
     spielplanModus: { type: "string", enum: ["einfach", "doppelt"] },
@@ -318,17 +323,17 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   // Regeln gesperrt und spiegelt den Spielplan (Heim/Auswaerts getauscht, Ergebnisse
   // zurueckgesetzt). Die beiden Spieltage teilen eine gemeinsame wettbewerbId (Aggregations-
   // Klammer). Anlegen wie ein normales Turnier nur fuer Admin/Manager.
-  app.post<{ Params: { id: string }; Body: { name: string; datum: string; startzeit?: string } }>(
+  app.post<{ Params: { id: string }; Body: { name: string; datum: string; startzeit: string } }>(
     "/turniere/:id/ableiten",
     {
       schema: {
         body: {
           type: "object",
-          required: ["name", "datum"],
+          required: ["name", "datum", "startzeit"],
           properties: {
             name: { type: "string", minLength: 1 },
             datum: { type: "string", minLength: 1 },
-            startzeit: { type: "string" },
+            startzeit: { type: "string", minLength: 1 },
           },
         },
       },
