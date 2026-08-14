@@ -585,7 +585,12 @@ export function MailPostfachPage() {
                         Status zurücksetzen
                       </button>
                     )}
-                    <button type="button" className="symbol-button" onClick={() => loeschen(mail)} title="Löschen">
+                    <button
+                      type="button"
+                      className="symbol-button button-loeschen"
+                      onClick={() => loeschen(mail)}
+                      title="Löschen"
+                    >
                       ✕
                     </button>
                   </td>

@@ -95,7 +95,7 @@ function TurnierTabelle({
             <td>
               <button
                 type="button"
-                className="symbol-button"
+                className="symbol-button button-loeschen"
                 onClick={() => onLoeschen(turnier._id, turnier.name)}
                 aria-label={`${turnier.name} löschen`}
                 title="Löschen"

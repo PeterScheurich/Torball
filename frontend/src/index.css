@@ -1139,6 +1139,19 @@ button:disabled {
   color: var(--accent);
   border: 1px solid var(--accent);
 }
+/* Gemeinsamer Stil fuer JEDEN Loeschen-/Entfernen-Knopf in der App (Turniere, Vereine, Teams,
+   Mannschaften, Schiedsrichter, Kanban-Karten, Mails, ...). Nur die Textfarbe auf --danger zu
+   setzen liess den globalen gruenen button-Hintergrund (--accent) stehen - rotbrauner Text auf
+   gruenem Grund war praktisch nicht lesbar (live zuerst am Kanban-Board aufgefallen). Kraeftigerer
+   Rahmen + fette Schrift, damit die Aktion neben anderen (Icon-)Buttons klar als "loeschend"
+   erkennbar bleibt. */
+.button-loeschen {
+  background: transparent;
+  color: var(--danger);
+  border-width: 2px;
+  border-color: var(--danger);
+  font-weight: 700;
+}
 .kriterien-liste {
   max-width: 24em;
   padding-left: 1.4em;
@@ -1667,21 +1680,12 @@ button:hover:not(:disabled) {
   font-size: 0.8rem;
   padding: 2px 8px;
 }
-/* Nur die Textfarbe auf --danger zu setzen liess den globalen button-Hintergrund
-   (--accent, gruen) stehen - rotbrauner Text auf gruenem Grund war praktisch nicht lesbar
-   (live aufgefallen). Gleiches Umriss-Muster wie .button-sekundaer, nur mit --danger
-   statt --accent: transparenter Hintergrund, Text/Rahmen in der Warnfarbe. */
-.kanban-loeschen {
-  background: transparent;
-  color: var(--danger);
-  border-color: var(--danger);
-  border-width: 2px;
-}
-/* Hoehere Spezifitaet noetig, um gegen ".kanban-karte-aktionen button { font-size: 0.8rem }"
-   zu gewinnen (mehr Klassen im Selektor schlagen die Deklarationsreihenfolge). */
-.kanban-karte-aktionen .kanban-loeschen {
+/* .button-loeschen (index.css, bei .button-sekundaer) traegt Farbe/Rahmen. Hoehere Spezifitaet
+   noetig, um dessen Groesse gegen ".kanban-karte-aktionen button { font-size: 0.8rem }" auf das
+   Niveau der uebrigen Icon-Buttons in der Reihe zu heben (mehr Klassen im Selektor schlagen die
+   Deklarationsreihenfolge). */
+.kanban-karte-aktionen .button-loeschen {
   font-size: 1.1rem;
-  font-weight: 700;
 }
 
 /* .kanban-sync-aktionen wird auch von MailPostfachPage.tsx (IMAP-/API-Key-Test-Knopfreihen)

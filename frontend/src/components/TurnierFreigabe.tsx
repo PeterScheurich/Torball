@@ -276,7 +276,7 @@ export function TurnierFreigabe({
                   Speichern
                 </button>{" "}
                 {codesStatus?.turnierleitungCodeAktiv && (
-                  <button type="button" onClick={() => codeSetzen("turnierleitungCode", null)}>
+                  <button type="button" className="button-loeschen" onClick={() => codeSetzen("turnierleitungCode", null)}>
                     Löschen
                   </button>
                 )}
@@ -305,7 +305,7 @@ export function TurnierFreigabe({
                   Speichern
                 </button>{" "}
                 {codesStatus?.spielleitungCodeAktiv && (
-                  <button type="button" onClick={() => codeSetzen("spielleitungCode", null)}>
+                  <button type="button" className="button-loeschen" onClick={() => codeSetzen("spielleitungCode", null)}>
                     Löschen
                   </button>
                 )}

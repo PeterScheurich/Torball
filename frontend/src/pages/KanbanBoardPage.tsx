@@ -381,7 +381,7 @@ export function KanbanBoardPage() {
                       </button>
                       <button
                         type="button"
-                        className="kanban-loeschen"
+                        className="button-loeschen"
                         aria-label="Löschen"
                         title="Löschen"
                         onClick={() => loeschen(karte)}

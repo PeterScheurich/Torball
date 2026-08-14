@@ -426,7 +426,7 @@ export function MannschaftenListe({
                   </button>{" "}
                   <button
                     type="button"
-                    className="symbol-button"
+                    className="symbol-button button-loeschen"
                     onClick={() => loeschen(m._id)}
                     disabled={gesperrt}
                     aria-label={`${m.name} löschen`}

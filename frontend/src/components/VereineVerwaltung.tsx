@@ -296,7 +296,7 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
                   <td>
                     <button
                       type="button"
-                      className="symbol-button"
+                      className="symbol-button button-loeschen"
                       onClick={() => loeschen(v._id)}
                       aria-label={`${v.name} löschen`}
                       title="Löschen"

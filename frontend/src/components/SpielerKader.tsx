@@ -299,7 +299,7 @@ export function SpielerKader({ mannschaftId, onAnzahlGeaendert, maxSehendeSpiele
                   <td>
                     <button
                       type="button"
-                      className="symbol-button"
+                      className="symbol-button button-loeschen"
                       onClick={() => loeschen(s._id)}
                       aria-label={`${s.name} aus dem Kader entfernen`}
                       title="Entfernen"

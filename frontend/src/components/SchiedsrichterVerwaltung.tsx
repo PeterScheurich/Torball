@@ -376,7 +376,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
                   <td>
                     <button
                       type="button"
-                      className="symbol-button"
+                      className="symbol-button button-loeschen"
                       onClick={() => loeschen(s._id)}
                       aria-label={`${s.name} löschen`}
                       title="Löschen"

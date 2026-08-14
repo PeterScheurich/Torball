@@ -181,7 +181,7 @@ export function TeamsVerwaltung({ vereine, darfBearbeiten }: Props) {
                   <td>
                     <button
                       type="button"
-                      className="symbol-button"
+                      className="symbol-button button-loeschen"
                       onClick={() => loeschen(t._id)}
                       aria-label={`${t.name} löschen`}
                       title="Löschen"
