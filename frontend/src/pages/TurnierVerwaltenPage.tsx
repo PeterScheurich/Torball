@@ -22,6 +22,7 @@ import { TurnierregelnFormular } from "../components/TurnierregelnFormular";
 import { TurnierLogo } from "../components/TurnierLogo";
 import { bildAlsLogoDataUrl, MAX_LOGO_BYTES } from "../logoBild";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
+import { useAuth } from "../auth";
 
 type Tab = "uebersicht" | "regeln" | "mannschaften" | "schiedsrichter" | "spielplan" | "ergebnisse";
 
@@ -120,6 +121,7 @@ function allgemeinAusTurnier(turnier: Turnier): AllgemeinBearbeitung {
 export function TurnierVerwaltenPage() {
   const { id } = useParams<{ id: string }>();
   const turnierId = id!;
+  const { benutzer } = useAuth();
 
   const [turnier, setTurnier] = useState<Turnier | undefined>();
   const [allgemein, setAllgemein] = useState<AllgemeinBearbeitung | undefined>();
@@ -648,7 +650,11 @@ export function TurnierVerwaltenPage() {
 
         <TurnierFreigabe turnier={turnier} onGeaendert={setTurnier} />
 
-        <TurnierSync turnierId={turnierId} />
+        {/* Sync setzt eine "Verbundene Instanz" am Benutzerkonto voraus (siehe ProfilPage) - fuer
+            eine per Turnierleitung-Code angemeldete Sitzung (kein echtes Benutzerkonto, siehe
+            turnierCode.ts) gibt es das nicht, deshalb hier ausgeblendet statt einer Funktion, die
+            ohnehin nichts Sinnvolles anzeigen koennte. */}
+        {benutzer && <TurnierSync turnierId={turnierId} />}
 
         <h2>Öffentliche Turnierseite</h2>
         <p>
