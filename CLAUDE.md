@@ -790,6 +790,22 @@ dieser Version gilt der folgende Ablauf:
   ohne eigene Feld-Labels (Vereine/Teams/Schiedsrichter/Kader/Mannschaften) wird
   stattdessen der **Spaltenkopf** markiert (`<span className="pflicht-stern">`).
   Neue Pflichtfelder: `required` setzen (`.feld`) bzw. den Spaltenkopf markieren.
+- **Standard für Anlege-Formulare in Verwaltungs-Listen** (Stammdaten, Benutzerverwaltung,
+  vergleichbare Listen-Seiten): Tabellen-Form statt gestapelter `.feld`-Blöcke – Label **neben**
+  (nicht über) dem Eingabefeld, also `.uebersicht-tabelle` in einem `.tabellen-wrapper` (liefert
+  die Pflichtfeld-Markierung oben "for free"). Das `<form>` selbst braucht zusätzlich die Klasse
+  `.stammdaten-formular`, sonst quetscht das globale `form { max-width: 420px }` (gedacht für
+  schmale `.feld`-Formulare wie Login) die Tabelle sichtbar zusammen. Spart bei Formularen mit
+  mehreren Feldern deutlich Höhe (Nutzer-Vorgabe 2026-08-14, siehe `VereineVerwaltung.tsx`/
+  `TeamsVerwaltung.tsx`/`SchiedsrichterStammdatenVerwaltung.tsx`/`BenutzerverwaltungPage.tsx`) –
+  **gilt für jedes künftige Anlege-Formular dieser Art**, nicht nur die genannten Stellen.
+  Zusätzlich ab ca. 4–5 Feldern **zuklappbar**, Startzustand **zu** (nicht offen mit
+  anschließendem Zuklappen – sonst blitzt das Formular bei jedem Seitenaufruf kurz auf, bevor der
+  Lade-Effekt es schließt) und nur bei der allerersten echten Ersterfassung (Liste nach dem ersten
+  erfolgreichen Laden tatsächlich leer) automatisch aufklappen; danach entscheidet die Person
+  selbst per Umschalter (`aria-expanded`/`aria-controls`, Muster in `VereineVerwaltung.tsx`:
+  `erstLadungFertig`-State + `autoEntschieden`-Ref). Kurze Formulare (2–3 Felder, z. B. Team
+  anlegen, Benutzer einladen) brauchen die Zuklapp-Mechanik nicht, nur die Tabellen-Form.
 - Farbschema folgt standardmäßig der Systemeinstellung
   (`prefers-color-scheme`), mit manuellem Umschalter (`[data-theme]`) als
   Override. Zusätzlich Tabellendichte/Zeilenabstand (`[data-dichte]`,
