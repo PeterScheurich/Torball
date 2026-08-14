@@ -306,6 +306,14 @@ export function KanbanBoardPage() {
                           KI · ungeprüft
                         </span>
                       )}
+                      {karte.notizen && karte.notizen.length > 0 && (
+                        <span
+                          className="kanban-badge"
+                          title={`${karte.notizen.length} Notiz(en) – beim Bearbeiten sichtbar`}
+                        >
+                          <span aria-hidden="true">📝</span> {karte.notizen.length}
+                        </span>
+                      )}
                     </div>
                     <h3 className="kanban-karte-titel">{karte.titel}</h3>
                     {karte.beschreibung && <p className="kanban-karte-text">{karte.beschreibung}</p>}
