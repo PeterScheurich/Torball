@@ -42,7 +42,10 @@ export async function testeImapVerbindung(verbindung: ImapVerbindung): Promise<v
 }
 
 /** Holt alle Mails mit einer hoeheren UID als `letzteUid` aus dem Posteingang (INBOX), aeltestes
- *  zuerst. Wirft, wenn die Verbindung fehlschlaegt. */
+ *  zuerst, und markiert sie dabei im selben IMAP-Aufruf als gelesen (\Seen) - der Berichtslauf
+ *  hat die Mail damit "bearbeitet" (gelesen + zusammengefasst), unabhaengig davon, ob die
+ *  anschliessende KI-Klassifikation gelingt (Nutzer-Vorgabe). Wirft, wenn die Verbindung
+ *  fehlschlaegt. */
 export async function holeNeueMails(letzteUid: number, verbindung: ImapVerbindung): Promise<AbgerufeneMail[]> {
   const client = baueClient(verbindung);
 
@@ -64,6 +67,13 @@ export async function holeNeueMails(letzteUid: number, verbindung: ImapVerbindun
           empfangenAm: (geparst.date ?? new Date()).toISOString(),
           text: (geparst.text ?? "").slice(0, MAX_TEXTLAENGE),
         });
+      }
+      if (ergebnisse.length > 0) {
+        await client.messageFlagsAdd(
+          ergebnisse.map((m) => m.imapUid),
+          ["\\Seen"],
+          { uid: true },
+        );
       }
     } finally {
       lock.release();
