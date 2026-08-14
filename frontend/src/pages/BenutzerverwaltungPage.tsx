@@ -213,24 +213,43 @@ export function BenutzerverwaltungPage() {
       </div>
 
       <h2>Neuen Benutzer einladen</h2>
-      <form onSubmit={einladen}>
-        <div className="feld">
-          <label htmlFor="name">Name</label>
-          <input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="email">E-Mail</label>
-          <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        </div>
-        <div className="feld">
-          <label htmlFor="rolle">Rolle</label>
-          <select id="rolle" value={rolle} onChange={(e) => setRolle(e.target.value as GlobaleRolle)}>
-            {vergebbareRollen.map((r) => (
-              <option key={r} value={r}>
-                {ROLLEN_LABEL[r]}
-              </option>
-            ))}
-          </select>
+      <form onSubmit={einladen} className="stammdaten-formular">
+        <div className="tabellen-wrapper">
+          <table className="uebersicht-tabelle">
+            <caption className="sr-only">Neuen Benutzer einladen</caption>
+            <tbody>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="name">Name</label>
+                </th>
+                <td>
+                  <input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="email">E-Mail</label>
+                </th>
+                <td>
+                  <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="rolle">Rolle</label>
+                </th>
+                <td>
+                  <select id="rolle" value={rolle} onChange={(e) => setRolle(e.target.value as GlobaleRolle)}>
+                    {vergebbareRollen.map((r) => (
+                      <option key={r} value={r}>
+                        {ROLLEN_LABEL[r]}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         <button type="submit">Einladen</button>
       </form>

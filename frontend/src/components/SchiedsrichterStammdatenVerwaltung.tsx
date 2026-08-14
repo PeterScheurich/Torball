@@ -36,8 +36,11 @@ export function SchiedsrichterStammdatenVerwaltung({ vereine, darfBearbeiten }: 
   const [fehler, setFehler] = useState<string | undefined>();
   const [neu, setNeu] = useState<SchiedsrichterStammdatenAktualisierung>(LEERES_FORMULAR);
   const [bearbeitung, setBearbeitung] = useState<Record<string, SchiedsrichterStammdatenAktualisierung>>({});
-  const [formularOffen, setFormularOffen] = useState(true);
-  const autoZugeklappt = useRef(false);
+  // Default zu (analog VereineVerwaltung): der haeufigere Fall (Seite erneut aufgerufen, Eintraege
+  // existieren schon) zeigt das Formular dann nie kurz auf, um gleich darauf wieder zuzuklappen.
+  const [formularOffen, setFormularOffen] = useState(false);
+  const [erstLadungFertig, setErstLadungFertig] = useState(false);
+  const autoEntschieden = useRef(false);
   const nameRef = useRef<HTMLInputElement>(null);
 
   const laden = useCallback(async () => {
@@ -47,6 +50,8 @@ export function SchiedsrichterStammdatenVerwaltung({ vereine, darfBearbeiten }: 
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden der Schiedsrichter-Stammdaten");
+    } finally {
+      setErstLadungFertig(true);
     }
   }, []);
 
@@ -71,14 +76,14 @@ export function SchiedsrichterStammdatenVerwaltung({ vereine, darfBearbeiten }: 
     });
   }, [liste]);
 
-  // Anlege-Formular automatisch einklappen, sobald beim ersten Laden bereits Eintraege
-  // existieren (gleiches Muster wie VereineVerwaltung).
+  // Anlege-Formular nur bei der allerersten, echten Ersterfassung automatisch aufklappen -
+  // gleiches Muster wie VereineVerwaltung (siehe dort fuer die Begruendung des Default-zu).
   useEffect(() => {
-    if (!autoZugeklappt.current && liste.length > 0) {
-      autoZugeklappt.current = true;
-      setFormularOffen(false);
+    if (erstLadungFertig && !autoEntschieden.current) {
+      autoEntschieden.current = true;
+      if (liste.length === 0) setFormularOffen(true);
     }
-  }, [liste]);
+  }, [erstLadungFertig, liste]);
 
   const listeSortiert = [...liste].sort(
     (a, b) => a.name.localeCompare(b.name) || (a.vorname ?? "").localeCompare(b.vorname ?? ""),
@@ -339,67 +344,99 @@ export function SchiedsrichterStammdatenVerwaltung({ vereine, darfBearbeiten }: 
                 <span className="feld-hinweis">Füllt das Formular mit deinen Stammdaten aus „Mein Profil“ vor.</span>
               </p>
             )}
-            <form id="sstamm-anlegen" onSubmit={anlegen}>
-              <div className="feld">
-                <label htmlFor="sstammNeuName">Name</label>
-                <input
-                  id="sstammNeuName"
-                  ref={nameRef}
-                  required
-                  value={neu.name}
-                  onChange={(e) => setNeu((n) => ({ ...n, name: e.target.value }))}
-                />
+            <form id="sstamm-anlegen" onSubmit={anlegen} className="stammdaten-formular">
+              <div className="tabellen-wrapper">
+                <table className="uebersicht-tabelle">
+                  <caption className="sr-only">Neuen Schiedsrichter anlegen</caption>
+                  <tbody>
+                    <tr>
+                      <th scope="row">
+                        <label htmlFor="sstammNeuName">Name</label>
+                      </th>
+                      <td>
+                        <input
+                          id="sstammNeuName"
+                          ref={nameRef}
+                          required
+                          value={neu.name}
+                          onChange={(e) => setNeu((n) => ({ ...n, name: e.target.value }))}
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        <label htmlFor="sstammNeuVorname">Vorname</label>
+                      </th>
+                      <td>
+                        <input
+                          id="sstammNeuVorname"
+                          value={neu.vorname ?? ""}
+                          onChange={(e) => setNeu((n) => ({ ...n, vorname: e.target.value }))}
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        <label htmlFor="sstammNeuTelefon">Telefon</label>
+                      </th>
+                      <td>
+                        <input
+                          id="sstammNeuTelefon"
+                          type="tel"
+                          value={neu.telefon ?? ""}
+                          onChange={(e) => setNeu((n) => ({ ...n, telefon: e.target.value }))}
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        <label htmlFor="sstammNeuEmail">E-Mail</label>
+                      </th>
+                      <td>
+                        <input
+                          id="sstammNeuEmail"
+                          type="email"
+                          className="sr-email-eingabe"
+                          value={neu.email ?? ""}
+                          onChange={(e) => setNeu((n) => ({ ...n, email: e.target.value }))}
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        <label htmlFor="sstammNeuVerein">Verein</label>
+                      </th>
+                      <td>
+                        <select
+                          id="sstammNeuVerein"
+                          value={neu.vereinId ?? ""}
+                          onChange={(e) => setNeu((n) => ({ ...n, vereinId: e.target.value }))}
+                        >
+                          <option value="">— keine (neutral) —</option>
+                          {vereine.map((v) => (
+                            <option key={v._id} value={v._id}>
+                              {v.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">
+                        <label htmlFor="sstammNeuLizenz">Lizenz vorhanden</label>
+                      </th>
+                      <td>
+                        <input
+                          id="sstammNeuLizenz"
+                          type="checkbox"
+                          checked={neu.lizenzVorhanden ?? false}
+                          onChange={(e) => setNeu((n) => ({ ...n, lizenzVorhanden: e.target.checked }))}
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <div className="feld">
-                <label htmlFor="sstammNeuVorname">Vorname (optional)</label>
-                <input
-                  id="sstammNeuVorname"
-                  value={neu.vorname ?? ""}
-                  onChange={(e) => setNeu((n) => ({ ...n, vorname: e.target.value }))}
-                />
-              </div>
-              <div className="feld">
-                <label htmlFor="sstammNeuTelefon">Telefon (optional)</label>
-                <input
-                  id="sstammNeuTelefon"
-                  type="tel"
-                  value={neu.telefon ?? ""}
-                  onChange={(e) => setNeu((n) => ({ ...n, telefon: e.target.value }))}
-                />
-              </div>
-              <div className="feld">
-                <label htmlFor="sstammNeuEmail">E-Mail (optional)</label>
-                <input
-                  id="sstammNeuEmail"
-                  type="email"
-                  className="sr-email-eingabe"
-                  value={neu.email ?? ""}
-                  onChange={(e) => setNeu((n) => ({ ...n, email: e.target.value }))}
-                />
-              </div>
-              <div className="feld">
-                <label htmlFor="sstammNeuVerein">Verein (optional)</label>
-                <select
-                  id="sstammNeuVerein"
-                  value={neu.vereinId ?? ""}
-                  onChange={(e) => setNeu((n) => ({ ...n, vereinId: e.target.value }))}
-                >
-                  <option value="">— keine (neutral) —</option>
-                  {vereine.map((v) => (
-                    <option key={v._id} value={v._id}>
-                      {v.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <label className="schiedsrichter-lizenz">
-                <input
-                  type="checkbox"
-                  checked={neu.lizenzVorhanden ?? false}
-                  onChange={(e) => setNeu((n) => ({ ...n, lizenzVorhanden: e.target.checked }))}
-                />{" "}
-                Lizenz vorhanden
-              </label>
               <button type="submit">Schiedsrichter anlegen</button>
             </form>
           </>
