@@ -31,6 +31,7 @@ import { MailPostfachPage } from "./pages/MailPostfachPage";
 import { EinstellungenPage } from "./pages/EinstellungenPage";
 import { HilfePage } from "./pages/HilfePage";
 import { UeberPage } from "./pages/UeberPage";
+import { FehlerMeldenPage } from "./pages/FehlerMeldenPage";
 import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
 import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { UmgebungsBanner } from "./components/UmgebungsBanner";
@@ -239,6 +240,7 @@ function App() {
           <Route element={<GeschuetzteRoute />}>
             <Route path="/profil" element={<ProfilPage />} />
             <Route path="/ueber" element={<UeberPage />} />
+            <Route path="/fehler-melden" element={<FehlerMeldenPage />} />
             <Route path="/benutzerverwaltung" element={<BenutzerverwaltungPage />} />
             <Route path="/stammdaten" element={<StammdatenPage />} />
             <Route path="/schiedsrichter-stammdaten" element={<SchiedsrichterStammdatenPage />} />

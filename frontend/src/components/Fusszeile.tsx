@@ -1,16 +1,21 @@
+import { Link } from "react-router-dom";
 import { useAuth } from "../auth";
 import { APP_VERSION } from "../version";
 import { ENTWICKLER } from "../entwicklerKontakt";
 
 /** Globale Fusszeile (auf jeder Seite sichtbar, analog zur Kopfzeile): zeigt den angemeldeten
- *  Benutzer (Vorname + Name, sofern vorhanden), einen Kontakt-Link fuers Feedback und die
- *  App-Version. Der Benutzername stand frueher im Kopfzeilen-Menue (dort blieb nur noch das
- *  👤-Symbol), die Version frueher als farbiges Badge neben der Marke. Der Kontakt-Link nutzt
- *  dieselbe Adresse wie die "Über & Kontakt"-Seite (siehe entwicklerKontakt.ts) - Betreff traegt
- *  die aktuelle Version, damit Rueckmeldungen ohne Rueckfrage zuordenbar sind. Nur bei Anmeldung
- *  sichtbar: die Fusszeile rendert auch auf oeffentlichen Seiten (Login, oeffentliche
- *  Turnierseite) ohne GeschuetzteRoute - die E-Mail soll dort aus Scam-/Spam-Schutz nicht fuer
- *  jeden Besucher/Crawler abgreifbar sein (gleiche Regel wie auf der "Über"-Seite). */
+ *  Benutzer (Vorname + Name, sofern vorhanden), zwei Kontakt-Wege und die App-Version. Der
+ *  Benutzername stand frueher im Kopfzeilen-Menue (dort blieb nur noch das 👤-Symbol), die
+ *  Version frueher als farbiges Badge neben der Marke. "Feedback" ist ein freier Mail-Entwurf
+ *  (Lob/Anregungen/allgemeine Rueckmeldung, gleiche Adresse wie die "Über & Kontakt"-Seite,
+ *  siehe entwicklerKontakt.ts) - Betreff traegt die aktuelle Version, damit Rueckmeldungen ohne
+ *  Rueckfrage zuordenbar sind. "Fehler melden" fuehrt stattdessen auf ein strukturiertes
+ *  Formular (FehlerMeldenPage), das aus denselben Angaben ebenfalls nur einen Mail-Entwurf an
+ *  dieselbe Adresse zusammenbaut - kein zusaetzlicher Versandweg, nur klarere Struktur fuer die
+ *  Person, die meldet. Nur bei Anmeldung sichtbar: die Fusszeile rendert auch auf oeffentlichen
+ *  Seiten (Login, oeffentliche Turnierseite) ohne GeschuetzteRoute - die E-Mail soll dort aus
+ *  Scam-/Spam-Schutz nicht fuer jeden Besucher/Crawler abgreifbar sein (gleiche Regel wie auf
+ *  der "Über"-Seite). */
 // Vorausgefuellter Mail-Text: gibt Testenden ohne Rueckfrage vor, welche Angaben bei einer
 // Fehlermeldung helfen (Nutzer-Vorgabe) - oben Platz fuer den eigentlichen Text, die Fragen
 // darunter nur als Orientierung, gelten erkennbar nicht fuer reines Lob/Anregungen.
@@ -34,7 +39,10 @@ export function Fusszeile() {
     <footer className="fusszeile">
       <span>{benutzer && (benutzer.vorname ? `${benutzer.vorname} ${benutzer.name}` : benutzer.name)}</span>
       {benutzer && ENTWICKLER.email && (
-        <a href={`mailto:${ENTWICKLER.email}?subject=${betreff}&body=${text}`}>Kontakt für Feedback &amp; Fehler</a>
+        <>
+          <a href={`mailto:${ENTWICKLER.email}?subject=${betreff}&body=${text}`}>Feedback</a>
+          <Link to="/fehler-melden">Fehler melden</Link>
+        </>
       )}
       <span className="marke-version">{APP_VERSION}</span>
     </footer>
