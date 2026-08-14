@@ -142,7 +142,12 @@ export async function mailPostfachRoutes(app: FastifyInstance): Promise<void> {
       aktualisiertAm: jetzt,
     };
     await insertDoc(karte);
-    const aktualisierteMail = await insertDoc({ ...mail, kanbanKartenId: karteId, aktualisiertAm: jetzt });
+    const aktualisierteMail = await insertDoc({
+      ...mail,
+      kanbanKartenId: karteId,
+      manuellerStatus: "kanban",
+      aktualisiertAm: jetzt,
+    });
     return reply.code(201).send({ mail: aktualisierteMail, karte });
   });
 

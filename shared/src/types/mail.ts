@@ -7,8 +7,11 @@ export type MailBerichtId = string;
 /** Grobe Einordnung einer eingegangenen Mail, von der KI-Klassifikation vergeben. */
 export type MailKategorie = "fehlermeldung" | "lob" | "anregung" | "kritik" | "spam" | "sonstiges";
 
-/** Manuelle Triage durch die Entwicklung, unabhaengig von der KI-Kategorie. */
-export type MailManuellerStatus = "erledigt" | "ignoriert";
+/** Manuelle Triage durch die Entwicklung, unabhaengig von der KI-Kategorie. "kanban" wird NICHT von
+ *  Hand gesetzt, sondern automatisch, sobald zu dieser Mail eine Kanban-Karte entsteht (automatisch
+ *  bei der KI-Klassifikation oder manuell ueber "Als Kanban-Karte uebernehmen") - siehe
+ *  mail/bericht.ts und routes/mailPostfach.ts. */
+export type MailManuellerStatus = "erledigt" | "ignoriert" | "kanban";
 
 export type MailBerichtAusloeser = "automatisch" | "manuell";
 

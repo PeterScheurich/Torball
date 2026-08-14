@@ -23,11 +23,12 @@ export function kanbanKategorieFuer(ergebnis: Klassifikationsergebnis): KanbanKa
  *  Wert ist nur der Ausgangswert dafuer. */
 export const STANDARD_AUFBEWAHRUNG_TAGE = 7;
 
-/** Ob eine Mail die Aufbewahrungsfrist (aufbewahrungTage Tage) ueberschritten hat: nur erledigte/
- *  ignorierte Mails veralten ueberhaupt (ein "offener" Eintrag bleibt unbegrenzt liegen), gemessen
- *  ab dem letzten aktualisiertAm - das faellt fuer eine bereits klassifizierte Mail mit dem
- *  Zeitpunkt zusammen, an dem der manuelle Status gesetzt wurde (siehe
- *  PUT /mail-postfach/nachrichten/:id). Die Ursprungsmail bleibt im echten Postfach erhalten
+/** Ob eine Mail die Aufbewahrungsfrist (aufbewahrungTage Tage) ueberschritten hat: nur Mails mit
+ *  gesetztem manuellerStatus (erledigt/ignoriert/kanban) veralten ueberhaupt (ein "offener"
+ *  Eintrag bleibt unbegrenzt liegen), gemessen ab dem letzten aktualisiertAm - das faellt fuer
+ *  eine bereits klassifizierte Mail mit dem Zeitpunkt zusammen, an dem der Status gesetzt wurde
+ *  (manuell ueber PUT /mail-postfach/nachrichten/:id oder automatisch beim Anlegen einer
+ *  Kanban-Karte, siehe mail/bericht.ts). Die Ursprungsmail bleibt im echten Postfach erhalten
  *  (siehe MailNachricht-Dokumentation), hier geht nur die lokale Kopie/Klassifikation verloren. */
 export function istVeraltet(mail: MailNachricht, jetzt: Date, aufbewahrungTage: number): boolean {
   if (!mail.manuellerStatus) return false;

@@ -122,6 +122,8 @@ export async function erstelleMailBericht(
       kategorie: ergebnis?.kategorie ?? "sonstiges",
       kiZusammenfassung: ergebnis?.kiZusammenfassung,
       kanbanKartenId,
+      // Automatisch erzeugte Karte -> Status "kanban" statt "offen" (siehe MailManuellerStatus).
+      manuellerStatus: kanbanKartenId ? "kanban" : undefined,
       beruecksichtigtInBerichtId: berichtId,
       aktualisiertAm: new Date().toISOString(),
     };

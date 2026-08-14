@@ -24,12 +24,14 @@ const KATEGORIE_LABEL: Record<MailKategorie, string> = {
   sonstiges: "Sonstiges",
 };
 
-/** "offen" ist kein gespeicherter Status (nur erledigt/ignoriert sind das), sondern das
- *  Anzeige-/Filter-Gegenstueck zu "noch kein manueller Status gesetzt". */
+/** "offen" ist kein gespeicherter Status (nur erledigt/ignoriert/kanban sind das), sondern das
+ *  Anzeige-/Filter-Gegenstueck zu "noch kein manueller Status gesetzt". "kanban" wird nie von Hand
+ *  gesetzt, sondern automatisch, sobald zur Mail eine Kanban-Karte entsteht (siehe MailManuellerStatus). */
 const STATUS_LABEL: Record<MailManuellerStatus | "offen", string> = {
   offen: "Offen",
   erledigt: "Erledigt",
   ignoriert: "Ignoriert",
+  kanban: "Kanban",
 };
 
 const LEERES_EINSTELLUNGEN_FORMULAR = {
@@ -487,6 +489,7 @@ export function MailPostfachPage() {
               <option value="offen">Offen</option>
               <option value="erledigt">Erledigt</option>
               <option value="ignoriert">Ignoriert</option>
+              <option value="kanban">Kanban</option>
             </select>
           </div>
         </div>
