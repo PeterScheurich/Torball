@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../auth";
 import { APP_VERSION } from "../version";
 import { ENTWICKLER } from "../entwicklerKontakt";
@@ -12,7 +12,9 @@ import { ENTWICKLER } from "../entwicklerKontakt";
  *  Rueckfrage zuordenbar sind. "Fehler melden" fuehrt stattdessen auf ein strukturiertes
  *  Formular (FehlerMeldenPage), das aus denselben Angaben ebenfalls nur einen Mail-Entwurf an
  *  dieselbe Adresse zusammenbaut - kein zusaetzlicher Versandweg, nur klarere Struktur fuer die
- *  Person, die meldet. Nur bei Anmeldung sichtbar: die Fusszeile rendert auch auf oeffentlichen
+ *  Person, die meldet - dazu die aktuelle Seite (per Link-`state`, nicht als URL-Query, damit sie
+ *  nicht im Browser-Verlauf landet) als "von wo aufgerufen"-Kontext. Nur bei Anmeldung sichtbar:
+ *  die Fusszeile rendert auch auf oeffentlichen
  *  Seiten (Login, oeffentliche Turnierseite) ohne GeschuetzteRoute - die E-Mail soll dort aus
  *  Scam-/Spam-Schutz nicht fuer jeden Besucher/Crawler abgreifbar sein (gleiche Regel wie auf
  *  der "Über"-Seite). */
@@ -32,8 +34,12 @@ Bei einer Fehlermeldung helfen zusätzlich folgende Angaben:
 
 export function Fusszeile() {
   const { benutzer } = useAuth();
+  const standort = useLocation();
   const betreff = encodeURIComponent(`Feedback zu Torball-Turniere (${APP_VERSION})`);
   const text = encodeURIComponent(MAIL_VORLAGE);
+  // Aktuelle Seite im Moment des Klicks - fuer FehlerMeldenPage als "von wo aufgerufen"
+  // (Abschnitt/Tab-Query wie ?tab=regeln bewusst mit, Pfad allein waere sonst mehrdeutig).
+  const herkunft = `${standort.pathname}${standort.search}${standort.hash}`;
 
   return (
     <footer className="fusszeile">
@@ -41,7 +47,9 @@ export function Fusszeile() {
       {benutzer && ENTWICKLER.email && (
         <>
           <a href={`mailto:${ENTWICKLER.email}?subject=${betreff}&body=${text}`}>Feedback</a>
-          <Link to="/fehler-melden">Fehler melden</Link>
+          <Link to="/fehler-melden" state={{ herkunft }}>
+            Fehler melden
+          </Link>
         </>
       )}
       <span className="marke-version">{APP_VERSION}</span>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import type { GlobaleRolle } from "@torball/shared";
 import { useAuth } from "../auth";
 import { ENTWICKLER } from "../entwicklerKontakt";
@@ -28,9 +29,13 @@ function aktuelleUmgebung(): string {
  * Feedback-Adresse; nichts wird automatisch verschickt (kein Server-seitiger Mailversand aus dem
  * Frontend). Umgebung und meldende Person werden automatisch mitgeschickt, nicht manuell
  * abgefragt - beides ist an dieser Stelle bereits zuverlässig bekannt (Build-Info bzw. Login).
+ * Die Ausgangsseite (von wo „Fehler melden" aufgerufen wurde) kommt per Link-`state` aus der
+ * Fusszeile (Fusszeile.tsx) - fehlt sie (z.B. Seite neu geladen, Lesezeichen), wird das im
+ * Mailtext klar als „nicht bekannt" ausgewiesen statt eine falsche Stelle zu suggerieren.
  */
 export function FehlerMeldenPage() {
   const { benutzer } = useAuth();
+  const herkunft = (useLocation().state as { herkunft?: string } | null)?.herkunft;
   const [titel, setTitel] = useState("");
   const [fundstelle, setFundstelle] = useState("");
   const [beschreibung, setBeschreibung] = useState("");
@@ -42,9 +47,11 @@ export function FehlerMeldenPage() {
 
   const gemeldetVon = `${benutzer.vorname ? `${benutzer.vorname} ${benutzer.name}` : benutzer.name} (${ROLLEN_LABEL[benutzer.globaleRolle]})`;
   const umgebung = aktuelleUmgebung();
+  const ausgangsseite = herkunft ? `${window.location.origin}${herkunft}` : undefined;
 
   function baueText(): string {
     return [
+      `Ausgangsseite: ${ausgangsseite ?? "nicht bekannt"}`,
       `Fundstelle: ${fundstelle.trim() || "–"}`,
       `Umgebung: ${umgebung}`,
       `Gemeldet von: ${gemeldetVon}`,
@@ -97,7 +104,7 @@ export function FehlerMeldenPage() {
   return (
     <>
       <h1>Fehler melden</h1>
-      <p className="feld-hinweis">
+      <p>
         Für strukturierte Meldungen zu Fehlern oder Auffälligkeiten – öffnet einen fertigen Mail-Entwurf an dieselbe
         Adresse wie „Feedback" in der Fußzeile. Für freies Lob oder allgemeine Anregungen reicht der einfache
         Feedback-Link.
@@ -146,7 +153,8 @@ export function FehlerMeldenPage() {
       </label>
 
       <p className="feld-hinweis">
-        Wird automatisch mitgeschickt: Umgebung „{umgebung}" · Gemeldet von {gemeldetVon}.
+        Wird automatisch mitgeschickt: Ausgangsseite „{herkunft ?? "nicht bekannt"}" · Umgebung „{umgebung}" ·
+        Gemeldet von {gemeldetVon}.
       </p>
 
       {hinweis && <p role={hinweisArt === "fehler" ? "alert" : "status"}>{hinweis}</p>}
