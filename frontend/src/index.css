@@ -1617,11 +1617,6 @@ button:hover:not(:disabled) {
   color: var(--text-muted);
   margin: 0 0 8px;
 }
-/* Mail-Zeile, die per Link von einer Kanban-Karte aus angesprungen wurde (siehe
-   MailPostfachPage.tsx, ?mail=<id>). */
-.mail-zeile-hervorgehoben td {
-  background: var(--bg-subtle);
-}
 .kanban-karte-aktionen {
   display: flex;
   flex-wrap: wrap;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { MailBericht, MailKategorie, MailManuellerStatus, MailNachricht } from "@torball/shared";
 import {
@@ -73,9 +73,16 @@ export function MailPostfachPage() {
   // Verlinkung von einer Kanban-Karte aus (siehe KanbanBoardPage.tsx, Link auf
   // "?mail=<quellMailId>") - die verlinkte Mail soll unabhaengig vom sonst passenden Status
   // sichtbar sein, deshalb startet der Status-Filter in diesem Fall auf "Alle" statt "offen".
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const zielMailId = searchParams.get("mail") ?? undefined;
-  const zielMailGescrollt = useRef(false);
+
+  function alleMailsAnzeigen() {
+    setSearchParams((bisherige) => {
+      const neu = new URLSearchParams(bisherige);
+      neu.delete("mail");
+      return neu;
+    });
+  }
 
   const [suchtext, setSuchtext] = useState("");
   const [kategorieFilter, setKategorieFilter] = useState<MailKategorie | "">("");
@@ -120,17 +127,9 @@ export function MailPostfachPage() {
     laden();
   }, [laden]);
 
-  // Einmalig zur verlinkten Mail scrollen, sobald sie geladen ist - nicht bei jedem weiteren
-  // laden()-Aufruf (z.B. nach "Erledigt" klicken) erneut, das wuerde die Seite ungefragt wieder
-  // dorthin springen lassen.
-  useEffect(() => {
-    if (!zielMailId || !geladen || zielMailGescrollt.current) return;
-    const zeile = document.getElementById(`mail-zeile-${zielMailId}`);
-    if (zeile) {
-      zeile.scrollIntoView({ behavior: "smooth", block: "center" });
-      zielMailGescrollt.current = true;
-    }
-  }, [zielMailId, geladen, mails]);
+  // Von einer Kanban-Karte aus verlinkt (zielMailId gesetzt) -> nur die betroffene Mail zeigen,
+  // nicht die ganze (nach Status "Alle" gefilterte) Liste drumherum.
+  const sichtbareMails = zielMailId ? mails.filter((m) => m._id === zielMailId) : mails;
 
   async function statusSetzen(mail: MailNachricht, status: MailManuellerStatus | null) {
     try {
@@ -514,15 +513,23 @@ export function MailPostfachPage() {
           </div>
         </div>
 
-        {geladen && zielMailId && !mails.some((m) => m._id === zielMailId) && (
+        {geladen && zielMailId && sichtbareMails.length === 0 && (
           <p role="alert">
-            Die aus dem Kanban-Board verlinkte Mail ist in der aktuellen Liste nicht enthalten – entweder wurde sie
-            bereits gelöscht, oder die Filter oben blenden sie aus.
+            Die aus dem Kanban-Board verlinkte Mail ist nicht (mehr) vorhanden – vermutlich wurde sie bereits
+            gelöscht. <button type="button" onClick={alleMailsAnzeigen}>Alle Mails anzeigen</button>
+          </p>
+        )}
+        {geladen && zielMailId && sichtbareMails.length > 0 && (
+          <p role="status">
+            Nur die aus dem Kanban-Board verlinkte Mail wird angezeigt.{" "}
+            <button type="button" onClick={alleMailsAnzeigen}>
+              Alle Mails anzeigen
+            </button>
           </p>
         )}
         {!geladen && <p>Lädt…</p>}
-        {geladen && mails.length === 0 && <p>Keine Mails gefunden.</p>}
-        {geladen && mails.length > 0 && (
+        {geladen && sichtbareMails.length === 0 && !zielMailId && <p>Keine Mails gefunden.</p>}
+        {geladen && sichtbareMails.length > 0 && (
           <table className="uebersicht-tabelle mail-nachrichten-tabelle">
             <thead>
               <tr>
@@ -536,12 +543,8 @@ export function MailPostfachPage() {
               </tr>
             </thead>
             <tbody>
-              {mails.map((mail) => (
-                <tr
-                  key={mail._id}
-                  id={`mail-zeile-${mail._id}`}
-                  className={mail._id === zielMailId ? "mail-zeile-hervorgehoben" : undefined}
-                >
+              {sichtbareMails.map((mail) => (
+                <tr key={mail._id}>
                   <td>{formatiereZeitstempel(mail.empfangenAm)}</td>
                   <td>{mail.von}</td>
                   <td>{mail.betreff}</td>
