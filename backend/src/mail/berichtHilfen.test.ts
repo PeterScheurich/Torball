@@ -80,3 +80,7 @@ test("istVeraltet: die Frist ist konfigurierbar, nicht fest auf 7 Tage", () => {
   assert.equal(istVeraltet(mail("erledigt", vorZweiTagen), JETZT, 1), true);
   assert.equal(istVeraltet(mail("erledigt", vorZweiTagen), JETZT, 30), false);
 });
+
+test("istVeraltet: 'kanban' veraltet nie, egal wie alt (bewusst von der Aufraeumung ausgenommen)", () => {
+  assert.equal(istVeraltet(mail("kanban", "2020-01-01T00:00:00.000Z"), JETZT, 7), false);
+});
