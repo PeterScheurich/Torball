@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { geladenesTheme, themeAnwenden, THEME_GEAENDERT_EVENT, type Theme } from "../theme";
 
-const OPTIONEN: { wert: "light" | "dark"; icon: string; label: string }[] = [
+const OPTIONEN: { wert: Theme; icon: string; label: string }[] = [
+  { wert: "system", icon: "🖥", label: "Systemeinstellung folgen" },
   { wert: "light", icon: "☀", label: "Hell" },
   { wert: "dark", icon: "🌙", label: "Dunkel" },
 ];
 
-/** Umschalter Hell/Dunkel fuer das Farbschema (geraetelokale Wahl, siehe theme.ts). */
+/** Umschalter Systemeinstellung/Hell/Dunkel fuer das Farbschema (geraetelokale Wahl, siehe theme.ts). */
 export function ThemeUmschalter() {
   const [theme, setTheme] = useState<Theme>(geladenesTheme);
 
@@ -32,10 +33,8 @@ export function ThemeUmschalter() {
           className={theme === option.wert ? "theme-button theme-button-aktiv" : "theme-button"}
           aria-pressed={theme === option.wert}
           aria-label={option.label}
-          title={theme === option.wert ? `${option.label} (erneut klicken: Systemeinstellung folgen)` : option.label}
-          // Erneutes Klicken der bereits aktiven Option hebt die manuelle Wahl wieder auf
-          // (zurueck zu "system") - ersetzt den frueheren dritten "System"-Button.
-          onClick={() => setTheme(theme === option.wert ? "system" : option.wert)}
+          title={option.label}
+          onClick={() => setTheme(option.wert)}
         >
           <span aria-hidden="true">{option.icon}</span>
         </button>
