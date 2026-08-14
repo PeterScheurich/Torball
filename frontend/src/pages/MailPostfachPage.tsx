@@ -254,14 +254,14 @@ export function MailPostfachPage() {
         <h2>Einstellungen</h2>
         <form onSubmit={einstellungenSpeichern} className="regeln-formular">
           <div className="tabellen-wrapper">
-            <table className="uebersicht-tabelle regeln-tabelle">
+            <table className="uebersicht-tabelle regeln-tabelle regeln-tabelle-breit">
               <caption className="sr-only">Bericht</caption>
               <tbody>
                 <tr>
                   <th scope="row">
                     <label htmlFor="mail-berichtszeit">Tägliche Berichtszeit</label>
                   </th>
-                  <td>
+                  <td className="regeln-eingabe-spalte">
                     <input
                       id="mail-berichtszeit"
                       type="time"
@@ -270,12 +270,13 @@ export function MailPostfachPage() {
                       onChange={(e) => setEinstellungenForm((f) => ({ ...f, berichtszeit: e.target.value }))}
                     />
                   </td>
+                  <td></td>
                 </tr>
                 <tr>
                   <th scope="row">
                     <label htmlFor="mail-empfaenger">Bericht-Empfänger (E-Mail)</label>
                   </th>
-                  <td>
+                  <td className="regeln-eingabe-spalte">
                     <input
                       id="mail-empfaenger"
                       type="email"
@@ -283,12 +284,13 @@ export function MailPostfachPage() {
                       onChange={(e) => setEinstellungenForm((f) => ({ ...f, berichtEmpfaenger: e.target.value }))}
                     />
                   </td>
+                  <td></td>
                 </tr>
                 <tr>
                   <th scope="row">
                     <label htmlFor="mail-aufbewahrung">Aufbewahrung erledigter/ignorierter Mails (Tage)</label>
                   </th>
-                  <td>
+                  <td className="regeln-eingabe-spalte">
                     <input
                       id="mail-aufbewahrung"
                       type="number"
@@ -297,10 +299,10 @@ export function MailPostfachPage() {
                       value={einstellungenForm.aufbewahrungTage}
                       onChange={(e) => setEinstellungenForm((f) => ({ ...f, aufbewahrungTage: e.target.value }))}
                     />
-                    <p className="feld-hinweis">
-                      Als „Erledigt"/„Ignoriert" markierte Mails werden danach automatisch aus dieser Liste entfernt –
-                      betrifft nur die hier gespeicherte Kopie, die Original-Mail bleibt im Postfach erhalten.
-                    </p>
+                  </td>
+                  <td className="feld-hinweis-spalte">
+                    Als „Erledigt"/„Ignoriert" markierte Mails werden danach automatisch aus dieser Liste entfernt –
+                    betrifft nur die hier gespeicherte Kopie, die Original-Mail bleibt im Postfach erhalten.
                   </td>
                 </tr>
               </tbody>
