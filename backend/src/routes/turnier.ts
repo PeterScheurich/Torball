@@ -515,6 +515,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         pauseMinuten: neuesTurnier.pauseMinuten,
         anzahlHalbzeiten: neuesTurnier.anzahlHalbzeiten,
         startzeit: neuesTurnier.startzeit,
+        bundeslandBeruecksichtigen: neuesTurnier.bundeslandBeruecksichtigen,
       };
       const mitBasis = await insertDoc({ ...neuesTurnier, spielplanBasis });
 

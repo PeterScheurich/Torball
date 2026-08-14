@@ -49,6 +49,7 @@ export interface SpielplanBasis {
   pauseMinuten: number;
   anzahlHalbzeiten: number;
   startzeit?: string;
+  bundeslandBeruecksichtigen: boolean;
 }
 
 /**

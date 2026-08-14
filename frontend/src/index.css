@@ -1059,22 +1059,24 @@ button:disabled {
    mehr Platz als die uebrigen, reinen Eingabe-Tabellen (30em) - sonst blieben Eingabe- UND
    Hinweis-Spalte in der Summe genauso schmal wie vorher, nur anders verteilt. */
 .regeln-tabelle-breit {
-  max-width: 46em;
+  max-width: 64em;
 }
-/* Erlaeuternder Text neben (statt unter) der Eingabe - eigene, schmalere Spalte, damit lange
-   Hinweistexte nicht in der ohnehin knapp bemessenen Eingabe-Spalte umbrechen (frueher als
-   .feld-hinweis UNTER dem Eingabefeld in derselben Zelle). Zeilen ohne Hinweis lassen die Zelle
-   leer, damit alle Zeilen derselben Tabelle gleich viele Spalten haben. */
+/* Erlaeuternder Text neben (statt unter) der Eingabe - eigene Spalte, damit lange Hinweistexte
+   nicht in der ohnehin knapp bemessenen Eingabe-Spalte umbrechen (frueher als .feld-hinweis UNTER
+   dem Eingabefeld in derselben Zelle). Zeilen ohne Hinweis lassen die Zelle leer, damit alle
+   Zeilen derselben Tabelle gleich viele Spalten haben. */
 .feld-hinweis-spalte {
   font-size: 0.85rem;
   color: var(--text-muted);
-  width: 45%;
+  width: 60%;
 }
 /* Standardmaessig richten th/td vertikal mittig aus - faellt bei einzeiligem Inhalt nicht auf,
-   schiebt das Label aber sichtbar zwischen Eingabefeld und Hinweistext, sobald die Wert-Zelle
-   mehrzeilig wird (z.B. Eingabefeld + .feld-hinweis darunter, siehe Mail-Postfach-Passwort/
-   API-Key-Felder). Oben ausrichten, damit das Label immer neben dem Eingabefeld steht. */
-.regeln-tabelle th {
+   schiebt Label UND Eingabe aber sichtbar in die Mitte, sobald die Zeile durch eine mehrzeilige
+   Hinweis-Spalte (.feld-hinweis-spalte) hoch wird - z.B. eine Checkbox haengt dann mittig statt
+   neben der ersten Zeile des Labels/Hinweistexts. Oben ausrichten, damit Label und Eingabe immer
+   auf gleicher Hoehe wie die erste Zeile des Hinweistexts stehen. */
+.regeln-tabelle th,
+.regeln-tabelle td {
   vertical-align: top;
 }
 /* Von einer Option abhaengige Zeile (z.B. Tordifferenz-Grenze unter dem Abbruch-Schalter,

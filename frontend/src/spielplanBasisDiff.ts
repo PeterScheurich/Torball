@@ -43,6 +43,11 @@ export function spielplanBasisAenderungen(turnier: Turnier, mannschaften: Mannsc
   if ((basis.startzeit ?? "") !== (turnier.startzeit ?? "")) {
     aenderungen.push(`Startzeit: ${basis.startzeit ?? "—"} → ${turnier.startzeit ?? "—"}`);
   }
+  if (basis.bundeslandBeruecksichtigen !== turnier.bundeslandBeruecksichtigen) {
+    aenderungen.push(
+      `Bundesland-Regel: ${basis.bundeslandBeruecksichtigen ? "ein" : "aus"} → ${turnier.bundeslandBeruecksichtigen ? "ein" : "aus"}`,
+    );
+  }
 
   return aenderungen;
 }

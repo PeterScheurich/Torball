@@ -223,6 +223,7 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
         pauseMinuten: turnier.pauseMinuten,
         anzahlHalbzeiten: turnier.anzahlHalbzeiten,
         startzeit: turnier.startzeit,
+        bundeslandBeruecksichtigen: turnier.bundeslandBeruecksichtigen,
       };
 
       const zuschreiber = zuschreibung(req);

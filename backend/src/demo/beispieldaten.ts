@@ -620,6 +620,7 @@ async function erzeugeSpieltag2(
     pauseMinuten: neuesTurnier.pauseMinuten,
     anzahlHalbzeiten: neuesTurnier.anzahlHalbzeiten,
     startzeit: neuesTurnier.startzeit,
+    bundeslandBeruecksichtigen: neuesTurnier.bundeslandBeruecksichtigen,
   };
   neuesTurnier = await insertDoc({ ...neuesTurnier, spielplanBasis });
   return neuesTurnier;
