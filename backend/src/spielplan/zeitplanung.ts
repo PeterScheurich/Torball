@@ -21,3 +21,18 @@ export function berechneStartzeit(turnier: Turnier, slot: number): string | unde
   start.setMinutes(start.getMinutes() + slot * spieldauerMinuten(turnier));
   return start.toISOString();
 }
+
+/**
+ * Umkehrung von berechneStartzeit(): zerlegt einen ISO-Zeitstempel wieder in lokale
+ * Turnier-Felder (Datum/Startzeit). Nutzt bewusst die lokalen Date-Getter (nicht die
+ * UTC-Varianten), da berechneStartzeit() den Zeitstempel ebenfalls lokal interpretiert
+ * (`new Date("<datum>T<startzeit>:00")` ohne Zeitzonen-Suffix).
+ */
+export function datumUndStartzeitAus(iso: string): { datum: string; startzeit: string } {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    datum: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    startzeit: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  };
+}

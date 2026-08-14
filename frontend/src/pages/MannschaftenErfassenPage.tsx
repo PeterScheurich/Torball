@@ -39,6 +39,7 @@ export function MannschaftenErfassenPage() {
     <>
       <p>
         Schritt 3 von {gesamtSchritte}: Mannschaften erfassen ·{" "}
+        <Link to={`/turniere/${encodeURIComponent(turnierId)}/regeln-erfassen`}>Zurück zu Regeln</Link> ·{" "}
         <Link to={`/turniere/${encodeURIComponent(turnierId)}`}>Später fortsetzen</Link>
       </p>
       <h1>Mannschaften</h1>

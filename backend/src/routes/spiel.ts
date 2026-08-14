@@ -1,10 +1,16 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spiel, Turnier } from "@torball/shared";
 import { findAllBySelector, findById, insertDoc } from "../repository";
-import { berechneStartzeit, spieldauerMinuten } from "../spielplan/zeitplanung";
+import { berechneStartzeit, datumUndStartzeitAus, spieldauerMinuten } from "../spielplan/zeitplanung";
 import { schlageSchiedsrichterVor } from "../spielplan/schiedsrichterZuordnung";
 import { requireZugriff } from "../auth/plugin";
-import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt, type Zugriffsstufe } from "../auth/turnierZugriff";
+import {
+  hatMindestens,
+  TURNIER_GESPERRT_FEHLER,
+  turnierGesperrt,
+  zuschreibung,
+  type Zugriffsstufe,
+} from "../auth/turnierZugriff";
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 
 /** Nur diese Felder darf die Turnierleitung nachtraeglich anpassen (Abschnitt 8: "Reihenfolge,
@@ -168,6 +174,25 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
       for (const s of zuVerschieben) {
         const neueStartzeit = new Date(new Date(s.startzeitGeplant!).getTime() + deltaMs).toISOString();
         aktualisiert.push(await insertDoc({ ...s, startzeitGeplant: neueStartzeit }));
+      }
+
+      // Wird die Startzeit des ERSTEN Spiels verschoben, zieht die Turnier-Startzeit
+      // (Uebersicht) automatisch mit - umgekehrte Richtung zur eigentlichen Berechnung
+      // (berechneStartzeit leitet die Spiel-Zeiten aus der Turnier-Startzeit ab).
+      if (spiel.runde === "1") {
+        const { datum, startzeit } = datumUndStartzeitAus(req.body.startzeitGeplant);
+        const zuschreiber = zuschreibung(req);
+        await insertDoc<Turnier>({
+          ...turnier,
+          datum,
+          startzeit,
+          // spielplanBasis.startzeit sonst faelschlich "veraltet" (spielplanBasisAenderungen),
+          // obwohl der Verschub oben die Spiele bereits synchron gehalten hat.
+          spielplanBasis: turnier.spielplanBasis ? { ...turnier.spielplanBasis, startzeit } : turnier.spielplanBasis,
+          geaendertAm: new Date().toISOString(),
+          zuletztBearbeitetVon: zuschreiber.benutzerId,
+          zuletztBearbeitetVonName: zuschreiber.name,
+        });
       }
 
       await markiereTurnierBearbeitet(spiel.turnierId, req.benutzer);
