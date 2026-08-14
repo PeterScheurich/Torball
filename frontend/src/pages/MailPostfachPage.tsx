@@ -276,7 +276,7 @@ export function MailPostfachPage() {
                   <th scope="row">
                     <label htmlFor="mail-empfaenger">Bericht-Empfänger (E-Mail)</label>
                   </th>
-                  <td className="regeln-eingabe-spalte">
+                  <td className="regeln-eingabe-spalte regeln-eingabe-spalte-breit">
                     <input
                       id="mail-empfaenger"
                       type="email"

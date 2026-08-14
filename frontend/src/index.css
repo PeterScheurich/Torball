@@ -1098,6 +1098,13 @@ button:disabled {
 .regeln-eingabe-spalte {
   min-width: 5em;
 }
+/* Freitext-Eingaben (z.B. eine E-Mail-Adresse) brauchen mehr als die pauschalen 5em - sonst
+   bemisst das Tabellen-Auto-Layout die Spalte nach ihrem eigenen (durch width:100% zirkulaeren)
+   Mindestinhalt und der Wert wird im schmalen Feld abgeschnitten, obwohl noch Platz auf der
+   Seite waere (live aufgefallen: Mail-Postfach-Einstellungen, Bericht-Empfaenger). */
+.regeln-eingabe-spalte-breit {
+  min-width: 18em;
+}
 /* Standardmaessig richten th/td vertikal mittig aus - faellt bei einzeiligem Inhalt nicht auf,
    schiebt Label UND Eingabe aber sichtbar in die Mitte, sobald die Zeile durch eine mehrzeilige
    Hinweis-Spalte (.feld-hinweis-spalte) hoch wird - z.B. eine Checkbox haengt dann mittig statt
