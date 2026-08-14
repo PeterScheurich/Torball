@@ -11,15 +11,30 @@ import { ENTWICKLER } from "../entwicklerKontakt";
  *  sichtbar: die Fusszeile rendert auch auf oeffentlichen Seiten (Login, oeffentliche
  *  Turnierseite) ohne GeschuetzteRoute - die E-Mail soll dort aus Scam-/Spam-Schutz nicht fuer
  *  jeden Besucher/Crawler abgreifbar sein (gleiche Regel wie auf der "Über"-Seite). */
+// Vorausgefuellter Mail-Text: gibt Testenden ohne Rueckfrage vor, welche Angaben bei einer
+// Fehlermeldung helfen (Nutzer-Vorgabe) - oben Platz fuer den eigentlichen Text, die Fragen
+// darunter nur als Orientierung, gelten erkennbar nicht fuer reines Lob/Anregungen.
+const MAIL_VORLAGE = `Kurz zu meinem Anliegen:
+
+
+---
+Bei einer Fehlermeldung helfen zusätzlich folgende Angaben:
+- Bei welcher Aufgabe ist der Fehler aufgetreten?
+- Wie hat sich der Fehler gezeigt?
+- Ist er schon öfter aufgetreten?
+- Mit welcher Version wird gearbeitet (Server-Instanz oder lokale Installation)?
+- Screenshot(s) beigefügt?`;
+
 export function Fusszeile() {
   const { benutzer } = useAuth();
   const betreff = encodeURIComponent(`Feedback zu Torball-Turniere (${APP_VERSION})`);
+  const text = encodeURIComponent(MAIL_VORLAGE);
 
   return (
     <footer className="fusszeile">
       <span>{benutzer && (benutzer.vorname ? `${benutzer.vorname} ${benutzer.name}` : benutzer.name)}</span>
       {benutzer && ENTWICKLER.email && (
-        <a href={`mailto:${ENTWICKLER.email}?subject=${betreff}`}>Kontakt für Feedback &amp; Fehler</a>
+        <a href={`mailto:${ENTWICKLER.email}?subject=${betreff}&body=${text}`}>Kontakt für Feedback &amp; Fehler</a>
       )}
       <span className="marke-version">{APP_VERSION}</span>
     </footer>
