@@ -21,7 +21,9 @@
 # backend/.env wird NUR beim allerersten Deploy geschrieben - ein Update laesst eine bereits
 # vorhandene Datei unveraendert, damit spaeter manuell gesetzte Werte (COOKIE_SECURE,
 # FRONTEND_URL, SMTP, DEMO_SNAPSHOT_ERLAUBT, per "torball konfiguration:setzen" geaenderte Werte,
-# ...) nicht bei jedem Update wieder auf den Bootstrap-Default zurueckfallen.
+# ...) nicht bei jedem Update wieder auf den Bootstrap-Default zurueckfallen. Weicht bei einem
+# Update ein angegebener Port vom bisher konfigurierten ab, fragt das Skript interaktiv nach
+# (Tippfehler-Schutz, z.B. 8000 statt 8080).
 set -euo pipefail
 
 BASE_DIR="/opt/torball"
@@ -40,6 +42,30 @@ SERVER_NAME="${4:-_}"
 DIR="${BASE_DIR}/${NAME}"
 DB="torball_${NAME}"
 COUCH_ADMIN_PASS="$(cat "${CONF_DIR}/couchdb-admin")"
+
+echo "== Port-Plausibilitaetspruefung (nur bei bereits bestehender Instanz) =="
+# Ein vertippter Port (z.B. 8000 statt 8080) faellt sonst nicht auf: backend_port landet zwar seit
+# obigem .env-Fix nicht mehr in einem bereits bestehenden backend/.env, wird aber bedingungslos in
+# die nginx-Site geschrieben (proxy_pass) - ein falscher Wert dort fuehrt zu 502 Bad Gateway fuer
+# die ganze Instanz, ohne dass beim Ausfuehren selbst etwas auffaellt. Nur ein Hinweis + Rueckfrage,
+# kein hartes Verbot - ein bewusster Port-Wechsel (Instanz umziehen) bleibt moeglich.
+if [[ -f "${DIR}/backend/.env" ]]; then
+  BISHERIGER_BE_PORT="$(grep -m1 '^PORT=' "${DIR}/backend/.env" | cut -d= -f2)"
+  if [[ -n "$BISHERIGER_BE_PORT" && "$BISHERIGER_BE_PORT" != "$BE_PORT" ]]; then
+    echo "WARNUNG: backend_port=${BE_PORT} weicht vom bisherigen Wert in backend/.env ab (${BISHERIGER_BE_PORT})."
+    read -r -p "Wirklich mit ${BE_PORT} fortfahren? Tippe 'ja': " ANTWORT
+    [[ "$ANTWORT" == "ja" ]] || { echo "Abgebrochen."; exit 1; }
+  fi
+fi
+NGINX_SITE="/etc/nginx/sites-available/torball-${NAME}"
+if [[ -f "$NGINX_SITE" ]]; then
+  BISHERIGER_FE_PORT="$(sed -n 's/^[[:space:]]*listen \([0-9]*\);.*/\1/p' "$NGINX_SITE" | head -1)"
+  if [[ -n "$BISHERIGER_FE_PORT" && "$BISHERIGER_FE_PORT" != "$FE_PORT" ]]; then
+    echo "WARNUNG: frontend_port=${FE_PORT} weicht vom bisherigen Wert in der nginx-Site ab (${BISHERIGER_FE_PORT})."
+    read -r -p "Wirklich mit ${FE_PORT} fortfahren? Tippe 'ja': " ANTWORT
+    [[ "$ANTWORT" == "ja" ]] || { echo "Abgebrochen."; exit 1; }
+  fi
+fi
 
 echo "== Code holen/aktualisieren (${DIR}, Branch ${BRANCH}) =="
 if [[ -d "${DIR}/.git" ]]; then
