@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { MailBericht, MailKategorie, MailManuellerStatus, MailNachricht } from "@torball/shared";
 import {
@@ -130,6 +130,17 @@ export function MailPostfachPage() {
   // Von einer Kanban-Karte aus verlinkt (zielMailId gesetzt) -> nur die betroffene Mail zeigen,
   // nicht die ganze (nach Status "Alle" gefilterte) Liste drumherum.
   const sichtbareMails = zielMailId ? mails.filter((m) => m._id === zielMailId) : mails;
+
+  // Der Abschnitt "Mails durchsuchen" liegt unterhalb der (langen) Einstellungen - beim Sprung von
+  // einer Kanban-Karte aus dorthin scrollen, statt die Person auf dem Seitenanfang landen zu
+  // lassen. Nur einmalig (nicht bei jedem weiteren laden()-Aufruf, z.B. nach "Erledigt" klicken).
+  const mailsAbschnittRef = useRef<HTMLElement>(null);
+  const zielGescrollt = useRef(false);
+  useEffect(() => {
+    if (!zielMailId || !geladen || zielGescrollt.current) return;
+    mailsAbschnittRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    zielGescrollt.current = true;
+  }, [zielMailId, geladen]);
 
   async function statusSetzen(mail: MailNachricht, status: MailManuellerStatus | null) {
     try {
@@ -470,7 +481,7 @@ export function MailPostfachPage() {
         )}
       </section>
 
-      <section>
+      <section ref={mailsAbschnittRef}>
         <h2>Mails durchsuchen</h2>
         <div className="kanban-formular-zeile">
           <div className="feld">
