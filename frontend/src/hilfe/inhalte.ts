@@ -491,7 +491,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
           {
             liste: [
               "Administrator: voller Zugriff auf alles.",
-              "Manager: voller Zugriff auf selbst erstellte Turniere; kann außerdem Benutzer verwalten.",
+              "Manager: voller Zugriff auf selbst erstellte Turniere; kann außerdem Benutzer verwalten sowie Stammdaten (Vereine, Teams, Schiedsrichter) bearbeiten. Die Standardregeln bleiben Administratoren vorbehalten.",
               "Weitere Zugriffe auf ein einzelnes Turnier werden gezielt freigegeben (siehe Thema „Turnier verwalten“) – in drei Stufen: Lesen, Schreiben für den Spielbetrieb (Spielplan/Ergebnisse) oder volles Schreiben (zusätzlich Grunddaten/Mannschaften/Regeln).",
             ],
           },
