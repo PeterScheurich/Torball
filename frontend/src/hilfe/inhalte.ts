@@ -215,6 +215,16 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
+        frage: "Wie prüfe ich, ob mit meinem Turnier alles passt?",
+        text: [
+          "Über den Knopf „Turnier prüfen“ im Reiter „Übersicht“ – er sammelt Auffälligkeiten wie fehlende Spielfelder, zu wenige Mannschaften, doppelte Trikotnummern oder Mannschaften mit zwei Spielen direkt hintereinander in einer Liste.",
+          {
+            hinweis:
+              "Reine Information: Nichts wird dabei blockiert oder automatisch geändert – du entscheidest, ob und wie du reagierst. Praktisch z. B. kurz vor dem Abschließen, um nichts zu übersehen.",
+          },
+        ],
+      },
+      {
         frage: "Wie schließe ich ein Turnier ab, und was ändert sich dann?",
         text: [
           "Über den Knopf „Turnier abschließen“ im Reiter „Übersicht“ – das geht erst, wenn zu jedem Spiel ein Ergebnis erfasst ist. Ein abgeschlossenes Turnier ist gegen versehentliche Änderungen geschützt: Grunddaten, Mannschaften, Schiedsrichter, Spielplan und Ergebnisse lassen sich nicht mehr bearbeiten.",
