@@ -157,7 +157,7 @@ export function BenutzerverwaltungPage() {
             {liste.map((b) => (
               <tr key={b._id}>
                 <td>{b.name}</td>
-                <td>{b.email}</td>
+                <td className="benutzer-email">{b.email}</td>
                 <td>
                   <label className="sr-only" htmlFor={`rolle-${b._id}`}>
                     Rolle von {b.name}
@@ -187,7 +187,7 @@ export function BenutzerverwaltungPage() {
                       ? "Einladung offen"
                       : "Aktiv"}
                 </td>
-                <td className="mannschaft-aktionen">
+                <td className="benutzer-aktionen">
                   <button
                     type="button"
                     onClick={() => sperrenUmschalten(b)}
@@ -196,8 +196,8 @@ export function BenutzerverwaltungPage() {
                     {b.gesperrt ? "Entsperren" : "Sperren"}
                   </button>
                   {b._id !== angemeldeter?._id && (
-                    <button type="button" onClick={() => passwortResetAusloesen(b)}>
-                      Passwort-Reset auslösen
+                    <button type="button" onClick={() => passwortResetAusloesen(b)} title="Passwort-Reset auslösen">
+                      PW-Reset
                     </button>
                   )}
                   {angemeldeter?.globaleRolle === "admin" && b.zweiFaAktiv && b._id !== angemeldeter?._id && (

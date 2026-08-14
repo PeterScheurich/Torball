@@ -781,6 +781,24 @@ form {
   margin-left: 8px;
 }
 
+/* Aktionen-Spalte in der Benutzerverwaltung: bewusst NICHT white-space:nowrap wie
+   .mannschaft-aktionen - dort sind es nur zwei kurze Eintraege, hier bis zu drei laengere
+   Buttons (Sperren/Entsperren, Passwort-Reset, 2FA deaktivieren), die die Spalte sonst extrem
+   breit ziehen und die E-Mail-Spalte daneben zusammenquetschen. Duerfen bei Bedarf in eine
+   zweite Zeile umbrechen, statt die Tabelle in die Breite zu zwingen. */
+.benutzer-aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* E-Mail-Spalte in der Benutzerverwaltung: nie mitten in der Adresse umbrechen (unschoen, siehe
+   Nutzer-Hinweis) - der .tabellen-wrapper scrollt bei Bedarf ohnehin horizontal, jetzt wo die
+   Aktionen-Spalte daneben nicht mehr unnoetig breit gezogen wird, faellt das kaum noch an. */
+.benutzer-email {
+  white-space: nowrap;
+}
+
 /* Kleine Zahl-Plakette am Kader-Umschalter: zeigt schon im zugeklappten Zustand, dass fuer
    diese Mannschaft bereits Spieler erfasst sind (und wie viele). */
 .kader-anzahl {
