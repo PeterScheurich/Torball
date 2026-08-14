@@ -463,7 +463,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Was zeigt die öffentliche Seite?",
         text: [
-          "Das ist eine Seite, die Besucher ohne Login öffnen können. Vier Bereiche lassen sich einzeln freischalten: „Turnierinfos“, „Anfahrt & Dokumente“, „Spielplan“ und „Ergebnisse“. Die Freischaltung steuerst du im Reiter „Übersicht“ des Turniers. Dort werden ein Link und ein QR-Code zur Verfügung gestellt. Bei Bedarf kannst du den QR-Code herunterladen und in ein Dokument (z. B. Aushang) integrieren.",
+          "Das ist eine Seite, die Besucher ohne Login öffnen können. Fünf Bereiche lassen sich einzeln freischalten: „Turnierinfos“, „Anfahrt & Dokumente“, „Spielplan“, „Ergebnisse“ und „Regeln“. Die Freischaltung steuerst du im Reiter „Übersicht“ des Turniers. Dort werden ein Link und ein QR-Code zur Verfügung gestellt. Bei Bedarf kannst du den QR-Code herunterladen und in ein Dokument (z. B. Aushang) integrieren.",
         ],
       },
       {
