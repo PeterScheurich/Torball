@@ -1055,6 +1055,21 @@ button:disabled {
 .regeln-tabelle {
   max-width: 30em;
 }
+/* Tabellen mit einer dritten Spalte fuer erlaeuternden Text (siehe .feld-hinweis-spalte) brauchen
+   mehr Platz als die uebrigen, reinen Eingabe-Tabellen (30em) - sonst blieben Eingabe- UND
+   Hinweis-Spalte in der Summe genauso schmal wie vorher, nur anders verteilt. */
+.regeln-tabelle-breit {
+  max-width: 46em;
+}
+/* Erlaeuternder Text neben (statt unter) der Eingabe - eigene, schmalere Spalte, damit lange
+   Hinweistexte nicht in der ohnehin knapp bemessenen Eingabe-Spalte umbrechen (frueher als
+   .feld-hinweis UNTER dem Eingabefeld in derselben Zelle). Zeilen ohne Hinweis lassen die Zelle
+   leer, damit alle Zeilen derselben Tabelle gleich viele Spalten haben. */
+.feld-hinweis-spalte {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  width: 45%;
+}
 /* Standardmaessig richten th/td vertikal mittig aus - faellt bei einzeiligem Inhalt nicht auf,
    schiebt das Label aber sichtbar zwischen Eingabefeld und Hinweistext, sobald die Wert-Zelle
    mehrzeilig wird (z.B. Eingabefeld + .feld-hinweis darunter, siehe Mail-Postfach-Passwort/

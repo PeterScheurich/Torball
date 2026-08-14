@@ -98,6 +98,10 @@ export async function erzeugeBeispieldaten(): Promise<void> {
       ersteller,
       teams: mannschaftenListe,
       wiederholungen: 1,
+      // Bundesliga ist genau der Wettbewerbstyp mit festem Regionalbezug, fuer den die
+      // Bundesland-Regel gedacht ist (Standard sonst "nein") - zeigt die Prioritaet im
+      // Demo-Spielplan sichtbar.
+      bundeslandBeruecksichtigen: true,
       ergebnisAnteil: 0,
       ergebnisseAbschliessen: false,
       mitSpieler: true,
@@ -373,6 +377,10 @@ interface TurnierBauOptionen {
   ersteller: Benutzer;
   teams: TeamMitVerein[];
   wiederholungen: 1 | 2;
+  /** Ueberschreibt die aktuellen Standardregeln fuer dieses Demo-Turnier gezielt (z.B. die
+   *  Bundesliga-Spieltage, um die Bundesland-Regel im Spielplan sichtbar zu demonstrieren) -
+   *  ohne Angabe gilt der Wert aus den Standardregeln. */
+  bundeslandBeruecksichtigen?: boolean;
   /** Anteil der Spiele (0..1, in Zeit-Slot-Reihenfolge von vorne), die ein Ergebnis bekommen. */
   ergebnisAnteil: number;
   /** true: die Spiele mit Ergebnis gelten als endgueltig abgeschlossen (status "abgeschlossen"),
@@ -420,6 +428,7 @@ async function erzeugeEinzelTurnier(opts: TurnierBauOptionen): Promise<Turnier> 
     erstelltMitKonfigVersion: version,
     erstelltAm: jetzt,
     ...regeln,
+    bundeslandBeruecksichtigen: opts.bundeslandBeruecksichtigen ?? regeln.bundeslandBeruecksichtigen,
   };
   turnier = await insertDoc(turnier);
 
@@ -443,7 +452,7 @@ async function erzeugeEinzelTurnier(opts: TurnierBauOptionen): Promise<Turnier> 
     if (opts.mitSpieler) await erzeugeSpieler(mannschaft._id);
   }
 
-  const paarungen = erzeugePaarungen(mannschaften, opts.wiederholungen);
+  const paarungen = erzeugePaarungen(mannschaften, opts.wiederholungen, turnier.bundeslandBeruecksichtigen);
   const vorschlag = erstelleSpielplanVorschlag(paarungen, turnier.felder);
 
   const spiele: Spiel[] = vorschlag.map((eintrag) => {

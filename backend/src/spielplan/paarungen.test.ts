@@ -18,7 +18,7 @@ function mannschaft(id: string, vereinId?: string, bundesland?: string): Mannsch
 
 test("einfaches Turnier: jede Paarung genau einmal", () => {
   const teams = [mannschaft("a"), mannschaft("b"), mannschaft("c"), mannschaft("d")];
-  const paarungen = erzeugePaarungen(teams, 1);
+  const paarungen = erzeugePaarungen(teams, 1, true);
 
   assert.equal(paarungen.length, 6); // C(4,2)
   assert.ok(paarungen.every((p) => p.durchgang === 1));
@@ -26,7 +26,7 @@ test("einfaches Turnier: jede Paarung genau einmal", () => {
 
 test("doppeltes Turnier: jede Paarung genau zweimal", () => {
   const teams = [mannschaft("a"), mannschaft("b"), mannschaft("c")];
-  const paarungen = erzeugePaarungen(teams, 2);
+  const paarungen = erzeugePaarungen(teams, 2, true);
 
   assert.equal(paarungen.length, 6); // C(3,2) * 2
   const durchgang1 = paarungen.filter((p) => p.durchgang === 1);
@@ -40,7 +40,7 @@ test("Vereins-Duell wird als 'verein' priorisiert, auch bei gleichem Bundesland"
     mannschaft("a", "verein:1", "Bayern"),
     mannschaft("b", "verein:1", "Bayern"),
   ];
-  const [paarung] = erzeugePaarungen(teams, 1);
+  const [paarung] = erzeugePaarungen(teams, 1, true);
   assert.equal(paarung.prioritaet, "verein");
 });
 
@@ -49,7 +49,7 @@ test("Bundesland-Derby wird als 'bundesland' priorisiert, wenn Vereine unterschi
     mannschaft("a", "verein:1", "Bayern"),
     mannschaft("b", "verein:2", "Bayern"),
   ];
-  const [paarung] = erzeugePaarungen(teams, 1);
+  const [paarung] = erzeugePaarungen(teams, 1, true);
   assert.equal(paarung.prioritaet, "bundesland");
 });
 
@@ -58,7 +58,7 @@ test("Bundesland-Abgleich tolerant gegenueber Gross-/Kleinschreibung und Leerzei
     mannschaft("a", "verein:1", " bayern "),
     mannschaft("b", "verein:2", "Bayern"),
   ];
-  const [paarung] = erzeugePaarungen(teams, 1);
+  const [paarung] = erzeugePaarungen(teams, 1, true);
   assert.equal(paarung.prioritaet, "bundesland");
 });
 
@@ -67,6 +67,24 @@ test("Paarung ohne gemeinsamen Verein/Bundesland ist 'neutral'", () => {
     mannschaft("a", "verein:1", "Bayern"),
     mannschaft("b", "verein:2", "Hessen"),
   ];
-  const [paarung] = erzeugePaarungen(teams, 1);
+  const [paarung] = erzeugePaarungen(teams, 1, true);
   assert.equal(paarung.prioritaet, "neutral");
+});
+
+test("bundeslandBeruecksichtigen=false: Bundesland-Derby faellt auf 'neutral' zurueck (Standardfall)", () => {
+  const teams = [
+    mannschaft("a", "verein:1", "Bayern"),
+    mannschaft("b", "verein:2", "Bayern"),
+  ];
+  const [paarung] = erzeugePaarungen(teams, 1, false);
+  assert.equal(paarung.prioritaet, "neutral");
+});
+
+test("bundeslandBeruecksichtigen=false: Vereins-Duell bleibt trotzdem als 'verein' priorisiert", () => {
+  const teams = [
+    mannschaft("a", "verein:1", "Bayern"),
+    mannschaft("b", "verein:1", "Bayern"),
+  ];
+  const [paarung] = erzeugePaarungen(teams, 1, false);
+  assert.equal(paarung.prioritaet, "verein");
 });

@@ -212,7 +212,7 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
 
       <h3>Weitere Regeln</h3>
       <div className="tabellen-wrapper">
-        <table className="uebersicht-tabelle regeln-tabelle">
+        <table className="uebersicht-tabelle regeln-tabelle regeln-tabelle-breit">
           <caption className="sr-only">Weitere Regeln</caption>
           <tbody>
             <tr>
@@ -221,12 +221,26 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
                 <input id="maxSehendeSpieler" type="number" min={0} required value={r.maxSehendeSpieler}
                   onChange={(e) => zahl("maxSehendeSpieler", e.target.value)} />
               </td>
+              <td></td>
             </tr>
             <tr>
               <th scope="row"><label htmlFor="einstelligeTrikotnummern">Nur einstellige Trikotnummern</label></th>
               <td>
                 <input id="einstelligeTrikotnummern" type="checkbox" checked={r.einstelligeTrikotnummern}
                   onChange={(e) => schalter("einstelligeTrikotnummern", e.target.checked)} />
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <th scope="row"><label htmlFor="bundeslandBeruecksichtigen">Bundesland-Regel bei der Spielplan-Erstellung</label></th>
+              <td>
+                <input id="bundeslandBeruecksichtigen" type="checkbox" checked={r.bundeslandBeruecksichtigen}
+                  onChange={(e) => schalter("bundeslandBeruecksichtigen", e.target.checked)} />
+              </td>
+              <td className="feld-hinweis-spalte">
+                Mannschaften desselben Bundeslands möglichst früh gegeneinander einplanen – nachrangig zur Vermeidung
+                von Direkt-Folgespielen. Eigenheit für Wettbewerbe mit festem Regionalbezug (Bundesliga, Deutsche
+                Meisterschaft), deshalb standardmäßig aus.
               </td>
             </tr>
           </tbody>
@@ -235,7 +249,7 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
 
       <h3>Wertung</h3>
       <div className="tabellen-wrapper">
-        <table className="uebersicht-tabelle regeln-tabelle">
+        <table className="uebersicht-tabelle regeln-tabelle regeln-tabelle-breit">
           <caption className="sr-only">Wertung</caption>
           <tbody>
             <tr>
@@ -244,6 +258,7 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
                 <input id="punkteSieg" type="number" min={0} required value={r.punkteSieg}
                   onChange={(e) => zahl("punkteSieg", e.target.value)} />
               </td>
+              <td></td>
             </tr>
             <tr>
               <th scope="row"><label htmlFor="punkteUnentschieden">Punkte für Unentschieden</label></th>
@@ -251,6 +266,7 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
                 <input id="punkteUnentschieden" type="number" min={0} required value={r.punkteUnentschieden}
                   onChange={(e) => zahl("punkteUnentschieden", e.target.value)} />
               </td>
+              <td></td>
             </tr>
             <tr>
               <th scope="row"><label htmlFor="punkteNiederlage">Punkte für Niederlage</label></th>
@@ -258,14 +274,15 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
                 <input id="punkteNiederlage" type="number" min={0} required value={r.punkteNiederlage}
                   onChange={(e) => zahl("punkteNiederlage", e.target.value)} />
               </td>
+              <td></td>
             </tr>
             <tr>
               <th scope="row"><label htmlFor="forfaitErgebnis">Wertung bei Nichtantreten (Sieger:Verlierer)</label></th>
               <td>
                 <input id="forfaitErgebnis" type="text" inputMode="numeric" pattern="\d+:\d+" placeholder="3:0" required
                   value={r.forfaitErgebnis} onChange={(e) => text("forfaitErgebnis", e.target.value)} />
-                <span className="feld-hinweis">Wird bei „nicht angetreten" gesetzt (z.B. 3:0 für die angetretene Mannschaft).</span>
               </td>
+              <td className="feld-hinweis-spalte">Wird bei „nicht angetreten" gesetzt (z.B. 3:0 für die angetretene Mannschaft).</td>
             </tr>
           </tbody>
         </table>

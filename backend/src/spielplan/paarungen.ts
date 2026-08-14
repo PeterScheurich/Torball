@@ -21,10 +21,17 @@ export interface Paarung {
  * wird diese Funktion einmal je Spieltag (= je Turnier-Dokument) aufgerufen,
  * die Verknüpfung der Spieltage läuft über den Wettbewerb (Abschnitt 20.3),
  * nicht über diesen Algorithmus.
+ *
+ * `bundeslandBeruecksichtigen` steuert die Bundesland-Stufe der Prioritaet (Turnierregel, siehe
+ * `Turnierregeln.bundeslandBeruecksichtigen` - Standard „nein", eine Eigenheit fuer Wettbewerbe mit
+ * festem Regionalbezug wie Bundesliga/Deutsche Meisterschaft). Ist sie deaktiviert, faellt eine
+ * Paarung ohne gemeinsamen Verein direkt auf "neutral" - die Vereins-Prioritaet gilt unabhaengig
+ * davon immer.
  */
 export function erzeugePaarungen(
   mannschaften: MannschaftImTurnier[],
   wiederholungen: 1 | 2,
+  bundeslandBeruecksichtigen: boolean,
 ): Paarung[] {
   const paarungen: Paarung[] = [];
 
@@ -34,7 +41,7 @@ export function erzeugePaarungen(
         paarungen.push({
           mannschaftAId: mannschaften[i].mannschaftId,
           mannschaftBId: mannschaften[j].mannschaftId,
-          prioritaet: prioritaetVon(mannschaften[i], mannschaften[j]),
+          prioritaet: prioritaetVon(mannschaften[i], mannschaften[j], bundeslandBeruecksichtigen),
           durchgang,
         });
       }
@@ -44,9 +51,15 @@ export function erzeugePaarungen(
   return paarungen;
 }
 
-function prioritaetVon(a: MannschaftImTurnier, b: MannschaftImTurnier): PaarungsPrioritaet {
+function prioritaetVon(
+  a: MannschaftImTurnier,
+  b: MannschaftImTurnier,
+  bundeslandBeruecksichtigen: boolean,
+): PaarungsPrioritaet {
   if (a.vereinId && a.vereinId === b.vereinId) return "verein";
-  if (a.bundesland && normalisiert(a.bundesland) === normalisiert(b.bundesland)) return "bundesland";
+  if (bundeslandBeruecksichtigen && a.bundesland && normalisiert(a.bundesland) === normalisiert(b.bundesland)) {
+    return "bundesland";
+  }
   return "neutral";
 }
 

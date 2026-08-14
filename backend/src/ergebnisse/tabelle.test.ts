@@ -32,6 +32,7 @@ function turnier(tabellenKriterien: TabellenKriterium[]): Turnier {
     punkteNiederlage: 0,
     tabellenKriterien,
     forfaitErgebnis: "3:0",
+    bundeslandBeruecksichtigen: false,
     spielernamenOeffentlich: false,
     spielplanFreigegeben: false,
     spielplanVersion: 1,

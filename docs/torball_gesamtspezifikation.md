@@ -161,7 +161,7 @@ Modi sollen möglichst frei über eine Admin-Funktion pflegbar sein, nicht fest 
 
 Je Mannschaft: Vereinsname, Mannschaftsname, Bundesland (relevant für die Spielplan-Generierung bei der Bundesliga), Ansprechpartner/Trainer. Optional Referenz auf Stammdaten-Team (Abschnitt 15) – die Daten werden dabei kopiert, nicht live verknüpft.
 
-**Bundesland-Regel:** Mannschaften aus demselben Bundesland müssen so früh wie möglich gegeneinander spielen. Priorität: 1. Vermeidung von Direkt-Folgespielen (Back-to-Back) hat Vorrang, 2. Bundesland-Derbys so früh wie mathematisch danach möglich. Da die Turnierleitung den Spielplan nachträglich ändern kann, ist das als Vorschlag zu verstehen.
+**Bundesland-Regel:** Mannschaften aus demselben Bundesland müssen so früh wie möglich gegeneinander spielen. Priorität: 1. Vermeidung von Direkt-Folgespielen (Back-to-Back) hat Vorrang, 2. Bundesland-Derbys so früh wie mathematisch danach möglich. Da die Turnierleitung den Spielplan nachträglich ändern kann, ist das als Vorschlag zu verstehen. Turnierweise per Regel `bundeslandBeruecksichtigen` ein-/ausschaltbar (Standard **aus**) – eine Eigenheit für Wettbewerbe mit festem Regionalbezug wie Bundesliga oder Deutsche Meisterschaft, kein Normalfall.
 
 ### 5.3 Spieler
 
@@ -286,7 +286,7 @@ Aus Turnierdefinition und Spielregeln wird ein Spielplan-**Vorschlag** erstellt 
 
 **Praktische Grenze bei mehreren Feldern:** „Keine zwei Spiele hintereinander" und „Felder spielen möglichst parallel" stehen in Konflikt, sobald genug Felder für volle Parallelität vorhanden sind (Felder ≥ Mannschaften/2) – dann spielt zwangsläufig jede Mannschaft jede Runde, eine Pause ist nur durch bewusst ungenutzte Feldkapazität möglich. Bei der üblichen Konfiguration (1 Feld, ausnahmsweise 2) tritt dieser Konflikt in der Praxis kaum auf: Ab 5 Mannschaften mit einem Feld ist eine vollständig kollisionsfreie Runde immer möglich, bei genau 3 oder 4 Mannschaften mit einem Feld ist dagegen mindestens ein Back-to-Back-Fall unvermeidbar. Bei sehr kleinen Ligen (4–5 Mannschaften) mit 2 Feldern sind unvermeidbare Back-to-Back-Fälle zu erwarten und werden als Warnung, nicht als Fehler, angezeigt.
 
-**Bevorzugte Reihenfolge (Bundesliga):** 1. Mannschaften desselben Vereins zuerst, 2. dann desselben Bundeslandes (frühestmöglich, ohne Back-to-Back-Verstoß), 3. dann alle anderen.
+**Bevorzugte Reihenfolge (Bundesliga):** 1. Mannschaften desselben Vereins zuerst, 2. dann desselben Bundeslandes (frühestmöglich, ohne Back-to-Back-Verstoß) – nur bei aktivierter Bundesland-Regel (siehe 5.2), sonst entfällt diese Stufe und Bundesland-Derbys zählen wie alle anderen Paarungen, 3. dann alle anderen.
 
 **Nichterscheinen einer Mannschaft** (zwei Verfahren, pro Turnier konfigurierbar):
 - **Feste Wertung:** Alle Spiele der abwesenden Mannschaft erhalten ein konfigurierbares Standardergebnis (Vorgabewert aus Systemkonfiguration, Default 3:0), üblich bei Bundesliga-Spieltagen.

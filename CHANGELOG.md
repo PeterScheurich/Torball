@@ -7,7 +7,10 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
-Noch keine Einträge – wird beim nächsten Versionssprung befüllt.
+- Neue Turnierregel „Bundesland-Regel bei der Spielplan-Erstellung" (Standard: aus): steuert, ob
+  Mannschaften desselben Bundeslands bei der Spielplan-Erzeugung möglichst früh gegeneinander
+  eingeplant werden – gedacht für Wettbewerbe mit festem Regionalbezug wie Bundesliga oder
+  Deutsche Meisterschaft.
 
 ## [0.9.0-beta] - 2026-08-11
 

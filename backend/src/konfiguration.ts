@@ -34,6 +34,7 @@ export const STANDARD_TURNIERREGELN: Turnierregeln = {
   punkteNiederlage: 0,
   tabellenKriterien: STANDARD_TABELLEN_KRITERIEN,
   forfaitErgebnis: "3:0",
+  bundeslandBeruecksichtigen: false,
 };
 
 /** Die Namen aller Regelfelder - fuer das Herauskopieren aus einem Turnier/einer Konfiguration. */

@@ -79,6 +79,12 @@ export interface Turnierregeln {
   /** Wertung bei Nichtantreten (Forfait), Format „Sieger:Verlierer" (z.B. „3:0"). Wird von den
    *  „nicht angetreten"-Aktionen der Ergebniserfassung verwendet. */
   forfaitErgebnis: string;
+  /** Steuert, ob bei der Spielplan-Erstellung Mannschaften desselben Bundeslands moeglichst frueh
+   *  gegeneinander eingeplant werden (Gesamtspezifikation Abschnitt 5.2/8, "Bundesland-Regel").
+   *  Standard „nein" - eine Eigenheit fuer Wettbewerbe mit festem Regionalbezug (z.B. Bundesliga,
+   *  Deutsche Meisterschaft), nicht der Normalfall. Betrifft nur die Reihenfolge im Spielplan,
+   *  nicht die Schiedsrichter-Zuordnung (die hat ihre eigene, unabhaengige Vereins-Regel). */
+  bundeslandBeruecksichtigen: boolean;
 }
 
 /** Siehe Gesamtspezifikation Abschnitt 20.5. */

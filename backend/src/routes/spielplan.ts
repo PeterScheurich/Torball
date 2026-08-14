@@ -106,7 +106,7 @@ async function ladeUndBerechneVorschlag(
     return undefined;
   }
 
-  const paarungen = erzeugePaarungen(mannschaften, wiederholungen);
+  const paarungen = erzeugePaarungen(mannschaften, wiederholungen, turnier.bundeslandBeruecksichtigen ?? false);
   const vorschlag = erstelleSpielplanVorschlag(paarungen, turnier.felder);
 
   return { turnier, vorschlag, wiederholungen };
