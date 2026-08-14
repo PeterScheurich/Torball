@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import type { KanbanKarte, KanbanKategorie, KanbanPrioritaet, KanbanSpalte } from "@torball/shared";
 import {
   createKanbanKarte,
@@ -343,6 +344,17 @@ export function KanbanBoardPage() {
                     </div>
                     <h3 className="kanban-karte-titel">{karte.titel}</h3>
                     {karte.beschreibung && <p className="kanban-karte-text">{karte.beschreibung}</p>}
+                    {karte.mailAbsender && (
+                      <p className="kanban-karte-absender">
+                        Von: {karte.mailAbsender}
+                        {karte.quellMailId && (
+                          <>
+                            {" · "}
+                            <Link to={`/mail-postfach?mail=${karte.quellMailId}`}>Original-Mail ansehen</Link>
+                          </>
+                        )}
+                      </p>
+                    )}
                     <p className="kanban-karte-meta">
                       {karte.erstelltVonName ?? "?"}
                       {karte.erstelltVonEmail && (

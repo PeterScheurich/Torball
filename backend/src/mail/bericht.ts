@@ -109,6 +109,7 @@ export async function erstelleMailBericht(
         herkunft: "mailPostfach",
         kiErstellt: true,
         quellMailId: mail._id,
+        mailAbsender: mail.von,
         erstelltAm: kartenJetzt,
         aktualisiertAm: kartenJetzt,
       };

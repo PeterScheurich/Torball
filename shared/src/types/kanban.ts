@@ -50,6 +50,13 @@ export interface KanbanKarte extends CouchMeta {
   kiErstellt?: boolean;
   /** Bei herkunft "mailPostfach": Referenz zurueck auf die ausloesende MailNachricht. */
   quellMailId?: string;
+  /** Bei herkunft "mailPostfach": Absender der Ursprungsmail (roher MailNachricht.von-Wert,
+   *  z.B. "Vorname Nachname <adresse@example.com>"), zum Zeitpunkt der Kartenerstellung
+   *  uebernommen. Bewusst GETRENNT von erstelltVonName/-Email - die meinen bei einer
+   *  automatisch/manuell aus einer Mail erzeugten Karte die Person, die den Berichtslauf
+   *  ausgeloest bzw. auf "Als Kanban-Karte uebernehmen" geklickt hat, nicht den Melder (live
+   *  aufgefallen: beide Namen fielen zufaellig zusammen, im Normalfall waeren sie verschieden). */
+  mailAbsender?: string;
   erstelltAm: Zeitstempel;
   aktualisiertAm: Zeitstempel;
 }

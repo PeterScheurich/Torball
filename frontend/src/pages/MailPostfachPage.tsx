@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { MailBericht, MailKategorie, MailManuellerStatus, MailNachricht } from "@torball/shared";
 import {
   deleteMailNachricht,
@@ -69,11 +70,18 @@ export function MailPostfachPage() {
   const [apiKeyTestLaeuft, setApiKeyTestLaeuft] = useState(false);
   const [apiKeyTestErgebnis, setApiKeyTestErgebnis] = useState<MailTestErgebnis | undefined>();
 
+  // Verlinkung von einer Kanban-Karte aus (siehe KanbanBoardPage.tsx, Link auf
+  // "?mail=<quellMailId>") - die verlinkte Mail soll unabhaengig vom sonst passenden Status
+  // sichtbar sein, deshalb startet der Status-Filter in diesem Fall auf "Alle" statt "offen".
+  const [searchParams] = useSearchParams();
+  const zielMailId = searchParams.get("mail") ?? undefined;
+  const zielMailGescrollt = useRef(false);
+
   const [suchtext, setSuchtext] = useState("");
   const [kategorieFilter, setKategorieFilter] = useState<MailKategorie | "">("");
   // Default "offen" (nicht "Alle") - Erledigtes/Ignoriertes soll beim Aufruf der Seite nicht
   // erst weggefiltert werden muessen (Nutzer-Vorgabe).
-  const [statusFilter, setStatusFilter] = useState<MailManuellerStatus | "offen" | "">("offen");
+  const [statusFilter, setStatusFilter] = useState<MailManuellerStatus | "offen" | "">(zielMailId ? "" : "offen");
 
   const laden = useCallback(async () => {
     try {
@@ -111,6 +119,18 @@ export function MailPostfachPage() {
   useEffect(() => {
     laden();
   }, [laden]);
+
+  // Einmalig zur verlinkten Mail scrollen, sobald sie geladen ist - nicht bei jedem weiteren
+  // laden()-Aufruf (z.B. nach "Erledigt" klicken) erneut, das wuerde die Seite ungefragt wieder
+  // dorthin springen lassen.
+  useEffect(() => {
+    if (!zielMailId || !geladen || zielMailGescrollt.current) return;
+    const zeile = document.getElementById(`mail-zeile-${zielMailId}`);
+    if (zeile) {
+      zeile.scrollIntoView({ behavior: "smooth", block: "center" });
+      zielMailGescrollt.current = true;
+    }
+  }, [zielMailId, geladen, mails]);
 
   async function statusSetzen(mail: MailNachricht, status: MailManuellerStatus | null) {
     try {
@@ -494,6 +514,12 @@ export function MailPostfachPage() {
           </div>
         </div>
 
+        {geladen && zielMailId && !mails.some((m) => m._id === zielMailId) && (
+          <p role="alert">
+            Die aus dem Kanban-Board verlinkte Mail ist in der aktuellen Liste nicht enthalten – entweder wurde sie
+            bereits gelöscht, oder die Filter oben blenden sie aus.
+          </p>
+        )}
         {!geladen && <p>Lädt…</p>}
         {geladen && mails.length === 0 && <p>Keine Mails gefunden.</p>}
         {geladen && mails.length > 0 && (
@@ -511,7 +537,11 @@ export function MailPostfachPage() {
             </thead>
             <tbody>
               {mails.map((mail) => (
-                <tr key={mail._id}>
+                <tr
+                  key={mail._id}
+                  id={`mail-zeile-${mail._id}`}
+                  className={mail._id === zielMailId ? "mail-zeile-hervorgehoben" : undefined}
+                >
                   <td>{formatiereZeitstempel(mail.empfangenAm)}</td>
                   <td>{mail.von}</td>
                   <td>{mail.betreff}</td>

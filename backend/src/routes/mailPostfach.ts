@@ -138,6 +138,7 @@ export async function mailPostfachRoutes(app: FastifyInstance): Promise<void> {
       herkunft: "mailPostfach",
       kiErstellt: false,
       quellMailId: mail._id,
+      mailAbsender: mail.von,
       erstelltAm: jetzt,
       aktualisiertAm: jetzt,
     };

@@ -619,6 +619,26 @@ manuell per Knopf/CLI-Befehl `mail:bericht:erstellen`. `MailBericht` speichert `
 `kiOutputTokens` aus `response.usage` für eine grobe Kostenabschätzung direkt im Bericht. Details:
 `docs/Protokolle/2026-08-13-mail-postfach.md`.
 
+**Mail-Postfach ↔ Kanban, drei zusammenhängende Ergänzungen (2026-08-15, Nutzer-Vorgabe):**
+(1) Die Aufbewahrungsfrist für erledigte/ignorierte Mails (`MailPostfachEinstellungen.aufbewahrungTage`,
+Fallback `STANDARD_AUFBEWAHRUNG_TAGE = 7`) ist über die Oberfläche konfigurierbar statt fest verdrahtet.
+(2) Sobald zu einer Mail eine Kanban-Karte entsteht (automatisch oder über „Als Kanban-Karte
+übernehmen"), bekommt sie den dritten `MailManuellerStatus`-Wert `"kanban"` statt weiter als „offen" zu
+gelten – der zählt aber **bewusst nicht** für `istVeraltet()` (anders als erledigt/ignoriert): die Mail
+ist die Quelle/Referenz der Karte und soll nicht verschwinden, solange die Karte noch offen ist.
+(3) `KanbanKarte.mailAbsender` speichert den rohen `MailNachricht.von`-Wert zum Zeitpunkt der
+Kartenerstellung, **getrennt** von `erstelltVonName`/`erstelltVonEmail` – die meinen bei einer aus einer
+Mail erzeugten Karte die Person, die den Berichtslauf ausgelöst bzw. auf „übernehmen" geklickt hat,
+nicht den Melder (live aufgefallen: ohne dieses Feld war der tatsächliche Absender einer Meldung auf der
+Karte nicht mehr erkennbar). Zusätzlich verlinkt die Karte über das bereits bestehende `quellMailId` per
+Link auf `/mail-postfach?mail=<id>`; `MailPostfachPage.tsx` liest den `mail`-Query-Parameter, hebt die
+Zeile hervor (`.mail-zeile-hervorgehoben`) und scrollt einmalig dorthin, wobei der Status-Filter dafür
+auf „Alle" statt dem sonstigen Default „offen" startet. Wird die verlinkte Mail zwischenzeitlich gelöscht,
+zeigt die Seite einen Hinweis statt eines stillen Leerlaufs. **Bekannte Einschränkung:** Es gibt keine
+Route, um `MailNachricht.kanbanKartenId` gezielt zurückzusetzen – wird die zugehörige Kanban-Karte
+gelöscht, bleibt der Verweis auf der Mail bestehen (zeigt dann „nicht gefunden") und der „Als
+Kanban-Karte übernehmen"-Knopf taucht nicht wieder auf.
+
 **Turnier-Lebenszyklus / Abschließen:** `TurnierStatus` ist
 `entwurf | aktiv | abgeschlossen | archiviert` (Spez 10.3 entsprechend
 aktualisiert). Die Turnierübersicht (`TurnierListePage`) trennt **geplant**

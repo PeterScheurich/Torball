@@ -1605,10 +1605,22 @@ button:hover:not(:disabled) {
   margin: 0 0 6px;
   white-space: pre-wrap;
 }
+/* Absender der Ursprungsmail (KanbanKarte.mailAbsender) - bewusst NICHT --text-muted wie
+   .kanban-karte-meta: genau diese Information ("von wem kam die Meldung?") war live nicht mehr
+   erkennbar, soll also nicht zusaetzlich gedaempft werden. */
+.kanban-karte-absender {
+  font-size: 0.85rem;
+  margin: 0 0 6px;
+}
 .kanban-karte-meta {
   font-size: 0.78rem;
   color: var(--text-muted);
   margin: 0 0 8px;
+}
+/* Mail-Zeile, die per Link von einer Kanban-Karte aus angesprungen wurde (siehe
+   MailPostfachPage.tsx, ?mail=<id>). */
+.mail-zeile-hervorgehoben td {
+  background: var(--bg-subtle);
 }
 .kanban-karte-aktionen {
   display: flex;
