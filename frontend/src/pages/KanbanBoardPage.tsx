@@ -379,8 +379,14 @@ export function KanbanBoardPage() {
                       <button type="button" onClick={() => bearbeiten(karte)}>
                         Bearbeiten
                       </button>
-                      <button type="button" className="kanban-loeschen" onClick={() => loeschen(karte)}>
-                        Löschen
+                      <button
+                        type="button"
+                        className="kanban-loeschen"
+                        aria-label="Löschen"
+                        title="Löschen"
+                        onClick={() => loeschen(karte)}
+                      >
+                        ✕
                       </button>
                     </div>
                   </article>

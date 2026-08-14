@@ -1667,8 +1667,14 @@ button:hover:not(:disabled) {
   font-size: 0.8rem;
   padding: 2px 8px;
 }
+/* Nur die Textfarbe auf --danger zu setzen liess den globalen button-Hintergrund
+   (--accent, gruen) stehen - rotbrauner Text auf gruenem Grund war praktisch nicht lesbar
+   (live aufgefallen). Gleiches Umriss-Muster wie .button-sekundaer, nur mit --danger
+   statt --accent: transparenter Hintergrund, Text/Rahmen in der Warnfarbe. */
 .kanban-loeschen {
+  background: transparent;
   color: var(--danger);
+  border-color: var(--danger);
 }
 
 /* .kanban-sync-aktionen wird auch von MailPostfachPage.tsx (IMAP-/API-Key-Test-Knopfreihen)
