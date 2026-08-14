@@ -815,6 +815,14 @@ dieser Version gilt der folgende Ablauf:
   `<a>` sonst sichtbar höher/breiter als ein echter `<button>` mit
   demselben Text. Ist in dieser Codebase bereits zweimal unabhängig
   aufgetreten – bei einer neuen gemeinsamen Klasse gleich mit einplanen.
+- **Löschen-/Entfernen-Buttons: immer `className="button-loeschen"`** (definiert bei
+  `.button-sekundaer` in `index.css`) statt nur `color: var(--danger)` zu setzen – der globale
+  `button`-Hintergrund ist grün (`--accent`), rotbrauner Text darauf ist praktisch unlesbar (live
+  aufgefallen, zuerst am Kanban-Board). `.button-loeschen` setzt transparenten Hintergrund +
+  Rahmen/Text in `--danger` (gleiches Umriss-Muster wie `.button-sekundaer`, nur mit `--danger`
+  statt `--accent`). Bei einem Icon-Button zusätzlich `symbol-button button-loeschen` (zwei
+  Klassen). Der Bestätigungsdialog (`window.confirm(...)`) vor dem eigentlichen Löschen bleibt
+  davon unabhängig – jede neue Löschen-Aktion braucht beides: die Klasse UND die Rückfrage.
 - **Pflichtfelder werden markiert.** In `.feld`-Formularen automatisch per CSS
   (`.feld:has(input:required, …) > label::after`), in der Turnier-Übersicht
   (Label/Wert-Tabelle) per `.uebersicht-tabelle`-Regel. In reinen Datentabellen
