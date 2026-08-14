@@ -67,7 +67,9 @@ export function MailPostfachPage() {
 
   const [suchtext, setSuchtext] = useState("");
   const [kategorieFilter, setKategorieFilter] = useState<MailKategorie | "">("");
-  const [statusFilter, setStatusFilter] = useState<MailManuellerStatus | "offen" | "">("");
+  // Default "offen" (nicht "Alle") - Erledigtes/Ignoriertes soll beim Aufruf der Seite nicht
+  // erst weggefiltert werden muessen (Nutzer-Vorgabe).
+  const [statusFilter, setStatusFilter] = useState<MailManuellerStatus | "offen" | "">("offen");
 
   const laden = useCallback(async () => {
     try {
