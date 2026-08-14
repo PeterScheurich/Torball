@@ -100,6 +100,16 @@ export function ProfilPage() {
     }
   }
 
+  async function kopplungscodeKopieren() {
+    if (!neuerKopplungscode) return;
+    try {
+      await navigator.clipboard.writeText(neuerKopplungscode);
+      setHinweis("Kopplungscode kopiert.");
+    } catch {
+      setFehler("Kopplungscode konnte nicht kopiert werden.");
+    }
+  }
+
   async function instanzEntfernen(id: string) {
     if (!window.confirm("Diese Instanz widerrufen? Sie kann sich danach nicht mehr verbinden oder synchronisieren.")) {
       return;
@@ -518,8 +528,11 @@ export function ProfilPage() {
 
       {neuerKopplungscode && (
         <p role="status">
-          Kopplungscode (15 Minuten gültig, nur jetzt sichtbar): <code>{neuerKopplungscode}</code> – auf der lokalen
-          Installation unter „Einstellungen" eingeben.
+          Kopplungscode (15 Minuten gültig, nur jetzt sichtbar): <code>{neuerKopplungscode}</code>{" "}
+          <button type="button" onClick={kopplungscodeKopieren}>
+            Schlüssel kopieren
+          </button>{" "}
+          – auf der lokalen Installation unter „Einstellungen" eingeben.
         </p>
       )}
 
