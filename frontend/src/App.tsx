@@ -37,7 +37,7 @@ import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { UmgebungsBanner } from "./components/UmgebungsBanner";
 import { Fusszeile } from "./components/Fusszeile";
 import { useAuth } from "./auth";
-import { mailPostfachVerfuegbar } from "./api";
+import { kanbanBoardVerfuegbar, mailPostfachVerfuegbar } from "./api";
 
 // Wurzelkomponente: globale Kopfzeile (Navigation) plus das komplette Routing der App.
 // Oeffentliche Routen (Login, Einladung, Passwort-Reset, Ergebnis-Erfassung per Link,
@@ -60,6 +60,15 @@ function Kopfzeile() {
     mailPostfachVerfuegbar()
       .then((r) => setMailPostfachDaAktiv(r.verfuegbar))
       .catch(() => setMailPostfachDaAktiv(false));
+  }, []);
+
+  // Entwicklungs-Kanban-Board: gleiches Muster, nur auf der Entwicklungsinstanz aktiv
+  // (KANBAN_BOARD_AKTIV, siehe backend/src/routes/kanban.ts).
+  const [kanbanBoardDaAktiv, setKanbanBoardDaAktiv] = useState(false);
+  useEffect(() => {
+    kanbanBoardVerfuegbar()
+      .then((r) => setKanbanBoardDaAktiv(r.verfuegbar))
+      .catch(() => setKanbanBoardDaAktiv(false));
   }, []);
 
   async function abmelden() {
@@ -139,9 +148,11 @@ function Kopfzeile() {
               <Link to="/systemeinstellungen" className="kopfzeile-menue-eintrag" role="menuitem">
                 Systemeinstellungen
               </Link>
-              <Link to="/entwicklungs-board" className="kopfzeile-menue-eintrag" role="menuitem">
-                Entwicklungs-Board
-              </Link>
+              {kanbanBoardDaAktiv && (
+                <Link to="/entwicklungs-board" className="kopfzeile-menue-eintrag" role="menuitem">
+                  Entwicklungs-Board
+                </Link>
+              )}
               {mailPostfachDaAktiv && (
                 <Link to="/mail-postfach" className="kopfzeile-menue-eintrag" role="menuitem">
                   Mail-Postfach

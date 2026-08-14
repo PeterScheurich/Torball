@@ -58,7 +58,7 @@ gesperrt – bewusst nie auf Prod aktiv, da sie ganze Datenbestände ersetzen/ü
 Diese Env-Flags sind ausschließlich für die Entwicklungsinstanz gedacht (siehe
 `docs/entwicklungs-umgebung.md`) und werden auf Demo nicht gesetzt:
 
-- `KANBAN_SYNC` (schreibender Kanban-Import)
+- `KANBAN_BOARD_AKTIV` (Entwicklungs-Kanban-Board)
 - `MAIL_POSTFACH_AKTIV` (Mail-Postfach-Feature)
 
 ## Pauschaler Zugriff für alle Benutzer

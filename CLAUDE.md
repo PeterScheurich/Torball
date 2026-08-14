@@ -582,20 +582,21 @@ Seed-Skript mitgezogen werden muss** – es baut Dokumente direkt über das Repo
 die HTTP-Routen) und bekommt Typ-/Schema-Änderungen daher nicht automatisch mit, nur über
 `tsc`-Fehler beim nächsten Build.
 
-**Entwicklungs-Kanban-Board (admin-only, kein Turnier-Bezug):** eigenständiges
-Werkzeug zur Organisation der Weiterentwicklung, `docType: "kanbanKarte"` in
+**Entwicklungs-Kanban-Board (admin-only, kein Turnier-Bezug, nur Entwicklungsinstanz):**
+eigenständiges Werkzeug zur Organisation der Weiterentwicklung, `docType: "kanbanKarte"` in
 derselben CouchDB (`shared/src/types/kanban.ts`, `backend/src/routes/kanban.ts`,
-`frontend/src/pages/KanbanBoardPage.tsx`, Route `/entwicklungs-board`, Menü nur
-für Admins). Abgleich Dev↔Prod ohne zentralen Server per **JSON-Export/-Import**:
-Export überall, schreibender **Import nur wenn `KANBAN_SYNC=true`** (Env-Flag, nur
-Dev-Instanz) – sonst 403 + Button ausgeblendet. Import ist **zweistufig**
-(`/kanban/import/vorschau` + `/kanban/import/anwenden`): Merge je stabiler
-`kanbanId`, **kein automatisches Last-Write-Wins** – inhaltliche Konflikte werden
-im UI je Karte zur Entscheidung vorgelegt (lokal/eingehend), der neuere Stand ist
-nur markiert. Reine Logik + Tests in
-`backend/src/kanban/importMerge.ts(.test.ts)`. Details und späterer Umstieg auf
-CouchDB-Replikation: `docs/kanban-board.md`. Löschungen syncen bewusst nicht
-(kein Tombstone).
+`frontend/src/pages/KanbanBoardPage.tsx`, Route `/entwicklungs-board`, Menü unter „Admin").
+**Freischaltung nur über `KANBAN_BOARD_AKTIV=true`** (Env-Flag, gleiches Muster wie
+`MAIL_POSTFACH_AKTIV`: öffentlich abfragbares `GET /kanban/verfuegbar` blendet den Menüpunkt
+aus, alle übrigen `/kanban`-Routen liefern ohne das Flag 403) – **auf 2026-08-15 umgestellt,
+vorher war das Board auf jeder Instanz sichtbar** und ein JSON-Export/-Import (mit manueller
+Konfliktauflösung je Karte) glich die Kartenstände zwischen Dev und Prod ab
+(`backend/src/kanban/importMerge.ts`, seitdem ersatzlos entfernt). Grund für die Umstellung:
+Feedback/Fehlermeldungen aus dem laufenden Betrieb laufen inzwischen über das Mail-Postfach
+(unten) herein, das erkannte Anforderungen ohnehin automatisch als Kanban-Karte auf der
+Entwicklungsinstanz anlegt – ein eigenes Board auf Prod/Demo samt Abgleich-Mechanismus war
+damit überflüssig geworden. Details: `docs/kanban-board.md`. Löschungen sind unwiderruflich
+(kein Tombstone/Papierkorb).
 
 **Mail-Postfach (admin-only, nur Entwicklungsinstanz, `backend/src/mail/`):** liest per IMAP ein
 zentrales Feedback-Postfach der Software (Fehlermeldungen/Lob/Anregungen/Kritik/Spam), fasst neue
@@ -603,7 +604,7 @@ Mails per KI (Anthropic, Modell `claude-sonnet-5`) zusammen und legt erkannte An
 automatisch, aber klar als `kiErstellt: true`/„KI · ungeprüft" markiert (`KanbanKarte`-Felder
 `herkunft`/`kiErstellt`/`quellMailId`), im Entwicklungs-Kanban-Board an – zusätzlich ein manueller
 „Als Kanban-Karte übernehmen"-Knopf pro Mail, auch ohne KI-Treffer. **Freischaltung nur über das
-Env-Flag `MAIL_POSTFACH_AKTIV`** (analog `KANBAN_SYNC`) – bewusst NICHT über die Oberfläche
+Env-Flag `MAIL_POSTFACH_AKTIV`** (analog `KANBAN_BOARD_AKTIV`) – bewusst NICHT über die Oberfläche
 umschaltbar, weil ein UI-Schalter versehentlich auch auf Prod/Demo aktivierbar wäre. **Alle
 übrigen Konfigurationsdaten (IMAP-Host/Port/Benutzer/Passwort, Anthropic-API-Key,
 Bericht-Empfänger, Berichtszeit) dagegen bewusst über die Oberfläche** (Singleton-Dokument

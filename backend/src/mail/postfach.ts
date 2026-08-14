@@ -14,7 +14,7 @@ export const STANDARD_MAIL_POSTFACH_EINSTELLUNGEN: MailPostfachEinstellungen = {
 
 /**
  * Nur auf der Entwicklungsinstanz gesetzt (`MAIL_POSTFACH_AKTIV=true` in backend/.env, analog
- * `KANBAN_SYNC`/`DEMO_SNAPSHOT_ERLAUBT`) - schaltet die komplette Funktion frei: Routen
+ * `KANBAN_BOARD_AKTIV`/`DEMO_SNAPSHOT_ERLAUBT`) - schaltet die komplette Funktion frei: Routen
  * (`routes/mailPostfach.ts`), Admin-Menuepunkt im Frontend und den taeglichen Job
  * (`mail/scheduler.ts`). Auf Prod/Demo bewusst weglassen.
  */

@@ -23,7 +23,7 @@ type Befehl = (optionen: Optionen) => Promise<void>;
 
 /** Nur diese Schluessel duerfen ueber die CLI geaendert werden - bewusst ohne COUCHDB_*
  * (Verbindung wuerde ein Tippfehler sofort kappen; die werden vom Installer/deploy-instanz.sh
- * verwaltet) und ohne KANBAN_SYNC (nur fuer die Entwicklungs-Instanz relevant). */
+ * verwaltet) und ohne KANBAN_BOARD_AKTIV (nur fuer die Entwicklungs-Instanz relevant). */
 const ERLAUBTE_KONFIGURATIONS_SCHLUESSEL = [
   "PORT",
   "HOST",

@@ -147,7 +147,7 @@ SMTP_PORT=587
 SMTP_USER=
 SMTP_PASSWORD=
 SMTP_FROM="Torball-Turniere" <noreply@example.com>
-KANBAN_SYNC=false
+KANBAN_BOARD_AKTIV=false
 # Schaltet die demo:*-CLI-Befehle frei (Snapshot/Restore, siehe backend/src/demo/snapshot.ts) -
 # bleibt fuer jede Instanz false, bis deploy/demo-snapshot-einrichten.sh gezielt fuer eine
 # Demo-Instanz durchlaeuft. Nie versehentlich gegen Produktivdaten aktivieren.

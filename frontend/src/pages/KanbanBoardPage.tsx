@@ -1,18 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { KanbanKarte, KanbanKategorie, KanbanPrioritaet, KanbanSpalte } from "@torball/shared";
-import {
-  createKanbanKarte,
-  deleteKanbanKarte,
-  getKanbanBoard,
-  kanbanImportAnwenden,
-  kanbanImportVorschau,
-  kanbanKarteVerschieben,
-  updateKanbanKarte,
-  type KanbanImportErgebnis,
-  type KanbanImportVorschau,
-  type KanbanKonfliktWahl,
-} from "../api";
+import { createKanbanKarte, deleteKanbanKarte, getKanbanBoard, kanbanKarteVerschieben, updateKanbanKarte } from "../api";
 import { formatiereZeitstempel } from "../format";
 
 const SPALTEN: KanbanSpalte[] = ["offen", "inArbeit", "testen", "erledigt"];
@@ -46,32 +35,22 @@ const LEERES_FORMULAR = {
 };
 
 /**
- * Entwicklungs-Kanban-Board (nur Admins). Eigenstaendiges Werkzeug zur Organisation der
- * Weiterentwicklung, ohne Bezug zum Torball-Fachmodell. Sync zwischen Instanzen (Dev/Prod)
- * ueber JSON-Export/-Import: Export ueberall, Import/Merge nur wo freigeschaltet (Dev).
+ * Entwicklungs-Kanban-Board (nur Admins, nur Entwicklungsinstanz - siehe App.tsx, das den
+ * Menuepunkt/die Route nur bei kanbanBoardVerfuegbar() zeigt). Eigenstaendiges Werkzeug zur
+ * Organisation der Weiterentwicklung, ohne Bezug zum Torball-Fachmodell.
  */
 export function KanbanBoardPage() {
   const [karten, setKarten] = useState<KanbanKarte[]>([]);
-  const [syncAktiv, setSyncAktiv] = useState(false);
   const [fehler, setFehler] = useState<string | undefined>();
   const [geladen, setGeladen] = useState(false);
 
   const [formular, setFormular] = useState(LEERES_FORMULAR);
   const [bearbeiteId, setBearbeiteId] = useState<string | undefined>();
 
-  const [importErgebnis, setImportErgebnis] = useState<KanbanImportErgebnis | undefined>();
-  // Zweistufiger Import: erst Vorschau (mit Konflikten), dann nach Entscheidung anwenden.
-  const [vorschau, setVorschau] = useState<KanbanImportVorschau | undefined>();
-  const [eingeleseneKarten, setEingeleseneKarten] = useState<KanbanKarte[]>([]);
-  const [wahlen, setWahlen] = useState<Record<string, KanbanKonfliktWahl>>({});
-  const [importLaeuft, setImportLaeuft] = useState(false);
-  const importInputRef = useRef<HTMLInputElement>(null);
-
   const laden = useCallback(async () => {
     try {
       const board = await getKanbanBoard();
       setKarten(board.karten);
-      setSyncAktiv(board.syncAktiv);
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden");
@@ -159,86 +138,12 @@ export function KanbanBoardPage() {
     }
   }
 
-  function exportieren() {
-    const inhalt = {
-      typ: "torball-kanban-export",
-      formatVersion: 1,
-      exportiertAm: new Date().toISOString(),
-      karten,
-    };
-    const blob = new Blob([JSON.stringify(inhalt, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    const datum = new Date().toISOString().slice(0, 10);
-    a.download = `kanban-export-${datum}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function importAbbrechen() {
-    setVorschau(undefined);
-    setEingeleseneKarten([]);
-    setWahlen({});
-  }
-
-  // Schritt 1: Datei einlesen -> Vorschau holen (schreibt noch nichts). Konflikte werden
-  // vorbelegt mit "lokal" (nichts wird ungefragt überschrieben); der neuere Stand wird nur
-  // markiert, nicht automatisch genommen.
-  async function dateiGewaehlt(event: React.ChangeEvent<HTMLInputElement>) {
-    const datei = event.target.files?.[0];
-    event.target.value = "";
-    if (!datei) return;
-    setImportErgebnis(undefined);
-    importAbbrechen();
-    try {
-      const text = await datei.text();
-      const geparst = JSON.parse(text);
-      const liste = Array.isArray(geparst) ? geparst : geparst?.karten;
-      if (!Array.isArray(liste)) {
-        throw new Error("Die Datei enthält keine gültige Kartenliste.");
-      }
-      const v = await kanbanImportVorschau(liste);
-      setEingeleseneKarten(liste as KanbanKarte[]);
-      setVorschau(v);
-      setWahlen(Object.fromEntries(v.konflikte.map((k) => [k.kanbanId, "lokal" as KanbanKonfliktWahl])));
-      setFehler(undefined);
-    } catch (err) {
-      setFehler(err instanceof Error ? err.message : "Import-Vorschau fehlgeschlagen");
-    }
-  }
-
-  // Schritt 2: mit den getroffenen Entscheidungen anwenden.
-  async function importAnwenden() {
-    if (!vorschau) return;
-    setImportLaeuft(true);
-    try {
-      const ergebnis = await kanbanImportAnwenden(eingeleseneKarten, wahlen);
-      setImportErgebnis(ergebnis);
-      importAbbrechen();
-      setFehler(undefined);
-      await laden();
-    } catch (err) {
-      setFehler(err instanceof Error ? err.message : "Import fehlgeschlagen");
-    } finally {
-      setImportLaeuft(false);
-    }
-  }
-
-  function alleKonflikte(wahl: KanbanKonfliktWahl) {
-    if (!vorschau) return;
-    setWahlen(Object.fromEntries(vorschau.konflikte.map((k) => [k.kanbanId, wahl])));
-  }
-
   const spaltenKarten = (spalte: KanbanSpalte) => karten.filter((k) => k.spalte === spalte);
 
   return (
     <>
       <h1>Entwicklungs-Board</h1>
-      <p>
-        Kleines Kanban-Board für die Weiterentwicklung (nur für Admins). Der Abgleich zwischen den
-        Umgebungen läuft über Export/Import als JSON-Datei – ein zentraler Server ist dafür nicht nötig.
-      </p>
+      <p>Kleines Kanban-Board für die Weiterentwicklung (nur für Admins, nur auf dieser Instanz).</p>
       {fehler && <p role="alert">{fehler}</p>}
 
       <section className="kanban-formular">
@@ -417,135 +322,6 @@ export function KanbanBoardPage() {
           })}
         </div>
       )}
-
-      <section className="kanban-sync">
-        <h2>Abgleich zwischen den Umgebungen</h2>
-        <p>
-          Karten als JSON-Datei exportieren und auf einer anderen Instanz wieder importieren. Der Import
-          zeigt zuerst eine Vorschau; bei Konflikten (dieselbe Karte, aber unterschiedlicher Stand)
-          entscheidest du je Karte, welche Fassung gewinnt – es wird nichts automatisch überschrieben.
-        </p>
-        <div className="kanban-sync-aktionen">
-          <button type="button" onClick={exportieren} disabled={karten.length === 0}>
-            Export (JSON herunterladen)
-          </button>
-          {syncAktiv ? (
-            <>
-              <button type="button" onClick={() => importInputRef.current?.click()}>
-                Import (JSON einlesen)
-              </button>
-              <input
-                ref={importInputRef}
-                type="file"
-                accept="application/json,.json"
-                className="sr-only"
-                onChange={dateiGewaehlt}
-              />
-            </>
-          ) : (
-            <span className="feld-hinweis">
-              Import ist auf dieser Instanz nicht freigeschaltet (nur auf der Entwicklungs-Instanz).
-            </span>
-          )}
-        </div>
-
-        {vorschau && (
-          <div className="kanban-import-vorschau">
-            <h3>Import-Vorschau</h3>
-            <p>
-              {vorschau.neu.length} neu, {vorschau.identisch} unverändert, {vorschau.konflikte.length} Konflikt(e)
-              {vorschau.uebersprungen > 0 ? `, ${vorschau.uebersprungen} übersprungen` : ""}.
-            </p>
-
-            {vorschau.konflikte.length > 0 && (
-              <>
-                <p className="feld-hinweis">
-                  Bitte je Konflikt wählen, welche Fassung übernommen wird. Vorbelegt ist „lokal behalten".
-                </p>
-                <div className="kanban-sync-aktionen">
-                  <button type="button" onClick={() => alleKonflikte("lokal")}>
-                    Alle: lokal behalten
-                  </button>
-                  <button type="button" onClick={() => alleKonflikte("eingehend")}>
-                    Alle: importierte übernehmen
-                  </button>
-                </div>
-                <ul className="kanban-konflikte">
-                  {vorschau.konflikte.map((k) => {
-                    const lokalNeuer = k.lokal.aktualisiertAm >= k.eingehend.aktualisiertAm;
-                    return (
-                      <li key={k.kanbanId} className="kanban-konflikt">
-                        <fieldset>
-                          <legend>{k.lokal.titel !== k.eingehend.titel ? `${k.lokal.titel} ↔ ${k.eingehend.titel}` : k.lokal.titel}</legend>
-                          <div className="kanban-konflikt-seiten">
-                            <label className="kanban-konflikt-seite">
-                              <input
-                                type="radio"
-                                name={`konflikt-${k.kanbanId}`}
-                                checked={wahlen[k.kanbanId] === "lokal"}
-                                onChange={() => setWahlen((w) => ({ ...w, [k.kanbanId]: "lokal" }))}
-                              />
-                              <span>
-                                <strong>Lokal behalten{lokalNeuer ? " (neuer)" : ""}</strong>
-                                <br />
-                                {konfliktZusammenfassung(k.lokal)}
-                              </span>
-                            </label>
-                            <label className="kanban-konflikt-seite">
-                              <input
-                                type="radio"
-                                name={`konflikt-${k.kanbanId}`}
-                                checked={wahlen[k.kanbanId] === "eingehend"}
-                                onChange={() => setWahlen((w) => ({ ...w, [k.kanbanId]: "eingehend" }))}
-                              />
-                              <span>
-                                <strong>Importierte übernehmen{!lokalNeuer ? " (neuer)" : ""}</strong>
-                                <br />
-                                {konfliktZusammenfassung(k.eingehend)}
-                              </span>
-                            </label>
-                          </div>
-                        </fieldset>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </>
-            )}
-
-            <div className="kanban-sync-aktionen">
-              <button type="button" onClick={importAnwenden} disabled={importLaeuft}>
-                {importLaeuft ? "Wird importiert…" : "Importieren"}
-              </button>
-              <button type="button" onClick={importAbbrechen} disabled={importLaeuft}>
-                Abbrechen
-              </button>
-            </div>
-          </div>
-        )}
-
-        {importErgebnis && (
-          <p role="status">
-            Import abgeschlossen: {importErgebnis.eingefuegt} neu, {importErgebnis.ueberschrieben} überschrieben,{" "}
-            {importErgebnis.lokalBehalten} lokal behalten, {importErgebnis.identisch} unverändert
-            {importErgebnis.offen > 0 ? `, ${importErgebnis.offen} offen` : ""}
-            {importErgebnis.uebersprungen > 0 ? `, ${importErgebnis.uebersprungen} übersprungen` : ""}.
-          </p>
-        )}
-      </section>
     </>
   );
-}
-
-/** Kompakte Ein-Zeilen-Beschreibung einer Konfliktseite für die Auswahl. */
-function konfliktZusammenfassung(karte: KanbanKarte): string {
-  const teile = [
-    SPALTEN_LABEL[karte.spalte],
-    KATEGORIE_LABEL[karte.kategorie],
-    PRIORITAET_LABEL[karte.prioritaet],
-    formatiereZeitstempel(karte.aktualisiertAm),
-  ];
-  const autor = [karte.erstelltVonName, karte.erstelltVonEmail].filter(Boolean).join(" ");
-  if (autor) teile.push(autor);
-  return teile.join(" · ");
 }

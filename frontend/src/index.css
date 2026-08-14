@@ -1635,68 +1635,13 @@ button:hover:not(:disabled) {
   color: var(--danger);
 }
 
-.kanban-sync {
-  border-top: 1px solid var(--border);
-  padding-top: 16px;
-}
+/* .kanban-sync-aktionen wird auch von MailPostfachPage.tsx (IMAP-/API-Key-Test-Knopfreihen)
+   verwendet, daher hier belassen, obwohl der Kanban-Abgleich selbst (Export/Import) entfallen ist. */
 .kanban-sync-aktionen {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-}
-
-/* Import-Vorschau mit Konfliktauflösung */
-.kanban-import-vorschau {
-  margin-top: 16px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-subtle);
-}
-.kanban-konflikte {
-  list-style: none;
-  padding: 0;
-  margin: 12px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.kanban-konflikt fieldset {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  margin: 0;
-  padding: 8px 12px 12px;
-  background: var(--bg);
-}
-.kanban-konflikt legend {
-  font-weight: 600;
-  padding: 0 6px;
-}
-.kanban-konflikt-seiten {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-@media (max-width: 560px) {
-  .kanban-konflikt-seiten {
-    grid-template-columns: 1fr;
-  }
-}
-/* Auswahlseite: Radio + zweizeilige Beschreibung nebeneinander, gut anklickbar. */
-.kanban-konflikt-seite {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-.kanban-konflikt-seite:has(input:checked) {
-  border-color: var(--accent);
-  background: var(--bg-subtle);
 }
 
 /* --- Ausdrucke / Druckansicht (PDFs) ---

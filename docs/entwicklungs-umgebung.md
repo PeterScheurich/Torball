@@ -28,7 +28,7 @@ Prod/Demo nicht gesetzt:
 
 | Flag | Schaltet frei |
 |---|---|
-| `KANBAN_SYNC=true` | Schreibenden JSON-Import im Entwicklungs-Kanban-Board (`/entwicklungs-board`) – Export ist überall möglich, der Import/Merge zentralisiert die Stände bewusst nur hier. |
+| `KANBAN_BOARD_AKTIV=true` | Das gesamte Entwicklungs-Kanban-Board (`/entwicklungs-board`, Admin-Menü). Feedback/Fehlermeldungen von Prod/Demo laufen über das Mail-Postfach (das erkannte Anforderungen automatisch als Kanban-Karte anlegt), ein eigenes Board auf Prod/Demo braucht es dafür nicht mehr. |
 | `MAIL_POSTFACH_AKTIV=true` | Das Mail-Postfach (`/mail-postfach`, Admin-Menü): IMAP-Abruf des Feedback-Postfachs + KI-Zusammenfassung + automatische Kanban-Karten. Zugangsdaten (IMAP, Anthropic-API-Key) werden **nicht** über `.env`, sondern über die Oberfläche gepflegt (Admin → Mail-Postfach → Einstellungen). |
 
 `DEMO_SNAPSHOT_ERLAUBT` gehört dagegen zur Demo-Instanz, nicht hierher (siehe

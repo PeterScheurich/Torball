@@ -253,7 +253,7 @@ SMTP_PORT=$SmtpPort
 SMTP_USER=$SmtpUser
 SMTP_PASSWORD=$SmtpPassword
 SMTP_FROM=$SmtpFrom
-KANBAN_SYNC=false
+KANBAN_BOARD_AKTIV=false
 SERVE_FRONTEND=true
 "@ | Set-Content -Path $EnvFile -Encoding utf8
     Write-Host "backend/.env angelegt."

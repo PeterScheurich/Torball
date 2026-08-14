@@ -2,27 +2,33 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { KanbanKarte, KanbanKategorie, KanbanPrioritaet, KanbanSpalte } from "@torball/shared";
 import { deleteDoc, findAllByType, findById, insertDoc, newId } from "../repository";
 import { requireRolle } from "../auth/plugin";
-import {
-  KANBAN_KATEGORIEN,
-  KANBAN_PRIORITAETEN,
-  KANBAN_SPALTEN,
-  loeseKonflikte,
-  planeImport,
-  type KonfliktWahl,
-} from "../kanban/importMerge";
+
+const KANBAN_SPALTEN: KanbanSpalte[] = ["offen", "inArbeit", "testen", "erledigt"];
+const KANBAN_KATEGORIEN: KanbanKategorie[] = ["bug", "feature", "wunsch", "aufgabe", "sonstiges"];
+const KANBAN_PRIORITAETEN: KanbanPrioritaet[] = ["hoch", "mittel", "niedrig"];
 
 /**
  * Entwicklungs-Kanban-Board (nur Admins). Eigenstaendige Entitaet ohne Bezug zum
  * Torball-Fachmodell - dient der Organisation der Weiterentwicklung.
  *
- * Sync ueber JSON-Export/-Import (kein zusaetzlicher Server, keine Replikation noetig):
- * Export ist auf jeder Instanz erlaubt (reines Herunterladen der eigenen Karten). Der
- * schreibende Import/Merge ist bewusst nur dort freigeschaltet, wo `KANBAN_SYNC=true`
- * gesetzt ist - laut Vorgabe nur auf der Dev-Instanz, damit dort zentral zusammengefuehrt
- * wird (dieselbe Rolle, die spaeter eine CouchDB-Replikation initiieren wuerde). Siehe
- * docs/kanban-board.md.
+ * Nur auf der Entwicklungsinstanz sichtbar (`KANBAN_BOARD_AKTIV=true` in backend/.env,
+ * analog `MAIL_POSTFACH_AKTIV`) - Feedback/Fehlermeldungen von Prod/Demo laufen inzwischen
+ * ueber das Mail-Postfach (das erkannte Anforderungen ohnehin automatisch als Kanban-Karte
+ * anlegt), ein instanzuebergreifender Karten-Abgleich (frueher: JSON-Export/-Import, siehe
+ * Git-Historie) ist damit ueberfluessig geworden.
  */
-const SYNC_AKTIV = process.env.KANBAN_SYNC === "true";
+function kanbanBoardAktiv(): boolean {
+  return process.env.KANBAN_BOARD_AKTIV === "true";
+}
+
+const vorbedingung = (req: FastifyRequest, reply: FastifyReply): boolean => {
+  if (!requireRolle(req, reply, ["admin"])) return false;
+  if (!kanbanBoardAktiv()) {
+    reply.code(403).send({ error: "Entwicklungs-Board ist auf dieser Instanz nicht freigeschaltet (nur Dev)." });
+    return false;
+  }
+  return true;
+};
 
 const SPALTEN = KANBAN_SPALTEN;
 
@@ -64,18 +70,23 @@ function naechsteReihenfolge(karten: KanbanKarte[], spalte: KanbanSpalte): numbe
 }
 
 export async function kanbanRoutes(app: FastifyInstance): Promise<void> {
-  // Board laden. syncAktiv steuert im Frontend, ob der Import-Bereich sichtbar ist.
+  // Oeffentlich (kein Login), analog GET /mail-postfach/verfuegbar - damit das Frontend den
+  // Admin-Menuepunkt ausblenden kann, ohne vorher als Admin eingeloggt sein zu muessen.
+  app.get("/kanban/verfuegbar", async () => {
+    return { verfuegbar: kanbanBoardAktiv() };
+  });
+
   app.get("/kanban", async (req, reply) => {
-    if (!requireRolle(req, reply, ["admin"])) return;
+    if (!vorbedingung(req, reply)) return;
     const karten = await findAllByType<KanbanKarte>("kanbanKarte");
-    return { karten: sortiere(karten), syncAktiv: SYNC_AKTIV };
+    return { karten: sortiere(karten) };
   });
 
   app.post<{ Body: KanbanBody }>(
     "/kanban/karten",
     { schema: { body: kanbanBodySchema } },
     async (req, reply) => {
-      if (!requireRolle(req, reply, ["admin"])) return;
+      if (!vorbedingung(req, reply)) return;
       const alle = await findAllByType<KanbanKarte>("kanbanKarte");
       const jetzt = new Date().toISOString();
       const id = newId("kanbanKarte");
@@ -104,7 +115,7 @@ export async function kanbanRoutes(app: FastifyInstance): Promise<void> {
     "/kanban/karten/:id",
     { schema: { body: kanbanBodySchema } },
     async (req, reply) => {
-      if (!requireRolle(req, reply, ["admin"])) return;
+      if (!vorbedingung(req, reply)) return;
       const bestehend = await findById<KanbanKarte>(req.params.id);
       if (!bestehend || bestehend.docType !== "kanbanKarte") {
         return reply.code(404).send({ error: "Karte nicht gefunden" });
@@ -145,7 +156,7 @@ export async function kanbanRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     async (req, reply) => {
-      if (!requireRolle(req, reply, ["admin"])) return;
+      if (!vorbedingung(req, reply)) return;
       const karte = await findById<KanbanKarte>(req.params.id);
       if (!karte || karte.docType !== "kanbanKarte") {
         return reply.code(404).send({ error: "Karte nicht gefunden" });
@@ -168,7 +179,7 @@ export async function kanbanRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.delete<{ Params: { id: string } }>("/kanban/karten/:id", async (req, reply) => {
-    if (!requireRolle(req, reply, ["admin"])) return;
+    if (!vorbedingung(req, reply)) return;
     const karte = await findById<KanbanKarte>(req.params.id);
     if (!karte || karte.docType !== "kanbanKarte") {
       return reply.code(404).send({ error: "Karte nicht gefunden" });
@@ -176,75 +187,4 @@ export async function kanbanRoutes(app: FastifyInstance): Promise<void> {
     await deleteDoc(karte._id, karte._rev!);
     return reply.code(204).send();
   });
-
-  /**
-   * Import ist bewusst ZWEISTUFIG (nur auf der Dev-Instanz, KANBAN_SYNC=true):
-   *
-   *  1. /vorschau ermittelt, was passieren wuerde, OHNE zu schreiben - insbesondere die
-   *     Konflikte (gleiche kanbanId, abweichender Inhalt). Es gibt KEIN automatisches
-   *     Last-Write-Wins; bei Konflikten muss der Nutzer je Karte entscheiden (Vorgabe).
-   *  2. /anwenden schreibt: fügt neue Karten ein und wendet die getroffenen Konflikt-
-   *     Entscheidungen an ("eingehend" ueberschreibt lokal unter Beibehaltung von _id/_rev).
-   *
-   * Der eingehende _rev wird stets verworfen (gehoert zur Quell-DB).
-   */
-  const importVorbedingung = (req: FastifyRequest, reply: FastifyReply): boolean => {
-    if (!requireRolle(req, reply, ["admin"])) return false;
-    if (!SYNC_AKTIV) {
-      reply.code(403).send({ error: "Import ist auf dieser Instanz nicht freigeschaltet (nur Dev)." });
-      return false;
-    }
-    return true;
-  };
-
-  app.post<{ Body: { karten?: unknown } }>(
-    "/kanban/import/vorschau",
-    { schema: { body: { type: "object", additionalProperties: true } } },
-    async (req, reply) => {
-      if (!importVorbedingung(req, reply)) return;
-      const eingehend = Array.isArray(req.body.karten) ? (req.body.karten as unknown[]) : null;
-      if (!eingehend) {
-        return reply.code(400).send({ error: "Ungueltiges Format: 'karten'-Liste fehlt." });
-      }
-      const bestehende = await findAllByType<KanbanKarte>("kanbanKarte");
-      const plan = planeImport(bestehende, eingehend);
-      return {
-        neu: plan.neu,
-        identisch: plan.identisch,
-        konflikte: plan.konflikte,
-        uebersprungen: plan.uebersprungen,
-      };
-    },
-  );
-
-  app.post<{ Body: { karten?: unknown; wahlen?: Record<string, KonfliktWahl> } }>(
-    "/kanban/import/anwenden",
-    { schema: { body: { type: "object", additionalProperties: true } } },
-    async (req, reply) => {
-      if (!importVorbedingung(req, reply)) return;
-      const eingehend = Array.isArray(req.body.karten) ? (req.body.karten as unknown[]) : null;
-      if (!eingehend) {
-        return reply.code(400).send({ error: "Ungueltiges Format: 'karten'-Liste fehlt." });
-      }
-      const wahlen = (req.body.wahlen ?? {}) as Record<string, KonfliktWahl>;
-
-      // Plan am Anwendungs-Zeitpunkt neu berechnen (der lokale Stand kann sich seit der
-      // Vorschau geaendert haben) - so wird nie etwas ueberschrieben, das inzwischen anders ist.
-      const bestehende = await findAllByType<KanbanKarte>("kanbanKarte");
-      const plan = planeImport(bestehende, eingehend);
-      const aufloesung = loeseKonflikte(plan.konflikte, wahlen);
-
-      for (const karte of plan.neu) await insertDoc(karte);
-      for (const karte of aufloesung.upserts) await insertDoc(karte);
-
-      return {
-        eingefuegt: plan.neu.length,
-        ueberschrieben: aufloesung.upserts.length,
-        lokalBehalten: aufloesung.lokalBehalten,
-        identisch: plan.identisch,
-        offen: aufloesung.offen,
-        uebersprungen: plan.uebersprungen,
-      };
-    },
-  );
 }
