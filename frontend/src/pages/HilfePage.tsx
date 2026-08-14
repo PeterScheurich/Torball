@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { HILFE_THEMEN, type HilfeBlock } from "../hilfe/inhalte";
+import { textMitSymbolVerweisen } from "../components/SymbolVerweis";
 import { useAuth } from "../auth";
 // Rohtext der Gesamtspezifikation: per Vite `?raw` zur BUILD-Zeit als String eingebettet.
 // Dadurch entspricht die in der App angezeigte Fassung bei jedem Deployment automatisch dem
@@ -14,13 +15,13 @@ import spezifikationMarkdown from "../../../docs/torball_gesamtspezifikation.md?
 /** Rendert einen einzelnen Antwort-Baustein (Absatz, Aufzaehlung, Hinweis oder Vertiefung). */
 function Block({ block }: { block: HilfeBlock }) {
   if (typeof block === "string") {
-    return <p>{block}</p>;
+    return <p>{textMitSymbolVerweisen(block)}</p>;
   }
   if ("liste" in block) {
     return (
       <ul>
         {block.liste.map((eintrag, i) => (
-          <li key={i}>{eintrag}</li>
+          <li key={i}>{textMitSymbolVerweisen(eintrag)}</li>
         ))}
       </ul>
     );
@@ -37,7 +38,7 @@ function Block({ block }: { block: HilfeBlock }) {
       </details>
     );
   }
-  return <p className="hilfe-hinweis">{block.hinweis}</p>;
+  return <p className="hilfe-hinweis">{textMitSymbolVerweisen(block.hinweis)}</p>;
 }
 
 /**

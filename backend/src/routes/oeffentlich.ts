@@ -103,6 +103,7 @@ export async function oeffentlichRoutes(app: FastifyInstance): Promise<void> {
         datum: t.datum,
         spielortName: t.spielortName,
         status: t.status,
+        logoDataUrl: t.logoDataUrl ?? null,
       }));
   });
 

@@ -335,6 +335,14 @@ header nav span.marke {
   max-width: 100%;
   vertical-align: middle;
 }
+
+/* Kleines Logo vor dem Turniernamen in den Turnierlisten (Startseite, oeffentliche Startseite) -
+   bewusst klein (siehe hoehe={28} an TurnierLogo), damit die Listen uebersichtlich bleiben. */
+.turnier-name-mit-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 /* Logo-Bereich in der Turnier-Uebersicht: Vorschau + Aktionsknoepfe nebeneinander. */
 .logo-bereich {
   display: flex;
@@ -573,6 +581,12 @@ form {
   color: var(--text-muted);
 }
 
+/* Inline-Link auf einen Kopfzeilen-Menuepunkt (SymbolVerweis-Komponente) innerhalb von Fliesstext -
+   Symbol und Text bleiben zusammen, damit der Verweis nicht ungluecklich umbricht. */
+.symbol-verweis {
+  white-space: nowrap;
+}
+
 /* Kontakt-Angaben auf der "Über & Kontakt"-Seite (Begriff/Wert-Liste). */
 .ueber-kontakt {
   margin: 0;
@@ -717,6 +731,17 @@ form {
   background: var(--bg);
   color: var(--text);
   font-weight: 400;
+}
+
+/* Hinweis auf der Anmeldeseite, wenn beim Tippen des Passworts die Feststelltaste aktiv ist -
+   haeufige Ursache fuer Fehleingaben, ohne dass der eigentliche Login-Fehler das verraet. */
+.feststelltaste-hinweis {
+  border-left: 3px solid var(--danger);
+  padding: 6px 10px;
+  margin: 6px 0 0;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.9rem;
 }
 
 /* Trainer/Betreuer-Felder oberhalb des Kaders im aufgeklappten Bereich: nebeneinander,

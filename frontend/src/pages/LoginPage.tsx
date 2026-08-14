@@ -13,6 +13,7 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [passwort, setPasswort] = useState("");
   const [totpCode, setTotpCode] = useState("");
+  const [feststelltasteAktiv, setFeststelltasteAktiv] = useState(false);
   const [benoetigtTotp, setBenoetigtTotp] = useState(false);
   const [ersteinrichtungVerfuegbar, setErsteinrichtungVerfuegbar] = useState(false);
   const [registrierungErlaubt, setRegistrierungErlaubt] = useState(false);
@@ -82,8 +83,16 @@ export function LoginPage() {
             required
             value={passwort}
             onChange={(e) => setPasswort(e.target.value)}
+            onKeyDown={(e) => setFeststelltasteAktiv(e.getModifierState("CapsLock"))}
+            onKeyUp={(e) => setFeststelltasteAktiv(e.getModifierState("CapsLock"))}
+            onBlur={() => setFeststelltasteAktiv(false)}
             disabled={benoetigtTotp}
           />
+          {feststelltasteAktiv && (
+            <p className="feststelltaste-hinweis" role="status">
+              Achtung: Die Feststelltaste ist aktiviert.
+            </p>
+          )}
         </div>
         {benoetigtTotp && (
           <div className="feld">

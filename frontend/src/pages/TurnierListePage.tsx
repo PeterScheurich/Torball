@@ -4,6 +4,7 @@ import type { Turnier, TurnierStatus } from "@torball/shared";
 import { deleteTurnier, getTurniere } from "../api";
 import { useAuth } from "../auth";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
+import { TurnierLogo } from "../components/TurnierLogo";
 
 /** Anzeige-Labels der Status-Werte (das rohe Feld waere z.B. "entwurf" - hier lesbar gemacht). */
 const STATUS_LABEL: Record<TurnierStatus, string> = {
@@ -14,10 +15,10 @@ const STATUS_LABEL: Record<TurnierStatus, string> = {
 };
 
 /**
- * Trennkriterium der Uebersicht: "abgeschlossen" (bewusst von der Turnierleitung beendet)
- * und "archiviert" (Langzeit-Archiv) gelten als abgeschlossen; entwurf/aktiv (inkl. gerade
- * laufender Turniere) zaehlen zu den geplanten. Vorgabe des Nutzers: laufende Turniere
- * gehoeren zu den geplanten.
+ * Drei Gruppen (Nutzer-Vorgabe, loest die fruehere Zweiteilung ab): "aktiv" bekommt eine eigene,
+ * ganz oben stehende Gruppe "Aktive Turniere" (gerade laufender Spieltag), "entwurf" bildet die
+ * "Geplanten Turniere", "abgeschlossen"/"archiviert" bleiben wie bisher zusammen "Abgeschlossene
+ * Turniere".
  */
 function istAbgeschlossen(status: TurnierStatus): boolean {
   return status === "abgeschlossen" || status === "archiviert";
@@ -83,7 +84,10 @@ function TurnierTabelle({
         {turniere.map((turnier) => (
           <tr key={turnier._id}>
             <td>
-              <Link to={`/turniere/${encodeURIComponent(turnier._id)}`}>{turnier.name}</Link>
+              <span className="turnier-name-mit-logo">
+                <TurnierLogo logoDataUrl={turnier.logoDataUrl} hoehe={28} />
+                <Link to={`/turniere/${encodeURIComponent(turnier._id)}`}>{turnier.name}</Link>
+              </span>
               <TurnierMeta turnier={turnier} />
             </td>
             <td>{formatiereDatum(turnier.datum)}</td>
@@ -145,7 +149,8 @@ export function TurnierListePage() {
     }
   }
 
-  const geplant = turniere.filter((t) => !istAbgeschlossen(t.status));
+  const aktiv = turniere.filter((t) => t.status === "aktiv");
+  const geplant = turniere.filter((t) => t.status === "entwurf");
   const abgeschlossen = turniere.filter((t) => istAbgeschlossen(t.status));
 
   return (
@@ -168,6 +173,19 @@ export function TurnierListePage() {
         <p>Noch keine Turniere angelegt.</p>
       ) : (
         <>
+          {/* Nur sichtbar, wenn gerade ein Spieltag laeuft - keine leere Gruppe anzeigen. */}
+          {aktiv.length > 0 && (
+            <>
+              <h2>Aktive Turniere</h2>
+              <TurnierTabelle
+                turniere={aktiv}
+                beschriftung="Aktive Turniere"
+                leerText="Keine aktiven Turniere."
+                onLoeschen={loeschen}
+              />
+            </>
+          )}
+
           <h2>Geplante Turniere</h2>
           <TurnierTabelle
             turniere={geplant}

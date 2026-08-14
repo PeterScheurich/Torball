@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getOeffentlicheTurnierliste, type OeffentlichesTurnierListenElement } from "../api";
 import { formatiereDatum } from "../format";
+import { TurnierLogo } from "../components/TurnierLogo";
 
 function istAbgeschlossen(status: string): boolean {
   return status === "abgeschlossen" || status === "archiviert";
@@ -13,7 +14,10 @@ function TurnierListe({ turniere, leerText }: { turniere: OeffentlichesTurnierLi
     <ul className="oeffentliche-turnierliste">
       {turniere.map((t) => (
         <li key={t.turnierId}>
-          <Link to={`/turniere/${t.turnierId}/oeffentlich`}>{t.name}</Link>
+          <span className="turnier-name-mit-logo">
+            <TurnierLogo logoDataUrl={t.logoDataUrl} hoehe={28} />
+            <Link to={`/turniere/${t.turnierId}/oeffentlich`}>{t.name}</Link>
+          </span>
           <span className="startseite-zusatz">
             {formatiereDatum(t.datum)}
             {t.spielortName ? ` · ${t.spielortName}` : ""}
@@ -41,10 +45,9 @@ export function OeffentlicheStartseitePage() {
       .finally(() => setGeladen(true));
   }, []);
 
-  // Aktuelle Turniere nach Datum aufsteigend (naechste zuerst), abgeschlossene absteigend (neueste zuerst).
-  const geplant = turniere
-    .filter((t) => !istAbgeschlossen(t.status))
-    .sort((a, b) => a.datum.localeCompare(b.datum));
+  // Aktive/geplante Turniere nach Datum aufsteigend (naechste zuerst), abgeschlossene absteigend (neueste zuerst).
+  const aktiv = turniere.filter((t) => t.status === "aktiv").sort((a, b) => a.datum.localeCompare(b.datum));
+  const geplant = turniere.filter((t) => t.status === "entwurf").sort((a, b) => a.datum.localeCompare(b.datum));
   const abgeschlossen = turniere
     .filter((t) => istAbgeschlossen(t.status))
     .sort((a, b) => b.datum.localeCompare(a.datum));
@@ -63,8 +66,15 @@ export function OeffentlicheStartseitePage() {
         <p>Aktuell sind keine Turniere öffentlich freigegeben.</p>
       ) : (
         <>
-          <h2>Aktuelle Turniere</h2>
-          <TurnierListe turniere={geplant} leerText="Keine aktuellen Turniere." />
+          {aktiv.length > 0 && (
+            <>
+              <h2>Aktive Turniere</h2>
+              <TurnierListe turniere={aktiv} leerText="Keine aktiven Turniere." />
+            </>
+          )}
+
+          <h2>Geplante Turniere</h2>
+          <TurnierListe turniere={geplant} leerText="Keine geplanten Turniere." />
 
           <h2>Abgeschlossene Turniere</h2>
           <TurnierListe turniere={abgeschlossen} leerText="Keine abgeschlossenen Turniere." />

@@ -24,6 +24,13 @@
  * `bildAlt` ist Pflicht, sobald `bild` gesetzt ist (der Typ erzwingt das) -
  * ein Screenshot ohne Alternativtext waere gerade in dieser App ein Widerspruch.
  * Optional zusaetzlich `bildUnterschrift: "..."` fuer eine sichtbare Bildunterschrift.
+ *
+ * === Auf einen Kopfzeilen-Menuepunkt verweisen ===
+ * Verweist ein Text auf einen Menuepunkt, der in der Kopfzeile nur als Symbol dargestellt wird
+ * (Einstellungen/Hilfe/Über/Mein Profil), einen Platzhalter wie "{{einstellungen}}" einsetzen -
+ * wird beim Anzeigen automatisch durch einen Link mit demselben Symbol ersetzt (siehe
+ * SymbolVerweis-Komponente). Verfuegbare Platzhalter: {{einstellungen}}, {{hilfe}}, {{ueber}},
+ * {{profil}}.
  */
 
 /** Ein Baustein einer Antwort: Absatz (String), Aufzaehlung, Hinweis-Kasten oder
@@ -539,7 +546,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wo ändere ich E-Mail oder Passwort?",
         text: [
-          "Unter „Mein Profil“ – erreichbar über das Menü oben rechts mit deinem Namen. Zur Bestätigung solcher sicherheitsrelevanten Änderungen gibst du jeweils dein aktuelles Passwort ein.",
+          "Unter {{profil}} – erreichbar über das Menü oben rechts mit deinem Namen. Zur Bestätigung solcher sicherheitsrelevanten Änderungen gibst du jeweils dein aktuelles Passwort ein.",
           {
             hinweis:
               "Wenn du dein Passwort änderst, werden alle anderen angemeldeten Sitzungen beendet – die gerade genutzte bleibt bestehen.",
@@ -555,7 +562,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie richte ich die Zwei-Faktor-Anmeldung (2FA) ein?",
         text: [
-          "Im Profil unter „Zwei-Faktor-Authentifizierung“ startest du die Einrichtung, scannst den angezeigten QR-Code mit einer Authenticator-App (oder gibst den Schlüssel manuell ein) und bestätigst mit dem Code aus der App. Danach fragt die Anmeldung neben dem Passwort zusätzlich diesen Code ab.",
+          "Unter {{profil}} → „Zwei-Faktor-Authentifizierung“ startest du die Einrichtung, scannst den angezeigten QR-Code mit einer Authenticator-App (oder gibst den Schlüssel manuell ein) und bestätigst mit dem Code aus der App. Danach fragt die Anmeldung neben dem Passwort zusätzlich diesen Code ab.",
           {
             vertiefung: {
               titel: "Was ist eine Authenticator-App?",
@@ -576,7 +583,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie stelle ich Hell-/Dunkelmodus ein?",
         text: [
-          "Unter „Einstellungen“ wählst du das Farbschema: „Systemeinstellung folgen“, „Hell“ oder „Dunkel“. Standardmäßig folgt die Anwendung deiner Systemeinstellung.",
+          "Unter {{einstellungen}} wählst du das Farbschema: „Systemeinstellung folgen“, „Hell“ oder „Dunkel“. Standardmäßig folgt die Anwendung deiner Systemeinstellung.",
         ],
       },
       {
@@ -585,7 +592,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
           "Er steuert, wie dicht Tabellen und Eingabefelder dargestellt werden („Standard“ oder „Schmal“). Das hilft, je nach Bildschirm mehr Inhalt auf einen Blick zu sehen.",
           {
             hinweis:
-              "Diese Anzeige-Einstellungen gelten nur für das aktuelle Gerät bzw. den Browser. Angemeldete Benutzer können im Profil zusätzlich einen kontogebundenen Standardwert hinterlegen.",
+              "Diese Anzeige-Einstellungen gelten nur für das aktuelle Gerät bzw. den Browser. Angemeldete Benutzer können unter {{profil}} zusätzlich einen kontogebundenen Standardwert hinterlegen.",
           },
         ],
       },
@@ -622,8 +629,8 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie verbinde ich die lokale Installation mit dem Server?",
         text: [
-          "Auf dem Server (dort, wo das Turnier normalerweise verwaltet wird) erzeugst du unter „Mein Profil“ → „Verbundene Instanzen“ einen Kopplungscode (15 Minuten gültig).",
-          "Auf der lokalen Installation gibst du unter „Einstellungen“ → „Turnier-Sync“ die Server-Adresse und diesen Code ein. Ab dann sind beide dauerhaft verbunden und die lokale Installation meldet sich automatisch regelmäßig beim Server.",
+          "Auf dem Server (dort, wo das Turnier normalerweise verwaltet wird) erzeugst du unter {{profil}} → „Verbundene Instanzen“ einen Kopplungscode (15 Minuten gültig).",
+          "Auf der lokalen Installation gibst du unter {{einstellungen}} → „Turnier-Sync“ die Server-Adresse und diesen Code ein. Ab dann sind beide dauerhaft verbunden und die lokale Installation meldet sich automatisch regelmäßig beim Server.",
         ],
       },
       {
@@ -671,7 +678,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
           },
           {
             hinweis:
-              "Rückmeldungen und Wünsche dazu sind jederzeit willkommen – Kontaktmöglichkeiten stehen auf der Seite „Über“.",
+              "Rückmeldungen und Wünsche dazu sind jederzeit willkommen – Kontaktmöglichkeiten stehen auf der Seite {{ueber}}.",
           },
         ],
       },

@@ -16,6 +16,7 @@ import {
 import { formatiereZeitstempel } from "../format";
 import { useAuth } from "../auth";
 import { PasswortRegeln } from "../PasswortRegeln";
+import { SymbolVerweis } from "../components/SymbolVerweis";
 import { themeAnwenden } from "../theme";
 import { dichteAnwenden } from "../dichte";
 import { breiteAnwenden } from "../breite";
@@ -397,7 +398,7 @@ export function ProfilPage() {
       </div>
       <p>
         Farbschema, Zeilenabstand und Breite gelten dann auch beim nächsten Login auf einem anderen Gerät, sofern dort
-        noch keine eigene Wahl in <a href="/einstellungen">den Einstellungen</a> getroffen wurde.
+        noch keine eigene Wahl unter <SymbolVerweis art="einstellungen" /> getroffen wurde.
       </p>
       <p>Für ein neues Passwort: mindestens 8 Zeichen, davon 1 Großbuchstabe, 1 Zahl, 1 Sonderzeichen.</p>
 
@@ -532,7 +533,7 @@ export function ProfilPage() {
           <button type="button" onClick={kopplungscodeKopieren}>
             Schlüssel kopieren
           </button>{" "}
-          – auf der lokalen Installation unter „Einstellungen" eingeben.
+          – auf der lokalen Installation unter „Einstellungen" (<span aria-hidden="true">⚙</span>) eingeben.
         </p>
       )}
 

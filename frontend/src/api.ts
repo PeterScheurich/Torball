@@ -863,6 +863,7 @@ export interface OeffentlichesTurnierListenElement {
   datum: string;
   spielortName?: string;
   status: string;
+  logoDataUrl?: string | null;
 }
 
 export function getOeffentlicheTurnierliste(): Promise<OeffentlichesTurnierListenElement[]> {

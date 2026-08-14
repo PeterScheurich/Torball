@@ -88,7 +88,8 @@ function ServerVerbindung() {
       <p>
         Verbinde dieses Gerät mit einem Zentralen-Plattform-Server, um Turniere von dort herunterzuladen und
         Ergebnisse automatisch zurückzusynchronisieren - auch bei unzuverlässigem Internet vor Ort. Den
-        Kopplungscode erzeugst du auf dem Server unter „Mein Profil" → „Verbundene Instanzen".
+        Kopplungscode erzeugst du auf dem Server unter „Mein Profil" (<span aria-hidden="true">👤</span>) → „Verbundene
+        Instanzen".
       </p>
       {fehler && <p role="alert">{fehler}</p>}
       <form onSubmit={verbinden}>
