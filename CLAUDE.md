@@ -740,6 +740,20 @@ dieser Version gilt der folgende Ablauf:
 - Von Anfang an mitdenken, nicht als Nachrüstung: sichtbarer Fokus-Indikator,
   passende ARIA-Rollen (z. B. Tabs), Tastatur-Bedienbarkeit für jede
   Maus-Interaktion (z. B. ▲/▼-Buttons als Alternative zu Drag & Drop).
+- **Textfarbe: nie `--text-muted`/`.feld-hinweis` für Haupttext.** Diese
+  gedämpfte Farbe ist nur für echte Nebeninfos gedacht (z. B. ein Hinweis
+  direkt unter einem Eingabefeld), nicht für Einleitungssätze oder sonstigen
+  Fließtext, der gelesen werden soll. Der Kontrast reicht zwar formal für
+  WCAG AA (`--text-muted` auf `--bg`: ca. 5,7:1 im Hellmodus), fühlt sich in
+  der Praxis aber merklich schwerer lesbar an - besonders bei der kleineren
+  Schriftgröße von `.feld-hinweis` (0.85rem), und diese App ist für eine
+  Sportart von/für blinde und sehbehinderte Menschen, Barrierefreiheit ist
+  hier kein Nice-to-have. Im Zweifel immer volle Textfarbe (`var(--text)`,
+  meist ein `<p>` ohne Sonderklasse) wählen. Schon zweimal unabhängig
+  aufgetreten: bei den Hilfe-Themen-Einleitungssätzen (Kommentar „bewusst
+  volle Textfarbe" in `index.css`) und bei `FehlerMeldenPage.tsx` - bei jeder
+  neuen Seite/Komponente von Anfang an einplanen, nicht erst auf Hinweis hin
+  korrigieren.
 - **CSS-Klassen, die sowohl auf `<a>`/`<Link>` als auch auf `<button>`
   angewendet werden, brauchen `box-sizing: border-box` explizit**
   (`.button-link`, `.kopfzeile-menue-eintrag`) – `<button>` ist im
