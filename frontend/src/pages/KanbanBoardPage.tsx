@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { KanbanKarte, KanbanKategorie, KanbanPrioritaet, KanbanSpalte } from "@torball/shared";
-import { createKanbanKarte, deleteKanbanKarte, getKanbanBoard, kanbanKarteVerschieben, updateKanbanKarte } from "../api";
+import {
+  createKanbanKarte,
+  deleteKanbanKarte,
+  getKanbanBoard,
+  kanbanKarteVerschieben,
+  kanbanNotizHinzufuegen,
+  updateKanbanKarte,
+} from "../api";
 import { formatiereZeitstempel } from "../format";
 
 const SPALTEN: KanbanSpalte[] = ["offen", "inArbeit", "testen", "erledigt"];
@@ -46,6 +53,7 @@ export function KanbanBoardPage() {
 
   const [formular, setFormular] = useState(LEERES_FORMULAR);
   const [bearbeiteId, setBearbeiteId] = useState<string | undefined>();
+  const [neueNotiz, setNeueNotiz] = useState("");
 
   const laden = useCallback(async () => {
     try {
@@ -66,6 +74,19 @@ export function KanbanBoardPage() {
   function formularZuruecksetzen() {
     setFormular(LEERES_FORMULAR);
     setBearbeiteId(undefined);
+    setNeueNotiz("");
+  }
+
+  async function notizHinzufuegen(event: React.FormEvent) {
+    event.preventDefault();
+    if (!bearbeiteId || !neueNotiz.trim()) return;
+    try {
+      await kanbanNotizHinzufuegen(bearbeiteId, neueNotiz.trim());
+      setNeueNotiz("");
+      await laden();
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern der Notiz");
+    }
   }
 
   async function absenden(event: React.FormEvent) {
@@ -139,6 +160,7 @@ export function KanbanBoardPage() {
   }
 
   const spaltenKarten = (spalte: KanbanSpalte) => karten.filter((k) => k.spalte === spalte);
+  const bearbeiteteKarte = bearbeiteId ? karten.find((k) => k._id === bearbeiteId) : undefined;
 
   return (
     <>
@@ -220,6 +242,44 @@ export function KanbanBoardPage() {
             )}
           </div>
         </form>
+
+        {bearbeiteteKarte && (
+          <div className="kanban-notizen">
+            <h3>Notizen</h3>
+            <p className="feld-hinweis">
+              Aktionen, Gedanken, Änderungsvorschläge – werden nicht auf der Karte selbst angezeigt, nur hier beim
+              Bearbeiten.
+            </p>
+            {bearbeiteteKarte.notizen && bearbeiteteKarte.notizen.length > 0 ? (
+              <ul className="kanban-notizen-liste">
+                {bearbeiteteKarte.notizen.map((notiz, index) => (
+                  <li key={index} className="kanban-notiz">
+                    <p className="kanban-notiz-text">{notiz.text}</p>
+                    <p className="kanban-notiz-meta">
+                      {notiz.erstelltVonName ?? "?"} · {formatiereZeitstempel(notiz.erstelltAm)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="kanban-leer">Noch keine Notizen.</p>
+            )}
+            <form onSubmit={notizHinzufuegen} className="kanban-notiz-formular">
+              <div className="feld">
+                <label htmlFor="kanban-neue-notiz">Neue Notiz</label>
+                <textarea
+                  id="kanban-neue-notiz"
+                  rows={2}
+                  value={neueNotiz}
+                  onChange={(e) => setNeueNotiz(e.target.value)}
+                />
+              </div>
+              <button type="submit" disabled={!neueNotiz.trim()}>
+                Notiz hinzufügen
+              </button>
+            </form>
+          </div>
+        )}
       </section>
 
       {geladen && (

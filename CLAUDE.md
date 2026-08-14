@@ -598,6 +598,16 @@ Entwicklungsinstanz anlegt – ein eigenes Board auf Prod/Demo samt Abgleich-Mec
 damit überflüssig geworden. Details: `docs/kanban-board.md`. Löschungen sind unwiderruflich
 (kein Tombstone/Papierkorb).
 
+**Notizen je Karte (`KanbanKarte.notizen`, `KanbanNotiz[]`):** Aktionen/Gedanken/
+Änderungsvorschläge zu einer Karte – bewusst **nicht auf der Karte selbst sichtbar**, nur beim
+Bearbeiten (`bearbeiten()`-Formular in `KanbanBoardPage.tsx`, Abschnitt „Notizen" unterhalb der
+normalen Felder). Nur **anhängbar** (`POST /kanban/karten/:id/notizen`, eigener Endpunkt statt
+über das generische PUT, damit zwei gleichzeitig hinzugefügte Notizen sich nicht überschreiben)
+– kein Bearbeiten/Löschen einzelner Einträge, analog einem Kommentarverlauf. `erstelltVonName`
+je Notiz kommt vom eingeloggten Account (auch KI-Sitzungen, die über den Admin-Account arbeiten,
+z. B. „Claude" auf der Dev-Instanz) – gedacht auch für Einschätzungen/Vorschläge aus einer
+Claude-Code-Sitzung, nicht nur menschliche Notizen.
+
 **Mail-Postfach (admin-only, nur Entwicklungsinstanz, `backend/src/mail/`):** liest per IMAP ein
 zentrales Feedback-Postfach der Software (Fehlermeldungen/Lob/Anregungen/Kritik/Spam), fasst neue
 Mails per KI (Anthropic, Modell `claude-sonnet-5`) zusammen und legt erkannte Anforderungen

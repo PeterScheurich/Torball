@@ -912,6 +912,10 @@ export function deleteKanbanKarte(id: string): Promise<void> {
   return anfrage(`/kanban/karten/${id}`, { method: "DELETE" });
 }
 
+export function kanbanNotizHinzufuegen(id: string, text: string): Promise<KanbanKarte> {
+  return anfrage(`/kanban/karten/${id}/notizen`, { method: "POST", body: JSON.stringify({ text }) });
+}
+
 // --- Turnier-Sync: lokale Instanz-Kopplung (Abschnitt 21.3/23, rein geraetelokal) ---
 
 export interface LokaleSyncStatus {

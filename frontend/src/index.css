@@ -1517,6 +1517,47 @@ button:hover:not(:disabled) {
   gap: 8px;
 }
 
+/* Notizen (Aktionen/Gedanken/Aenderungsvorschlaege) - nur beim Bearbeiten einer bestehenden
+   Karte sichtbar, bewusst NICHT auf der Karte selbst (siehe KanbanBoardPage.tsx). */
+.kanban-notizen {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  max-width: 640px;
+}
+.kanban-notizen-liste {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kanban-notiz {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.kanban-notiz-text {
+  margin: 0 0 4px;
+  white-space: pre-wrap;
+}
+.kanban-notiz-meta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.kanban-notiz-formular {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+.kanban-notiz-formular .feld {
+  width: 100%;
+}
+
 /* Vier Spalten nebeneinander; gestuft schmaler auf kleineren Schirmen. */
 .kanban-board {
   display: grid;

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { KanbanKarte, KanbanKategorie, KanbanPrioritaet, KanbanSpalte } from "@torball/shared";
+import type { KanbanKarte, KanbanKategorie, KanbanNotiz, KanbanPrioritaet, KanbanSpalte } from "@torball/shared";
 import { deleteDoc, findAllByType, findById, insertDoc, newId } from "../repository";
 import { requireRolle } from "../auth/plugin";
 
@@ -139,6 +139,40 @@ export async function kanbanRoutes(app: FastifyInstance): Promise<void> {
         aktualisiertAm: new Date().toISOString(),
       };
       return insertDoc(aktualisiert);
+    },
+  );
+
+  // Ergaenzung zur Karte anhaengen (Aktionen/Gedanken/Aenderungsvorschlaege) - bewusst nur
+  // anhaengbar (kein Bearbeiten/Loeschen einzelner Notizen, analog einem Kommentarverlauf).
+  // Eigener Endpunkt statt ueber das generische PUT, damit ein Race zwischen zwei gleichzeitig
+  // hinzugefuegten Notizen nicht die jeweils andere ueberschreibt.
+  app.post<{ Params: { id: string }; Body: { text: string } }>(
+    "/kanban/karten/:id/notizen",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["text"],
+          properties: { text: { type: "string", minLength: 1 } },
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!vorbedingung(req, reply)) return;
+      const karte = await findById<KanbanKarte>(req.params.id);
+      if (!karte || karte.docType !== "kanbanKarte") {
+        return reply.code(404).send({ error: "Karte nicht gefunden" });
+      }
+      const notiz: KanbanNotiz = {
+        text: req.body.text,
+        erstelltAm: new Date().toISOString(),
+        erstelltVonName: req.benutzer!.name,
+      };
+      return insertDoc({
+        ...karte,
+        notizen: [...(karte.notizen ?? []), notiz],
+        aktualisiertAm: new Date().toISOString(),
+      });
     },
   );
 

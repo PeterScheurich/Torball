@@ -11,19 +11,21 @@ export type KanbanKategorie = "bug" | "feature" | "wunsch" | "aufgabe" | "sonsti
 
 export type KanbanPrioritaet = "hoch" | "mittel" | "niedrig";
 
+/** Eine einzelne Notiz zu einer Karte (Aktionen/Gedanken/Aenderungsvorschlaege) - siehe
+ *  KanbanKarte.notizen. Nur additiv: es gibt kein Bearbeiten/Loeschen einzelner Notizen, nur
+ *  Anhaengen (analog einem Kommentarverlauf). */
+export interface KanbanNotiz {
+  text: string;
+  erstelltAm: Zeitstempel;
+  /** Freitext (Anzeigename), keine Benutzer-ID - eine Notiz kann auch von einer KI-Sitzung
+   *  (angemeldet als Admin-Account, z.B. "Claude") stammen, nicht nur von Menschen. */
+  erstelltVonName?: string;
+}
+
 /**
  * Karte auf dem Entwicklungs-Kanban-Board (nur Admins). Bewusst eine eigenstaendige,
  * mit dem Torball-Fachmodell nicht verbundene Entitaet - dient nur der Organisation der
  * Weiterentwicklung.
- *
- * Sync-Design (JSON-Export/-Import, siehe backend/src/routes/kanban.ts): `kanbanId` ist
- * die stabile fachliche ID ueber Instanzgrenzen hinweg. Inhaltliche Konflikte fuehren NICHT
- * automatisch zu Last-Write-Wins ueber `aktualisiertAm` (fruehere Design-Idee, so nie
- * umgesetzt) - stattdessen entscheidet die einladende Person je Karte manuell im UI
- * (lokal/eingehend uebernehmen), `aktualisiertAm` dient dabei nur als Orientierung, welcher
- * Stand neuer ist (siehe backend/src/kanban/importMerge.ts). `erstelltVonName` wird bewusst denormalisiert
- * mitgefuehrt, damit ein Import auf einer anderen Instanz den Autor auch dann anzeigen kann,
- * wenn es den Benutzer dort gar nicht gibt.
  */
 export interface KanbanKarte extends CouchMeta {
   docType: "kanbanKarte";
@@ -36,11 +38,10 @@ export interface KanbanKarte extends CouchMeta {
   /** Sortierung innerhalb der Spalte, aufsteigend. */
   reihenfolge: number;
   erstelltVon?: BenutzerId;
-  /** Denormalisierter Anzeigename des Erstellers (fuer instanzuebergreifenden Sync). */
+  /** Denormalisierter Anzeigename des Erstellers, fuer Rueckfragen ohne extra Lookup. */
   erstelltVonName?: string;
   /** Denormalisierte E-Mail (Login) des Erstellers - eindeutige Identifikation fuer
-   * Rueckfragen, auch instanzuebergreifend (die Benutzer-ID `erstelltVon` ist nur auf der
-   * Quell-Instanz aufloesbar). Die Funktion laeuft stets angemeldet, also immer gesetzt. */
+   * Rueckfragen. Die Funktion laeuft stets angemeldet, also immer gesetzt. */
   erstelltVonEmail?: string;
   /** Herkunft ausserhalb der manuellen Board-Pflege, aktuell nur das Mail-Postfach
    * (backend/src/mail/bericht.ts). Fehlt bei ganz normal von Hand angelegten Karten. */
@@ -57,6 +58,10 @@ export interface KanbanKarte extends CouchMeta {
    *  ausgeloest bzw. auf "Als Kanban-Karte uebernehmen" geklickt hat, nicht den Melder (live
    *  aufgefallen: beide Namen fielen zufaellig zusammen, im Normalfall waeren sie verschieden). */
   mailAbsender?: string;
+  /** Ergaenzungen zur Karte (Aktionen/Gedanken/Aenderungsvorschlaege) - bewusst NICHT auf der
+   *  Karte selbst sichtbar, nur beim Bearbeiten (siehe KanbanBoardPage.tsx). Chronologisch
+   *  (aeltere zuerst), nur anhaengbar. */
+  notizen?: KanbanNotiz[];
   erstelltAm: Zeitstempel;
   aktualisiertAm: Zeitstempel;
 }
