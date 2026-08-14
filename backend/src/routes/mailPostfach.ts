@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { KanbanKarte, MailBericht, MailManuellerStatus, MailNachricht } from "@torball/shared";
-import { findAllByType, findById, insertDoc, newId } from "../repository";
+import { deleteDoc, findAllByType, findById, insertDoc, newId } from "../repository";
 import { requireRolle } from "../auth/plugin";
 import { erstelleMailBericht } from "../mail/bericht";
 import { testeImapVerbindung } from "../mail/imapClient";
@@ -92,6 +92,20 @@ export async function mailPostfachRoutes(app: FastifyInstance): Promise<void> {
       });
     },
   );
+
+  // Loescht eine einzelne Mail aus der lokalen Liste (manuell ausgeloest, unabhaengig vom
+  // automatischen Aufraeumen nach der Aufbewahrungsfrist in mail/bericht.ts::raeumeAlteMailsAuf).
+  // Betrifft nur die hier gespeicherte Kopie - die Original-Mail bleibt im echten Postfach
+  // erhalten (Nutzer-Vorgabe), daher unproblematisch auch fuer noch nicht "erledigte" Mails.
+  app.delete<{ Params: { id: string } }>("/mail-postfach/nachrichten/:id", async (req, reply) => {
+    if (!vorbedingung(req, reply)) return;
+    const mail = await findById<MailNachricht>(req.params.id);
+    if (!mail || mail.docType !== "mailNachricht") {
+      return reply.code(404).send({ error: "Mail nicht gefunden" });
+    }
+    await deleteDoc(mail._id, mail._rev!);
+    return reply.code(204).send();
+  });
 
   // Legt manuell eine Kanban-Karte aus einer Mail an, auch wenn die KI sie nicht als Anforderung
   // erkannt hat (Werkzeug fuer die manuelle Nachbearbeitung/"Abarbeiten" des Postfachs).

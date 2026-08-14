@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import type { KanbanKarte } from "@torball/shared";
-import { kanbanKategorieFuer, naechsteReihenfolgeOffen } from "./berichtHilfen";
+import type { KanbanKarte, MailNachricht } from "@torball/shared";
+import { istVeraltet, kanbanKategorieFuer, naechsteReihenfolgeOffen } from "./berichtHilfen";
 import type { Klassifikationsergebnis } from "./klassifikation";
 
 function karte(spalte: KanbanKarte["spalte"], reihenfolge: number): KanbanKarte {
@@ -39,4 +39,38 @@ test("kanbanKategorieFuer: alles andere (Anregung/Kritik/Sonstiges) wird zu 'wun
   assert.equal(kanbanKategorieFuer(ergebnis("anregung")), "wunsch");
   assert.equal(kanbanKategorieFuer(ergebnis("kritik")), "wunsch");
   assert.equal(kanbanKategorieFuer(ergebnis("sonstiges")), "wunsch");
+});
+
+function mail(manuellerStatus: MailNachricht["manuellerStatus"], aktualisiertAm: string): MailNachricht {
+  return {
+    _id: "mailNachricht:test",
+    docType: "mailNachricht",
+    imapUid: 1,
+    von: "test@example.com",
+    betreff: "Test",
+    empfangenAm: aktualisiertAm,
+    text: "Testinhalt",
+    manuellerStatus,
+    erstelltAm: aktualisiertAm,
+    aktualisiertAm,
+  };
+}
+
+const JETZT = new Date("2026-08-20T12:00:00.000Z");
+
+test("istVeraltet: 'offene' (kein manueller Status) Mails veralten nie, egal wie alt", () => {
+  assert.equal(istVeraltet(mail(undefined, "2020-01-01T00:00:00.000Z"), JETZT), false);
+});
+
+test("istVeraltet: erledigt/ignoriert vor weniger als 7 Tagen ist noch nicht veraltet", () => {
+  const vorSechsTagen = new Date(JETZT.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString();
+  assert.equal(istVeraltet(mail("erledigt", vorSechsTagen), JETZT), false);
+  assert.equal(istVeraltet(mail("ignoriert", vorSechsTagen), JETZT), false);
+});
+
+test("istVeraltet: erledigt/ignoriert vor mindestens 7 Tagen ist veraltet", () => {
+  const vorSiebenTagen = new Date(JETZT.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const vorZehnTagen = new Date(JETZT.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString();
+  assert.equal(istVeraltet(mail("erledigt", vorSiebenTagen), JETZT), true);
+  assert.equal(istVeraltet(mail("ignoriert", vorZehnTagen), JETZT), true);
 });

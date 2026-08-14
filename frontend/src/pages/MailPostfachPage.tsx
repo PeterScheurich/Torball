@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { MailBericht, MailKategorie, MailManuellerStatus, MailNachricht } from "@torball/shared";
 import {
+  deleteMailNachricht,
   erstelleKarteAusMail,
   erstelleMailBericht,
   getMailBerichte,
@@ -122,6 +123,26 @@ export function MailPostfachPage() {
       await laden();
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Anlegen der Karte");
+    }
+  }
+
+  /** Loescht nur die hier gespeicherte Kopie - die Original-Mail bleibt im Postfach (siehe
+   *  Hinweistext im Bestaetigungsdialog), erledigte/ignorierte Mails werden dennoch nach der
+   *  Aufbewahrungsfrist ohnehin automatisch geraeumt (siehe backend mail/bericht.ts). */
+  async function loeschen(mail: MailNachricht) {
+    if (
+      !window.confirm(
+        `Mail „${mail.betreff}" wirklich aus dieser Liste löschen? Das löscht nur die hier gespeicherte Kopie, ` +
+          `nicht die Original-Mail im Postfach.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await deleteMailNachricht(mail._id);
+      await laden();
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Löschen der Mail");
     }
   }
 
@@ -492,6 +513,9 @@ export function MailPostfachPage() {
                         Status zurücksetzen
                       </button>
                     )}
+                    <button type="button" className="symbol-button" onClick={() => loeschen(mail)} title="Löschen">
+                      ✕
+                    </button>
                   </td>
                 </tr>
               ))}

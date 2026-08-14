@@ -1051,6 +1051,11 @@ export function updateMailNachricht(id: string, manuellerStatus: MailManuellerSt
   return anfrage(`/mail-postfach/nachrichten/${id}`, { method: "PUT", body: JSON.stringify({ manuellerStatus }) });
 }
 
+/** Loescht nur die hier gespeicherte Kopie/Klassifikation - die Original-Mail bleibt im Postfach. */
+export function deleteMailNachricht(id: string): Promise<void> {
+  return anfrage(`/mail-postfach/nachrichten/${id}`, { method: "DELETE" });
+}
+
 export function erstelleKarteAusMail(id: string): Promise<{ mail: MailNachricht; karte: unknown }> {
   return anfrage(`/mail-postfach/nachrichten/${id}/karte`, { method: "POST" });
 }
