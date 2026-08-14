@@ -40,7 +40,7 @@ export function TurnierSync({ turnierId }: { turnierId: string }) {
       .catch(() => setInstanzen([]));
     getLokaleSyncStatus()
       .then(setLokaleSyncStatus)
-      .catch(() => setLokaleSyncStatus({ verbunden: false }));
+      .catch(() => setLokaleSyncStatus({ verbunden: false, istLokaleInstallation: false }));
   }, [checkoutLaden]);
 
   async function downloadAnfordern(event: React.FormEvent) {

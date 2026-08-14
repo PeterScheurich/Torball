@@ -220,6 +220,14 @@ Historie erhalten. Volle bidirektionale PouchDB↔CouchDB-Synchronisation
 (Abschnitt 17/23) bleibt bewusst zurückgestellt – deutlich komplexer, als für
 diesen (häufigeren) Anwendungsfall nötig.
 
+**`GET /sync/status` liefert zusätzlich `istLokaleInstallation`** (`= SERVE_FRONTEND === "true"`,
+siehe `backend/src/index.ts`): `EinstellungenPage.tsx`s Kopplungsformular ("Turnier-Sync (Lokale
+Installation)") blendet sich damit komplett aus, wenn diese Instanz keine echte lokale
+Windows-Installation ist – ohne dieses Signal zeigte das Formular sich bisher auf **jeder**
+Instanz (Dev/Prod/Demo, im normalen Browser), obwohl eine Kopplung "als lokale Installation" dort
+nie sinnvoll ist (live beim Nutzer aufgefallen, 2026-08-14). Bewusst nur eine UI-Blende, keine
+serverseitige Sperre von `POST /sync/verbinden` – dafür gab es keinen konkreten Anlass.
+
 **Eigenes „Admin"-Menü in der Kopfzeile** (`App.tsx`, neben „Stammdaten"):
 bündelt Funktionen, die *ausschließlich* der Rolle Admin vorbehalten sind
 („Systemeinstellungen", „Entwicklungs-Board") – wird für alle anderen Rollen

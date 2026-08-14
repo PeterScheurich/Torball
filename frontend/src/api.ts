@@ -952,6 +952,9 @@ export interface LokaleSyncStatus {
   verbunden: boolean;
   serverUrl?: string;
   gekoppeltAm?: string;
+  /** Spiegelt SERVE_FRONTEND - nur im Einzelprozess-Modus der Windows-Installation ergibt eine
+   *  Kopplung als "lokale Installation" ueberhaupt Sinn (siehe EinstellungenPage.tsx). */
+  istLokaleInstallation: boolean;
 }
 
 export function getLokaleSyncStatus(): Promise<LokaleSyncStatus> {

@@ -58,10 +58,15 @@ function ServerVerbindung() {
   }
 
   if (!status) return null;
+  // Ohne SERVE_FRONTEND (siehe backend/src/index.ts) ist diese Instanz keine lokale Installation
+  // - eine Kopplung "als lokale Installation" ergibt dann keinen Sinn und wuerde nur verwirren
+  // (auf jeder Dev-/Prod-/Demo-Instanz waere das Formular sonst gleichermassen sichtbar).
+  if (!status.istLokaleInstallation) return null;
 
   if (status.verbunden) {
     return (
       <>
+        <h2>Turnier-Sync (Lokale Installation)</h2>
         <p>
           Verbunden mit <strong>{status.serverUrl}</strong>
           {status.gekoppeltAm && <> (seit {formatiereZeitstempel(status.gekoppeltAm)})</>}.
@@ -79,6 +84,7 @@ function ServerVerbindung() {
 
   return (
     <>
+      <h2>Turnier-Sync (Lokale Installation)</h2>
       <p>
         Verbinde dieses Gerät mit einem Zentralen-Plattform-Server, um Turniere von dort herunterzuladen und
         Ergebnisse automatisch zurückzusynchronisieren - auch bei unzuverlässigem Internet vor Ort. Den
@@ -155,7 +161,6 @@ export function EinstellungenPage() {
       <p>„Breit" nutzt mehr Bildschirmbreite (z. B. auf Widescreen-Monitoren); „Standard" hält eine schmalere, gut lesbare Spalte.</p>
       <BreiteUmschalter />
 
-      <h2>Turnier-Sync (Lokale Installation)</h2>
       <ServerVerbindung />
     </>
   );

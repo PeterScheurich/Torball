@@ -30,9 +30,19 @@ const verbindenSchema = {
 
 export async function syncRoutes(app: FastifyInstance): Promise<void> {
   app.get("/sync/status", async () => {
+    // istLokaleInstallation spiegelt SERVE_FRONTEND (siehe index.ts) - nur im Einzelprozess-
+    // Modus der Windows-Installation ergibt "dieses Geraet mit einem Server verbinden" ueberhaupt
+    // einen Sinn. Ohne dieses Signal zeigte EinstellungenPage.tsx das Kopplungsformular bisher auf
+    // JEDER Instanz (auch Dev/Prod/Demo im Browser) - live beim Nutzer aufgefallen.
+    const istLokaleInstallation = process.env.SERVE_FRONTEND === "true";
     const konfiguration = await aktuelleLokaleSyncKonfiguration();
-    if (!konfiguration) return { verbunden: false };
-    return { verbunden: true, serverUrl: konfiguration.serverUrl, gekoppeltAm: konfiguration.gekoppeltAm };
+    if (!konfiguration) return { verbunden: false, istLokaleInstallation };
+    return {
+      verbunden: true,
+      serverUrl: konfiguration.serverUrl,
+      gekoppeltAm: konfiguration.gekoppeltAm,
+      istLokaleInstallation,
+    };
   });
 
   app.post<{ Body: VerbindenBody }>(
