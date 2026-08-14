@@ -470,7 +470,7 @@ export function TurnierVerwaltenPage() {
                   <label htmlFor="uebersichtDatum">Datum</label>
                 </th>
                 <td>
-                  <input id="uebersichtDatum" readOnly value={formatiereDatum(turnier.datum)} />
+                  <input id="uebersichtDatum" required readOnly value={formatiereDatum(turnier.datum)} />
                 </td>
               </tr>
               {turnier.startzeit && (
@@ -481,6 +481,7 @@ export function TurnierVerwaltenPage() {
                   <td>
                     <input
                       id="uebersichtStartzeit"
+                      required
                       readOnly
                       value={formatiereUhrzeit(`${turnier.datum}T${turnier.startzeit}:00`)}
                     />
