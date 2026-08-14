@@ -967,6 +967,38 @@ textarea {
   width: 10em;
 }
 
+/* Mail-Postfach: Bericht-Verlauf zugeklappt (der taegliche automatische Lauf kommt auch ohne
+   neue Mails dazu - die Liste waechst sonst unbegrenzt und "frisst" viel Platz auf der Seite,
+   live aufgefallen). Innen zusaetzlich scrollbar begrenzt, damit ein geoeffneter Verlauf mit
+   vielen Eintraegen die Seite nicht beliebig lang macht. */
+.mail-berichte-verlauf summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin: 8px 0;
+}
+.mail-berichte-liste {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.mail-bericht-eintrag {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+.mail-bericht-kopf {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.mail-bericht-text {
+  margin: 2px 0 0;
+}
+
 /* Mail-Postfach: Liste mit Spaltenkoepfen oben (scope="col") statt Zeilen-Labels wie sonst bei
    .uebersicht-tabelle - der Browser-Standard fuer <th> ist zentriert, hier aber wie die Zellen
    linksbuendig gewuenscht. Zusaetzlich oben ausgerichtet statt vertikal mittig (Browser-Standard):

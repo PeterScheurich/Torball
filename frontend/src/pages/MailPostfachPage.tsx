@@ -466,18 +466,23 @@ export function MailPostfachPage() {
         </form>
 
         {berichte.length > 0 && (
-          <ul>
-            {berichte.map((b) => (
-              <li key={b._id}>
-                <strong>{formatiereZeitstempel(b.erzeugtAm)}</strong> ({b.ausgeloestDurch}, {b.anzahlMails} Mail(s),{" "}
-                {b.erstellteKartenIds.length} Karte(n)
-                {b.kiInputTokens !== undefined && b.kiOutputTokens !== undefined
-                  ? `, ${b.kiInputTokens} Input-/${b.kiOutputTokens} Output-Tokens`
-                  : ""}
-                ): {b.zusammenfassungText || "(keine Zusammenfassung)"}
-              </li>
-            ))}
-          </ul>
+          <details className="mail-berichte-verlauf">
+            <summary>Bisherige Berichte ({berichte.length})</summary>
+            <ul className="mail-berichte-liste">
+              {berichte.map((b) => (
+                <li key={b._id} className="mail-bericht-eintrag">
+                  <p className="mail-bericht-kopf">
+                    {formatiereZeitstempel(b.erzeugtAm)} · {b.ausgeloestDurch} · {b.anzahlMails} Mail(s),{" "}
+                    {b.erstellteKartenIds.length} Karte(n)
+                    {b.kiInputTokens !== undefined && b.kiOutputTokens !== undefined
+                      ? ` · ${b.kiInputTokens} Input-/${b.kiOutputTokens} Output-Tokens`
+                      : ""}
+                  </p>
+                  <p className="mail-bericht-text">{b.zusammenfassungText || "(keine Zusammenfassung)"}</p>
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </section>
 
