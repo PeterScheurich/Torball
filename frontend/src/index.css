@@ -1070,6 +1070,16 @@ button:disabled {
   color: var(--text-muted);
   width: 60%;
 }
+/* Ohne das wuerde die feste 60%-Breite von .feld-hinweis-spalte die Eingabe-Spalte in Zeilen OHNE
+   Hinweis (z.B. "Max. sehende Spieler") auf einen Bruchteil zusammenstauchen: Spaltenbreiten
+   gelten tabellenweit, eine einzelne breite Zelle wirkt sich auf die gesamte Spalte aus, auch in
+   Zeilen mit einer leeren dritten Zelle. min-width auf JEDER Eingabe-Zelle (nicht nur <colgroup>/
+   <col> - deren width-Angabe wird von den Browsern fuers automatische Tabellen-Layout nicht
+   zuverlaessig als Mindestbreite respektiert) garantiert genug Platz, unabhaengig davon, ob die
+   jeweilige Zeile einen Hinweis hat. */
+.regeln-eingabe-spalte {
+  min-width: 5em;
+}
 /* Standardmaessig richten th/td vertikal mittig aus - faellt bei einzeiligem Inhalt nicht auf,
    schiebt Label UND Eingabe aber sichtbar in die Mitte, sobald die Zeile durch eine mehrzeilige
    Hinweis-Spalte (.feld-hinweis-spalte) hoch wird - z.B. eine Checkbox haengt dann mittig statt
