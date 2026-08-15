@@ -1019,6 +1019,16 @@ dieser Version gilt der folgende Ablauf:
   Windows-Installation (`deploy/Installieren-Windows.cmd`) an einem Turnierort ohne Zugriff auf
   dieses Netz wäre der Quellcode sonst gar nicht zu bekommen – jede laufende Instanz bietet ihn
   so als Alternative zu `git clone` an (siehe README, Abschnitt „Installation").
+- **`FRONTEND_URL` fällt beim Erstanlegen auf die primäre Host-IP zurück, nicht auf `_`**
+  (`FRONTEND_HOST` in `deploy-instanz.sh`) – `SERVER_NAME` selbst bleibt für nginx bei `_`
+  (korrekter Catch-all), aber `FRONTEND_URL=http://${SERVER_NAME}:${FE_PORT}` hätte ohne diesen
+  Fallback wörtlich `http://_:8080` ergeben, weil der optionale 4. Parameter (`server_name`) in den
+  dokumentierten Deploy-Befehlen nie mitgegeben wird. Live erlebt (2026-08-15): genau dieser kaputte
+  Link stand in einer Passwort-Reset-Mail auf Prod – blieb seit dem allerersten Deploy unbemerkt
+  stehen, weil `backend/.env` bei Updates nie überschrieben wird (siehe oben). **Nach dem Umstieg
+  auf eine echte Domain/HTTPS muss `FRONTEND_URL` weiterhin manuell per `torball
+  konfiguration:setzen --schluessel="FRONTEND_URL" --wert="https://…"` + Neustart aktualisiert
+  werden** – der Fallback greift nur beim allerersten Deploy.
 - **`deploy/aktualisieren.sh` bündelt System- und App-Update in einem Befehl** (Nutzer-Vorgabe,
   nachdem `apt-get dist-upgrade` und das App-Deploy live verwechselt wurden): ruft `apt-get update`
   + zeigt verfügbare Pakete, fragt **vor** `dist-upgrade` nach (bewusst **ohne**

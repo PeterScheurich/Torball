@@ -35,6 +35,18 @@ NAME="${1:?Instanzname fehlt (z. B. prod)}"
 FE_PORT="${2:?frontend_port fehlt (z. B. 8080)}"
 BE_PORT="${3:?backend_port fehlt (z. B. 3001)}"
 SERVER_NAME="${4:-_}"
+# FRONTEND_URL braucht einen echten, erreichbaren Host - "_" ist nur fuer nginx' server_name als
+# Catch-all sinnvoll (s.u.), nicht als URL-Bestandteil. Ohne uebergebenen server_name faellt
+# FRONTEND_URL stattdessen auf die primaere IP-Adresse des Hosts zurueck, damit Links in E-Mails
+# (Einladung/Passwort-Reset) zumindest im LAN tatsaechlich funktionieren, statt woertlich
+# "http://_:8080" zu enthalten (live als Bug aufgefallen, 2026-08-15). Nach dem Umstieg auf eine
+# echte Domain/HTTPS muss FRONTEND_URL trotzdem manuell aktualisiert werden (siehe Doku) - das
+# schreibt dieses Skript bei einem Update bewusst nicht mehr um (siehe unten).
+if [[ "$SERVER_NAME" == "_" ]]; then
+  FRONTEND_HOST="$(hostname -I | awk '{print $1}')"
+else
+  FRONTEND_HOST="$SERVER_NAME"
+fi
 
 [[ $EUID -eq 0 ]] || { echo "Bitte als root ausfuehren (sudo, falls installiert; sonst direkt als root)."; exit 1; }
 [[ -f "${CONF_DIR}/couchdb-admin" ]] || { echo "CouchDB-Admin fehlt - erst deploy/provision.sh ausfuehren."; exit 1; }
@@ -139,7 +151,7 @@ COUCHDB_PASSWORD=${DB_PASS}
 # Vorerst false (Zugriff via HTTP im LAN). Sobald die Instanz hinter HTTPS haengt: auf true
 # setzen UND FRONTEND_URL auf die https-Adresse aendern (siehe Doku), dann Service neu starten.
 COOKIE_SECURE=false
-FRONTEND_URL=http://${SERVER_NAME}:${FE_PORT}
+FRONTEND_URL=http://${FRONTEND_HOST}:${FE_PORT}
 # E-Mail-Versand (Einladung/Passwort-Reset) wird NICHT hier eingetragen, sondern spaeter ueber die
 # Oberflaeche (Admin -> Systemeinstellungen -> "E-Mail-Versand (SMTP)") - kein .env-Wert mehr.
 KANBAN_BOARD_AKTIV=false
