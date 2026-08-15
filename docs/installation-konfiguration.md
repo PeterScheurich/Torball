@@ -80,6 +80,22 @@ anpassbar).
 
 ## Produktive Installation (Debian-LXC/VM) – Schritt für Schritt
 
+**Systemanforderungen (LXC/VM):** Der Workload ist bewusst leicht (kein hoher Dauertraffic,
+Turnierdaten selbst nur wenige MB pro Saison, siehe Speicherplatz-Angaben beim Windows-Installer
+unten) – für einen dedizierten Produktiv-Host empfiehlt sich trotzdem eine komfortable statt knapp
+bemessene Ausstattung:
+
+| Ressource | Empfehlung | Begründung |
+|---|---|---|
+| CPU | 2 vCores | Node/Fastify ist weitgehend single-threaded, CouchDB (Erlang) + nginx brauchen wenig – 2 Kerne geben Luft für Bursts (z. B. viele Geräte, die per Live-Polling alle 10–15 s gleichzeitig nachfragen, siehe unten). |
+| RAM | 2 GB | CouchDBs Erlang-VM reagiert empfindlicher auf zu wenig RAM als auf zu wenig CPU. |
+| Swap | 512 MB–1 GB | Reines Sicherheitsnetz, nicht für Dauerbetrieb gedacht. |
+| Disk | 8–10 GB | Baseline ca. 450 MB (App + Node + CouchDB), Rest ist Puffer für OS, wachsende CouchDB-Daten über mehrere Saisons, systemd-Journal-Logs und das bei jedem Deploy neu erzeugte Quellcode-ZIP (siehe unten). |
+
+Bewusst großzügig statt am Minimum bemessen – bei diesem leichten Workload lohnt sich Sparen kaum,
+und LXC-Ressourcen lassen sich in Proxmox jederzeit nachträglich anpassen. Laufen mehrere Instanzen
+auf einem Host (z. B. `prod` + `demo`), reicht dieselbe Bemessung für beide zusammen.
+
 Aufbau: lokale CouchDB (nur `127.0.0.1`), containerlokale nginx (Frontend statisch + `/api`-Proxy
 zum Backend als systemd-Service). Mehrere Instanzen (z. B. `prod` + `demo`) laufen über eigene
 Ports/DBs auf **einem** Host. Zwei Skripte im Ordner `deploy/` erledigen alles:
