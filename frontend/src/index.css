@@ -1686,10 +1686,24 @@ button:hover:not(:disabled) {
   font-size: 0.95rem;
   margin: 0 0 4px;
 }
-.kanban-karte-text {
-  font-size: 0.88rem;
-  margin: 0 0 6px;
-  white-space: pre-wrap;
+/* Titel ist ein <button> (oeffnet den Detail-Dialog) - Button-Standardstyling zurueckgesetzt,
+   damit er weiterhin wie normaler Ueberschriftentext aussieht, aber per Hover/Fokus erkennbar
+   interaktiv bleibt. */
+.kanban-karte-titel-knopf {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.kanban-karte-titel-knopf:hover,
+.kanban-karte-titel-knopf:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
 }
 /* Absender der Ursprungsmail (KanbanKarte.mailAbsender) - bewusst NICHT --text-muted wie
    .kanban-karte-meta: genau diese Information ("von wem kam die Meldung?") war live nicht mehr
@@ -1718,6 +1732,34 @@ button:hover:not(:disabled) {
    Deklarationsreihenfolge). */
 .kanban-karte-aktionen .button-loeschen {
   font-size: 1.1rem;
+}
+
+/* Detail-Dialog einer Karte (natives <dialog>, per showModal() geoeffnet) - uebernimmt
+   Fokus-Falle/Esc-zum-Schliessen/Ruecksprung des Fokus vom Browser, hier nur Optik. */
+.kanban-detail-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+.kanban-detail-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+.kanban-detail-kopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.kanban-detail-kopf h2 {
+  margin: 0;
+  font-size: 1.15rem;
 }
 
 /* .kanban-sync-aktionen wird auch von MailPostfachPage.tsx (IMAP-/API-Key-Test-Knopfreihen)
