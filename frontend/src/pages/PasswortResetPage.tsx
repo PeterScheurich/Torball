@@ -1,20 +1,32 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { passwortReset } from "../api";
+import { passwortReset, pruefePasswortResetToken } from "../api";
 import { PasswortRegeln } from "../PasswortRegeln";
 
 /**
  * Passwort-Reset ueber den Einmal-Link aus der "Passwort vergessen"-E-Mail (Token in der URL).
- * Nach erfolgreichem Setzen werden serverseitig alle bisherigen Sitzungen beendet - darauf
- * weist die Erfolgsmeldung hin.
+ * Prueft den Token schon beim Laden (Nutzer-Vorgabe, live aufgefallen: "ungueltig/abgelaufen" kam
+ * vorher erst nach dem Ausfuellen des Formulars) - analog EinladungAnnehmenPage. Nach erfolgreichem
+ * Setzen werden serverseitig alle bisherigen Sitzungen beendet - darauf weist die Erfolgsmeldung hin.
  */
 export function PasswortResetPage() {
   const { token } = useParams<{ token: string }>();
+  const [tokenGueltig, setTokenGueltig] = useState<boolean | undefined>();
   const [neuesPasswort, setNeuesPasswort] = useState("");
   const [wiederholung, setWiederholung] = useState("");
   const [fehler, setFehler] = useState<string | undefined>();
   const [erfolgreich, setErfolgreich] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!token) return;
+    pruefePasswortResetToken(token)
+      .then(() => setTokenGueltig(true))
+      .catch((err) => {
+        setTokenGueltig(false);
+        setFehler(err instanceof Error ? err.message : "Der Link ist ungültig oder abgelaufen.");
+      });
+  }, [token]);
 
   async function absenden(event: React.FormEvent) {
     event.preventDefault();
@@ -42,6 +54,9 @@ export function PasswortResetPage() {
       </>
     );
   }
+
+  if (tokenGueltig === undefined) return <p>Lädt…</p>;
+  if (!tokenGueltig) return <p role="alert">{fehler}</p>;
 
   return (
     <>

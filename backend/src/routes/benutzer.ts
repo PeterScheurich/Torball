@@ -496,6 +496,19 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // Prueft den Token OHNE ihn zu verbrauchen - laesst die Seite "Link ungueltig/abgelaufen" schon
+  // beim Aufrufen anzeigen, statt erst nach dem Ausfuellen des Formulars (Nutzer-Vorgabe, live
+  // aufgefallen: die Fehlermeldung kam vorher erst nach dem Absenden). Analog GET /benutzer/einladung/:token.
+  app.get<{ Params: { token: string } }>("/benutzer/passwort-reset/:token", async (req, reply) => {
+    const hash = hashe(req.params.token);
+    const alle = await findAllByType<Benutzer>("benutzer");
+    const benutzer = alle.find((b) => b.resetTokenHash === hash);
+    if (!benutzer || !benutzer.resetAblauf || new Date(benutzer.resetAblauf).getTime() < Date.now()) {
+      return reply.code(404).send({ error: "Der Link ist ungültig oder abgelaufen." });
+    }
+    return { ok: true };
+  });
+
   app.post<{ Params: { token: string }; Body: { neuesPasswort: string } }>(
     "/benutzer/passwort-reset/:token",
     {

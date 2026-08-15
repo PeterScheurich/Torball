@@ -622,6 +622,10 @@ export function passwortVergessen(email: string): Promise<{ ok: true }> {
   return anfrage("/benutzer/passwort-vergessen", { method: "POST", body: JSON.stringify({ email }) });
 }
 
+export function pruefePasswortResetToken(token: string): Promise<{ ok: true }> {
+  return anfrage(`/benutzer/passwort-reset/${token}`);
+}
+
 export function passwortReset(token: string, neuesPasswort: string): Promise<{ ok: true }> {
   return anfrage(`/benutzer/passwort-reset/${token}`, { method: "POST", body: JSON.stringify({ neuesPasswort }) });
 }
