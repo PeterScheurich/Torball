@@ -22,6 +22,7 @@ export * from "./auditLog";
 export * from "./kanban";
 export * from "./sync";
 export * from "./mail";
+export * from "./wartung";
 
 import type { Benutzer } from "./benutzer";
 import type { Session } from "./session";
@@ -44,6 +45,7 @@ import type { AuditLogEintrag } from "./auditLog";
 import type { KanbanKarte } from "./kanban";
 import type { VerbundeneInstanz, TurnierCheckout, LokaleSyncKonfiguration } from "./sync";
 import type { MailNachricht, MailBericht, MailPostfachEinstellungen } from "./mail";
+import type { Wartung } from "./wartung";
 
 /**
  * Discriminated Union aller CouchDB-Dokumenttypen (Unterscheidung über
@@ -77,4 +79,5 @@ export type TorballDokument =
   | LokaleSyncKonfiguration
   | MailNachricht
   | MailBericht
-  | MailPostfachEinstellungen;
+  | MailPostfachEinstellungen
+  | Wartung;

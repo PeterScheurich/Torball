@@ -593,6 +593,32 @@ buendelt die Logik fuer beide Aufrufstellen (haengt an `smtpVerbindungAus()`, al
 nur geloggt (`console.error`, kein `app.log`, da die Funktion ausserhalb eines Request-Handlers
 liegt), blockiert aber nie die eigentliche Registrierung/Aktivierung.
 
+**Wartungsmodus (`docType: "wartung"`, Singleton-Dokument, eigene Route `/wartung`, eigener Admin-
+Menüpunkt „Wartungsmodus"):** bewusst **zwei unabhängige, manuell gesetzte Schalter statt einer
+Automatik** (Nutzer-Vorgabe) – keiner schaltet den anderen um. **Ankündigung**
+(`angekuendigtAb`/`angekuendigtBis`, beide optional) zeigt nur einen Warnhinweis: auf der
+Startseite (`StartRoute` in `App.tsx`, für jede Person sichtbar, auch nicht angemeldete Gäste),
+solange der Beginn in der Zukunft liegt, und zusätzlich einen dringlicheren Kurzfrist-Hinweis in
+der Kopfzeile für **angemeldete** Personen ab 15 Minuten vorher (`WartungKurzfristHinweis`) – „bitte
+Arbeit abschließen, um Datenverlust zu vermeiden". **Sperre** (`aktiv`) blockiert davon unabhängig
+die komplette App für alle außer angemeldeten Admins, sowohl im Frontend (`App.tsx` rendert dann
+nur `WartungPage` statt der `Routes`) als auch im Backend – doppelt abgesichert, damit ein direkter
+API-Aufruf oder ein Frontend-Bug die Sperre nicht umgeht. Der Backend-Teil
+(`backend/src/wartung.ts::wartungPreHandler`) wird als `preHandler`-Hook **innerhalb**
+`registerApiRoutes()` registriert (nicht global auf der Root-Instanz wie `authPreHandler`) – im
+Einzelprozess-Modus (`SERVE_FRONTEND`) ist das ein eigener, per `/api`-Präfix verkapselter
+Plugin-Kontext, sodass die Sperre nur die API-Routen trifft und nicht das Ausliefern der
+statischen `frontend/dist`-Dateien (sonst könnte die SPA-Hülle selbst während aktiver Wartung
+nicht mehr laden). **Bewusst 403 statt 503** als Statuscode für die Sperre: `frontend/src/api.ts`
+behandelt 502/503/504 pauschal als „Backend nicht erreichbar" und verwirft dabei jede eigene
+Fehlermeldung. Eine feste Ausnahmeliste (`/wartung/status`, `/auth/login`, `/auth/logout`,
+`/auth/me` im Backend; `/login`, `/passwort-vergessen`, `/passwort-reset/:token`,
+`/ersteinrichtung` im Frontend) bleibt immer erreichbar – sonst könnte sich während aktiver Sperre
+niemand mehr als Admin anmelden, um sie wieder aufzuheben. `WartungPage` (die Sperr-Seite selbst)
+verlinkt deshalb explizit auf `/login`. Frontend pollt `GET /wartung/status` (öffentlich, kein
+Login nötig) alle 30 s bei sichtbarem Tab plus sofort bei `visibilitychange` – analog dem übrigen
+Live-Aktualisierung-per-Polling-Muster im Projekt (siehe unten).
+
 **Demo-Snapshot/Reset (`backend/src/demo/`, CLI-Befehle `demo:*`):** die Demo-Instanz bekommt einen
 nächtlichen Reset auf CouchDB-Ebene statt eines App-seitigen Löschens. `beispieldaten.ts` erzeugt
 einmalig einen festen Satz Demo-Stammdaten (Vereine/Teams, mehrere Turniere inkl. einer

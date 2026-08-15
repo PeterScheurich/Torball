@@ -33,6 +33,7 @@ import type {
   TurnierRolle,
   Verein,
   VerbundeneInstanz,
+  WartungStatus,
 } from "@torball/shared";
 
 // Zentraler API-Client des Frontends: duenne fetch-Wrapper um die Backend-Routen. Alle
@@ -207,6 +208,20 @@ export function testeSmtpVerbindung(daten: {
   passwort?: string;
 }): Promise<MailTestErgebnis> {
   return anfrage("/systemeinstellungen/smtp-testen", { method: "POST", body: JSON.stringify(daten) });
+}
+
+// --- Wartungsmodus (Status oeffentlich lesbar, Aendern nur Admin) ---
+
+export function getWartungStatus(): Promise<WartungStatus> {
+  return anfrage("/wartung/status");
+}
+
+export function updateWartung(daten: {
+  aktiv: boolean;
+  angekuendigtAb?: string | null;
+  angekuendigtBis?: string | null;
+}): Promise<WartungStatus> {
+  return anfrage("/wartung", { method: "PUT", body: JSON.stringify(daten) });
 }
 
 export interface NeueMannschaft {

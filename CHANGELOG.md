@@ -14,6 +14,10 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 - E-Mail-Versand (für Einladungen und Passwort-Reset) lässt sich jetzt bequem über die
   Systemeinstellungen einrichten (Host, Port, Zugangsdaten, Absender, Verbindungstest) statt nur
   über eine Server-Konfigurationsdatei.
+- Neuer Wartungsmodus (Admin-Menü): eine geplante Wartung lässt sich vorab ankündigen (Warnhinweis
+  auf der Startseite, Kurzfristhinweis für angemeldete Personen ab 15 Minuten vorher) und bei
+  tatsächlichem Beginn per Schalter aktivieren – dann sehen alle außer Admins nur noch eine
+  Wartungsseite, bis der Schalter wieder ausgeschaltet wird.
 
 ## [0.9.0-beta] - 2026-08-11
 

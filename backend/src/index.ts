@@ -27,6 +27,8 @@ import { instanzSyncRoutes } from "./routes/instanzSync";
 import { turnierSyncRoutes } from "./routes/turnierSync";
 import { syncRoutes } from "./routes/sync";
 import { mailPostfachRoutes } from "./routes/mailPostfach";
+import { wartungRoutes } from "./routes/wartung";
+import { wartungPreHandler } from "./wartung";
 import { starteCheckinTimer } from "./sync/checkin";
 import { starteMailBerichtTimer } from "./mail/scheduler";
 
@@ -77,6 +79,14 @@ server.get("/health", async () => {
 // Betriebsarten, siehe Kommentar oben) als auch unter einem /api-Praefix (Einzelprozess-
 // Modus) registriert werden koennen, ohne die Liste zu duplizieren.
 const registerApiRoutes = async (instance: FastifyInstance): Promise<void> => {
+  // Muss VOR allen Routen-Plugins registriert werden, braucht aber req.benutzer aus dem bereits
+  // root-registrierten authPreHandler (siehe start()). In diesem Scope registriert (statt global
+  // auf server) - im Einzelprozess-Modus (SERVE_FRONTEND) wird registerApiRoutes als eigener,
+  // per Praefix "/api" verkapselter Kind-Plugin-Kontext registriert; nur so bleibt das statische
+  // Ausliefern von frontend/dist (Geschwister-Registrierung, siehe unten) von der Wartungssperre
+  // unberuehrt - sonst koennte die SPA-Huelle selbst waehrend aktiver Wartung nicht mehr laden.
+  instance.addHook("preHandler", wartungPreHandler);
+  instance.register(wartungRoutes);
   instance.register(authRoutes);
   instance.register(benutzerRoutes);
   instance.register(vereinRoutes);

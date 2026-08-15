@@ -26,6 +26,8 @@ import { StammdatenPage } from "./pages/StammdatenPage";
 import { SchiedsrichterStammdatenPage } from "./pages/SchiedsrichterStammdatenPage";
 import { StandardregelnPage } from "./pages/StandardregelnPage";
 import { SystemeinstellungenPage } from "./pages/SystemeinstellungenPage";
+import { WartungVerwaltenPage } from "./pages/WartungVerwaltenPage";
+import { WartungPage } from "./pages/WartungPage";
 import { KanbanBoardPage } from "./pages/KanbanBoardPage";
 import { MailPostfachPage } from "./pages/MailPostfachPage";
 import { EinstellungenPage } from "./pages/EinstellungenPage";
@@ -37,7 +39,60 @@ import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { UmgebungsBanner } from "./components/UmgebungsBanner";
 import { Fusszeile } from "./components/Fusszeile";
 import { useAuth } from "./auth";
-import { kanbanBoardVerfuegbar, mailPostfachVerfuegbar } from "./api";
+import { getWartungStatus, kanbanBoardVerfuegbar, mailPostfachVerfuegbar } from "./api";
+import type { WartungStatus } from "@torball/shared";
+import { formatiereZeitstempel } from "./format";
+
+/** Ab wie vielen Minuten vor dem angekuendigten Beginn angemeldete Personen den
+ *  Kurzfrist-Hinweis sehen (Nutzer-Vorgabe: 15 Minuten). */
+const WARTUNG_KURZFRIST_MINUTEN = 15;
+
+/** Pfade, die auch bei aktiver Wartungssperre normal erreichbar bleiben muessen - sonst koennte
+ *  sich eine Admin-Person waehrend der Sperre nicht mehr anmelden, um sie aufzuheben. Analog zur
+ *  Backend-Ausnahmeliste in backend/src/wartung.ts. */
+function wartungAusgenommenerPfad(pathname: string): boolean {
+  return (
+    pathname === "/login" ||
+    pathname === "/passwort-vergessen" ||
+    pathname === "/ersteinrichtung" ||
+    pathname.startsWith("/passwort-reset/")
+  );
+}
+
+function istInZukunft(iso: string | undefined): boolean {
+  return Boolean(iso) && new Date(iso!).getTime() > Date.now();
+}
+
+/** Persistenter Kopfzeilen-Hinweis fuer angemeldete Personen ab WARTUNG_KURZFRIST_MINUTEN vor dem
+ *  angekuendigten Beginn - unabhaengig von der eigentlichen Sperre (die schaltet die Turnierleitung
+ *  separat und manuell scharf, siehe WartungVerwaltenPage). */
+function WartungKurzfristHinweis({ wartung }: { wartung?: WartungStatus }) {
+  const { benutzer } = useAuth();
+  if (!benutzer || !wartung?.angekuendigtAb) return null;
+  const minutenBis = (new Date(wartung.angekuendigtAb).getTime() - Date.now()) / 60_000;
+  if (minutenBis <= 0 || minutenBis > WARTUNG_KURZFRIST_MINUTEN) return null;
+  return (
+    <div className="wartungs-banner" role="alert">
+      ⚠ In Kürze beginnt eine Wartung (ab {formatiereZeitstempel(wartung.angekuendigtAb)}) – bitte schließe deine
+      Arbeit vorher ab, um Datenverlust zu vermeiden.
+    </div>
+  );
+}
+
+/** Warnhinweis auf der Startseite, solange ein angekuendigtes Zeitfenster in der Zukunft liegt -
+ *  fuer jede Person sichtbar, auch nicht angemeldete Besucher. */
+function WartungAnkuendigung({ wartung }: { wartung?: WartungStatus }) {
+  if (!istInZukunft(wartung?.angekuendigtAb)) return null;
+  return (
+    <p className="wartungs-ankuendigung" role="alert">
+      ⚠ Geplante Wartung{" "}
+      {wartung!.angekuendigtBis
+        ? `von ${formatiereZeitstempel(wartung!.angekuendigtAb!)} bis ${formatiereZeitstempel(wartung!.angekuendigtBis)}`
+        : `ab ${formatiereZeitstempel(wartung!.angekuendigtAb!)}`}
+      . Das System steht in diesem Zeitraum voraussichtlich nicht zur Verfügung.
+    </p>
+  );
+}
 
 // Wurzelkomponente: globale Kopfzeile (Navigation) plus das komplette Routing der App.
 // Oeffentliche Routen (Login, Einladung, Passwort-Reset, Ergebnis-Erfassung per Link,
@@ -141,12 +196,16 @@ function Kopfzeile() {
               label="Admin"
               aktiv={
                 pathname.startsWith("/systemeinstellungen") ||
+                pathname.startsWith("/wartung") ||
                 pathname.startsWith("/entwicklungs-board") ||
                 pathname.startsWith("/mail-postfach")
               }
             >
               <Link to="/systemeinstellungen" className="kopfzeile-menue-eintrag" role="menuitem">
                 Systemeinstellungen
+              </Link>
+              <Link to="/wartung" className="kopfzeile-menue-eintrag" role="menuitem">
+                Wartungsmodus
               </Link>
               {kanbanBoardDaAktiv && (
                 <Link to="/entwicklungs-board" className="kopfzeile-menue-eintrag" role="menuitem">
@@ -212,62 +271,115 @@ function Kopfzeile() {
 }
 
 /** Root-Route: fuer angemeldete Benutzer die Verwaltungs-Turnierliste, fuer Gaeste die
- *  oeffentliche Startseite (freigegebene Turniere + Anmelde-Link). */
-function StartRoute() {
+ *  oeffentliche Startseite (freigegebene Turniere + Anmelde-Link). Zeigt vorab den
+ *  Wartungs-Warnhinweis, falls ein Zeitfenster angekuendigt ist. */
+function StartRoute({ wartung }: { wartung?: WartungStatus }) {
   const { benutzer, laedt } = useAuth();
   if (laedt) return <p>Lädt…</p>;
-  return benutzer ? <TurnierListePage /> : <OeffentlicheStartseitePage />;
+  return (
+    <>
+      <WartungAnkuendigung wartung={wartung} />
+      {benutzer ? <TurnierListePage /> : <OeffentlicheStartseitePage />}
+    </>
+  );
 }
 
 /** Definiert alle Routen der Anwendung (siehe Modul-Kommentar oben zur Trennung
  *  oeffentlich / anmeldepflichtig). */
 function App() {
+  const { benutzer } = useAuth();
+  const { pathname } = useLocation();
+
+  // Wartungsstatus per Polling (analog anderen "Live-Aktualisierung"-Stellen im Projekt, siehe
+  // CLAUDE.md) - reagiert so auch fuer bereits offene Tabs, wenn eine Admin-Person die Sperre
+  // ein-/ausschaltet, ohne dass alle Betroffenen die Seite neu laden muessten.
+  const [wartung, setWartung] = useState<WartungStatus | undefined>();
+  useEffect(() => {
+    let abgebrochen = false;
+    async function pruefen() {
+      try {
+        const status = await getWartungStatus();
+        if (!abgebrochen) setWartung(status);
+      } catch {
+        // Best effort - z.B. Backend kurz nicht erreichbar; letzter bekannter Stand bleibt stehen.
+      }
+    }
+    pruefen();
+    const intervall = setInterval(() => {
+      if (document.visibilityState === "visible") pruefen();
+    }, 30_000);
+    document.addEventListener("visibilitychange", pruefen);
+    return () => {
+      abgebrochen = true;
+      clearInterval(intervall);
+      document.removeEventListener("visibilitychange", pruefen);
+    };
+  }, []);
+
+  const istAdmin = benutzer?.globaleRolle === "admin";
+  // Waehrend aktiver Sperre sehen alle ausser angemeldeten Admins nur die Wartungsseite - mit
+  // Ausnahme der Pfade, die fuer eine Anmeldung erreichbar bleiben muessen (siehe oben). Das
+  // Backend blockiert unabhaengig davon dieselben Anfragen zusaetzlich serverseitig (siehe
+  // backend/src/wartung.ts) - diese Frontend-Sperre ist die Oberflaechen-Haelfte davon.
+  const gesperrt = Boolean(wartung?.aktiv) && !istAdmin && !wartungAusgenommenerPfad(pathname);
+
   return (
     <>
       <UmgebungsBanner />
+      {wartung?.aktiv && istAdmin && (
+        <div className="wartungs-banner" role="alert">
+          ⚠ Wartungsmodus ist aktiv – andere Personen sehen aktuell nur die Wartungsseite.
+        </div>
+      )}
+      <WartungKurzfristHinweis wartung={wartung} />
       <Kopfzeile />
       <main>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/ersteinrichtung" element={<ErsteinrichtungPage />} />
-          <Route path="/registrieren" element={<RegistrierenPage />} />
-          <Route path="/einladung/:token" element={<EinladungAnnehmenPage />} />
-          <Route path="/passwort-vergessen" element={<PasswortVergessenPage />} />
-          <Route path="/passwort-reset/:token" element={<PasswortResetPage />} />
-          <Route path="/ergebnis-erfassung/:tokenWert" element={<ErgebnisErfassungPage />} />
-          <Route path="/turniere/:id/code" element={<TurnierCodeAnmeldenPage />} />
-          {/* Turnierleitung-Code: volle Verwaltungsansicht ausserhalb von GeschuetzteRoute - die
-              Komponente selbst und die darin eingebundenen Tab-Komponenten haengen nicht an
-              useAuth(), nur diese Route-Einbettung entscheidet ueber die Anmeldepflicht. */}
-          <Route path="/turniere/:id/code/turnierleitung" element={<TurnierVerwaltenPage />} />
-          <Route path="/turniere/:id/code/spielleitung" element={<SpielleitungCodePage />} />
-          <Route path="/turniere/:id/oeffentlich" element={<OeffentlicheTurnierseitePage />} />
-          <Route path="/turniere/:id/oeffentlich/druck" element={<OeffentlicheDruckansichtPage />} />
-          <Route path="/einstellungen" element={<EinstellungenPage />} />
-          <Route path="/hilfe" element={<HilfePage />} />
-          {/* Root ist oeffentlich: Gaeste sehen die Startseite, Angemeldete die Verwaltungsliste. */}
-          <Route path="/" element={<StartRoute />} />
+        {gesperrt ? (
+          <WartungPage wartung={wartung} />
+        ) : (
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/ersteinrichtung" element={<ErsteinrichtungPage />} />
+            <Route path="/registrieren" element={<RegistrierenPage />} />
+            <Route path="/einladung/:token" element={<EinladungAnnehmenPage />} />
+            <Route path="/passwort-vergessen" element={<PasswortVergessenPage />} />
+            <Route path="/passwort-reset/:token" element={<PasswortResetPage />} />
+            <Route path="/ergebnis-erfassung/:tokenWert" element={<ErgebnisErfassungPage />} />
+            <Route path="/turniere/:id/code" element={<TurnierCodeAnmeldenPage />} />
+            {/* Turnierleitung-Code: volle Verwaltungsansicht ausserhalb von GeschuetzteRoute - die
+                Komponente selbst und die darin eingebundenen Tab-Komponenten haengen nicht an
+                useAuth(), nur diese Route-Einbettung entscheidet ueber die Anmeldepflicht. */}
+            <Route path="/turniere/:id/code/turnierleitung" element={<TurnierVerwaltenPage />} />
+            <Route path="/turniere/:id/code/spielleitung" element={<SpielleitungCodePage />} />
+            <Route path="/turniere/:id/oeffentlich" element={<OeffentlicheTurnierseitePage />} />
+            <Route path="/turniere/:id/oeffentlich/druck" element={<OeffentlicheDruckansichtPage />} />
+            <Route path="/einstellungen" element={<EinstellungenPage />} />
+            <Route path="/hilfe" element={<HilfePage />} />
+            {/* Root ist oeffentlich: Gaeste sehen die Startseite, Angemeldete die Verwaltungsliste. */}
+            <Route path="/" element={<StartRoute wartung={wartung} />} />
 
-          <Route element={<GeschuetzteRoute />}>
-            <Route path="/profil" element={<ProfilPage />} />
-            <Route path="/ueber" element={<UeberPage />} />
-            <Route path="/fehler-melden" element={<FehlerMeldenPage />} />
-            <Route path="/benutzerverwaltung" element={<BenutzerverwaltungPage />} />
-            <Route path="/stammdaten" element={<StammdatenPage />} />
-            <Route path="/schiedsrichter-stammdaten" element={<SchiedsrichterStammdatenPage />} />
-            <Route path="/standardregeln" element={<StandardregelnPage />} />
-            <Route path="/systemeinstellungen" element={<SystemeinstellungenPage />} />
-            <Route path="/entwicklungs-board" element={<KanbanBoardPage />} />
-            <Route path="/mail-postfach" element={<MailPostfachPage />} />
-            <Route path="/turniere/neu" element={<TurnierAnlegenPage />} />
-            <Route path="/turniere/:id/regeln-erfassen" element={<SpielregelnErfassenPage />} />
-            <Route path="/turniere/:id/mannschaften-erfassen" element={<MannschaftenErfassenPage />} />
-            <Route path="/turniere/:id/schiedsrichter-erfassen" element={<SchiedsrichterErfassenPage />} />
-            <Route path="/turniere/:id/spielplan-erstellen" element={<SpielplanErstellenPage />} />
-            <Route path="/turniere/:id/druck" element={<DruckansichtPage />} />
-            <Route path="/turniere/:id" element={<TurnierVerwaltenPage />} />
-          </Route>
-        </Routes>
+            <Route element={<GeschuetzteRoute />}>
+              <Route path="/profil" element={<ProfilPage />} />
+              <Route path="/ueber" element={<UeberPage />} />
+              <Route path="/fehler-melden" element={<FehlerMeldenPage />} />
+              <Route path="/benutzerverwaltung" element={<BenutzerverwaltungPage />} />
+              <Route path="/stammdaten" element={<StammdatenPage />} />
+              <Route path="/schiedsrichter-stammdaten" element={<SchiedsrichterStammdatenPage />} />
+              <Route path="/standardregeln" element={<StandardregelnPage />} />
+              <Route path="/systemeinstellungen" element={<SystemeinstellungenPage />} />
+              <Route path="/wartung" element={<WartungVerwaltenPage />} />
+              <Route path="/entwicklungs-board" element={<KanbanBoardPage />} />
+              <Route path="/mail-postfach" element={<MailPostfachPage />} />
+              <Route path="/turniere/neu" element={<TurnierAnlegenPage />} />
+              <Route path="/turniere/:id/regeln-erfassen" element={<SpielregelnErfassenPage />} />
+              <Route path="/turniere/:id/mannschaften-erfassen" element={<MannschaftenErfassenPage />} />
+              <Route path="/turniere/:id/schiedsrichter-erfassen" element={<SchiedsrichterErfassenPage />} />
+              <Route path="/turniere/:id/spielplan-erstellen" element={<SpielplanErstellenPage />} />
+              <Route path="/turniere/:id/druck" element={<DruckansichtPage />} />
+              <Route path="/turniere/:id" element={<TurnierVerwaltenPage />} />
+            </Route>
+          </Routes>
+        )}
       </main>
       <Fusszeile />
     </>

@@ -105,6 +105,26 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+/* Wartungsmodus: gleiche volle-Breite-Balken-Optik wie .umgebungs-banner, fuer den Admin-Hinweis
+   "Sperre ist aktiv" bzw. den Kurzfrist-Countdown-Hinweis (siehe App.tsx). */
+.wartungs-banner {
+  margin: 0 -16px 16px;
+  padding: 8px 16px;
+  text-align: center;
+  font-weight: 600;
+  background: var(--danger);
+  color: var(--bg);
+}
+
+/* Ankuendigung auf der Startseite - weniger dringlich als .wartungs-banner (kann Tage in der
+   Zukunft liegen), deshalb als umrandeter Absatz statt vollflaechigem Balken. */
+.wartungs-ankuendigung {
+  padding: 10px 14px;
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  font-weight: 600;
+}
+
 /* Sichtbarer Fokus-Indikator fuer alle interaktiven Elemente (Abschnitt 24.1). */
 :focus-visible {
   outline: 3px solid var(--focus-ring);
