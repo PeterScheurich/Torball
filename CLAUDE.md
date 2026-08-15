@@ -372,6 +372,18 @@ Profil-Knopf). War ursprünglich als Backlog-Punkt "akkreditierte
 Schiedsrichter" zurückgestellt, im Zuge des Vereins-Bezugs-Umbaus (siehe oben)
 gleich mit umgesetzt, da beide Aenderungen dieselbe Datengrundlage brauchen.
 
+**Paarungs-Priorität bei der Spielplan-Erstellung:** `backend/src/spielplan/paarungen.ts`
+erzeugt alle Begegnungen eines Turniers und weist jeder eine `PaarungsPrioritaet` zu
+(`verein` > `bundesland` > `neutral`, Gesamtspezifikation Abschnitt 8), die `planung.ts`
+beim Einplanen bevorzugt berücksichtigt (Vereins-Duelle/Bundesland-Derbys werden
+frühzeitig eingeplant, nicht erst wenn nichts anderes mehr passt). **Vereins-Duelle**
+(gleiche `vereinId`) gelten immer; die **Bundesland-Stufe** greift nur, wenn
+`Turnierregeln.bundeslandBeruecksichtigen` aktiv ist (Standard „nein" – Eigenheit für
+Wettbewerbe mit festem Regionalbezug wie Bundesliga/Deutsche Meisterschaft, siehe
+„Turnierregeln als gemeinsamer Typ" oben). Der Bundesland-Abgleich
+(`MannschaftImTurnier.bundesland`) normalisiert Groß-/Kleinschreibung und Leerzeichen,
+damit ein Tippfehler die Regel nicht stillschweigend aushebelt.
+
 **Schiedsrichter-Zuordnung ist ein bewusster Schritt, kein Automatismus:** ein
 Button in der Spielplan-Sicht „Schiedsrichter-Einteilung" ruft
 `POST /turniere/:id/schiedsrichter-zuordnung` und erzeugt einen *Vorschlag* je
@@ -967,6 +979,13 @@ dieser Version gilt der folgende Ablauf:
   `docs/Protokolle/2026-08-12-produktiv-installation.md`,
   `docs/installation-konfiguration.md`. **`.sh`-Dateien müssen LF-Zeilenenden
   haben** (erzwungen über `.gitattributes`; CRLF scheitert auf Linux).
+- **`deploy-instanz.sh` erzeugt bei jedem Lauf ein downloadbares Quellcode-ZIP**
+  (`git archive --format=zip` nach `<DIR>/downloads/torball-quellcode.zip`, über nginx unter
+  `/download/` ausgeliefert, stabiler Dateiname statt Versionierung – immer nur der jeweils
+  aktuelle Stand). Grund: der interne Gitea-Server ist nur im LAN erreichbar, für die lokale
+  Windows-Installation (`deploy/Installieren-Windows.cmd`) an einem Turnierort ohne Zugriff auf
+  dieses Netz wäre der Quellcode sonst gar nicht zu bekommen – jede laufende Instanz bietet ihn
+  so als Alternative zu `git clone` an (siehe README, Abschnitt „Installation").
 - **`deploy/aktualisieren.sh` bündelt System- und App-Update in einem Befehl** (Nutzer-Vorgabe,
   nachdem `apt-get dist-upgrade` und das App-Deploy live verwechselt wurden): ruft `apt-get update`
   + zeigt verfügbare Pakete, fragt **vor** `dist-upgrade` nach (bewusst **ohne**
