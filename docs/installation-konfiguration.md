@@ -109,6 +109,48 @@ TLS-Endpunkt → dann `COOKIE_SECURE=true` + `FRONTEND_URL=https://…`):
 `docs/Protokolle/2026-08-12-produktiv-installation.md`. Zielbild/Begründung:
 `docs/Protokolle/2026-08-11-zielbild-produktivumgebung.md`.
 
+### Neue öffentlich erreichbare Instanz fertigstellen (Checkliste)
+
+Der Deploy oben reicht nur für den Betrieb im LAN. Soll die Instanz öffentlich erreichbar sein
+(echte Domain, HTTPS), sind danach noch folgende Schritte nötig:
+
+1. **`backend/.env` auf die echte Domain/HTTPS umstellen** (wird nur beim allerersten Deploy
+   geschrieben, der Default ist rein fürs LAN gedacht):
+   ```bash
+   cd /opt/torball/<name>/backend
+   npm run torball -- konfiguration:setzen --schluessel="COOKIE_SECURE" --wert="true"
+   npm run torball -- konfiguration:setzen --schluessel="FRONTEND_URL" --wert="https://<domain>"
+   systemctl restart torball@<name>
+   ```
+   Beides erst, **nachdem** Domain/HTTPS unten stehen – `COOKIE_SECURE=true` vor dem HTTPS-Umstieg
+   würde den Login über bloßes HTTP kaputt machen (der Browser setzt das Cookie sonst nicht).
+
+2. **Extern erreichbar machen:**
+   - DNS-Eintrag für die neue Subdomain auf die öffentliche IP.
+   - Neuer Eintrag im Reverse-Proxy (z. B. Nginx Proxy Manager): Domain → interne IP des Servers,
+     Port `<frontend_port>`, SSL-Zertifikat (Let's Encrypt) darüber einrichten.
+   - Portweiterleitung am Router i. d. R. nicht nötig, wenn der Reverse-Proxy (Port 80/443) schon
+     für andere Instanzen weitergeleitet ist.
+
+3. **In der App selbst** (nach dem ersten Aufruf der neuen Domain):
+   - Ersteinrichtung des ersten Admin-Kontos durchlaufen (siehe oben).
+   - **Admin → Systemeinstellungen → „E-Mail-Versand (SMTP)"**: eigene Zugangsdaten eintragen –
+     das ist pro Instanz in der Datenbank gepflegt, wird **nicht** von einer anderen Instanz
+     übernommen. Mit „Verbindung testen" prüfen, dann „E-Mail-Versand aktivieren" setzen.
+   - Selbstregistrierung: für eine echte Produktivinstanz normalerweise **ausgeschaltet** lassen
+     (Standard).
+   - Standardregeln (Stammdaten → Standardregeln) prüfen/anpassen, falls die eingebauten
+     Standardwerte nicht passen.
+
+4. **Namensgebung beachten:** der Instanzname (`<name>` beim Deploy) steuert auch das
+   Umgebungs-Banner im Frontend (`UmgebungsBanner.tsx`) – nur bei **exakt** `prod` erscheint kein
+   Banner. Jeder andere Name zeigt einen Hinweis „Nicht-Produktivumgebung" (bei `demo` den
+   spezifischen Hinweis auf den automatischen Reset).
+
+**Bewusst unverändert lassen** (Default passt bereits): `KANBAN_BOARD_AKTIV`,
+`MAIL_POSTFACH_AKTIV`, `DEMO_SNAPSHOT_ERLAUBT` bleiben `false` – diese drei sind nur für die
+Entwicklungs- bzw. Demo-Instanz gedacht.
+
 ### Aktualisieren
 
 Zwei unabhängige Dinge lassen sich aktualisieren, die leicht verwechselt werden:
