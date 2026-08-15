@@ -170,7 +170,7 @@ export function DruckansichtPage() {
       const pfeifende = schiedsrichter.filter((sr) => !sr.nurTurnierleitung);
       const eintraege = pfeifende
         .map((sr) => ({
-          name: sr.vorname ? `${sr.name}, ${sr.vorname}` : sr.name,
+          name: sr.vorname ? `${sr.vorname} ${sr.name}` : sr.name,
           spiele: spiele
             .filter((s) => s.schiedsrichterId === sr._id)
             .sort(nachRunde)

@@ -407,8 +407,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
                 .sort((a, b) => a.name.localeCompare(b.name) || (a.vorname ?? "").localeCompare(b.vorname ?? ""))
                 .map((s) => (
                   <option key={s._id} value={s._id}>
-                    {s.name}
-                    {s.vorname ? `, ${s.vorname}` : ""}
+                    {s.vorname ? `${s.vorname} ${s.name}` : s.name}
                   </option>
                 ))}
             </select>{" "}

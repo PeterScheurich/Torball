@@ -26,6 +26,7 @@ function darfZielRolleVergeben(vergebendeRolle: GlobaleRolle, zielRolle: Globale
 interface BenutzerAnlegenBody {
   email: string;
   name: string;
+  vorname?: string;
   globaleRolle: GlobaleRolle;
 }
 
@@ -35,6 +36,7 @@ const benutzerAnlegenSchema = {
   properties: {
     email: { type: "string", minLength: 1 },
     name: { type: "string", minLength: 1 },
+    vorname: { type: "string" },
     globaleRolle: { type: "string", enum: ["admin", "manager", "benutzer"] },
   },
 } as const;
@@ -93,6 +95,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         benutzerId: id,
         email,
         name: req.body.name,
+        vorname: req.body.vorname?.trim() || undefined,
         globaleRolle: req.body.globaleRolle,
         sprache: "de",
         zweiFaAktiv: false,

@@ -557,6 +557,7 @@ export function getBenutzerListe(): Promise<BenutzerProfil[]> {
 export interface NeuerBenutzer {
   email: string;
   name: string;
+  vorname?: string;
   globaleRolle: GlobaleRolle;
 }
 

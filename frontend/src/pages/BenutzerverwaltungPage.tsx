@@ -28,6 +28,7 @@ export function BenutzerverwaltungPage() {
   const { benutzer: angemeldeter } = useAuth();
   const [liste, setListe] = useState<BenutzerProfil[]>([]);
   const [name, setName] = useState("");
+  const [vorname, setVorname] = useState("");
   const [email, setEmail] = useState("");
   const [rolle, setRolle] = useState<GlobaleRolle>("benutzer");
   const [einladungslink, setEinladungslink] = useState<string | undefined>();
@@ -62,13 +63,19 @@ export function BenutzerverwaltungPage() {
     setEinladungslink(undefined);
     setEinladungPerMail(false);
     try {
-      const { einladungsToken } = await benutzerEinladen({ name, email, globaleRolle: rolle });
+      const { einladungsToken } = await benutzerEinladen({
+        name,
+        vorname: vorname.trim() || undefined,
+        email,
+        globaleRolle: rolle,
+      });
       if (einladungsToken) {
         setEinladungslink(`${window.location.origin}/einladung/${einladungsToken}`);
       } else {
         setEinladungPerMail(true);
       }
       setName("");
+      setVorname("");
       setEmail("");
       setRolle("benutzer");
       await laden();
@@ -174,7 +181,7 @@ export function BenutzerverwaltungPage() {
           <tbody>
             {liste.map((b) => (
               <tr key={b._id}>
-                <td>{b.name}</td>
+                <td>{b.vorname ? `${b.vorname} ${b.name}` : b.name}</td>
                 <td className="benutzer-email">{b.email}</td>
                 <td>
                   <label className="sr-only" htmlFor={`rolle-${b._id}`}>
@@ -253,6 +260,14 @@ export function BenutzerverwaltungPage() {
                 </th>
                 <td>
                   <input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="vorname">Vorname</label>
+                </th>
+                <td>
+                  <input id="vorname" value={vorname} onChange={(e) => setVorname(e.target.value)} />
                 </td>
               </tr>
               <tr>

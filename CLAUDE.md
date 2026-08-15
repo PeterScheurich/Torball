@@ -964,6 +964,19 @@ dieser Version gilt der folgende Ablauf:
   (`PUT /benutzer/mich`) änderbar, nur über die admin/manager-gated
   `PUT /benutzer/:id` - sonst könnte sich ein Benutzer selbst zum Admin
   machen.
+- **`vorname` ist seit 2026-08-16 auch beim Admin-Einladen setzbar** (vorher nur
+  über Selbstregistrierung/Ersteinrichtung/„Mein Profil" – ein admin-eingeladener
+  Account hatte bis dahin nie einen Vornamen, es sei denn, die Person trug ihn
+  nachträglich selbst nach). **Anzeige-Konvention „Vorname Name" (Leerzeichen,
+  Vorname zuerst) gilt jetzt einheitlich überall**, wo Vorname+Name zu einem
+  String kombiniert werden (Benutzerverwaltung-Liste, Schiedsrichter-Zuordnung im
+  Spielplan, Schiedsrichter-„Aus Stammdaten übernehmen"-Auswahl, PDF-Dokument
+  „Schiedsrichter-Einteilung") – vorher nutzte die Schiedsrichter-Seite
+  uneinheitlich „Name, Vorname" (Komma), das ist bewusst vereinheitlicht worden
+  (Nutzer-Vorgabe: Vornamen sind meist eher bekannt als Nachnamen). Reine
+  Tabellenspalten-Darstellungen (Name/Vorname nebeneinander, z. B.
+  Schiedsrichter-Stammdaten, Schiedsrichter-Verwaltung Haupttabelle) sind davon
+  nicht betroffen, nur zusammengesetzte Anzeige-Strings.
 
 ## Betrieb / Infrastruktur
 

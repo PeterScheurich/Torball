@@ -176,7 +176,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }
 
   const nameVon = (mannschaftId: string) => mannschaften.find((m) => m._id === mannschaftId)?.name ?? mannschaftId;
   const schiedsrichterNach = (id: string | undefined) => schiedsrichter.find((sr) => sr._id === id);
-  const schiedsrichterLabel = (sr: SchiedsrichterImTurnier) => (sr.vorname ? `${sr.name}, ${sr.vorname}` : sr.name);
+  const schiedsrichterLabel = (sr: SchiedsrichterImTurnier) => (sr.vorname ? `${sr.vorname} ${sr.name}` : sr.name);
 
   /** Erzeugt (bewusst per Klick, nicht automatisch) einen Schiedsrichter-Vorschlag ueber alle
    * Spiele und speichert ihn; danach je Spiel manuell anpassbar. */
