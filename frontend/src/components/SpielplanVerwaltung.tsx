@@ -571,8 +571,19 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }
                             <input
                               id={`vorschau-zeit-${vollIndex}`}
                               type="time"
-                              value={zeitEingabeWert(eintrag.startzeitGeplant)}
-                              onChange={(e) => vorschlagZeitAendern(vollIndex, e.target.value)}
+                              // onBlur statt onChange: das native Zeitfeld hat schon nach der
+                              // Stunden-Eingabe (mit der noch unveraenderten alten Minute) einen
+                              // vollstaendigen Wert - onChange wuerde also mitten in der Eingabe
+                              // feuern und mit der spaeteren Neu-Renderung die laufende Eingabe
+                              // unterbrechen (Bug-Meldung 2026-08-14).
+                              defaultValue={zeitEingabeWert(eintrag.startzeitGeplant)}
+                              key={eintrag.startzeitGeplant}
+                              onBlur={(e) => {
+                                const hhmm = e.target.value;
+                                if (hhmm && hhmm !== zeitEingabeWert(eintrag.startzeitGeplant)) {
+                                  vorschlagZeitAendern(vollIndex, hhmm);
+                                }
+                              }}
                             />
                           ) : (
                             "–"
@@ -718,9 +729,19 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }
                                 <input
                                   id={`spiel-zeit-${s._id}`}
                                   type="time"
-                                  value={zeitEingabeWert(s.startzeitGeplant)}
+                                  // onBlur statt onChange, siehe Kommentar bei der Vorschlag-Tabelle
+                                  // oben - hier zusaetzlich wichtig, weil onChange sonst bei jeder
+                                  // Teil-Eingabe einen Server-Rundlauf (inkl. Kaskaden-Verschub der
+                                  // nachfolgenden Spiele) ausloesen wuerde.
+                                  defaultValue={zeitEingabeWert(s.startzeitGeplant)}
+                                  key={s.startzeitGeplant}
                                   disabled={s.status !== "geplant"}
-                                  onChange={(e) => startzeitPersistiertAendern(s, e.target.value)}
+                                  onBlur={(e) => {
+                                    const hhmm = e.target.value;
+                                    if (hhmm && hhmm !== zeitEingabeWert(s.startzeitGeplant)) {
+                                      startzeitPersistiertAendern(s, hhmm);
+                                    }
+                                  }}
                                 />
                               ) : (
                                 formatiereUhrzeit(s.startzeitGeplant)
