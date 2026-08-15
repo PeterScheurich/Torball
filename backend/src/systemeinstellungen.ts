@@ -1,6 +1,6 @@
 import type { Systemeinstellungen, SystemeinstellungenOeffentlich } from "@torball/shared";
 import { findById } from "./repository";
-import type { SmtpVerbindung } from "./mail/transport";
+import { sendeMail, type SmtpVerbindung } from "./mail/transport";
 
 /** Singleton-Dokument, immer dieselbe feste ID (kein newId()/UUID noetig, es gibt nur eines). */
 export const SYSTEMEINSTELLUNGEN_ID = "systemeinstellungen:global";
@@ -33,6 +33,7 @@ export function oeffentlicheSystemeinstellungen(einstellungen: Systemeinstellung
     smtpUser: einstellungen.smtpUser,
     smtpPasswortGesetzt: Boolean(einstellungen.smtpPasswort),
     smtpAbsender: einstellungen.smtpAbsender,
+    benachrichtigungEmpfaenger: einstellungen.benachrichtigungEmpfaenger,
   };
 }
 
@@ -50,4 +51,29 @@ export function smtpVerbindungAus(einstellungen: Systemeinstellungen): SmtpVerbi
     passwort: einstellungen.smtpPasswort,
     absender: einstellungen.smtpAbsender,
   };
+}
+
+/** Verschickt (best effort) eine Benachrichtigung an den konfigurierten Empfaenger, wenn sich
+ *  jemand selbst registriert oder eine Einladung annimmt (Nutzer-Vorgabe) - ohne konfigurierten
+ *  Empfaenger oder aktivierten/vollstaendigen SMTP-Versand passiert nichts. Ein Fehlschlag wird nur
+ *  geloggt, nie an den Aufrufer durchgereicht: die Registrierung/Aktivierung selbst darf davon nie
+ *  abhaengen. */
+export async function benachrichtigeNeuenAccount(
+  einstellungen: Systemeinstellungen,
+  anlass: "registrierung" | "einladung-angenommen",
+  neuerBenutzer: { name: string; email: string },
+): Promise<void> {
+  if (!einstellungen.benachrichtigungEmpfaenger) return;
+  const smtp = smtpVerbindungAus(einstellungen);
+  if (!smtp) return;
+  const anlassText = anlass === "registrierung" ? "sich selbst registriert" : "eine Einladung angenommen";
+  try {
+    await sendeMail(smtp, {
+      an: einstellungen.benachrichtigungEmpfaenger,
+      betreff: "Neuer Account - Torball-Turniere",
+      text: `${neuerBenutzer.name} (${neuerBenutzer.email}) hat ${anlassText}.`,
+    });
+  } catch (err) {
+    console.error("Benachrichtigung ueber neuen Account konnte nicht versendet werden", err);
+  }
 }

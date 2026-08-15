@@ -22,6 +22,7 @@ interface SystemeinstellungenBody {
   smtpUser?: string | null;
   smtpPasswort?: string | null;
   smtpAbsender?: string | null;
+  benachrichtigungEmpfaenger?: string | null;
 }
 
 const systemeinstellungenSchema = {
@@ -38,6 +39,7 @@ const systemeinstellungenSchema = {
     smtpUser: { type: ["string", "null"] },
     smtpPasswort: { type: ["string", "null"] },
     smtpAbsender: { type: ["string", "null"] },
+    benachrichtigungEmpfaenger: { type: ["string", "null"] },
   },
 } as const;
 
@@ -76,6 +78,7 @@ export async function systemeinstellungenRoutes(app: FastifyInstance): Promise<v
         smtpUser: feldOderBisherig(req.body.smtpUser, bisherige.smtpUser),
         smtpPasswort: feldOderBisherig(req.body.smtpPasswort, bisherige.smtpPasswort),
         smtpAbsender: feldOderBisherig(req.body.smtpAbsender, bisherige.smtpAbsender),
+        benachrichtigungEmpfaenger: feldOderBisherig(req.body.benachrichtigungEmpfaenger, bisherige.benachrichtigungEmpfaenger),
         geaendertVon: req.benutzer!._id,
         geaendertAm: new Date().toISOString(),
       };

@@ -583,6 +583,16 @@ Zugangsdaten-Stelle für sämtlichen ausgehenden App-Mailversand. Der `torball`-
 `konfiguration:setzen` kennt `SMTP_*` entsprechend nicht mehr (Allowlist bereinigt); der
 Windows-Installer fragt SMTP beim Ersteinrichten ebenfalls nicht mehr ab.
 
+**Benachrichtigung bei neuem Account** (`Systemeinstellungen.benachrichtigungEmpfaenger`, Nutzer-
+Vorgabe): eine feste, optionale Zieladresse (Feld unterhalb des SMTP-Zugangs) bekommt eine kurze
+Mail, sobald sich jemand selbst registriert (`POST /auth/registrieren`) oder eine Einladung
+annimmt (`POST /benutzer/einladung/:token/annehmen`) – **nicht** bei der Bootstrap-Ersteinrichtung
+des allerersten Admin-Kontos. `backend/src/systemeinstellungen.ts::benachrichtigeNeuenAccount()`
+buendelt die Logik fuer beide Aufrufstellen (haengt an `smtpVerbindungAus()`, also ebenfalls an
+`mailversandAktiv` + vollstaendigen Zugangsdaten) und ist bewusst best effort – ein Fehlschlag wird
+nur geloggt (`console.error`, kein `app.log`, da die Funktion ausserhalb eines Request-Handlers
+liegt), blockiert aber nie die eigentliche Registrierung/Aktivierung.
+
 **Demo-Snapshot/Reset (`backend/src/demo/`, CLI-Befehle `demo:*`):** die Demo-Instanz bekommt einen
 nächtlichen Reset auf CouchDB-Ebene statt eines App-seitigen Löschens. `beispieldaten.ts` erzeugt
 einmalig einen festen Satz Demo-Stammdaten (Vereine/Teams, mehrere Turniere inkl. einer

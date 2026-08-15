@@ -24,6 +24,7 @@ export function SystemeinstellungenPage() {
   const [smtpUser, setSmtpUser] = useState("");
   const [smtpPasswort, setSmtpPasswort] = useState("");
   const [smtpAbsender, setSmtpAbsender] = useState("");
+  const [benachrichtigungEmpfaenger, setBenachrichtigungEmpfaenger] = useState("");
   const [smtpPasswortGesetzt, setSmtpPasswortGesetzt] = useState(false);
   const [smtpTestLaeuft, setSmtpTestLaeuft] = useState(false);
   const [smtpTestErgebnis, setSmtpTestErgebnis] = useState<MailTestErgebnis | undefined>();
@@ -44,6 +45,7 @@ export function SystemeinstellungenPage() {
       setSmtpUser(einstellungen.smtpUser ?? "");
       setSmtpPasswort("");
       setSmtpAbsender(einstellungen.smtpAbsender ?? "");
+      setBenachrichtigungEmpfaenger(einstellungen.benachrichtigungEmpfaenger ?? "");
       setSmtpPasswortGesetzt(einstellungen.smtpPasswortGesetzt);
       setFehler(undefined);
     } catch (err) {
@@ -74,6 +76,7 @@ export function SystemeinstellungenPage() {
         smtpUser: smtpUser.trim() || null,
         smtpPasswort: smtpPasswort.trim() || undefined,
         smtpAbsender: smtpAbsender.trim() || null,
+        benachrichtigungEmpfaenger: benachrichtigungEmpfaenger.trim() || null,
       });
       setSmtpPasswortGesetzt(ergebnis.smtpPasswortGesetzt);
       setSmtpPasswort("");
@@ -270,6 +273,20 @@ export function SystemeinstellungenPage() {
           {smtpTestErgebnis && (
             <p role="status">{smtpTestErgebnis.ok ? "✓ Verbindung erfolgreich." : `✗ ${smtpTestErgebnis.fehler}`}</p>
           )}
+
+          <div className="feld">
+            <label htmlFor="benachrichtigungEmpfaenger">Benachrichtigung bei neuer Registrierung/Einladung-Annahme</label>
+            <input
+              id="benachrichtigungEmpfaenger"
+              type="email"
+              value={benachrichtigungEmpfaenger}
+              onChange={(e) => setBenachrichtigungEmpfaenger(e.target.value)}
+            />
+            <p className="feld-hinweis">
+              Optional. Geht an diese Adresse, sobald sich jemand selbst registriert oder eine Einladung annimmt -
+              nur wenn der E-Mail-Versand oben aktiviert und vollständig eingerichtet ist.
+            </p>
+          </div>
 
           {gespeichertHinweis && <p>Gespeichert.</p>}
           <button type="submit" disabled={sendet}>

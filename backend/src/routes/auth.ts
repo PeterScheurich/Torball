@@ -6,7 +6,7 @@ import { hashePasswort, passwortRegelVerstoss, passwortStimmt } from "../auth/pa
 import { loescheSessionCookie, SESSION_COOKIE_NAME, setzeSessionCookie } from "../auth/plugin";
 import { erstelleSession, loescheSessionPerToken } from "../auth/session";
 import { totpCodeGueltig } from "../auth/totp";
-import { aktuelleSystemeinstellungen } from "../systemeinstellungen";
+import { aktuelleSystemeinstellungen, benachrichtigeNeuenAccount } from "../systemeinstellungen";
 
 // Anmelde-bezogene Routen: Login (inkl. optionaler 2FA), Logout, "wer bin ich" (/auth/me)
 // und die einmalige Ersteinrichtung des allerersten Admin-Kontos. Die eigentliche
@@ -227,6 +227,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         erstelltAm: new Date().toISOString(),
       };
       const gespeichert = await insertDoc(benutzer);
+      await benachrichtigeNeuenAccount(einstellungen, "registrierung", { name: benutzer.name, email });
       return reply.code(201).send(oeffentlichesProfil(gespeichert));
     },
   );

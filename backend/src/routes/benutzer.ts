@@ -8,7 +8,7 @@ import { loescheAlleSessionenVonBenutzer, loescheAndereSessionenVonBenutzer } fr
 import { erzeugeOtpAuthUri, erzeugeQrCodeDataUri, erzeugeTotpSecret, totpCodeGueltig } from "../auth/totp";
 import { erzeugeToken, hashe } from "../auth/token";
 import { sendeMail } from "../mail/transport";
-import { aktuelleSystemeinstellungen, smtpVerbindungAus } from "../systemeinstellungen";
+import { aktuelleSystemeinstellungen, benachrichtigeNeuenAccount, smtpVerbindungAus } from "../systemeinstellungen";
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
 
@@ -490,6 +490,10 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         passwortHash: await hashePasswort(req.body.passwort),
         einladungTokenHash: undefined,
         einladungAblauf: undefined,
+      });
+      await benachrichtigeNeuenAccount(await aktuelleSystemeinstellungen(), "einladung-angenommen", {
+        name: benutzer.name,
+        email: benutzer.email,
       });
       return oeffentlichesProfil(aktualisiert);
     },

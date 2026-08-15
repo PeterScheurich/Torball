@@ -189,6 +189,7 @@ export interface SystemeinstellungenEingabe {
   smtpUser?: string | null;
   smtpPasswort?: string | null;
   smtpAbsender?: string | null;
+  benachrichtigungEmpfaenger?: string | null;
 }
 
 export function updateSystemeinstellungen(

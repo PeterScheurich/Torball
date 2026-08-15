@@ -31,6 +31,10 @@ export interface Systemeinstellungen extends CouchMeta {
   smtpPasswort?: string;
   /** Absenderadresse, Format `"Name" <adresse@beispiel.de>`. */
   smtpAbsender?: string;
+  /** Feste Zieladresse fuer eine Benachrichtigung bei Selbstregistrierung/Einladung-Annahme -
+   *  optional, ohne gesetzten Wert (oder ohne aktivierten/konfigurierten Mailversand) verschickt
+   *  das Backend keine Benachrichtigung. */
+  benachrichtigungEmpfaenger?: string;
   geaendertVon?: BenutzerId;
   geaendertAm?: Zeitstempel;
 }
@@ -46,4 +50,5 @@ export interface SystemeinstellungenOeffentlich {
   smtpUser?: string;
   smtpPasswortGesetzt: boolean;
   smtpAbsender?: string;
+  benachrichtigungEmpfaenger?: string;
 }
