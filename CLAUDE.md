@@ -611,14 +611,26 @@ damit überflüssig geworden. Details: `docs/kanban-board.md`. Löschungen sind 
 (kein Tombstone/Papierkorb).
 
 **Notizen je Karte (`KanbanKarte.notizen`, `KanbanNotiz[]`):** Aktionen/Gedanken/
-Änderungsvorschläge zu einer Karte – bewusst **nicht auf der Karte selbst sichtbar**, nur beim
-Bearbeiten (`bearbeiten()`-Formular in `KanbanBoardPage.tsx`, Abschnitt „Notizen" unterhalb der
-normalen Felder). Nur **anhängbar** (`POST /kanban/karten/:id/notizen`, eigener Endpunkt statt
+Änderungsvorschläge zu einer Karte – bewusst **nicht auf der Karte selbst sichtbar**, nur im
+Detail-Dialog einer Karte (`KanbanBoardPage.tsx`, Abschnitt „Notizen" unterhalb des
+Bearbeiten-Formulars). Nur **anhängbar** (`POST /kanban/karten/:id/notizen`, eigener Endpunkt statt
 über das generische PUT, damit zwei gleichzeitig hinzugefügte Notizen sich nicht überschreiben)
 – kein Bearbeiten/Löschen einzelner Einträge, analog einem Kommentarverlauf. `erstelltVonName`
 je Notiz kommt vom eingeloggten Account (auch KI-Sitzungen, die über den Admin-Account arbeiten,
 z. B. „Claude" auf der Dev-Instanz) – gedacht auch für Einschätzungen/Vorschläge aus einer
 Claude-Code-Sitzung, nicht nur menschliche Notizen.
+
+**Karten auf dem Board zeigen bewusst nur das Nötigste (2026-08-15, Nutzer-Vorgabe):** Titel +
+Badges (Kategorie/Priorität/KI/Notizen-Anzahl) + die fünf Schnellaktionen (▲▼◀▶✕) – Beschreibung,
+Absender und das Bearbeiten-Formular saßen vorher immer sichtbar direkt auf der Karte bzw. in
+einem permanent eingeblendeten Formular oben auf der Seite und nahmen dadurch zu viel Platz ein.
+Ein Klick auf den Titel (als `<button>` gerendert, nicht die ganze Karte – vermeidet verschachtelte
+interaktive Elemente mit den Schnellaktions-Buttons) öffnet ein natives `<dialog>` (`showModal()`,
+übernimmt Fokus-Falle + Esc-Handling vom Browser) mit den vollen Details, dem Bearbeiten-Formular
+und den Notizen. Das obere Formular auf der Seite dient seitdem nur noch dem Neuanlegen, nicht mehr
+dem Bearbeiten. Dialogbreite bewusst 760px statt des CSS-Standards `form { max-width: 420px }`, den
+man dafür explizit über `.kanban-detail-dialog form { max-width: none }` aushebeln muss – live als
+Bug aufgefallen: Freitext-Felder blieben sonst trotz breitem Dialog schmal.
 
 **Mail-Postfach (admin-only, nur Entwicklungsinstanz, `backend/src/mail/`):** liest per IMAP ein
 zentrales Feedback-Postfach der Software (Fehlermeldungen/Lob/Anregungen/Kritik/Spam), fasst neue
