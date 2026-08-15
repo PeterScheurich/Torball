@@ -1106,6 +1106,18 @@ dieser Version gilt der folgende Ablauf:
   Pfad über `readlink -f "${BASH_SOURCE[0]}"` auf statt direkt über `BASH_SOURCE`, sonst würde es
   bei Aufruf über den Symlink `/usr/local/bin` (statt den echten `deploy/`-Ordner) als eigenen
   Ordner annehmen und `deploy-instanz.sh` nicht mehr finden.
+- **`deploy/instanz-entfernen.sh <name>` ist das Gegenstück zu `deploy-instanz.sh`** (Nutzer-Vorgabe,
+  2026-08-16, für den Fall eines Instanz-Umzugs auf einen neuen Namen): stoppt/deaktiviert den
+  systemd-Service, entfernt die nginx-Site, löscht die CouchDB-Datenbank **und** den zugehörigen
+  CouchDB-Benutzer (braucht dafür erst dessen aktuelle `_rev` aus `_users` abzurufen, CouchDB
+  verlangt die zum Löschen) sowie den kompletten Checkout unter `/opt/torball/<name>` und die
+  generierte Passwort-Datei. Bewusst **kein** `--force`/`-y`-Flag – fragt den Instanznamen zur
+  Bestätigung nochmal zum Eintippen ab (kein simples „ja/nein", das sich bei ähnlich klingenden
+  Namen wie `prod`/`prod-neu` zu leicht versehentlich wegklicken ließe) und weist vorher explizit
+  darauf hin, dass Systemeinstellungen dieser Instanz (SMTP-Zugangsdaten, Benachrichtigungs-
+  Empfänger, Wartungsmodus, …) nur in dieser einen Datenbank stecken und beim Löschen mit weg sind.
+  Externe DNS-/Reverse-Proxy-Einträge (Nginx Proxy Manager) muss die aufrufende Person weiterhin
+  selbst anpassen – das kann das Skript nicht wissen.
 - **Umgebungs-Banner (`UmgebungsBanner.tsx`) markiert Nicht-Prod-Umgebungen unübersehbar** – gegen
   versehentliches Pflegen von „echten" Daten auf einer Demo-/Entwicklungsinstanz (oder umgekehrt).
   Rein build-zeit-gesteuert, **kein Laufzeit-API-Aufruf**: `import.meta.env.DEV` kommt direkt von

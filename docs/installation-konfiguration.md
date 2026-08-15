@@ -140,6 +140,22 @@ Aktualisiert **nicht** sich selbst (den Checkout unter `~/torball-src`) – fall
 Deploy-Skripte seit dem letzten Lauf geändert haben, vorher dort `git pull` ausführen (der Symlink
 zeigt auf die Datei im Checkout, zieht die Änderung also automatisch nach).
 
+### Instanz entfernen
+
+Gegenstück zu `deploy-instanz.sh` – z. B. wenn eine Test-Instanz nicht mehr gebraucht wird oder
+eine Instanz durch eine neu aufgesetzte ersetzt wurde:
+
+```bash
+bash deploy/instanz-entfernen.sh <name>
+```
+
+Stoppt den Dienst, entfernt die nginx-Site, löscht die CouchDB-Datenbank + den zugehörigen
+CouchDB-Benutzer sowie den kompletten Checkout unter `/opt/torball/<name>`. **Unwiderruflich** –
+fragt deshalb vorab den Instanznamen zur Bestätigung nochmal zum Eintippen ab und weist darauf
+hin, dass Systemeinstellungen dieser Instanz (SMTP-Zugangsdaten, Benachrichtigungs-Empfänger, …)
+nur in dieser Datenbank stecken. Externe DNS-/Reverse-Proxy-Einträge (z. B. im Nginx Proxy
+Manager) müssen danach separat angepasst werden – das kann das Skript nicht wissen.
+
 ## Lokale Installation unter Windows
 
 Für einen lokalen Betrieb auf einem Windows-Rechner (z. B. offline am Spielort) – zwei Wege:
