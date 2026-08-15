@@ -23,7 +23,7 @@ import type {
   Spieler,
   SpielerStatus,
   Spielmodus,
-  Systemeinstellungen,
+  SystemeinstellungenOeffentlich,
   Systemkonfiguration,
   Team,
   Theme,
@@ -174,17 +174,38 @@ export function updateSystemkonfiguration(
   return anfrage("/systemkonfiguration", { method: "PUT", body: JSON.stringify(daten) });
 }
 
-// --- Systemeinstellungen (u.a. Selbstregistrierung, nur Admin) ---
+// --- Systemeinstellungen (Selbstregistrierung, E-Mail-Versand, nur Admin) ---
 
-export function getSystemeinstellungen(): Promise<Systemeinstellungen> {
+export function getSystemeinstellungen(): Promise<SystemeinstellungenOeffentlich> {
   return anfrage("/systemeinstellungen");
 }
 
-export function updateSystemeinstellungen(daten: {
+export interface SystemeinstellungenEingabe {
   selbstregistrierungErlaubt: boolean;
   selbstregistrierungStandardRolle: SelbstregistrierungsRolle;
-}): Promise<Systemeinstellungen> {
+  mailversandAktiv: boolean;
+  smtpHost?: string | null;
+  smtpPort?: number | null;
+  smtpUser?: string | null;
+  smtpPasswort?: string | null;
+  smtpAbsender?: string | null;
+}
+
+export function updateSystemeinstellungen(
+  daten: SystemeinstellungenEingabe,
+): Promise<SystemeinstellungenOeffentlich> {
   return anfrage("/systemeinstellungen", { method: "PUT", body: JSON.stringify(daten) });
+}
+
+/** Testet die SMTP-Verbindung mit den uebergebenen Werten; ein weggelassenes Passwort faellt auf
+ *  den bereits gespeicherten Wert zurueck (so laesst sich auch ohne erneute Eingabe testen). */
+export function testeSmtpVerbindung(daten: {
+  host?: string;
+  port?: number;
+  user?: string;
+  passwort?: string;
+}): Promise<MailTestErgebnis> {
+  return anfrage("/systemeinstellungen/smtp-testen", { method: "POST", body: JSON.stringify(daten) });
 }
 
 export interface NeueMannschaft {

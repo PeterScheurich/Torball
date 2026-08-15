@@ -4,7 +4,8 @@ import { istVeraltet, kanbanKategorieFuer, naechsteReihenfolgeOffen, STANDARD_AU
 import { holeNeueMails } from "./imapClient";
 import { klassifiziereMails } from "./klassifikation";
 import { aktuelleMailPostfachEinstellungen, MAIL_POSTFACH_EINSTELLUNGEN_ID } from "./postfach";
-import { mailKonfiguriert, sendeMail } from "./transport";
+import { sendeMail } from "./transport";
+import { aktuelleSystemeinstellungen, smtpVerbindungAus } from "../systemeinstellungen";
 
 export interface AusloesenderBenutzer {
   _id: string;
@@ -145,10 +146,11 @@ export async function erstelleMailBericht(
   };
   const gespeicherterBericht = await insertDoc(bericht);
 
-  if (einstellungen.berichtEmpfaenger && mailKonfiguriert()) {
+  const smtp = einstellungen.berichtEmpfaenger ? smtpVerbindungAus(await aktuelleSystemeinstellungen()) : undefined;
+  if (smtp) {
     try {
-      await sendeMail({
-        an: einstellungen.berichtEmpfaenger,
+      await sendeMail(smtp, {
+        an: einstellungen.berichtEmpfaenger!,
         betreff: `Mail-Postfach-Bericht (${ausgeloestDurch}): ${verarbeiteteMails.length} neue Mail(s)`,
         text: klassifikationsLauf.zusammenfassungText,
       });

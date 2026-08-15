@@ -23,20 +23,10 @@ type Befehl = (optionen: Optionen) => Promise<void>;
 
 /** Nur diese Schluessel duerfen ueber die CLI geaendert werden - bewusst ohne COUCHDB_*
  * (Verbindung wuerde ein Tippfehler sofort kappen; die werden vom Installer/deploy-instanz.sh
- * verwaltet) und ohne KANBAN_BOARD_AKTIV (nur fuer die Entwicklungs-Instanz relevant). */
-const ERLAUBTE_KONFIGURATIONS_SCHLUESSEL = [
-  "PORT",
-  "HOST",
-  "FRONTEND_URL",
-  "COOKIE_SECURE",
-  "SMTP_HOST",
-  "SMTP_PORT",
-  "SMTP_USER",
-  "SMTP_PASSWORD",
-  "SMTP_FROM",
-  "SERVE_FRONTEND",
-  "DEMO_SNAPSHOT_ERLAUBT",
-];
+ * verwaltet), ohne KANBAN_BOARD_AKTIV (nur fuer die Entwicklungs-Instanz relevant) und ohne
+ * SMTP_* (seit 2026-08-15 kein .env-Wert mehr, sondern ueber die Oberflaeche unter
+ * Systemeinstellungen gepflegt - siehe backend/src/routes/systemeinstellungen.ts). */
+const ERLAUBTE_KONFIGURATIONS_SCHLUESSEL = ["PORT", "HOST", "FRONTEND_URL", "COOKIE_SECURE", "SERVE_FRONTEND", "DEMO_SNAPSHOT_ERLAUBT"];
 
 const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
   "benutzer:liste": {

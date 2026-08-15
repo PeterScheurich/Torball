@@ -16,6 +16,34 @@ export interface Systemeinstellungen extends CouchMeta {
   docType: "systemeinstellungen";
   selbstregistrierungErlaubt: boolean;
   selbstregistrierungStandardRolle: SelbstregistrierungsRolle;
+  /** Schaltet den tatsaechlichen Versand ueber die SMTP-Werte unten frei/aus - unabhaengig davon,
+   *  ob diese vollstaendig gesetzt sind. So lassen sich Zugangsdaten eintragen und ueber den
+   *  "Verbindung testen"-Knopf pruefen, bevor Einladungs-/Passwort-Reset-Mails tatsaechlich live
+   *  verschickt werden. Default aus (sicherste Einstellung fuer eine frische Instanz). */
+  mailversandAktiv?: boolean;
+  /** E-Mail-Versand (Einladungen, Passwort-Reset) - ueber die Oberflaeche gepflegt statt
+   *  backend/.env (analog IMAP-Zugang/Anthropic-Key im Mail-Postfach). Ohne vollstaendige
+   *  Host/Benutzer/Passwort-Angabe (oder bei mailversandAktiv=false) faellt das Backend auf
+   *  Link-in-Antwort/Server-Log zurueck. */
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpPasswort?: string;
+  /** Absenderadresse, Format `"Name" <adresse@beispiel.de>`. */
+  smtpAbsender?: string;
   geaendertVon?: BenutzerId;
   geaendertAm?: Zeitstempel;
+}
+
+/** Sicht auf Systemeinstellungen ohne das SMTP-Passwort - stattdessen nur ein Gesetzt-Flag,
+ *  gleiches Muster wie MailPostfachEinstellungenOeffentlich. */
+export interface SystemeinstellungenOeffentlich {
+  selbstregistrierungErlaubt: boolean;
+  selbstregistrierungStandardRolle: SelbstregistrierungsRolle;
+  mailversandAktiv: boolean;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpPasswortGesetzt: boolean;
+  smtpAbsender?: string;
 }

@@ -550,8 +550,8 @@ admin-only lesend wie schreibend):** ein **Singleton-Dokument** (feste `_id`
 `systemeinstellungen:global`, `backend/src/systemeinstellungen.ts`) für systemweite
 App-Einstellungen – bewusst **nicht versioniert** wie `Systemkonfiguration`/Turnierregeln,
 weil hier nichts in ein Turnier kopiert wird und es keinen Anwendungsfall für eine alte
-Version gibt. Gedacht als Erweiterungspunkt für künftige globale Schalter; aktuell nur die
-**Selbstregistrierung**: `selbstregistrierungErlaubt` (Default `false`) +
+Version gibt. Gedacht als Erweiterungspunkt für künftige globale Schalter; aktuell die
+**Selbstregistrierung** und der **E-Mail-Versand** (siehe unten): `selbstregistrierungErlaubt` (Default `false`) +
 `selbstregistrierungStandardRolle` (`benutzer`/`manager` – **„admin" ist im Schema bewusst
 nicht erlaubt**, sowohl Backend-Enum als auch Frontend-Select, damit eine offene
 Selbstregistrierung nie automatisch Admin-Rechte vergeben kann). Ist sie aktiviert, kann sich
@@ -561,6 +561,27 @@ Login-Seite zeigt dann zusätzlich einen „Jetzt registrieren"-Link (Abfrage
 `GET /auth/registrierung-verfuegbar`, öffentlich, analog zu `bootstrap-verfuegbar`). Gedacht
 u. a. für eine Demo-Instanz, an der mehrere Tester parallel eigene Accounts brauchen, ohne dass
 jemand sie einzeln einladen muss.
+
+**E-Mail-Versand (SMTP) ist seit 2026-08-15 kein `.env`-Wert mehr, sondern Teil der
+Systemeinstellungen** (`smtpHost`/`smtpPort`/`smtpUser`/`smtpPasswort`/`smtpAbsender` +
+`mailversandAktiv`, Oberfläche unter Admin → Systemeinstellungen → „E-Mail-Versand (SMTP)") –
+Nutzer-Vorgabe, analog zum bereits `.env`-freien Mail-Postfach (IMAP-Zugang/Anthropic-Key).
+**`mailversandAktiv` ist ein eigener Schalter, unabhängig von vollständig gesetzten
+Zugangsdaten:** so lässt sich SMTP eintragen und über den „Verbindung testen"-Knopf
+(`POST /systemeinstellungen/smtp-testen`, `nodemailer`s `transporter.verify()`) prüfen, bevor
+Einladungs-/Passwort-Reset-Mails tatsächlich live verschickt werden. `smtpPasswort` wird nie über
+GET zurückgegeben (nur `smtpPasswortGesetzt`, gleiches Muster wie beim Mail-Postfach).
+`backend/src/mail/transport.ts` ist dafür komplett auf Parameter statt `process.env` umgestellt
+(`sendeMail(verbindung, optionen)`, analog `imapClient.ts`); `smtpVerbindungAus()`
+(`backend/src/systemeinstellungen.ts`) baut daraus die Verbindung oder liefert `undefined`, wenn
+nicht aktiviert/vollständig konfiguriert – die drei Aufrufstellen in `routes/benutzer.ts`
+(Einladung, admin-ausgelöster Reset, Self-Service „Passwort vergessen") fallen dann weiterhin auf
+Link-in-Antwort/Server-Log zurück, unverändert zum bisherigen Verhalten. **Auch der
+Mail-Postfach-Bericht-Versand** (`mail/bericht.ts`, an `berichtEmpfaenger`) läuft jetzt über
+dieselbe zentrale SMTP-Konfiguration statt einer eigenen – ein Admin pflegt nur noch eine
+Zugangsdaten-Stelle für sämtlichen ausgehenden App-Mailversand. Der `torball`-Konsolenbefehl
+`konfiguration:setzen` kennt `SMTP_*` entsprechend nicht mehr (Allowlist bereinigt); der
+Windows-Installer fragt SMTP beim Ersteinrichten ebenfalls nicht mehr ab.
 
 **Demo-Snapshot/Reset (`backend/src/demo/`, CLI-Befehle `demo:*`):** die Demo-Instanz bekommt einen
 nächtlichen Reset auf CouchDB-Ebene statt eines App-seitigen Löschens. `beispieldaten.ts` erzeugt

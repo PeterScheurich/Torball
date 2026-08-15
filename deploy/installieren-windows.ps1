@@ -10,7 +10,8 @@
 #     deploy/deploy-instanz.sh auf der Linux-Seite
 #   - npm install + Build (shared zuerst)
 #   - backend/.env (nur wenn noch keine vorhanden ist - vorhandene Konfiguration bleibt unberuehrt;
-#     fragt bei einer Neuanlage Port + optionalen SMTP-Versand ab, jeweils mit Standardwert)
+#     fragt bei einer Neuanlage nach dem Port, mit Standardwert. SMTP-Mailversand wird NICHT mehr
+#     hier abgefragt, sondern spaeter ueber die Oberflaeche unter Systemeinstellungen gepflegt)
 #   - Start-Torball.cmd + Aktualisieren-Torball.cmd + Desktop-Verknuepfung
 #
 # Das Backend liefert dabei das gebaute Frontend selbst mit aus (SERVE_FRONTEND=true, siehe
@@ -98,14 +99,6 @@ function Frage-MitDefault {
     $eingabe = Read-Host "$Text [$Standard]"
     if ([string]::IsNullOrWhiteSpace($eingabe)) { return $Standard }
     return $eingabe
-}
-
-function Frage-JaNein {
-    param([string]$Text, [bool]$StandardJa)
-    $hinweis = if ($StandardJa) { "J/n" } else { "j/N" }
-    $eingabe = Read-Host "$Text [$hinweis]"
-    if ([string]::IsNullOrWhiteSpace($eingabe)) { return $StandardJa }
-    return $eingabe -match '^[jJyY]'
 }
 
 if (Test-Couchdb) {
@@ -224,21 +217,9 @@ if (Test-Path $EnvFile) {
         $Port = Frage-MitDefault -Text "Port, unter dem die App laufen soll" -Standard "3000"
     }
 
-    $SmtpHost = ""; $SmtpPort = "587"; $SmtpUser = ""; $SmtpPassword = ""
-    $SmtpFrom = '"Torball-Turniere" <noreply@example.com>'
-    $SmtpEinrichten = Frage-JaNein -Text "SMTP-Mailversand jetzt einrichten (Einladungs-/Passwort-Reset-Mails; ohne das erscheint der Link stattdessen im Server-Log)?" -StandardJa $false
-    if ($SmtpEinrichten) {
-        $SmtpHost = Frage-MitDefault -Text "SMTP-Host" -Standard ""
-        $SmtpPort = Frage-MitDefault -Text "SMTP-Port" -Standard "587"
-        $SmtpUser = Frage-MitDefault -Text "SMTP-Benutzer" -Standard ""
-        $secureSmtp = Read-Host "SMTP-Passwort" -AsSecureString
-        $SmtpPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureSmtp))
-        $SmtpFrom = Frage-MitDefault -Text "Absender-Adresse (Format: `"Name`" <adresse@beispiel.de>)" -Standard $SmtpFrom
-    }
-    # In Anfuehrungszeichen setzen, falls Sonderzeichen (v.a. #) enthalten sind - sonst wird beim
-    # Start alles ab dem # als Kommentar abgeschnitten (siehe CLAUDE.md, Betrieb/Infrastruktur).
-    if ($SmtpPassword -match '[\s#]' -and -not $SmtpPassword.StartsWith('"')) { $SmtpPassword = "`"$SmtpPassword`"" }
-
+    # SMTP-Mailversand (Einladungen/Passwort-Reset) wird NICHT hier abgefragt - seit 2026-08-15
+    # ueber die Oberflaeche gepflegt (Admin-Menue -> Systemeinstellungen -> "E-Mail-Versand (SMTP)"),
+    # kein .env-Wert mehr.
     @"
 PORT=$Port
 HOST=127.0.0.1
@@ -248,11 +229,6 @@ COUCHDB_USER=$DbUser
 COUCHDB_PASSWORD=$DbPass
 COOKIE_SECURE=false
 FRONTEND_URL=http://localhost:$Port
-SMTP_HOST=$SmtpHost
-SMTP_PORT=$SmtpPort
-SMTP_USER=$SmtpUser
-SMTP_PASSWORD=$SmtpPassword
-SMTP_FROM=$SmtpFrom
 KANBAN_BOARD_AKTIV=false
 SERVE_FRONTEND=true
 "@ | Set-Content -Path $EnvFile -Encoding utf8
@@ -301,4 +277,5 @@ Write-Host "Ueber die Desktop-Verknuepfung 'Torball-Turniere' starten (oeffnet h
 Write-Host "Beim allerersten Start fuehrt die Anmeldeseite durch die einmalige Ersteinrichtung des ersten Admin-Kontos."
 Write-Host ""
 Write-Host "Spaeter aktualisieren: $UpdateCmd doppelklicken."
-Write-Host "Spaeter Konfiguration anpassen (z.B. Port, SMTP): in backend/ 'npm run torball -- konfiguration:anzeigen' bzw. 'konfiguration:setzen' (siehe --hilfe)."
+Write-Host "Spaeter Konfiguration anpassen (z.B. Port): in backend/ 'npm run torball -- konfiguration:anzeigen' bzw. 'konfiguration:setzen' (siehe --hilfe)."
+Write-Host "E-Mail-Versand (SMTP) fuer Einladungen/Passwort-Reset: im Admin-Menue unter Systemeinstellungen einrichten."

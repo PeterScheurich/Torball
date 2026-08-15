@@ -1,17 +1,33 @@
 import { useCallback, useEffect, useState } from "react";
 import type { SelbstregistrierungsRolle } from "@torball/shared";
-import { getSystemeinstellungen, updateSystemeinstellungen } from "../api";
+import {
+  getSystemeinstellungen,
+  testeSmtpVerbindung,
+  updateSystemeinstellungen,
+  type MailTestErgebnis,
+} from "../api";
 
 /**
- * Systemweite App-Einstellungen (nur Admin) - aktuell Selbstregistrierung, gedacht als
- * Erweiterungspunkt fuer kuenftige globale Schalter (siehe shared Systemeinstellungen-Typ).
- * Bewusst getrennt von den Standardregeln (Turnierregeln): andere Art von Einstellung
- * (unversioniert, wirkt sofort), keine Kopplung an neu angelegte Turniere.
+ * Systemweite App-Einstellungen (nur Admin) - Selbstregistrierung sowie E-Mail-Versand (SMTP) fuer
+ * Einladungen/Passwort-Reset, gedacht als Erweiterungspunkt fuer kuenftige globale Schalter (siehe
+ * shared Systemeinstellungen-Typ). Bewusst getrennt von den Standardregeln (Turnierregeln): andere
+ * Art von Einstellung (unversioniert, wirkt sofort), keine Kopplung an neu angelegte Turniere.
  */
 export function SystemeinstellungenPage() {
   const [selbstregistrierungErlaubt, setSelbstregistrierungErlaubt] = useState(false);
   const [selbstregistrierungStandardRolle, setSelbstregistrierungStandardRolle] =
     useState<SelbstregistrierungsRolle>("benutzer");
+
+  const [mailversandAktiv, setMailversandAktiv] = useState(false);
+  const [smtpHost, setSmtpHost] = useState("");
+  const [smtpPort, setSmtpPort] = useState("");
+  const [smtpUser, setSmtpUser] = useState("");
+  const [smtpPasswort, setSmtpPasswort] = useState("");
+  const [smtpAbsender, setSmtpAbsender] = useState("");
+  const [smtpPasswortGesetzt, setSmtpPasswortGesetzt] = useState(false);
+  const [smtpTestLaeuft, setSmtpTestLaeuft] = useState(false);
+  const [smtpTestErgebnis, setSmtpTestErgebnis] = useState<MailTestErgebnis | undefined>();
+
   const [geladen, setGeladen] = useState(false);
   const [sendet, setSendet] = useState(false);
   const [fehler, setFehler] = useState<string | undefined>();
@@ -22,6 +38,13 @@ export function SystemeinstellungenPage() {
       const einstellungen = await getSystemeinstellungen();
       setSelbstregistrierungErlaubt(einstellungen.selbstregistrierungErlaubt);
       setSelbstregistrierungStandardRolle(einstellungen.selbstregistrierungStandardRolle);
+      setMailversandAktiv(einstellungen.mailversandAktiv);
+      setSmtpHost(einstellungen.smtpHost ?? "");
+      setSmtpPort(einstellungen.smtpPort ? String(einstellungen.smtpPort) : "");
+      setSmtpUser(einstellungen.smtpUser ?? "");
+      setSmtpPasswort("");
+      setSmtpAbsender(einstellungen.smtpAbsender ?? "");
+      setSmtpPasswortGesetzt(einstellungen.smtpPasswortGesetzt);
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden");
@@ -34,18 +57,72 @@ export function SystemeinstellungenPage() {
     laden();
   }, [laden]);
 
+  // smtpHost/User/Absender zeigt das Formular immer im Klartext - ein geleertes Feld bedeutet hier
+  // also "löschen" (null). smtpPasswort wird nie angezeigt - ein leeres Feld bedeutet "unverändert
+  // lassen" (Feld fehlt im Request); explizites Löschen läuft über den eigenen "entfernen"-Knopf.
   async function speichern(event: React.FormEvent) {
     event.preventDefault();
     setSendet(true);
     setGespeichertHinweis(false);
     try {
-      await updateSystemeinstellungen({ selbstregistrierungErlaubt, selbstregistrierungStandardRolle });
+      const ergebnis = await updateSystemeinstellungen({
+        selbstregistrierungErlaubt,
+        selbstregistrierungStandardRolle,
+        mailversandAktiv,
+        smtpHost: smtpHost.trim() || null,
+        smtpPort: smtpPort.trim() ? Number(smtpPort) : null,
+        smtpUser: smtpUser.trim() || null,
+        smtpPasswort: smtpPasswort.trim() || undefined,
+        smtpAbsender: smtpAbsender.trim() || null,
+      });
+      setSmtpPasswortGesetzt(ergebnis.smtpPasswortGesetzt);
+      setSmtpPasswort("");
       setFehler(undefined);
       setGespeichertHinweis(true);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern");
     } finally {
       setSendet(false);
+    }
+  }
+
+  async function smtpPasswortEntfernen() {
+    try {
+      const ergebnis = await updateSystemeinstellungen({
+        selbstregistrierungErlaubt,
+        selbstregistrierungStandardRolle,
+        mailversandAktiv,
+        smtpHost: smtpHost.trim() || null,
+        smtpUser: smtpUser.trim() || null,
+        smtpAbsender: smtpAbsender.trim() || null,
+        smtpPasswort: null,
+      });
+      setSmtpPasswortGesetzt(ergebnis.smtpPasswortGesetzt);
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Entfernen");
+    }
+  }
+
+  // Schickt die aktuell im Formular stehenden Werte; ein leeres Passwort-Feld laesst das Backend
+  // auf den bereits gespeicherten Wert zurueckfallen (so laesst sich auch ohne erneute Eingabe
+  // testen, ob ein zuvor gespeicherter Wert noch funktioniert).
+  async function smtpVerbindungTesten() {
+    setSmtpTestLaeuft(true);
+    setSmtpTestErgebnis(undefined);
+    try {
+      setSmtpTestErgebnis(
+        await testeSmtpVerbindung({
+          host: smtpHost.trim() || undefined,
+          port: smtpPort.trim() ? Number(smtpPort) : undefined,
+          user: smtpUser.trim() || undefined,
+          passwort: smtpPasswort.trim() || undefined,
+        }),
+      );
+    } catch (err) {
+      setSmtpTestErgebnis({ ok: false, fehler: err instanceof Error ? err.message : "Test fehlgeschlagen" });
+    } finally {
+      setSmtpTestLaeuft(false);
     }
   }
 
@@ -91,6 +168,109 @@ export function SystemeinstellungenPage() {
             Aus Sicherheitsgründen ist „Admin" hier bewusst nicht wählbar - eine Selbstregistrierung darf nie
             automatisch Admin-Rechte vergeben.
           </p>
+
+          <h2>E-Mail-Versand (SMTP)</h2>
+          <p>
+            Für Einladungen und Passwort-Reset. Ohne aktivierten und vollständig eingerichteten Versand
+            erscheint der jeweilige Link stattdessen im Server-Log bzw. direkt in der Antwort der
+            auslösenden Person.
+          </p>
+          <div className="feld">
+            <label htmlFor="mailversandAktiv">
+              <input
+                id="mailversandAktiv"
+                type="checkbox"
+                checked={mailversandAktiv}
+                onChange={(e) => setMailversandAktiv(e.target.checked)}
+              />{" "}
+              E-Mail-Versand aktivieren
+            </label>
+            <p className="feld-hinweis">
+              Lässt sich unabhängig von den Zugangsdaten unten umschalten - so lässt sich die Verbindung erst
+              testen, bevor Einladungs-/Passwort-Reset-Mails tatsächlich live verschickt werden.
+            </p>
+          </div>
+          <div className="tabellen-wrapper">
+            <table className="uebersicht-tabelle regeln-tabelle">
+              <caption className="sr-only">SMTP-Zugang</caption>
+              <tbody>
+                <tr>
+                  <th scope="row">
+                    <label htmlFor="smtp-host">Host</label>
+                  </th>
+                  <td>
+                    <input id="smtp-host" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} />
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    <label htmlFor="smtp-port">Port</label>
+                  </th>
+                  <td>
+                    <input
+                      id="smtp-port"
+                      type="number"
+                      placeholder="587"
+                      value={smtpPort}
+                      onChange={(e) => setSmtpPort(e.target.value)}
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    <label htmlFor="smtp-user">Benutzer</label>
+                  </th>
+                  <td>
+                    <input id="smtp-user" value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} />
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    <label htmlFor="smtp-passwort">Passwort</label>
+                  </th>
+                  <td>
+                    <input
+                      id="smtp-passwort"
+                      type="password"
+                      autoComplete="new-password"
+                      value={smtpPasswort}
+                      onChange={(e) => setSmtpPasswort(e.target.value)}
+                    />
+                    <p className="feld-hinweis">
+                      {smtpPasswortGesetzt ? "Hinterlegt – leer lassen, um es zu behalten." : "Noch nicht hinterlegt."}
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    <label htmlFor="smtp-absender">Absender</label>
+                  </th>
+                  <td>
+                    <input
+                      id="smtp-absender"
+                      placeholder='"Torball-Turniere" &lt;noreply@beispiel.de&gt;'
+                      value={smtpAbsender}
+                      onChange={(e) => setSmtpAbsender(e.target.value)}
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="kanban-sync-aktionen">
+            <button type="button" onClick={smtpVerbindungTesten} disabled={smtpTestLaeuft}>
+              {smtpTestLaeuft ? "Verbindung wird getestet…" : "Verbindung testen"}
+            </button>
+            {smtpPasswortGesetzt && (
+              <button type="button" onClick={smtpPasswortEntfernen}>
+                Passwort entfernen
+              </button>
+            )}
+          </div>
+          {smtpTestErgebnis && (
+            <p role="status">{smtpTestErgebnis.ok ? "✓ Verbindung erfolgreich." : `✗ ${smtpTestErgebnis.fehler}`}</p>
+          )}
+
           {gespeichertHinweis && <p>Gespeichert.</p>}
           <button type="submit" disabled={sendet}>
             Speichern

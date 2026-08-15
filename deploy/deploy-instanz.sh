@@ -20,8 +20,8 @@
 # torball@<name>. Wiederholtes Ausfuehren = Update (git pull + rebuild + restart).
 # backend/.env wird NUR beim allerersten Deploy geschrieben - ein Update laesst eine bereits
 # vorhandene Datei unveraendert, damit spaeter manuell gesetzte Werte (COOKIE_SECURE,
-# FRONTEND_URL, SMTP, DEMO_SNAPSHOT_ERLAUBT, per "torball konfiguration:setzen" geaenderte Werte,
-# ...) nicht bei jedem Update wieder auf den Bootstrap-Default zurueckfallen. Weicht bei einem
+# FRONTEND_URL, DEMO_SNAPSHOT_ERLAUBT, per "torball konfiguration:setzen" geaenderte Werte, ...)
+# nicht bei jedem Update wieder auf den Bootstrap-Default zurueckfallen. Weicht bei einem
 # Update ein angegebener Port vom bisher konfigurierten ab, fragt das Skript interaktiv nach
 # (Tippfehler-Schutz, z.B. 8000 statt 8080).
 set -euo pipefail
@@ -122,8 +122,8 @@ curl "${AUTH[@]}" -X PUT "http://127.0.0.1:5984/${DB}/_security" \
 
 if [[ -f "${DIR}/backend/.env" ]]; then
   # NUR beim allerersten Deploy neu schreiben - ein Update wuerde sonst jeden manuell gesetzten
-  # Wert (COOKIE_SECURE/FRONTEND_URL fuer HTTPS, SMTP-Zugangsdaten, DEMO_SNAPSHOT_ERLAUBT, ...)
-  # stillschweigend auf den Bootstrap-Default zuruecksetzen. Live erlebt: ein "torball-
+  # Wert (COOKIE_SECURE/FRONTEND_URL fuer HTTPS, DEMO_SNAPSHOT_ERLAUBT, ...) stillschweigend auf
+  # den Bootstrap-Default zuruecksetzen. Live erlebt: ein "torball-
   # aktualisieren demo" hat DEMO_SNAPSHOT_ERLAUBT so unbemerkt wieder auf false gedreht, obwohl
   # deploy/demo-snapshot-einrichten.sh es zuvor gezielt auf true gesetzt hatte.
   echo "== backend/.env existiert bereits - unveraendert gelassen (Update) =="
@@ -140,13 +140,8 @@ COUCHDB_PASSWORD=${DB_PASS}
 # setzen UND FRONTEND_URL auf die https-Adresse aendern (siehe Doku), dann Service neu starten.
 COOKIE_SECURE=false
 FRONTEND_URL=http://${SERVER_NAME}:${FE_PORT}
-# SMTP optional - ausfuellen fuer echten Mailversand (Einladung/Passwort-Reset). Ohne Werte:
-# Fallback (Link kommt in die API-Antwort bzw. ins Server-Log).
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASSWORD=
-SMTP_FROM="Torball-Turniere" <noreply@example.com>
+# E-Mail-Versand (Einladung/Passwort-Reset) wird NICHT hier eingetragen, sondern spaeter ueber die
+# Oberflaeche (Admin -> Systemeinstellungen -> "E-Mail-Versand (SMTP)") - kein .env-Wert mehr.
 KANBAN_BOARD_AKTIV=false
 # Schaltet die demo:*-CLI-Befehle frei (Snapshot/Restore, siehe backend/src/demo/snapshot.ts) -
 # bleibt fuer jede Instanz false, bis deploy/demo-snapshot-einrichten.sh gezielt fuer eine

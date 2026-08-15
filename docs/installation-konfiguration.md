@@ -47,14 +47,21 @@ Prozess neu starten.
 | `COUCHDB_URL` | URL der CouchDB (z. B. `http://couchdb-host:5984`) |
 | `COUCHDB_DB` | Datenbankname |
 | `COUCHDB_USER` / `COUCHDB_PASSWORD` | CouchDB-Zugang |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_FROM` | E-Mail-Versand (Einladungen, Passwort-Reset). Optional – ohne diese Werte fällt das Backend auf Link-in-Antwort/Server-Log zurück. |
 | `FRONTEND_URL` | Basis-URL des Frontends für Links in E-Mails |
 | `COOKIE_SECURE` | Session-Cookie mit `Secure`-Flag ausliefern (nur über HTTPS gültig). **Lokal (HTTP) weglassen bzw. `false`**, sonst setzt der Browser das Cookie nicht und der Login schlägt fehl. **In Produktion hinter HTTPS zwingend `true`.** |
 | `SERVE_FRONTEND` | Einzelprozess-Modus: Backend liefert `frontend/dist` gleich mit aus (siehe Windows-Installer unten). Auf dem Debian-Produktivserver weglassen/`false` – dort übernimmt nginx das Ausliefern. |
 
 **Werte mit Sonderzeichen** (z. B. `#`, Leerzeichen) immer in Anführungszeichen
-setzen (`SMTP_PASSWORD="Geheim#123"`) – ohne Anführungszeichen wird alles ab
+setzen (`COUCHDB_PASSWORD="Geheim#123"`) – ohne Anführungszeichen wird alles ab
 einem `#` als Kommentar abgeschnitten.
+
+**E-Mail-Versand (SMTP) steht bewusst NICHT in dieser Tabelle** – anders als die übrigen Werte wird
+er nicht in `backend/.env` gepflegt, sondern über die Oberfläche (Admin-Menü → Systemeinstellungen
+→ „E-Mail-Versand (SMTP)"): Host/Port/Benutzer/Passwort/Absender eintragen, per „Verbindung
+testen" prüfen und über den Schalter „E-Mail-Versand aktivieren" freischalten. Ohne aktivierten,
+vollständig eingerichteten Versand erscheinen Einladungs-/Passwort-Reset-Links stattdessen im
+Server-Log bzw. direkt in der Antwort der auslösenden Person – die App bleibt also auch ohne
+SMTP-Konto voll nutzbar.
 
 ## Ersteinrichtung des ersten Admin-Kontos
 
@@ -170,10 +177,10 @@ Administratorrechten – nötig für die Node-/CouchDB-Installation). Das Skript
 - **App-Datenbank + eigener eingeschränkter CouchDB-Benutzer** (`torball_backend`, kein
   Admin-Zugriff) – analog zu `deploy/deploy-instanz.sh` auf der Linux-Seite.
 - **Bauen** (`npm install`, `shared` zuerst, dann alle Workspaces).
-- **`backend/.env`** – nur angelegt, falls noch keine vorhanden ist; fragt dabei interaktiv den
-  **Port** (Standard `3000`) sowie optional **SMTP-Zugangsdaten** für den Mailversand ab (jeweils
-  mit vorgeschlagenem Standardwert, einfach Enter drücken zum Übernehmen). Setzt zusätzlich
-  `SERVE_FRONTEND=true` (siehe unten).
+- **`backend/.env`** – nur angelegt, falls noch keine vorhanden ist; fragt dabei interaktiv nach dem
+  **Port** (Standard `3000`, mit vorgeschlagenem Standardwert, einfach Enter drücken zum
+  Übernehmen). Setzt zusätzlich `SERVE_FRONTEND=true` (siehe unten). SMTP-Mailversand wird nicht
+  hier abgefragt, sondern später über die Oberfläche eingerichtet (siehe oben).
 - **`Start-Torball.cmd`** + **`Aktualisieren-Torball.cmd`** im Projektordner sowie eine Verknüpfung
   „Torball-Turniere" auf dem Desktop (startet `Start-Torball.cmd`).
 
@@ -193,8 +200,8 @@ weil er nur Anfragen mit `/api`-Präfix erkannte und eine volle Seiten-Navigatio
 ohne dieses Präfix (z. B. `/turniere/:id`) mit der gleichnamigen Backend-Route kollidierte.
 
 **Konfiguration später anpassen oder die App aktualisieren:** Für Änderungen nach der Installation
-(z. B. Port oder SMTP nachträglich setzen) muss nicht der komplette Installer erneut durchlaufen
-werden – dafür hat das Konsolen-Tool `torball` (siehe unten) eigene Befehle:
+(z. B. Port nachträglich setzen) muss nicht der komplette Installer erneut durchlaufen werden –
+dafür hat das Konsolen-Tool `torball` (siehe unten) eigene Befehle:
 
 ```bash
 npm run torball --workspace=backend -- konfiguration:anzeigen

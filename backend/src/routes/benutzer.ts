@@ -7,7 +7,8 @@ import { requireAuth, requireRolle } from "../auth/plugin";
 import { loescheAlleSessionenVonBenutzer, loescheAndereSessionenVonBenutzer } from "../auth/session";
 import { erzeugeOtpAuthUri, erzeugeQrCodeDataUri, erzeugeTotpSecret, totpCodeGueltig } from "../auth/totp";
 import { erzeugeToken, hashe } from "../auth/token";
-import { mailKonfiguriert, sendeMail } from "../mail/transport";
+import { sendeMail } from "../mail/transport";
+import { aktuelleSystemeinstellungen, smtpVerbindungAus } from "../systemeinstellungen";
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
 
@@ -103,9 +104,10 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       };
       const gespeichert = await insertDoc(benutzer);
 
-      if (mailKonfiguriert()) {
+      const smtp = smtpVerbindungAus(await aktuelleSystemeinstellungen());
+      if (smtp) {
         try {
-          await sendeMail({
+          await sendeMail(smtp, {
             an: email,
             betreff: "Einladung zu Torball-Turniere",
             text:
@@ -360,9 +362,10 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       resetAblauf: new Date(Date.now() + RESET_GUELTIG_MS).toISOString(),
     });
 
-    if (mailKonfiguriert()) {
+    const smtpFuerReset = smtpVerbindungAus(await aktuelleSystemeinstellungen());
+    if (smtpFuerReset) {
       try {
-        await sendeMail({
+        await sendeMail(smtpFuerReset, {
           an: ziel.email,
           betreff: "Passwort zurücksetzen - Torball-Turniere",
           text:
@@ -466,9 +469,10 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
           resetAblauf: new Date(Date.now() + RESET_GUELTIG_MS).toISOString(),
         });
 
-        if (mailKonfiguriert()) {
+        const smtpFuerVergessen = smtpVerbindungAus(await aktuelleSystemeinstellungen());
+        if (smtpFuerVergessen) {
           try {
-            await sendeMail({
+            await sendeMail(smtpFuerVergessen, {
               an: benutzer.email,
               betreff: "Passwort zurücksetzen - Torball-Turniere",
               text:

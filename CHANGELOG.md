@@ -11,6 +11,9 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
   Mannschaften desselben Bundeslands bei der Spielplan-Erzeugung möglichst früh gegeneinander
   eingeplant werden – gedacht für Wettbewerbe mit festem Regionalbezug wie Bundesliga oder
   Deutsche Meisterschaft.
+- E-Mail-Versand (für Einladungen und Passwort-Reset) lässt sich jetzt bequem über die
+  Systemeinstellungen einrichten (Host, Port, Zugangsdaten, Absender, Verbindungstest) statt nur
+  über eine Server-Konfigurationsdatei.
 
 ## [0.9.0-beta] - 2026-08-11
 
