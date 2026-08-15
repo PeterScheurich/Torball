@@ -581,6 +581,14 @@ export function benutzerPasswortResetAusloesen(id: string): Promise<{ email: str
   return anfrage(`/benutzer/${id}/passwort-reset-ausloesen`, { method: "POST" });
 }
 
+/** Verschickt die Einladung fuer einen noch nicht aktivierten Account erneut (frischer Token) -
+ * z.B. wenn die urspruengliche Mail nie ankam. Ist Mailversand konfiguriert, geht der Link direkt
+ * an die Adresse und einladungsToken fehlt in der Antwort - sonst kommt der Klartext-Token direkt
+ * zurueck, analog zur Erst-Einladung. */
+export function benutzerEinladungErneutSenden(id: string): Promise<{ email: string; einladungsToken?: string }> {
+  return anfrage(`/benutzer/${id}/einladung-erneut-senden`, { method: "POST" });
+}
+
 /** Admin deaktiviert die 2FA eines anderen Benutzers (z.B. bei verlorener Authenticator-App). */
 export function benutzerZweiFaDeaktivieren(id: string): Promise<BenutzerProfil> {
   return anfrage(`/benutzer/${id}/2fa/deaktivieren`, { method: "POST" });

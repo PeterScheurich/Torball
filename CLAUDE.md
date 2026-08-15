@@ -935,6 +935,14 @@ dieser Version gilt der folgende Ablauf:
 
 - Kein Benutzer-Löschen-Endpunkt: „Sperren" (`gesperrt: true`) ist der laut
   Spezifikation (Abschnitt 25.3) vorgesehene Mechanismus, kein Hard-Delete.
+  Für noch nicht aktivierte Accounts (offene Einladung, `hatPasswort: false`)
+  gibt es stattdessen **„Einladung erneut senden"** (`POST
+  /benutzer/:id/einladung-erneut-senden`, ✉-Symbol-Button in der
+  Benutzerverwaltung, nur bei offener Einladung sichtbar) – frischer Token,
+  alter wird ungültig. Gedacht für den Fall, dass die Original-Mail nie ankam
+  (z. B. weil SMTP zum Einladungszeitpunkt noch nicht eingerichtet war);
+  Fallback-Verhalten (Token in der Antwort statt Mail) identisch zur
+  Erst-Einladung und zum admin-ausgelösten Passwort-Reset.
 - Sensible Felder (Passwort-Hash, 2FA-Secret, Einladungs-/Reset-Token-Hashes)
   dürfen nie über die API zurückgegeben werden - immer über
   `oeffentlichesProfil()` (`backend/src/auth/benutzerProfil.ts`) filtern.

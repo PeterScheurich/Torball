@@ -3,6 +3,7 @@ import type { GlobaleRolle } from "@torball/shared";
 import {
   benutzerAktualisieren,
   benutzerEinladen,
+  benutzerEinladungErneutSenden,
   benutzerPasswortResetAusloesen,
   benutzerZweiFaDeaktivieren,
   getBenutzerListe,
@@ -32,6 +33,7 @@ export function BenutzerverwaltungPage() {
   const [einladungslink, setEinladungslink] = useState<string | undefined>();
   const [einladungPerMail, setEinladungPerMail] = useState(false);
   const [resetHinweis, setResetHinweis] = useState<{ email: string; link?: string } | undefined>();
+  const [einladungErneutHinweis, setEinladungErneutHinweis] = useState<{ email: string; link?: string } | undefined>();
   const [fehler, setFehler] = useState<string | undefined>();
 
   const laden = useCallback(async () => {
@@ -112,6 +114,22 @@ export function BenutzerverwaltungPage() {
       });
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Auslösen des Passwort-Resets");
+    }
+  }
+
+  // Verschickt die Einladung fuer einen noch nicht aktivierten Account erneut - z.B. wenn die
+  // urspruengliche Mail nie ankam (etwa weil SMTP zum Zeitpunkt der Einladung noch fehlte).
+  async function einladungErneutSenden(b: BenutzerProfil) {
+    setFehler(undefined);
+    setEinladungErneutHinweis(undefined);
+    try {
+      const { email, einladungsToken } = await benutzerEinladungErneutSenden(b._id);
+      setEinladungErneutHinweis({
+        email,
+        link: einladungsToken ? `${window.location.origin}/einladung/${einladungsToken}` : undefined,
+      });
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim erneuten Senden der Einladung");
     }
   }
 
@@ -200,6 +218,17 @@ export function BenutzerverwaltungPage() {
                       PW-Reset
                     </button>
                   )}
+                  {!b.hatPasswort && (
+                    <button
+                      type="button"
+                      className="symbol-button"
+                      onClick={() => einladungErneutSenden(b)}
+                      aria-label={`Einladung erneut senden an ${b.name}`}
+                      title="Einladung erneut senden"
+                    >
+                      ✉
+                    </button>
+                  )}
                   {angemeldeter?.globaleRolle === "admin" && b.zweiFaAktiv && b._id !== angemeldeter?._id && (
                     <button type="button" onClick={() => zweiFaDeaktivieren(b)}>
                       2FA deaktivieren
@@ -273,6 +302,18 @@ export function BenutzerverwaltungPage() {
           </p>
         ) : (
           <p>Passwort-Reset für {resetHinweis.email} ausgelöst und per E-Mail verschickt.</p>
+        ))}
+
+      {einladungErneutHinweis &&
+        (einladungErneutHinweis.link ? (
+          <p>
+            Einladung für {einladungErneutHinweis.email} erneuert. Kein E-Mail-Versand konfiguriert (oder gerade
+            nicht erreichbar) - Link bitte manuell weitergeben:
+            <br />
+            <input type="text" readOnly value={einladungErneutHinweis.link} onFocus={(e) => e.target.select()} />
+          </p>
+        ) : (
+          <p>Einladung für {einladungErneutHinweis.email} erneuert und per E-Mail verschickt.</p>
         ))}
     </>
   );

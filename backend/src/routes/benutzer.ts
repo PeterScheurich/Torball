@@ -388,6 +388,55 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /**
+   * Verschickt die Einladung fuer einen noch nicht aktivierten Account erneut (frischer Token mit
+   * neuer Gueltigkeit, der alte wird ungueltig) - z.B. wenn die urspruengliche Mail nie ankam, weil
+   * SMTP zum Zeitpunkt der Einladung noch nicht konfiguriert war. Nur fuer Accounts ohne gesetztes
+   * Passwort (noch offene Einladung); ein bereits aktivierter Account hat keinen "erneut senden"-
+   * Anwendungsfall. Fallback-Verhalten (Token in der Antwort bei fehlendem/fehlgeschlagenem
+   * Mailversand) analog zum admin-ausgeloesten Passwort-Reset oben.
+   */
+  app.post<{ Params: { id: string } }>("/benutzer/:id/einladung-erneut-senden", async (req, reply) => {
+    if (!requireRolle(req, reply, ["admin", "manager"])) return;
+    const ziel = await findById<Benutzer>(req.params.id);
+    if (!ziel) return reply.code(404).send({ error: "Benutzer nicht gefunden" });
+    if (!darfZielRolleVergeben(req.benutzer!.globaleRolle, ziel.globaleRolle)) {
+      return reply.code(403).send({ error: "Diesen Benutzer darfst du nicht bearbeiten." });
+    }
+    if (ziel.passwortHash) {
+      return reply.code(400).send({ error: "Dieser Account wurde bereits aktiviert." });
+    }
+
+    const { token, hash } = erzeugeToken();
+    await insertDoc({
+      ...ziel,
+      einladungTokenHash: hash,
+      einladungAblauf: new Date(Date.now() + EINLADUNG_GUELTIG_MS).toISOString(),
+    });
+
+    const smtpFuerEinladung = smtpVerbindungAus(await aktuelleSystemeinstellungen());
+    if (smtpFuerEinladung) {
+      try {
+        await sendeMail(smtpFuerEinladung, {
+          an: ziel.email,
+          betreff: "Einladung zu Torball-Turniere",
+          text:
+            `Hallo ${ziel.name},\n\n` +
+            `du wurdest zu Torball-Turniere eingeladen. Setze dein Passwort unter folgendem Link, ` +
+            `um deinen Account zu aktivieren:\n\n` +
+            `${FRONTEND_URL}/einladung/${token}\n\n` +
+            `Der Link ist 7 Tage gueltig.`,
+        });
+        return reply.send({ email: ziel.email });
+      } catch (err) {
+        app.log.error(err, "Einladungsmail (erneut) konnte nicht versendet werden");
+        return reply.send({ email: ziel.email, einladungsToken: token });
+      }
+    }
+
+    return reply.send({ email: ziel.email, einladungsToken: token });
+  });
+
+  /**
    * Admin deaktiviert die 2FA eines ANDEREN Benutzers. Hintergrund: Verliert jemand den
    * Zugang zu seiner Authenticator-App, ist er ausgesperrt - "neu anlegen + Turniere neu
    * zuordnen" waere zu aufwaendig. Bewusst nur fuer Admins (nicht Manager): das Herabsetzen
