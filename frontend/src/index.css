@@ -1568,7 +1568,6 @@ button:hover:not(:disabled) {
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
-  max-width: 640px;
 }
 .kanban-notizen-liste {
   list-style: none;
@@ -1760,6 +1759,12 @@ button:hover:not(:disabled) {
 .kanban-detail-kopf h2 {
   margin: 0;
   font-size: 1.15rem;
+}
+/* Ohne das faellt jedes <form> im Dialog auf das globale "form { max-width: 420px }" zurueck
+   (gedacht fuer schmale Login-artige Formulare) - Beschreibung/Notiz-Textarea nutzten dadurch
+   trotz des breiten Dialogs nur einen Bruchteil der Breite (live aufgefallen). */
+.kanban-detail-dialog form {
+  max-width: none;
 }
 
 /* .kanban-sync-aktionen wird auch von MailPostfachPage.tsx (IMAP-/API-Key-Test-Knopfreihen)
