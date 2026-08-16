@@ -629,7 +629,11 @@ form {
 .oeffentliche-turnierliste li {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  /* Nicht "baseline": die Basislinie eines verschachtelten inline-flex-Elements (hier
+     .turnier-name-mit-logo, Icon + Link) wird browserabhaengig unterschiedlich berechnet - live
+     aufgefallen (Chrome/Edge), Datum/Ort rutschten dadurch sichtbar zu tief. "center" ist robust
+     unabhaengig von Text-/Bild-Metriken. */
+  align-items: center;
   gap: 4px 10px;
   padding: 5px 0;
   border-bottom: 1px solid var(--border);
