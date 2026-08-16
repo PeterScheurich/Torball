@@ -50,6 +50,7 @@ Prozess neu starten.
 | `FRONTEND_URL` | Basis-URL des Frontends für Links in E-Mails |
 | `COOKIE_SECURE` | Session-Cookie mit `Secure`-Flag ausliefern (nur über HTTPS gültig). **Lokal (HTTP) weglassen bzw. `false`**, sonst setzt der Browser das Cookie nicht und der Login schlägt fehl. **In Produktion hinter HTTPS zwingend `true`.** |
 | `SERVE_FRONTEND` | Einzelprozess-Modus: Backend liefert `frontend/dist` gleich mit aus (siehe Windows-Installer unten). Auf dem Debian-Produktivserver weglassen/`false` – dort übernimmt nginx das Ausliefern. |
+| `TZ` | Zeitzone für die Interpretation von Turnier-Datum/Startzeit ohne Offset (`Europe/Berlin`). Ohne diese Variable nutzt Node die Systemzeitzone des Rechners – auf einem frischen Debian-Server i. d. R. UTC, nicht deutsche Zeit (führt sonst zu einem 1–2h-Versatz je nach Sommer-/Winterzeit). |
 
 **Werte mit Sonderzeichen** (z. B. `#`, Leerzeichen) immer in Anführungszeichen
 setzen (`COUCHDB_PASSWORD="Geheim#123"`) – ohne Anführungszeichen wird alles ab

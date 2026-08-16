@@ -231,6 +231,10 @@ COOKIE_SECURE=false
 FRONTEND_URL=http://localhost:$Port
 KANBAN_BOARD_AKTIV=false
 SERVE_FRONTEND=true
+# Explizit statt der Systemzeitzone des Rechners - siehe deploy-instanz.sh fuer die Begruendung
+# (Turnier-Startzeiten sollen unabhaengig von der lokalen Windows-Zeitzoneneinstellung als
+# deutsche Zeit interpretiert werden, inkl. korrekter Sommer-/Winterzeit-Umstellung).
+TZ=Europe/Berlin
 "@ | Set-Content -Path $EnvFile -Encoding utf8
     Write-Host "backend/.env angelegt."
 }

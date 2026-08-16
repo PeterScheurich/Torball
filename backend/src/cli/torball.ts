@@ -26,7 +26,15 @@ type Befehl = (optionen: Optionen) => Promise<void>;
  * verwaltet), ohne KANBAN_BOARD_AKTIV (nur fuer die Entwicklungs-Instanz relevant) und ohne
  * SMTP_* (seit 2026-08-15 kein .env-Wert mehr, sondern ueber die Oberflaeche unter
  * Systemeinstellungen gepflegt - siehe backend/src/routes/systemeinstellungen.ts). */
-const ERLAUBTE_KONFIGURATIONS_SCHLUESSEL = ["PORT", "HOST", "FRONTEND_URL", "COOKIE_SECURE", "SERVE_FRONTEND", "DEMO_SNAPSHOT_ERLAUBT"];
+const ERLAUBTE_KONFIGURATIONS_SCHLUESSEL = [
+  "PORT",
+  "HOST",
+  "FRONTEND_URL",
+  "COOKIE_SECURE",
+  "SERVE_FRONTEND",
+  "DEMO_SNAPSHOT_ERLAUBT",
+  "TZ",
+];
 
 const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
   "benutzer:liste": {

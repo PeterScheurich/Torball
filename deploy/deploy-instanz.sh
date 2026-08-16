@@ -152,6 +152,11 @@ COUCHDB_PASSWORD=${DB_PASS}
 # setzen UND FRONTEND_URL auf die https-Adresse aendern (siehe Doku), dann Service neu starten.
 COOKIE_SECURE=false
 FRONTEND_URL=http://${FRONTEND_HOST}:${FE_PORT}
+# Ohne explizite Zeitzone interpretiert Node Datum/Uhrzeit-Strings ohne Offset (z.B. Turnier-
+# Startzeiten, siehe backend/src/spielplan/zeitplanung.ts) in der Systemzeitzone des Servers - die
+# ist auf einer frischen Debian-Installation i.d.R. UTC, nicht deutsche Zeit. Europe/Berlin statt
+# eines festen Offsets, damit Node die Sommer-/Winterzeit-Umstellung automatisch beruecksichtigt.
+TZ=Europe/Berlin
 # E-Mail-Versand (Einladung/Passwort-Reset) wird NICHT hier eingetragen, sondern spaeter ueber die
 # Oberflaeche (Admin -> Systemeinstellungen -> "E-Mail-Versand (SMTP)") - kein .env-Wert mehr.
 KANBAN_BOARD_AKTIV=false
