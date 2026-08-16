@@ -33,6 +33,7 @@ import type {
   TurnierRolle,
   Verein,
   VerbundeneInstanz,
+  VideoEintrag,
   WartungStatus,
 } from "@torball/shared";
 
@@ -191,12 +192,19 @@ export interface SystemeinstellungenEingabe {
   smtpPasswort?: string | null;
   smtpAbsender?: string | null;
   benachrichtigungEmpfaenger?: string | null;
+  videos: VideoEintrag[];
 }
 
 export function updateSystemeinstellungen(
   daten: SystemeinstellungenEingabe,
 ): Promise<SystemeinstellungenOeffentlich> {
   return anfrage("/systemeinstellungen", { method: "PUT", body: JSON.stringify(daten) });
+}
+
+/** Oeffentlich (kein Login) - nur die konfigurierten Video-URLs, fuer Einbindungsstellen auf
+ *  oeffentlichen Seiten (z.B. das Einfuehrungsvideo auf der Gaeste-Startseite). */
+export function getOeffentlicheVideos(): Promise<VideoEintrag[]> {
+  return anfrage("/systemeinstellungen/videos");
 }
 
 /** Testet die SMTP-Verbindung mit den uebergebenen Werten; ein weggelassenes Passwort faellt auf

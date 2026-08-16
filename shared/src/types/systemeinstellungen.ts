@@ -5,6 +5,15 @@ import type { GlobaleRolle } from "./benutzer";
  *  offene Selbstregistrierung darf nie automatisch Admin-Rechte verteilen. */
 export type SelbstregistrierungsRolle = Exclude<GlobaleRolle, "admin">;
 
+/** Eine konfigurierbare Video-URL, ueber einen festen `schluessel` vom Code referenziert (siehe
+ *  frontend/src/pages/SystemeinstellungenPage.tsx, VIDEO_SLOTS) - neue Einbindungsstellen brauchen
+ *  nur einen neuen Slot-Eintrag im Code, keine Typ-/Schema-Aenderung. Oeffentlich lesbar (kein
+ *  Geheimwert), separat von der sonst admin-only GET /systemeinstellungen. */
+export interface VideoEintrag {
+  schluessel: string;
+  url: string;
+}
+
 /**
  * Systemweite App-Einstellungen (Singleton-Dokument, immer dieselbe feste ID - siehe
  * backend/src/systemeinstellungen.ts). Anders als Systemkonfiguration/Turnierregeln bewusst NICHT
@@ -35,6 +44,7 @@ export interface Systemeinstellungen extends CouchMeta {
    *  optional, ohne gesetzten Wert (oder ohne aktivierten/konfigurierten Mailversand) verschickt
    *  das Backend keine Benachrichtigung. */
   benachrichtigungEmpfaenger?: string;
+  videos?: VideoEintrag[];
   geaendertVon?: BenutzerId;
   geaendertAm?: Zeitstempel;
 }
@@ -51,4 +61,5 @@ export interface SystemeinstellungenOeffentlich {
   smtpPasswortGesetzt: boolean;
   smtpAbsender?: string;
   benachrichtigungEmpfaenger?: string;
+  videos: VideoEintrag[];
 }

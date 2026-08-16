@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { Systemeinstellungen } from "@torball/shared";
+import type { Systemeinstellungen, VideoEintrag } from "@torball/shared";
 import { insertDoc } from "../repository";
 import { requireRolle } from "../auth/plugin";
 import { testeSmtpVerbindung } from "../mail/transport";
@@ -23,11 +23,12 @@ interface SystemeinstellungenBody {
   smtpPasswort?: string | null;
   smtpAbsender?: string | null;
   benachrichtigungEmpfaenger?: string | null;
+  videos: VideoEintrag[];
 }
 
 const systemeinstellungenSchema = {
   type: "object",
-  required: ["selbstregistrierungErlaubt", "selbstregistrierungStandardRolle", "mailversandAktiv"],
+  required: ["selbstregistrierungErlaubt", "selbstregistrierungStandardRolle", "mailversandAktiv", "videos"],
   properties: {
     selbstregistrierungErlaubt: { type: "boolean" },
     // "admin" bewusst nicht im enum: eine Selbstregistrierung darf nie automatisch
@@ -40,6 +41,14 @@ const systemeinstellungenSchema = {
     smtpPasswort: { type: ["string", "null"] },
     smtpAbsender: { type: ["string", "null"] },
     benachrichtigungEmpfaenger: { type: ["string", "null"] },
+    videos: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["schluessel", "url"],
+        properties: { schluessel: { type: "string" }, url: { type: "string" } },
+      },
+    },
   },
 } as const;
 
@@ -54,6 +63,13 @@ const nurAdmin = (req: FastifyRequest, reply: FastifyReply): boolean => requireR
  *  wie schreibend, anders als die (allen angemeldeten Personen lesbaren) Standardregeln, weil es
  *  hier keinen Grund gibt, dass normale Benutzer diese Werte einsehen muessen. */
 export async function systemeinstellungenRoutes(app: FastifyInstance): Promise<void> {
+  // Oeffentlich (kein Login) - nur die Video-URLs, keine der uebrigen (teils sensiblen)
+  // Systemeinstellungen. Gedacht fuer Einbindungsstellen auf oeffentlichen Seiten (z.B. das
+  // Einfuehrungsvideo auf der Gaeste-Startseite), die ohne Anmeldung geladen werden.
+  app.get("/systemeinstellungen/videos", async () => {
+    return (await aktuelleSystemeinstellungen()).videos ?? [];
+  });
+
   app.get("/systemeinstellungen", async (req, reply) => {
     if (!nurAdmin(req, reply)) return;
     return oeffentlicheSystemeinstellungen(await aktuelleSystemeinstellungen());
@@ -79,6 +95,7 @@ export async function systemeinstellungenRoutes(app: FastifyInstance): Promise<v
         smtpPasswort: feldOderBisherig(req.body.smtpPasswort, bisherige.smtpPasswort),
         smtpAbsender: feldOderBisherig(req.body.smtpAbsender, bisherige.smtpAbsender),
         benachrichtigungEmpfaenger: feldOderBisherig(req.body.benachrichtigungEmpfaenger, bisherige.benachrichtigungEmpfaenger),
+        videos: req.body.videos,
         geaendertVon: req.benutzer!._id,
         geaendertAm: new Date().toISOString(),
       };

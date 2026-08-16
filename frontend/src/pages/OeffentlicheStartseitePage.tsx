@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getOeffentlicheTurnierliste, type OeffentlichesTurnierListenElement } from "../api";
+import { getOeffentlicheTurnierliste, getOeffentlicheVideos, type OeffentlichesTurnierListenElement } from "../api";
 import { formatiereDatum } from "../format";
 import { TurnierLogo } from "../components/TurnierLogo";
+import { VIDEO_SLOT_STARTSEITE_INTRO } from "../videoSlots";
+import { youtubeEmbedUrl } from "../youtube";
 
 function istAbgeschlossen(status: string): boolean {
   return status === "abgeschlossen" || status === "archiviert";
@@ -37,12 +39,21 @@ export function OeffentlicheStartseitePage() {
   const [turniere, setTurniere] = useState<OeffentlichesTurnierListenElement[]>([]);
   const [fehler, setFehler] = useState<string>();
   const [geladen, setGeladen] = useState(false);
+  const [introVideoEmbedUrl, setIntroVideoEmbedUrl] = useState<string>();
 
   useEffect(() => {
     getOeffentlicheTurnierliste()
       .then(setTurniere)
       .catch((err) => setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden"))
       .finally(() => setGeladen(true));
+    // Best effort: fehlt/scheitert der Abruf, wird das Video einfach nicht angezeigt - kein
+    // Grund, die Turnierliste deswegen mit einer Fehlermeldung zu blockieren.
+    getOeffentlicheVideos()
+      .then((videos) => {
+        const url = videos.find((v) => v.schluessel === VIDEO_SLOT_STARTSEITE_INTRO)?.url;
+        setIntroVideoEmbedUrl(url ? youtubeEmbedUrl(url) : undefined);
+      })
+      .catch(() => setIntroVideoEmbedUrl(undefined));
   }, []);
 
   // Aktive/geplante Turniere nach Datum aufsteigend (naechste zuerst), abgeschlossene absteigend (neueste zuerst).
@@ -62,17 +73,17 @@ export function OeffentlicheStartseitePage() {
             <Link to="/login">anmelden</Link>.
           </p>
         </div>
-        {/* youtube-nocookie.com statt youtube.com: setzt erst bei tatsaechlicher Wiedergabe
-            Tracking-Cookies, nicht schon beim reinen Laden der Seite. */}
-        <div className="startseite-video">
-          <iframe
-            src="https://www.youtube-nocookie.com/embed/SJfSENCQlNE"
-            title="Einführungsvideo: Torball-Turniere"
-            loading="lazy"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-          />
-        </div>
+        {introVideoEmbedUrl && (
+          <div className="startseite-video">
+            <iframe
+              src={introVideoEmbedUrl}
+              title="Einführungsvideo: Torball-Turniere"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+        )}
       </div>
 
       {fehler && <p role="alert">{fehler}</p>}

@@ -593,6 +593,21 @@ buendelt die Logik fuer beide Aufrufstellen (haengt an `smtpVerbindungAus()`, al
 nur geloggt (`console.error`, kein `app.log`, da die Funktion ausserhalb eines Request-Handlers
 liegt), blockiert aber nie die eigentliche Registrierung/Aktivierung.
 
+**Konfigurierbare Video-URLs (2026-08-17, Nutzer-Vorgabe):** `Systemeinstellungen.videos?:
+VideoEintrag[]` (`{schluessel, url}`) statt eines im Code fest verdrahteten YouTube-Links – Auslöser
+war ein Tippfehler im ursprünglich hart codierten Link. `frontend/src/videoSlots.ts` definiert die
+**bekannten Einbindungsstellen** (aktuell nur `VIDEO_SLOT_STARTSEITE_INTRO`, mit Label +
+Beschreibung fürs Admin-Formular) – eine **neue** Einbindungsstelle braucht nur einen neuen Eintrag
+dort (erscheint automatisch als Zeile in „Admin → Systemeinstellungen → Video-URLs") und eine
+Stelle im UI, die ihre URL per `schluessel` nachschlägt; die Speicherung selbst ist bereits ein
+generisches Array, keine Schema-Änderung nötig. `GET /systemeinstellungen/videos` ist bewusst
+**öffentlich** (kein Login), anders als die sonst admin-only `GET /systemeinstellungen` – URLs sind
+nicht sensibel, werden aber auf öffentlichen Seiten (aktuell die Gäste-Startseite) gebraucht.
+`frontend/src/youtube.ts::youtubeEmbedUrl()` wandelt eine beliebige YouTube-URL-Form (`youtu.be/…`
+oder `youtube.com/watch?v=…`) in eine `youtube-nocookie.com`-Embed-URL um (setzt erst bei
+tatsächlicher Wiedergabe Tracking-Cookies) – liefert `undefined` bei nicht erkannter URL, der
+jeweilige Video-Slot wird dann einfach nicht gerendert statt eine kaputte Einbettung zu zeigen.
+
 **Wartungsmodus (`docType: "wartung"`, Singleton-Dokument, eigene Route `/wartung`, eigener Admin-
 Menüpunkt „Wartungsmodus"):** bewusst **zwei unabhängige, manuell gesetzte Schalter statt einer
 Automatik** (Nutzer-Vorgabe) – keiner schaltet den anderen um. **Ankündigung**

@@ -34,6 +34,7 @@ export function oeffentlicheSystemeinstellungen(einstellungen: Systemeinstellung
     smtpPasswortGesetzt: Boolean(einstellungen.smtpPasswort),
     smtpAbsender: einstellungen.smtpAbsender,
     benachrichtigungEmpfaenger: einstellungen.benachrichtigungEmpfaenger,
+    videos: einstellungen.videos ?? [],
   };
 }
 

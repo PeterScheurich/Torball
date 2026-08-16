@@ -6,6 +6,7 @@ import {
   updateSystemeinstellungen,
   type MailTestErgebnis,
 } from "../api";
+import { VIDEO_SLOTS } from "../videoSlots";
 
 /**
  * Systemweite App-Einstellungen (nur Admin) - Selbstregistrierung sowie E-Mail-Versand (SMTP) fuer
@@ -25,6 +26,11 @@ export function SystemeinstellungenPage() {
   const [smtpPasswort, setSmtpPasswort] = useState("");
   const [smtpAbsender, setSmtpAbsender] = useState("");
   const [benachrichtigungEmpfaenger, setBenachrichtigungEmpfaenger] = useState("");
+  // Schluessel -> URL, vorbelegt mit allen bekannten Slots (siehe videoSlots.ts) - so zeigt das
+  // Formular auch fuer einen Slot ohne bisher gespeicherte URL bereits eine (leere) Zeile.
+  const [videos, setVideos] = useState<Record<string, string>>(
+    Object.fromEntries(VIDEO_SLOTS.map((slot) => [slot.schluessel, ""])),
+  );
   const [smtpPasswortGesetzt, setSmtpPasswortGesetzt] = useState(false);
   const [smtpTestLaeuft, setSmtpTestLaeuft] = useState(false);
   const [smtpTestErgebnis, setSmtpTestErgebnis] = useState<MailTestErgebnis | undefined>();
@@ -47,6 +53,10 @@ export function SystemeinstellungenPage() {
       setSmtpAbsender(einstellungen.smtpAbsender ?? "");
       setBenachrichtigungEmpfaenger(einstellungen.benachrichtigungEmpfaenger ?? "");
       setSmtpPasswortGesetzt(einstellungen.smtpPasswortGesetzt);
+      setVideos((bisherig) => ({
+        ...bisherig,
+        ...Object.fromEntries(einstellungen.videos.map((v) => [v.schluessel, v.url])),
+      }));
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden");
@@ -58,6 +68,15 @@ export function SystemeinstellungenPage() {
   useEffect(() => {
     laden();
   }, [laden]);
+
+  /** Baut aus dem Formular-State (Schluessel -> URL) wieder das Array fuers PUT - Zeilen mit
+   *  leerer URL werden weggelassen (kein Sinn, einen leeren Eintrag zu speichern). */
+  function videosAlsArray() {
+    return VIDEO_SLOTS.filter((slot) => videos[slot.schluessel]?.trim()).map((slot) => ({
+      schluessel: slot.schluessel,
+      url: videos[slot.schluessel].trim(),
+    }));
+  }
 
   // smtpHost/User/Absender zeigt das Formular immer im Klartext - ein geleertes Feld bedeutet hier
   // also "löschen" (null). smtpPasswort wird nie angezeigt - ein leeres Feld bedeutet "unverändert
@@ -77,6 +96,7 @@ export function SystemeinstellungenPage() {
         smtpPasswort: smtpPasswort.trim() || undefined,
         smtpAbsender: smtpAbsender.trim() || null,
         benachrichtigungEmpfaenger: benachrichtigungEmpfaenger.trim() || null,
+        videos: videosAlsArray(),
       });
       setSmtpPasswortGesetzt(ergebnis.smtpPasswortGesetzt);
       setSmtpPasswort("");
@@ -99,6 +119,7 @@ export function SystemeinstellungenPage() {
         smtpUser: smtpUser.trim() || null,
         smtpAbsender: smtpAbsender.trim() || null,
         smtpPasswort: null,
+        videos: videosAlsArray(),
       });
       setSmtpPasswortGesetzt(ergebnis.smtpPasswortGesetzt);
       setFehler(undefined);
@@ -286,6 +307,36 @@ export function SystemeinstellungenPage() {
               Optional. Geht an diese Adresse, sobald sich jemand selbst registriert oder eine Einladung annimmt -
               nur wenn der E-Mail-Versand oben aktiviert und vollständig eingerichtet ist.
             </p>
+          </div>
+
+          <h2>Video-URLs</h2>
+          <p>
+            YouTube-Links für an fest definierten Stellen der App eingebettete Videos. Leer lassen, wenn an der
+            jeweiligen Stelle kein Video angezeigt werden soll.
+          </p>
+          <div className="tabellen-wrapper">
+            <table className="uebersicht-tabelle regeln-tabelle">
+              <caption className="sr-only">Video-URLs</caption>
+              <tbody>
+                {VIDEO_SLOTS.map((slot) => (
+                  <tr key={slot.schluessel}>
+                    <th scope="row">
+                      <label htmlFor={`video-${slot.schluessel}`}>{slot.label}</label>
+                    </th>
+                    <td>
+                      <input
+                        id={`video-${slot.schluessel}`}
+                        type="url"
+                        placeholder="https://youtu.be/…"
+                        value={videos[slot.schluessel] ?? ""}
+                        onChange={(e) => setVideos((bisherig) => ({ ...bisherig, [slot.schluessel]: e.target.value }))}
+                      />
+                      <p className="feld-hinweis">{slot.beschreibung}</p>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           {gespeichertHinweis && <p>Gespeichert.</p>}
