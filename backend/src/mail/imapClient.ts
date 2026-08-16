@@ -1,5 +1,6 @@
 import { ImapFlow } from "imapflow";
-import { simpleParser } from "mailparser";
+import { simpleParser, type ParsedMail } from "mailparser";
+import type { MailAnhang } from "@torball/shared";
 
 // IMAP-Abruf des zentralen Feedback-Postfachs. Die Zugangsdaten kommen als Parameter (aus den
 // per Oberflaeche gepflegten MailPostfachEinstellungen, siehe mail/postfach.ts) - bewusst NICHT
@@ -18,10 +19,37 @@ export interface AbgerufeneMail {
   betreff: string;
   empfangenAm: string;
   text: string;
+  anhaenge: MailAnhang[];
 }
 
 /** Textlaenge pro Mail begrenzen (Speicher in CouchDB + Prompt-Groesse bei der KI-Klassifikation). */
 const MAX_TEXTLAENGE = 20_000;
+
+/** Anhaenge einer Mail duerfen in Summe hoechstens so gross sein (Base64-kodiert direkt am
+ *  MailNachricht-Dokument gespeichert, analog Turnier.logoDataUrl) - schuetzt vor unnoetigem
+ *  Aufblaehen der CouchDB durch grosse Anhaenge/Spam. Passt ein Anhang nicht mehr hinein, wird er
+ *  uebersprungen (kleinere, noch passende Anhaenge derselben Mail bleiben erhalten), nicht die
+ *  ganze Mail verworfen. */
+const MAX_ANHANG_GESAMT_BYTES = 5 * 1024 * 1024;
+
+/** Nur echte Anhaenge (contentDisposition "attachment"), keine inline eingebetteten Bilder aus
+ *  Signaturen o.ae. (contentDisposition "inline") - das waere fuer die Fehlerbericht-Auswertung
+ *  nur Rauschen. */
+function baueAnhaenge(geparst: ParsedMail): MailAnhang[] {
+  const anhaenge: MailAnhang[] = [];
+  let summe = 0;
+  for (const a of geparst.attachments ?? []) {
+    if (a.contentDisposition !== "attachment") continue;
+    if (summe + a.size > MAX_ANHANG_GESAMT_BYTES) continue;
+    summe += a.size;
+    anhaenge.push({
+      dateiname: a.filename ?? "anhang",
+      contentType: a.contentType,
+      dataUrl: `data:${a.contentType};base64,${a.content.toString("base64")}`,
+    });
+  }
+  return anhaenge;
+}
 
 function baueClient(verbindung: ImapVerbindung): ImapFlow {
   return new ImapFlow({
@@ -66,6 +94,7 @@ export async function holeNeueMails(letzteUid: number, verbindung: ImapVerbindun
           betreff: geparst.subject ?? "(kein Betreff)",
           empfangenAm: (geparst.date ?? new Date()).toISOString(),
           text: (geparst.text ?? "").slice(0, MAX_TEXTLAENGE),
+          anhaenge: baueAnhaenge(geparst),
         });
       }
       if (ergebnisse.length > 0) {

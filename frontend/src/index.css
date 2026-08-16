@@ -1035,6 +1035,23 @@ textarea {
   vertical-align: top;
 }
 
+/* Anhaenge-Spalte im Mail-Postfach: mehrere Anhaenge untereinander statt in einer Reihe, damit
+   lange Dateinamen (Nicht-Bild-Anhaenge) die Spalte nicht unnoetig verbreitern. */
+.mail-anhaenge-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mail-anhang-vorschau {
+  display: block;
+  max-height: 40px;
+  max-width: 80px;
+  object-fit: contain;
+}
+
 /* Nicht editierbare Werte in Label/Wert-Tabellen (Profil, Turnier-Uebersicht), die als
    readOnly-Input statt reinem Text ausgegeben werden: uebernehmen Rahmen/Padding eines
    normalen Eingabefelds, damit sie in derselben Tabellenspalte buendig mit echten

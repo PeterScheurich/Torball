@@ -15,6 +15,14 @@ export type MailManuellerStatus = "erledigt" | "ignoriert" | "kanban";
 
 export type MailBerichtAusloeser = "automatisch" | "manuell";
 
+/** Ein Mail-Anhang, als Data-URL direkt am MailNachricht-Dokument gespeichert (analog
+ *  Turnier.logoDataUrl - bewusst keine separate Dateiablage). */
+export interface MailAnhang {
+  dateiname: string;
+  contentType: string;
+  dataUrl: string;
+}
+
 /**
  * Eine per IMAP abgerufene Mail aus dem zentralen Feedback-Postfach (nur Entwicklungsinstanz,
  * siehe backend/src/mail/postfach.ts). `imapUid` verhindert doppeltes Abrufen derselben Mail;
@@ -27,6 +35,9 @@ export interface MailNachricht extends CouchMeta {
   betreff: string;
   empfangenAm: Zeitstempel;
   text: string;
+  /** Anhaenge der Mail, sofern welche vorhanden waren und der Groessendeckel (siehe
+   *  backend/src/mail/imapClient.ts, MAX_ANHANG_GESAMT_BYTES) das Speichern zugelassen hat. */
+  anhaenge?: MailAnhang[];
   kategorie?: MailKategorie;
   kiZusammenfassung?: string;
   /** Gesetzt, sobald (automatisch oder manuell) eine Kanban-Karte aus dieser Mail entstand. */

@@ -552,6 +552,7 @@ export function MailPostfachPage() {
                 <th>Empfangen</th>
                 <th>Von</th>
                 <th>Betreff</th>
+                <th>Anhänge</th>
                 <th>Kategorie</th>
                 <th>KI-Zusammenfassung</th>
                 <th>Status</th>
@@ -564,6 +565,25 @@ export function MailPostfachPage() {
                   <td>{formatiereZeitstempel(mail.empfangenAm)}</td>
                   <td>{mail.von}</td>
                   <td>{mail.betreff}</td>
+                  <td>
+                    {mail.anhaenge && mail.anhaenge.length > 0 ? (
+                      <ul className="mail-anhaenge-liste">
+                        {mail.anhaenge.map((anhang, index) => (
+                          <li key={index}>
+                            <a href={anhang.dataUrl} download={anhang.dateiname} title={anhang.dateiname}>
+                              {anhang.contentType.startsWith("image/") ? (
+                                <img src={anhang.dataUrl} alt={anhang.dateiname} className="mail-anhang-vorschau" />
+                              ) : (
+                                anhang.dateiname
+                              )}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      "–"
+                    )}
+                  </td>
                   <td>{mail.kategorie ? KATEGORIE_LABEL[mail.kategorie] : "noch nicht klassifiziert"}</td>
                   <td>{mail.kiZusammenfassung ?? "–"}</td>
                   <td>{STATUS_LABEL[mail.manuellerStatus ?? "offen"]}</td>

@@ -52,6 +52,7 @@ export async function erstelleMailBericht(
       betreff: roh.betreff,
       empfangenAm: roh.empfangenAm,
       text: roh.text,
+      anhaenge: roh.anhaenge.length > 0 ? roh.anhaenge : undefined,
       erstelltAm: jetzt,
       aktualisiertAm: jetzt,
     };

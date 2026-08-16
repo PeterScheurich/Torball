@@ -711,6 +711,20 @@ manuell per Knopf/CLI-Befehl `mail:bericht:erstellen`. `MailBericht` speichert `
 `kiOutputTokens` aus `response.usage` für eine grobe Kostenabschätzung direkt im Bericht. Details:
 `docs/Protokolle/2026-08-13-mail-postfach.md`.
 
+**Mail-Anhänge (2026-08-16):** `mailparser`s `simpleParser` liefert Anhänge bereits fertig geparst
+mit; `imapClient.ts::baueAnhaenge()` filtert auf `contentDisposition === "attachment"` (keine
+inline eingebetteten Signatur-Bilder) und speichert sie als Base64-Data-URLs direkt am
+`MailNachricht`-Dokument (`anhaenge: MailAnhang[]`, gleiches Muster wie `Turnier.logoDataUrl` –
+bewusst keine separate Dateiablage). **`MAX_ANHANG_GESAMT_BYTES` (5 MB je Mail)** begrenzt die
+Summe der Anhänge einer Mail – ein einzelner Anhang, der den Deckel sprengen würde, wird
+übersprungen (kleinere Anhänge derselben Mail bleiben erhalten), nicht die ganze Mail verworfen.
+Bewusst kein zusätzlicher Aufräum-Mechanismus über die ohnehin bestehende Aufbewahrungsfrist
+hinaus (Anhänge hängen am Mail-Dokument und verschwinden automatisch mit) – bei diesem
+Nutzungsvolumen (kleines internes Feedback-Postfach, keine dauerhafte Anhäufung, da nur an
+`"kanban"`-Mails dauerhaft gebunden) kein reales Platzproblem. UI: Spalte „Anhänge" in
+`MailPostfachPage.tsx` – Bild-Anhänge als kleine Vorschau, andere Typen als Download-Link, jeweils
+mit `download`-Attribut auf den Original-Dateinamen.
+
 **Mail-Postfach ↔ Kanban, drei zusammenhängende Ergänzungen (2026-08-15, Nutzer-Vorgabe):**
 (1) Die Aufbewahrungsfrist für erledigte/ignorierte Mails (`MailPostfachEinstellungen.aufbewahrungTage`,
 Fallback `STANDARD_AUFBEWAHRUNG_TAGE = 7`) ist über die Oberfläche konfigurierbar statt fest verdrahtet.
