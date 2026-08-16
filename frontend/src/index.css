@@ -362,6 +362,11 @@ header nav span.marke {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  /* Ohne das bricht der Name in Tabellen mit auto-Layout (Turnierliste) oft schon nach wenigen
+     Zeichen um, obwohl die Zelle noch reichlich Platz haette - inline-flex-Inhalt scheint bei
+     der Spaltenbreiten-Berechnung des Browsers kleiner eingeschaetzt zu werden als sein
+     tatsaechlicher Inhalt. nowrap erzwingt die korrekte (volle) Breitenmessung. */
+  white-space: nowrap;
 }
 /* Logo-Bereich in der Turnier-Uebersicht: Vorschau + Aktionsknoepfe nebeneinander. */
 .logo-bereich {
