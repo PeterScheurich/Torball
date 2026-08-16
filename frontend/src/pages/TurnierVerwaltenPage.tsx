@@ -793,7 +793,7 @@ export function TurnierVerwaltenPage() {
       </div>
 
       <div role="tabpanel" id="panel-spielplan" aria-labelledby="tab-spielplan" hidden={aktiverTab !== "spielplan"}>
-        <SpielplanVerwaltung turnierId={turnierId} gesperrt={istGesperrt} />
+        <SpielplanVerwaltung turnierId={turnierId} gesperrt={istGesperrt} onTurnierGeaendert={setTurnier} />
       </div>
 
       <div role="tabpanel" id="panel-ergebnisse" aria-labelledby="tab-ergebnisse" hidden={aktiverTab !== "ergebnisse"}>

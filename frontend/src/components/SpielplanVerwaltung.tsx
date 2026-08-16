@@ -127,13 +127,19 @@ interface Props {
   turnierId: string;
   /** Wird nach jedem Laden/Aendern mit der aktuellen Spieleliste aufgerufen. */
   onGeaendert?: (spiele: Spiel[]) => void;
+  /** Wird nach jedem Laden mit dem aktuellen Turnier aufgerufen - wichtig fuer Eltern-Seiten mit
+   *  eigenem, separat geladenem Turnier-State (z.B. die Uebersicht in TurnierVerwaltenPage): eine
+   *  manuelle Startzeit-Aenderung von Spiel 1 hier schreibt turnier.startzeit serverseitig mit
+   *  (siehe backend/src/routes/spiel.ts), ohne diesen Callback wuerde die Uebersicht das erst nach
+   *  einem Neuladen der Seite mitbekommen. */
+  onTurnierGeaendert?: (turnier: Turnier) => void;
   /** Turnier abgeschlossen: Bearbeitung sperren. Die Reihenfolge-/Zeit-/Status-Steuerung ist bei
    *  abgeschlossenem Turnier ohnehin ueber den Spiel-Status gesperrt (keine "geplant"-Spiele mehr);
    *  zusaetzlich muss die Schiedsrichter-Einteilung (Auto-Zuordnen + Dropdown) gesperrt werden. */
   gesperrt?: boolean;
 }
 
-export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }: Props) {
+export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert, gesperrt = false }: Props) {
   const [turnier, setTurnier] = useState<Turnier | undefined>();
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [spiele, setSpiele] = useState<Spiel[]>([]);
@@ -162,6 +168,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, gesperrt = false }
       setSpiele(s);
       setSchiedsrichter(sr);
       onGeaendert?.(s);
+      onTurnierGeaendert?.(t);
       setFehler(undefined);
       setAktuellesFeld((bisherig) => bisherig ?? t.felder[0]?.feldId);
     } catch (err) {
