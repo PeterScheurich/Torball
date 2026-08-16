@@ -158,7 +158,7 @@ export function SystemeinstellungenPage() {
       {fehler && <p role="alert">{fehler}</p>}
 
       {geladen && (
-        <form onSubmit={speichern}>
+        <form onSubmit={speichern} className="regeln-formular">
           <h2>Selbstregistrierung</h2>
           <p>
             Erlaubt es Besuchern, sich unter <code>/registrieren</code> ohne Einladung selbst einen Account
@@ -314,8 +314,10 @@ export function SystemeinstellungenPage() {
             YouTube-Links für an fest definierten Stellen der App eingebettete Videos. Leer lassen, wenn an der
             jeweiligen Stelle kein Video angezeigt werden soll.
           </p>
+          {/* Bewusst ohne .regeln-tabelle (max-width: 30em) - das war fuer kurze SMTP-Werte
+              gedacht, eine YouTube-URL braucht deutlich mehr Platz im Eingabefeld. */}
           <div className="tabellen-wrapper">
-            <table className="uebersicht-tabelle regeln-tabelle">
+            <table className="uebersicht-tabelle">
               <caption className="sr-only">Video-URLs</caption>
               <tbody>
                 {VIDEO_SLOTS.map((slot) => (
