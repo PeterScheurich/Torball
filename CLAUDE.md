@@ -1123,9 +1123,15 @@ dieser Version gilt der folgende Ablauf:
   Rein build-zeit-gesteuert, **kein Laufzeit-API-Aufruf**: `import.meta.env.DEV` kommt direkt von
   Vite (`npm run dev:frontend`); `VITE_INSTANZ_NAME` schreibt `deploy-instanz.sh` vor jedem Build
   in ein `frontend/.env` (Wert = der Instanzname, den das Skript ohnehin schon als Parameter
-  bekommt, z. B. `demo`) – auf `prod` sowie beim Windows-Installer (kein `VITE_INSTANZ_NAME`
+  bekommt, z. B. `demo`/`test`) – auf `prod` sowie beim Windows-Installer (kein `VITE_INSTANZ_NAME`
   gesetzt) erscheint bewusst kein Banner. `frontend/.env` ist über die bestehende `.env`-Regel in
-  `.gitignore` automatisch mit abgedeckt, kein zusätzlicher Eintrag nötig.
+  `.gitignore` automatisch mit abgedeckt, kein zusätzlicher Eintrag nötig. **Zwei Stufen bei
+  Nicht-Prod (seit 2026-08-16):** exakt `VITE_INSTANZ_NAME === "demo"` zeigt den spezifischen
+  Hinweis auf den automatischen nächtlichen Reset; jeder andere Nicht-Prod-Name (z. B. ein manueller
+  Test-Deploy wie `test`) bekommt stattdessen einen generischen „Nicht-Produktivumgebung"-Hinweis
+  ohne diese Behauptung – live aufgefallen, als eine Instanz `test` fälschlich den Demo-Reset-Text
+  zeigte, obwohl dort gar kein automatischer Reset eingerichtet ist (der läuft nur für `demo`, siehe
+  `deploy/demo-snapshot-einrichten.sh`).
 - **Interne LAN-Adressen gehören NICHT ins Repo** (Nutzer-Vorgabe): Dev-CouchDB,
   Gitea-Repo, BookStack usw. stehen im Repo nur als Platzhalter (`couchdb-host`,
   `gitea-host`, `bookstack-host`); die konkreten Adressen liegen im Claude-Memory.
