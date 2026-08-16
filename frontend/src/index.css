@@ -619,28 +619,27 @@ form {
   border-radius: 8px;
 }
 
-/* Turnierliste der oeffentlichen Startseite: Name + Zusatzinfos (Spieltag/Ort) in EINER Zeile,
-   damit die Abstaende kompakt bleiben. Auf schmalen Schirmen darf die Zeile umbrechen. */
+/* Turnierliste der oeffentlichen Startseite: Name+Logo in einer Zeile, Zusatzinfos (Spieltag/Ort)
+   als eigene Zeile darunter - analog .turnier-meta in der internen Turnierliste. Bewusst NICHT
+   nebeneinander in einer Zeile (fruehere Version): trotz nachweislich korrekter Box-Positionen
+   (per getBoundingClientRect verifiziert, kein Ueberlappen) kam es beim Nutzer live zu einem
+   visuellen Rendering-Artefakt (vermutlich Grafiktreiber-/Compositing-bedingt, nicht reproduzierbar
+   und auch durch Scrollen/Hardwarebeschleunigung-Toggle nicht behebbar) - das robustere,
+   nebeneinander-freie Layout umgeht das Problem strukturell. */
 .oeffentliche-turnierliste {
   list-style: none;
   padding: 0;
   margin: 0 0 16px;
 }
 .oeffentliche-turnierliste li {
-  display: flex;
-  flex-wrap: wrap;
-  /* Nicht "baseline": die Basislinie eines verschachtelten inline-flex-Elements (hier
-     .turnier-name-mit-logo, Icon + Link) wird browserabhaengig unterschiedlich berechnet - live
-     aufgefallen (Chrome/Edge), Datum/Ort rutschten dadurch sichtbar zu tief. "center" ist robust
-     unabhaengig von Text-/Bild-Metriken. */
-  align-items: center;
-  gap: 4px 10px;
   padding: 5px 0;
   border-bottom: 1px solid var(--border);
 }
 .startseite-zusatz {
+  display: block;
   font-size: 0.85rem;
   color: var(--text-muted);
+  margin-top: 2px;
 }
 
 /* Inline-Link auf einen Kopfzeilen-Menuepunkt (SymbolVerweis-Komponente) innerhalb von Fliesstext -

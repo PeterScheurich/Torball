@@ -20,10 +20,10 @@ function TurnierListe({ turniere, leerText }: { turniere: OeffentlichesTurnierLi
             <TurnierLogo logoDataUrl={t.logoDataUrl} hoehe={28} />
             <Link to={`/turniere/${t.turnierId}/oeffentlich`}>{t.name}</Link>
           </span>
-          <span className="startseite-zusatz">
+          <div className="startseite-zusatz">
             {formatiereDatum(t.datum)}
             {t.spielortName ? ` · ${t.spielortName}` : ""}
-          </span>
+          </div>
         </li>
       ))}
     </ul>
