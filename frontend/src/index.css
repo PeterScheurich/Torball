@@ -594,6 +594,31 @@ form {
   margin-top: 2px;
 }
 
+/* Kopfbereich der oeffentlichen Startseite: Titel/Text links, Einfuehrungsvideo rechts daneben -
+   auf schmalen Schirmen bricht das Video unter den Text um (kein eigener Media-Query noetig,
+   min-width am Text sorgt fuer den Umbruch). Video bewusst schmal gehalten (max-width), damit es
+   die Turnierliste darunter nicht verdraengt. */
+.startseite-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  align-items: flex-start;
+}
+.startseite-kopf > div:first-child {
+  flex: 3 1 320px;
+}
+.startseite-video {
+  flex: 1 1 240px;
+  max-width: 360px;
+}
+.startseite-video iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 8px;
+}
+
 /* Turnierliste der oeffentlichen Startseite: Name + Zusatzinfos (Spieltag/Ort) in EINER Zeile,
    damit die Abstaende kompakt bleiben. Auf schmalen Schirmen darf die Zeile umbrechen. */
 .oeffentliche-turnierliste {

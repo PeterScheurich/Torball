@@ -54,11 +54,26 @@ export function OeffentlicheStartseitePage() {
 
   return (
     <>
-      <h1>Torball-Turniere</h1>
-      <p>
-        Öffentlich freigegebene Turniere im Überblick. Zur Verwaltung bitte{" "}
-        <Link to="/login">anmelden</Link>.
-      </p>
+      <div className="startseite-kopf">
+        <div>
+          <h1>Torball-Turniere</h1>
+          <p>
+            Öffentlich freigegebene Turniere im Überblick. Zur Verwaltung bitte{" "}
+            <Link to="/login">anmelden</Link>.
+          </p>
+        </div>
+        {/* youtube-nocookie.com statt youtube.com: setzt erst bei tatsaechlicher Wiedergabe
+            Tracking-Cookies, nicht schon beim reinen Laden der Seite. */}
+        <div className="startseite-video">
+          <iframe
+            src="https://www.youtube-nocookie.com/embed/SJfSENCQlNE"
+            title="Einführungsvideo: Torball-Turniere"
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+        </div>
+      </div>
 
       {fehler && <p role="alert">{fehler}</p>}
 
