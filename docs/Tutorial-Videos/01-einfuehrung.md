@@ -10,8 +10,9 @@ Klick-Durchlauf, nur Orientierung.
 >
 > **Was ist Torball-Turniere**
 > Torball-Turniere hilft dir, ein Turnier zu planen — von den teilnehmenden Mannschaften über den
-> Spielplan und die Schiedsrichter-Einteilung bis zu den Ergebnissen — und es während der
-> Veranstaltung direkt am Computer zu protokollieren.
+> Spielplan und die Schiedsrichter-Einteilung bis zu den Ergebnissen, die du im Reiter „Ergebnisse"
+> jedes Turniers erfasst — und es damit während der Veranstaltung direkt am Computer zu
+> protokollieren.
 >
 > **Wer braucht ein Konto, wer nicht**
 > Für die Planung und Verwaltung eines Turniers meldest du dich mit einem eigenen Konto an. Zwei

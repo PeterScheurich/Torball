@@ -70,7 +70,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wofür ist diese Anwendung gedacht?",
         text: [
-          "Mit Torball-Turniere planst du ein Turnier und protokollierst es während der Veranstaltung am Computer: von den teilnehmenden Mannschaften über den Spielplan und die Schiedsrichter-Einteilung bis zu den Ergebnissen und einer öffentlichen Turnierseite zum Mitverfolgen.",
+          "Mit Torball-Turniere planst du ein Turnier und protokollierst es während der Veranstaltung am Computer: von den teilnehmenden Mannschaften über den Spielplan und die Schiedsrichter-Einteilung bis zur Ergebniserfassung im Reiter „Ergebnisse“ – dazu kommt eine öffentliche Turnierseite zum Mitverfolgen.",
         ],
       },
       {
