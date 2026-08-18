@@ -31,6 +31,12 @@
  * wird beim Anzeigen automatisch durch einen Link mit demselben Symbol ersetzt (siehe
  * SymbolVerweis-Komponente). Verfuegbare Platzhalter: {{einstellungen}}, {{hilfe}}, {{ueber}},
  * {{profil}}.
+ *
+ * === Auf den Quellcode-Download verweisen ===
+ * Fuer den ZIP-Download des Quellcodes (/download/torball-quellcode.zip, siehe deploy-instanz.sh)
+ * den Platzhalter "{{download-quellcode}}" einsetzen - wird zu einem echten, anklickbaren Link.
+ * NICHT den Pfad als reinen Text ausschreiben (frueher so, war fuer Nutzer nicht anklickbar und
+ * dadurch faktisch nicht auffindbar - live als Verwirrung gemeldet).
  */
 
 /** Ein Baustein einer Antwort: Absatz (String), Aufzaehlung, Hinweis-Kasten oder
@@ -632,7 +638,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie richte ich eine lokale Installation ein?",
         text: [
-          "Unter Windows gibt es einen Ein-Klick-Installer. Lade zunächst den Quellcode als ZIP herunter (Link: /download/torball-quellcode.zip, direkt auf diesem Server) und entpacke ihn. Starte darin die Datei „Installieren-Windows.cmd“ per Doppelklick – das Skript richtet alles Nötige automatisch ein.",
+          "Unter Windows gibt es einen Ein-Klick-Installer: {{download-quellcode}} (direkt von diesem Server) und danach entpacken. Starte darin die Datei „Installieren-Windows.cmd“ per Doppelklick – das Skript richtet alles Nötige automatisch ein.",
           {
             hinweis:
               "Dafür ist einmalig eine Internetverbindung nötig (für die Downloads) – danach läuft die lokale Installation komplett offline.",
