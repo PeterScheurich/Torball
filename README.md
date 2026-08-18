@@ -64,14 +64,14 @@ Je nach Zweck gibt es drei Wege – ausführlich beschrieben in
 | Zweck | Kurzform | Details |
 |---|---|---|
 | Entwickeln/Beitragen (jede Plattform) | Abschnitt „Schnellstart" unten | `docs/installation-konfiguration.md` |
-| Lokal auf einem Windows-Rechner nutzen (z. B. offline am Spielort) | `deploy/Installieren-Windows.cmd` doppelklicken | Abschnitt „Lokale Installation unter Windows" |
+| Lokal auf einem Windows-Rechner nutzen (z. B. offline am Spielort) | `Setup.cmd` doppelklicken | Abschnitt „Lokale Installation unter Windows" |
 | Produktiv auf einem Linux-Server betreiben | `deploy/provision.sh` + `deploy/deploy-instanz.sh` | Abschnitt „Produktive Installation (Debian-LXC/VM)" |
 
 Für die lokale Windows-Installation wird der Quellcode benötigt: mit Zugriff
 auf das interne Repo per `git clone`, sonst bietet jede laufende Instanz ihn
 zusätzlich als ZIP-Download unter `/download/torball-quellcode.zip` an (bei
-jedem Deploy neu erzeugt) – entpacken und danach wie gewohnt
-`Installieren-Windows.cmd` starten.
+jedem Deploy neu erzeugt) – entpacken und danach `Setup.cmd` auf der obersten
+Ebene starten.
 
 ### Schnellstart (Entwicklung)
 

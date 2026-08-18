@@ -638,7 +638,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie richte ich eine lokale Installation ein?",
         text: [
-          "Unter Windows gibt es einen Ein-Klick-Installer: {{download-quellcode}} (direkt von diesem Server) und danach entpacken. Starte darin die Datei „Installieren-Windows.cmd“ per Doppelklick – das Skript richtet alles Nötige automatisch ein.",
+          "Unter Windows gibt es einen Ein-Klick-Installer: {{download-quellcode}} (direkt von diesem Server) und danach entpacken. Starte darin die Datei „Setup.cmd“ auf der obersten Ebene per Doppelklick – das Skript richtet alles Nötige automatisch ein.",
           {
             hinweis:
               "Dafür ist einmalig eine Internetverbindung nötig (für die Downloads) – danach läuft die lokale Installation komplett offline.",

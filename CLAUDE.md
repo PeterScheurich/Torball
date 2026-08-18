@@ -1102,7 +1102,7 @@ dieser Version gilt der folgende Ablauf:
   (`git archive --format=zip` nach `<DIR>/downloads/torball-quellcode.zip`, über nginx unter
   `/download/` ausgeliefert, stabiler Dateiname statt Versionierung – immer nur der jeweils
   aktuelle Stand). Grund: der interne Gitea-Server ist nur im LAN erreichbar, für die lokale
-  Windows-Installation (`deploy/Installieren-Windows.cmd`) an einem Turnierort ohne Zugriff auf
+  Windows-Installation (`Setup.cmd`, siehe unten) an einem Turnierort ohne Zugriff auf
   dieses Netz wäre der Quellcode sonst gar nicht zu bekommen – jede laufende Instanz bietet ihn
   so als Alternative zu `git clone` an (siehe README, Abschnitt „Installation").
 - **`FRONTEND_URL` fällt beim Erstanlegen auf die primäre Host-IP zurück, nicht auf `_`**
@@ -1164,8 +1164,16 @@ dieser Version gilt der folgende Ablauf:
 - **Interne LAN-Adressen gehören NICHT ins Repo** (Nutzer-Vorgabe): Dev-CouchDB,
   Gitea-Repo, BookStack usw. stehen im Repo nur als Platzhalter (`couchdb-host`,
   `gitea-host`, `bookstack-host`); die konkreten Adressen liegen im Claude-Memory.
-- **Lokale Windows-Installation ist ebenfalls skript-basiert** (`deploy/Installieren-Windows.cmd`
-  → `deploy/installieren-windows.ps1`, Option A der geplanten Installationswege): installiert Node
+- **Lokale Windows-Installation ist ebenfalls skript-basiert** (`Setup.cmd` auf der obersten Ebene
+  des entpackten Quellcode-ZIPs/Checkouts → ruft nur `deploy/Installieren-Windows.cmd` auf →
+  `deploy/installieren-windows.ps1`, Option A der geplanten Installationswege). `Setup.cmd` existiert
+  bewusst zusätzlich (2026-08-19, Nutzer-Vorgabe): nach dem Entpacken des Quellcode-ZIPs sieht man
+  auf der obersten Ebene sonst nur den ganzen Repo-Ordnerbaum (`backend/`, `frontend/`, `deploy/`, …)
+  – niemand liest dabei erfahrungsgemäß die README, um den Installer unter `deploy/` zu finden.
+  `Setup.cmd` ruft per `call` nur `deploy/Installieren-Windows.cmd` auf, das eigentliche Skript
+  bleibt dort (funktioniert unverändert, da `installieren-windows.ps1` seinen `$RepoRoot` über
+  `$PSScriptRoot` relativ zu seinem eigenen Pfad auflöst – ein reiner Weiterleiter ändert daran
+  nichts). Installiert Node
   LTS (winget) + Apache CouchDB als Windows-Dienst (offizieller MSI-Installer, unbeaufsichtigt,
   Prüfsummen-Check) falls nicht vorhanden, legt eine eingeschränkte CouchDB-App-Datenbank +
   -Benutzer an (analog `deploy-instanz.sh`), baut die App und schreibt `backend/.env` +

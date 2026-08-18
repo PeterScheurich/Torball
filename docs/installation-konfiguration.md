@@ -240,7 +240,10 @@ erreichbar ist, bietet jede über `deploy/deploy-instanz.sh` ausgerollte Instanz
 Quellcode zusätzlich als ZIP unter `/download/torball-quellcode.zip` an (bei jedem Deploy-Lauf neu
 erzeugt, `git archive` - nicht bei jedem Push, um den Server nicht unnötig zu belasten) -
 herunterladen und entpacken. Alternativ (wer Zugriff auf das interne Netz hat): `git clone`.
-Danach `deploy/Installieren-Windows.cmd` per Doppelklick starten (fragt bei Bedarf per UAC nach
+Danach `Setup.cmd` (liegt auf der obersten Ebene des entpackten Ordners – ruft nur
+`deploy/Installieren-Windows.cmd` auf, das eigentliche Skript bleibt aus Ordnungsgründen dort;
+`Setup.cmd` existiert nur, damit man es nach dem Entpacken sofort findet, ohne die README zu lesen)
+per Doppelklick starten (fragt bei Bedarf per UAC nach
 Administratorrechten – nötig für die Node-/CouchDB-Installation). Das Skript
 (`deploy/installieren-windows.ps1`) übernimmt automatisiert:
 
