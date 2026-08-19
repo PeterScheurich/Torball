@@ -323,9 +323,22 @@ if (Test-Path $DbPassFile) {
 $authHeader = @{ Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$CouchAdminUser`:$CouchAdminPass")) }
 
 try { Invoke-RestMethod -Method Put -Uri "http://127.0.0.1:5984/$Db" -Headers $authHeader | Out-Null } catch { }
+# Bewusst erst lesen (fuer die _rev) und dann schreiben statt einfach blind PUT + Fehler ignorieren:
+# existiert der Benutzer schon (z.B. von einem frueheren Lauf mit einem inzwischen anderen
+# db-lokal.pass, etwa nach einer Ordner-Umstrukturierung), scheitert ein PUT ohne _rev mit 409 -
+# der vorherige try/catch schluckte das stillschweigend, wodurch CouchDB weiterhin das ALTE
+# Passwort erwartete, waehrend .env schon das NEUE enthielt ("Name or password is incorrect" beim
+# Start). Live erlebt. Mit _rev wird der Benutzer stattdessen korrekt auf das aktuelle
+# db-lokal.pass-Passwort aktualisiert.
 try {
-    $userBody = @{ name = $DbUser; password = $DbPass; roles = @(); type = "user" } | ConvertTo-Json
-    Invoke-RestMethod -Method Put -Uri "http://127.0.0.1:5984/_users/org.couchdb.user:$DbUser" -Headers $authHeader -Body $userBody -ContentType "application/json" | Out-Null
+    $vorhandenerBenutzer = Invoke-RestMethod -Method Get -Uri "http://127.0.0.1:5984/_users/org.couchdb.user:$DbUser" -Headers $authHeader -ErrorAction Stop
+} catch {
+    $vorhandenerBenutzer = $null
+}
+$userBody = @{ name = $DbUser; password = $DbPass; roles = @(); type = "user" }
+if ($vorhandenerBenutzer) { $userBody["_rev"] = $vorhandenerBenutzer._rev }
+try {
+    Invoke-RestMethod -Method Put -Uri "http://127.0.0.1:5984/_users/org.couchdb.user:$DbUser" -Headers $authHeader -Body ($userBody | ConvertTo-Json) -ContentType "application/json" | Out-Null
 } catch { }
 # Als admins (nicht nur members) eintragen: CouchDB verlangt fuer das Anlegen von Mango-Indizes
 # (ensureIndexes() in backend/src/db.ts, technisch ein Design-Dokument) Admin-Rechte auf der
