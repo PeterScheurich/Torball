@@ -87,7 +87,14 @@ export interface NeuesTurnier {
   schiedsrichterPlanung?: boolean;
 }
 
-export function getTurniere(): Promise<Turnier[]> {
+/** GET /turniere reichert jedes Turnier zusaetzlich um "ausgecheckt" an (aktiver Turnier-Sync-
+ *  Checkout an eine lokale Installation) - reines Anzeige-Feld der Liste, nicht Teil des
+ *  gespeicherten Turnier-Dokuments (siehe backend/src/routes/turnier.ts). */
+export interface TurnierMitSyncStatus extends Turnier {
+  ausgecheckt: boolean;
+}
+
+export function getTurniere(): Promise<TurnierMitSyncStatus[]> {
   return anfrage("/turniere");
 }
 

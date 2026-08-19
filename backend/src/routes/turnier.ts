@@ -8,6 +8,7 @@ import type {
   Spieler,
   SpielplanBasis,
   Turnier,
+  TurnierCheckout,
   Turnierregeln,
   TurnierStatus,
   Wettbewerb,
@@ -121,7 +122,16 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     if (!requireZugriff(req, reply)) return;
     const alle = (await findAllByType<Turnier>("turnier")).map(mitDefaults);
     const zugriffe = await Promise.all(alle.map((t) => hatMindestens(t, req, "lesen")));
-    return alle.filter((_, i) => zugriffe[i]);
+    const sichtbar = alle.filter((_, i) => zugriffe[i]);
+
+    // Ausgecheckt-Kennzeichnung fuer die Liste (TurnierListePage): EINE Abfrage ueber alle aktiven
+    // Checkouts statt pro Turnier einzeln nachzufragen (waere bei vielen Turnieren viele Requests).
+    const aktiveCheckouts = await findAllBySelector<TurnierCheckout>({
+      docType: "turnierCheckout",
+      status: { $in: ["angefordert", "aktiv"] },
+    });
+    const ausgecheckteIds = new Set(aktiveCheckouts.map((c) => c.turnierId));
+    return sichtbar.map((t) => ({ ...t, ausgecheckt: ausgecheckteIds.has(t._id) }));
   });
 
   app.get<{ Params: { id: string } }>("/turniere/:id", async (req, reply) => {

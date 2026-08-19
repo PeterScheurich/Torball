@@ -286,8 +286,15 @@ dem Server rot…"). `TurnierSync.tsx` bekommt dafür einen neuen optionalen `on
 Callback (nach erfolgreichem Download-Anfordern/Freigabe-aufheben), damit die Kennzeichnung in der
 einbettenden Seite sofort reagiert, ohne denselben Status doppelt zu pollen. Dieselbe Behandlung
 zusätzlich in `SpielleitungCodePage.tsx` (eigene, unabhängige `<h1>` – nutzt `TurnierVerwaltenPage`
-nicht mit). **Weiterhin offen:** eine Kennzeichnung in der Turnierliste selbst (`TurnierListePage`) –
-dort ist noch nichts umgesetzt.
+nicht mit).
+
+**Kennzeichnung auch in der Turnierliste (2026-08-19, Nutzer-Vorschlag):** `GET /turniere`
+reichert jedes Turnier um ein reines Anzeige-Feld `ausgecheckt: boolean` an (eine einzige
+`findAllBySelector`-Abfrage über alle aktiven `TurnierCheckout`s, kein Datenbank-Zugriff pro
+Zeile) – Frontend-Typ `TurnierMitSyncStatus` (`frontend/src/api.ts`, `extends Turnier`, nicht Teil
+des gespeicherten Dokuments). `TurnierListePage.tsx` zeigt dafür statt des `TurnierLogo` ein
+Stop-Schild-Emoji (🛑, `role="img"` + `aria-label`/`title`) vor dem Namen. Im Browser verifiziert
+(per direkt in CouchDB angelegtem `TurnierCheckout`-Testdokument).
 
 **Offline-/Lokal-Betrieb ist laut Spezifikation (Abschnitt 17/19) ein
 Kernfeature mit drei Betriebsmodi (Standalone, Lokales Netzwerk, Zentrale

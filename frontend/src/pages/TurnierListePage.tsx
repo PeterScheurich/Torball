@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import type { Turnier, TurnierStatus } from "@torball/shared";
-import { deleteTurnier, getTurniere } from "../api";
+import type { TurnierStatus } from "@torball/shared";
+import { deleteTurnier, getTurniere, type TurnierMitSyncStatus } from "../api";
 import { useAuth } from "../auth";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 import { TurnierLogo } from "../components/TurnierLogo";
@@ -34,7 +34,7 @@ function zeitpunkt(iso: string): string {
  * von …" (Ergebnis-Erfassung zaehlt hier bewusst nicht mit); bei abgeschlossenen „abgeschlossen …
  * von …". Aeltere Turniere ohne denormalisierte Namen fallen still auf den reinen Zeitpunkt zurueck.
  */
-function TurnierMeta({ turnier }: { turnier: Turnier }) {
+function TurnierMeta({ turnier }: { turnier: TurnierMitSyncStatus }) {
   if (istAbgeschlossen(turnier.status)) {
     if (!turnier.abgeschlossenAm) return null;
     return (
@@ -61,7 +61,7 @@ function TurnierTabelle({
   leerText,
   onLoeschen,
 }: {
-  turniere: Turnier[];
+  turniere: TurnierMitSyncStatus[];
   beschriftung: string;
   leerText: string;
   onLoeschen: (id: string, name: string) => void;
@@ -85,7 +85,18 @@ function TurnierTabelle({
           <tr key={turnier._id}>
             <td>
               <span className="turnier-name-mit-logo">
-                <TurnierLogo logoDataUrl={turnier.logoDataUrl} hoehe={28} />
+                {turnier.ausgecheckt ? (
+                  <span
+                    className="turnier-ausgecheckt-symbol"
+                    role="img"
+                    aria-label="Wird gerade auf einer lokalen Installation verwaltet und ist hier gesperrt"
+                    title="Wird gerade auf einer lokalen Installation verwaltet und ist hier gesperrt"
+                  >
+                    🛑
+                  </span>
+                ) : (
+                  <TurnierLogo logoDataUrl={turnier.logoDataUrl} hoehe={28} />
+                )}
                 <Link to={`/turniere/${encodeURIComponent(turnier._id)}`}>{turnier.name}</Link>
               </span>
               <TurnierMeta turnier={turnier} />
@@ -111,7 +122,7 @@ function TurnierTabelle({
 }
 
 export function TurnierListePage() {
-  const [turniere, setTurniere] = useState<Turnier[]>([]);
+  const [turniere, setTurniere] = useState<TurnierMitSyncStatus[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
   const { benutzer } = useAuth();
   const darfAnlegen = benutzer?.globaleRolle === "admin" || benutzer?.globaleRolle === "manager";

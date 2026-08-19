@@ -356,6 +356,13 @@ header nav span.marke {
   vertical-align: middle;
 }
 
+/* Stop-Schild statt Turnier-Logo, wenn das Turnier per Turnier-Sync an eine lokale Installation
+   ausgecheckt ist (TurnierListePage) - Groesse an die Logo-Hoehe (hoehe={28}) angenaehert. */
+.turnier-ausgecheckt-symbol {
+  font-size: 22px;
+  line-height: 1;
+}
+
 /* Kleines Logo vor dem Turniernamen in den Turnierlisten (Startseite, oeffentliche Startseite) -
    bewusst klein (siehe hoehe={28} an TurnierLogo), damit die Listen uebersichtlich bleiben. */
 .turnier-name-mit-logo {
