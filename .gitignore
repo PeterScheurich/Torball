@@ -149,7 +149,8 @@ scripts/bookstack-*.mjs
 # Doku-Archiv: nur lokal zur Versionierung/Nachschau, nicht im Repository verwalten.
 docs/Archiv/
 
-# Windows-Installer (deploy/installieren-windows.ps1): generierte Start-/Update-Skripte im
-# Projekt-Wurzelverzeichnis - je Installation individuell, nicht im Repository verwalten.
+# Windows-Installer (deploy/installieren-windows.ps1): generiertes Start-Skript im
+# Projekt-Wurzelverzeichnis - je Installation individuell (enthaelt den gewaehlten Port), nicht im
+# Repository verwalten. "Aktualisieren-Torball.cmd" dagegen ist rein statisch (kein
+# installationsspezifischer Wert) und deshalb als normale Datei mitversioniert, siehe dort.
 /Start-Torball.cmd
-/Aktualisieren-Torball.cmd

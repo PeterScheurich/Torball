@@ -1180,11 +1180,12 @@ dieser Version gilt der folgende Ablauf:
   Start-/Update-Skript/Desktop-Verknüpfung. Selbst-elevierend (UAC), idempotent. Fragt bei einer
   **Neu**anlage von `backend/.env` interaktiv Port + optionalen SMTP-Versand ab (Default-Wert
   vorgeschlagen, Enter übernimmt ihn) – bei einer bereits vorhandenen `.env` (erneuter Lauf =
-  Update) wird nicht erneut gefragt. Erzeugt zusätzlich `Aktualisieren-Torball.cmd`
-  (`npm run torball -- aktualisieren`, siehe „Konsolen-Tool" oben) für spätere Updates, ohne den
-  kompletten Installer (inkl. Node-/CouchDB-Prüfung) erneut zu durchlaufen; `Start-Torball.cmd` +
-  `Aktualisieren-Torball.cmd` sind generierte, individuelle Artefakte im Projekt-Wurzelverzeichnis
-  und deshalb in `.gitignore` gelistet. Dabei aktiviert (`SERVE_FRONTEND=true`) das Backend einen
+  Update) wird nicht erneut gefragt. Für spätere Updates ohne den kompletten Installer (inkl.
+  Node-/CouchDB-Prüfung) erneut zu durchlaufen: die mitversionierte `Aktualisieren-Torball.cmd`
+  im Projekt-Wurzelverzeichnis (`npm run torball -- aktualisieren`, siehe „Konsolen-Tool" oben und
+  „Windows-Installer"-Abschnitt unten) – anders als `Start-Torball.cmd` (weiterhin generiert, in
+  `.gitignore`, da ihr Port-Fallbackwert installationsspezifisch ist) kein generiertes Artefakt.
+  Dabei aktiviert (`SERVE_FRONTEND=true`) das Backend einen
   **Einzelprozess-Modus**: `backend/src/index.ts` registriert dann `@fastify/static` für
   `frontend/dist` (SPA-Fallback auf `index.html` im `notFoundHandler`, analog zu nginx'
   `try_files`) und registriert alle API-Routen zusätzlich unter einem echten `/api`-Präfix
@@ -1333,10 +1334,35 @@ wird – node muss den `.env`-Wert dann gar nicht mehr gegen einen bestehenden �
 schon korrekt vorliegt. Robuster als die Ursache (die konkrete Herkunft der Fremd-Variable) zu
 jagen, und deckt jeden ähnlichen Fall auf einem anderen Rechner mit ab.
 
-**Bewusst zurückgestellt: sauberes Deinstallieren der lokalen Windows-Installation.** Aktuell gibt
-es dafür kein Skript (anders als `deploy/instanz-entfernen.sh` für die Linux-Server-Seite) – Node.js,
-der CouchDB-Windows-Dienst, die Desktop-Verknüpfung und der Projektordner selbst (inkl.
-`backend/.env` mit Zugangsdaten) müssten aktuell von Hand entfernt werden.
+**`Aktualisieren-Torball.cmd` ist seit 2026-08-19 eine normale, mitversionierte Datei im
+Projekt-Wurzelverzeichnis, nicht mehr generiert.** Ihr Inhalt war schon immer rein statisch (kein
+installationsspezifischer Wert, nur `cd backend && npm run torball -- aktualisieren`) – `deploy/
+installieren-windows.ps1` schrieb sie bisher trotzdem bei jedem Lauf neu aus einem identischen
+Heredoc, ganz analog zu `Start-Torball.cmd` (das dagegen weiterhin generiert wird, da dessen Port-
+Fallbackwert installationsspezifisch ist). Als normale Datei taucht sie jetzt schon vor der
+allerersten Installation auf (auch im per `git archive` erzeugten Quellcode-ZIP), und ein `git
+pull`/eine neue ZIP-Version bringt künftige Änderungen daran automatisch mit. `AKTUALISIEREN.md`
+(ebenfalls Wurzelverzeichnis) fasst den Update-Weg für Laien zusammen, analog zu `Setup.cmd`s
+Rolle für die Erstinstallation.
+
+**Deinstaller fürs lokale Windows-Setup (`Deinstallieren-Torball.cmd` → `deploy/
+deinstallieren-windows.ps1`, 2026-08-19):** Gegenstück zu `deploy/instanz-entfernen.sh` auf der
+Linux-Server-Seite, war zuvor bewusst zurückgestellt. Nutzt dasselbe Erklären-und-Zustimmen-Muster
+wie der Installer (`Bestaetige-Systemaenderung`/`Frage-OptionalerSchritt`, Alltagssprache statt
+Fachbegriffen) – **mit einem wichtigen Unterschied:** eine Ablehnung bricht hier NICHT die gesamte
+Deinstallation ab (anders als beim Installer, wo ein fehlender Baustein die Installation unmöglich
+macht), sondern überspringt nur diesen einen, für sich sinnvollen Schritt – jemand kann so z. B. nur
+die Programmdateien entfernen und CouchDB/Node.js bewusst auf dem Rechner belassen, falls unklar
+ist, ob sie noch von anderer Software gebraucht werden (Standardantwort deshalb bei jeder Frage
+„nein", nicht „ja" wie beim Installer). Vier unabhängige Schritte: (1) Desktop-Verknüpfung +
+generierte `Start-Torball.cmd` – ohne Rückfrage, reine Aufräumarbeit; (2) `backend/.env` +
+`node_modules`/`dist`-Ordner – mit Rückfrage, da Zugangsdaten enthalten; (3) CouchDB (Dienst +
+Programm per `msiexec /x` über `Get-Package`, analog der Ghost-Erkennung im Installer, plus
+komplettes Löschen von `C:\Torball-Turniere`) – mit **deutlicher** Warnung, dass das ALLE
+gespeicherten Turnierdaten unwiderruflich mitlöscht; (4) Node.js (`winget uninstall`) – mit
+Warnung, dass andere Software auf demselben Rechner ebenfalls Node.js brauchen könnte. Der
+Projektordner selbst wird nie automatisch gelöscht (das Skript liegt selbst darin) – bleibt der
+Person zum manuellen Aufräumen überlassen (z. B. Papierkorb).
 
 ## Dokumentation
 

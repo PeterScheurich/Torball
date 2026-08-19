@@ -417,9 +417,15 @@ TZ=Europe/Berlin
 $PortZeile = (Get-Content $EnvFile) | Where-Object { $_ -match '^PORT=' } | Select-Object -First 1
 $EffectivePort = if ($PortZeile) { ($PortZeile -split '=', 2)[1].Trim() } else { "3000" }
 
-# --- [6/6] Start-/Aktualisierungs-Skript + Desktop-Verknuepfung ------------------------------------
+# --- [6/6] Start-Skript + Desktop-Verknuepfung ---------------------------------------------------
+# "Aktualisieren-Torball.cmd" wird hier bewusst NICHT (mehr) generiert: ihr Inhalt ist rein
+# statisch (kein einziger installationsspezifischer Wert), deshalb liegt sie seit 2026-08-19 als
+# normale, mitversionierte Datei direkt im Projekt-Wurzelverzeichnis - taucht damit schon vor der
+# allerersten Installation auf (auch im per "git archive" erzeugten Quellcode-ZIP) statt erst
+# danach, und ein "git pull"/eine neue ZIP-Version bringt Aenderungen daran automatisch mit statt
+# sie bei jedem Lauf dieses Skripts neu ausschreiben zu muessen.
 Write-Host ""
-Write-Host "== [6/6] Start-/Aktualisierungs-Skript + Desktop-Verknuepfung =="
+Write-Host "== [6/6] Start-Skript + Desktop-Verknuepfung =="
 $StartCmd = Join-Path $RepoRoot "Start-Torball.cmd"
 @"
 @echo off
@@ -438,18 +444,6 @@ timeout /t 3 /nobreak >nul
 start "" http://localhost:%PORT%
 "@ | Set-Content -Path $StartCmd -Encoding ascii
 
-$UpdateCmd = Join-Path $RepoRoot "Aktualisieren-Torball.cmd"
-@"
-@echo off
-echo Aktualisiert Torball-Turniere (Git-Pull falls vorhanden, npm install, Neubau) ...
-echo Falls der Server laeuft (Fenster "Torball-Turniere (Server ...)"), dieses bitte vorher schliessen.
-echo.
-cd /d "%~dp0backend"
-call npm run torball -- aktualisieren
-echo.
-pause
-"@ | Set-Content -Path $UpdateCmd -Encoding ascii
-
 $WshShell = New-Object -ComObject WScript.Shell
 $Shortcut = $WshShell.CreateShortcut((Join-Path ([Environment]::GetFolderPath("Desktop")) "Torball-Turniere.lnk"))
 $Shortcut.TargetPath = $StartCmd
@@ -462,6 +456,6 @@ Write-Host "Fertig!"
 Write-Host "Ueber die Desktop-Verknuepfung 'Torball-Turniere' starten (oeffnet http://localhost:$EffectivePort)."
 Write-Host "Beim allerersten Start fuehrt die Anmeldeseite durch die einmalige Ersteinrichtung des ersten Admin-Kontos."
 Write-Host ""
-Write-Host "Spaeter aktualisieren: $UpdateCmd doppelklicken."
+Write-Host "Spaeter aktualisieren: 'Aktualisieren-Torball.cmd' im Projektordner doppelklicken (siehe auch AKTUALISIEREN.md)."
 Write-Host "Spaeter Konfiguration anpassen (z.B. Port): in backend/ 'npm run torball -- konfiguration:anzeigen' bzw. 'konfiguration:setzen' (siehe --hilfe)."
 Write-Host "E-Mail-Versand (SMTP) fuer Einladungen/Passwort-Reset: im Admin-Menue unter Systemeinstellungen einrichten."

@@ -71,7 +71,9 @@ Für die lokale Windows-Installation wird der Quellcode benötigt: mit Zugriff
 auf das interne Repo per `git clone`, sonst bietet jede laufende Instanz ihn
 zusätzlich als ZIP-Download unter `/download/torball-quellcode.zip` an (bei
 jedem Deploy neu erzeugt) – entpacken und danach `Setup.cmd` auf der obersten
-Ebene starten.
+Ebene starten. Spätere Updates: `Aktualisieren-Torball.cmd` (siehe
+`AKTUALISIEREN.md`), Deinstallieren: `Deinstallieren-Torball.cmd` – beide
+ebenfalls auf der obersten Ebene.
 
 ### Schnellstart (Entwicklung)
 
