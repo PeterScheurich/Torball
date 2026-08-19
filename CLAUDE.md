@@ -1494,6 +1494,19 @@ pull`/eine neue ZIP-Version bringt künftige Änderungen daran automatisch mit. 
 (ebenfalls Wurzelverzeichnis) fasst den Update-Weg für Laien zusammen, analog zu `Setup.cmd`s
 Rolle für die Erstinstallation.
 
+**Bugfix 2026-08-20: `torball aktualisieren` behauptete faelschlich "Fertig aktualisiert", obwohl
+bei einer ZIP-Installation gar kein neuer Quellcode geholt wurde.** Live erlebt: nach mehreren
+Feature-Commits (Turnier-Sync-Sperre, neues Regel-Feld, Banner) lief `Aktualisieren-Torball.cmd`
+auf einer ZIP-basierten (nicht Git-) lokalen Installation "erfolgreich" durch, die neuen Funktionen
+fehlten aber komplett - der Befehl baute nur den unveraenderten Alt-Stand neu, da `git pull` bei
+fehlendem `.git`-Ordner ausschliesslich uebersprungen wird (mit einer leicht zu uebersehenden
+einzeiligen Konsolenmeldung, `aktualisieren()` in `backend/src/cli/torball.ts`). Fix: die
+Erfolgsmeldung ist jetzt an `istGitRepo` gekoppelt - im ZIP-Fall erscheint stattdessen ein
+deutlich hervorgehobener, mehrzeiliger Block ("ACHTUNG: Der Quellcode wurde NICHT aktualisiert!")
+mit den konkreten naechsten Schritten (neues ZIP herunterladen, `backend/.env` uebernehmen,
+`Setup.cmd` erneut ausfuehren). Betrifft `torball-aktualisieren` auf dem Server (dort immer ein
+Git-Checkout, also irrelevant) nicht, nur den lokalen Windows-Installationsweg.
+
 **Deinstaller fürs lokale Windows-Setup (`Deinstallieren-Torball.cmd` → `deploy/
 deinstallieren-windows.ps1`, 2026-08-19):** Gegenstück zu `deploy/instanz-entfernen.sh` auf der
 Linux-Server-Seite, war zuvor bewusst zurückgestellt. Nutzt dasselbe Erklären-und-Zustimmen-Muster

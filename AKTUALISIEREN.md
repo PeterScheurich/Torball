@@ -28,11 +28,13 @@ Ergebnisse.
 - **Installation aus einem Git-Repository** (`git clone`): `Aktualisieren-Torball.cmd` zieht den
   neuesten Stand automatisch per `git pull`.
 - **Installation aus einem heruntergeladenen ZIP** (kein Git-Repository vorhanden):
-  `Aktualisieren-Torball.cmd` baut nur den vorhandenen Stand neu – für eine neue Version muss
-  vorher das aktuelle Quellcode-ZIP erneut heruntergeladen und der Projektordnerinhalt (außer der
-  eigenen `backend/.env`) damit ersetzt werden. Am einfachsten: neu entpacken in einen anderen
-  Ordner, dann `backend/.env` aus der alten Installation in den neuen Ordner kopieren und dort
-  `Setup.cmd` erneut ausführen (überschreibt eine vorhandene `.env` nicht).
+  `Aktualisieren-Torball.cmd` baut nur den vorhandenen Stand neu – **es wird dabei kein neuer
+  Quellcode heruntergeladen.** Das Skript weist am Ende deutlich darauf hin, falls das auf diese
+  Installation zutrifft. Für eine neue Version muss vorher das aktuelle Quellcode-ZIP erneut
+  heruntergeladen und der Projektordnerinhalt (außer der eigenen `backend/.env`) damit ersetzt
+  werden. Am einfachsten: neu entpacken in einen anderen Ordner, dann `backend/.env` aus der alten
+  Installation in den neuen Ordner kopieren und dort `Setup.cmd` erneut ausführen (überschreibt
+  eine vorhandene `.env` nicht).
 
 ## Konfiguration ändern (z. B. Port), ohne neu zu installieren
 

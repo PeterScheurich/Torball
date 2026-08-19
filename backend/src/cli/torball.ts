@@ -247,11 +247,11 @@ async function aktualisieren(): Promise<void> {
     execSync(befehl, { cwd: projektWurzel, stdio: "inherit" });
   };
 
+  const istGitRepo = fs.existsSync(path.join(projektWurzel, ".git"));
+
   try {
-    if (fs.existsSync(path.join(projektWurzel, ".git"))) {
+    if (istGitRepo) {
       ausfuehren("git pull");
-    } else {
-      console.log("Kein Git-Repository erkannt - Quellcode wird nicht aktualisiert, nur neu gebaut.");
     }
     ausfuehren("npm install");
     ausfuehren("npm run build --workspace=shared");
@@ -262,7 +262,29 @@ async function aktualisieren(): Promise<void> {
     return;
   }
 
-  console.log("\nFertig aktualisiert. Bitte den laufenden Server-Prozess neu starten.");
+  if (istGitRepo) {
+    console.log("\nFertig aktualisiert. Bitte den laufenden Server-Prozess neu starten.");
+  } else {
+    // Kein Git-Repository (z.B. Installation aus dem heruntergeladenen Quellcode-ZIP) - "git pull"
+    // entfaellt dann komplett, es wurde nur der VORHANDENE (unveraenderte) Quellcode neu gebaut.
+    // Bewusst NICHT "Fertig aktualisiert" behaupten - das waere schlicht falsch und fuehrt live
+    // dazu, dass eine neue Version faelschlich als bereits installiert gilt (2026-08-20 selbst
+    // erlebt: neue Funktionen fehlten trotz "erfolgreichem" Lauf dieses Befehls komplett).
+    console.log(
+      "\n=====================================================================\n" +
+        "ACHTUNG: Der Quellcode wurde NICHT aktualisiert!\n" +
+        "Diese Installation stammt aus einem heruntergeladenen ZIP, kein Git-Repository - "
+        + "dieser Befehl kann den Quellcode dann nicht selbst herunterladen, sondern hat nur den "
+        + "bereits vorhandenen (unveraenderten) Stand neu gebaut.\n\n"
+        + "Um wirklich eine neue Version zu bekommen:\n"
+        + "1. Aktuelles Quellcode-ZIP erneut herunterladen (siehe README bzw. die Instanz, von der "
+        + "das ZIP stammt, unter /download/torball-quellcode.zip) und an einer neuen Stelle entpacken.\n"
+        + "2. Die eigene 'backend/.env' aus dieser Installation in den neuen Ordner kopieren.\n"
+        + "3. Dort 'Setup.cmd' erneut ausfuehren (eine vorhandene .env wird dabei nicht ueberschrieben).\n"
+        + "Siehe auch AKTUALISIEREN.md im Projektordner.\n" +
+        "=====================================================================",
+    );
+  }
 }
 
 function zeigeHilfe(): void {
