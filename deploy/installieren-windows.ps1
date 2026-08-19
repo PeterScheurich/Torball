@@ -113,8 +113,17 @@ Write-Host "node $(node -v), npm $(npm -v)"
 # --- [2/6] CouchDB -----------------------------------------------------------------------------
 Write-Host ""
 Write-Host "== [2/6] CouchDB =="
-$ConfDir = Join-Path $env:ProgramData "Torball"
-New-Item -ItemType Directory -Force -Path $ConfDir | Out-Null
+# Alles, was dieses Skript ausserhalb des Projektordners auf dem Rechner ablegt (CouchDB-
+# Installation, Konfigurationsdateien, Installations-Log), bewusst gebuendelt in einem einzigen,
+# klar benannten Ordner - erleichtert spaeteres manuelles Aufraeumen (Nutzer-Vorgabe 2026-08-19):
+# einfach "C:\Torball-Turniere" loeschen statt an mehreren Stellen (ProgramData, Program Files, ...)
+# suchen zu muessen. Bewusst direkt unter C:\ statt unter dem versteckten/geschuetzten
+# C:\ProgramData - fuer die Zielgruppe (auch technisch wenig versiert) leichter wiederzufinden.
+# Sicherheitsrelevante Dateien darin (Admin-Passwort) bleiben trotzdem einzeln per icacls
+# geschuetzt, unabhaengig vom Ordner.
+$TorballOrdner = "C:\Torball-Turniere"
+New-Item -ItemType Directory -Force -Path $TorballOrdner | Out-Null
+$ConfDir = $TorballOrdner
 $CouchAdminFile = Join-Path $ConfDir "couchdb-admin.txt"
 
 function Test-Couchdb {
@@ -144,7 +153,7 @@ if (Test-Couchdb) {
 } else {
     Bestaetige-Systemaenderung -Titel "CouchDB installieren" `
         -Erklaerung "CouchDB ist die Datenbank, in der Torball-Turniere alle Turnierdaten speichert (Mannschaften, Spielplaene, Ergebnisse usw.) - ohne CouchDB hat die App keinen Ort, um Daten zu speichern." `
-        -Auswirkung "CouchDB wird als Hintergrunddienst installiert (nach C:\CouchDB, nicht wie sonst ueblich nach 'Programme'): es startet automatisch mit Windows und laeuft dauerhaft im Hintergrund, auch wenn Torball-Turniere gerade nicht benutzt wird (aehnlich wie z.B. ein Antivirenprogramm). Es ist ausschliesslich von diesem Rechner selbst erreichbar, nicht ueber das Internet. Laesst sich jederzeit ganz normal ueber 'Apps & Features' wieder entfernen."
+        -Auswirkung "CouchDB wird als Hintergrunddienst installiert (nach C:\Torball-Turniere\CouchDB, nicht wie sonst ueblich nach 'Programme' - so bleibt alles, was diese Installation auf dem Rechner ablegt, an einer einzigen, leicht wiederzufindenden Stelle): es startet automatisch mit Windows und laeuft dauerhaft im Hintergrund, auch wenn Torball-Turniere gerade nicht benutzt wird (aehnlich wie z.B. ein Antivirenprogramm). Es ist ausschliesslich von diesem Rechner selbst erreichbar, nicht ueber das Internet. Laesst sich jederzeit ganz normal ueber 'Apps & Features' wieder entfernen."
     Write-Host "CouchDB nicht gefunden - lade offiziellen Installer herunter (Version $CouchdbVersion) ..."
     $CouchAdminUser = "admin"
     $CouchAdminPass = New-ZufallsPasswort
@@ -191,10 +200,12 @@ if (Test-Couchdb) {
     # denen "Program Files" selbst keinen 8.3-Kurznamen hat (z.B. weil 8.3-Kurznamen von Anfang an
     # deaktiviert waren, kein reines "seither deaktiviert"), scheitert CostFinalize sonst mit Error
     # 1324/Exit-Code 1603 - per direkter MSI-Tabellenabfrage (Property "APPLICATIONFOLDER", von
-    # "PROGRAMFILESFORSURE" alias Program Files abgeleitet) und Testinstallation verifiziert: mit
-    # einem Zielordner ausserhalb von Program Files tritt der Fehler gar nicht erst auf. Vermeidet
-    # damit von vornherein jede Notwendigkeit, eine Windows-Systemeinstellung anzufassen.
-    $CouchdbInstallDir = "C:\CouchDB\"
+    # "PROGRAMFILESFORSURE" alias Program Files abgeleitet) und zwei Testinstallationen verifiziert
+    # (auch mit dem hier verschachtelten Pfad): mit einem Zielordner ausserhalb von Program Files
+    # tritt der Fehler gar nicht erst auf. Vermeidet damit von vornherein jede Notwendigkeit, eine
+    # Windows-Systemeinstellung anzufassen. Liegt unter demselben $TorballOrdner wie die
+    # Konfigurationsdateien oben (Buendelung fuers Aufraeumen, siehe Kommentar dort).
+    $CouchdbInstallDir = Join-Path $TorballOrdner "CouchDB\"
     $msiArgs = @(
         "/i", "`"$msiPath`"",
         "APPLICATIONFOLDER=$CouchdbInstallDir",

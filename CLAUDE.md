@@ -1241,8 +1241,8 @@ WiX-Eigenschaft, deren Default via `PROGRAMFILESFORSURE` an „Program Files" h�
 nicht-elevierten Testlauf (`msiexec /i ... APPLICATIONFOLDER=C:\CouchDB\`, brach zwar mangels
 Adminrechten mit Exit-Code 1625 ab, aber **ohne** Error 1324 im Log) verifiziert: mit einem
 Zielordner außerhalb „Program Files" tritt der Fehler gar nicht erst auf. **Der eigentliche Fix ist
-daher, CouchDB nach `C:\CouchDB` statt nach „Program Files" zu installieren** (`APPLICATIONFOLDER=
-C:\CouchDB\` in `$msiArgs`, mit entsprechendem Hinweis in der `Bestaetige-Systemaenderung`-Erklärung)
+daher, CouchDB in einen eigenen Ordner statt nach „Program Files" zu installieren** (`APPLICATIONFOLDER=`
+in `$msiArgs`, mit entsprechendem Hinweis in der `Bestaetige-Systemaenderung`-Erklärung)
 – keine Windows-Systemeinstellung nötig, kein Neustart, kein Sonderfall für die Zielgruppe. Der
 8.3-Kurznamen-Zustimmungspfad bleibt als reiner Fallback im Code (falls Error 1324 aus einem anderen
 Grund an anderer Stelle nochmal auftaucht), sollte aber durch den geänderten Zielordner in der Praxis
@@ -1250,6 +1250,15 @@ nicht mehr greifen. Lehre: eine Auswirkungs-Behauptung wie „kein Neustart nöt
 übernehmen, auch wenn sie plausibel klingt – und bei einem wiederkehrenden Fehlerbild eher die
 Ursachen-Annahme selbst hinterfragen (z. B. direkt in der MSI-Datei nachsehen), statt nur den
 nächsten naheliegenden Workaround zu versuchen.
+
+**Alles, was der Windows-Installer außerhalb des Projektordners ablegt, gebündelt unter
+`C:\Torball-Turniere`** (2026-08-19, Nutzer-Vorgabe – erleichtert späteres manuelles Aufräumen):
+die CouchDB-Installation selbst (`APPLICATIONFOLDER=C:\Torball-Turniere\CouchDB\`, siehe oben) sowie
+die bisher unter `C:\ProgramData\Torball` liegenden Dateien (Admin-Passwort, App-DB-Passwort,
+Installations-Log) liegen jetzt gemeinsam in `$TorballOrdner`. Bewusst direkt unter `C:\` statt im
+versteckten/geschützten `C:\ProgramData` – für die Zielgruppe leichter wiederzufinden. Ändert nichts
+an der Sicherheit: die einzelne sicherheitsrelevante Datei (Admin-Passwort) bekommt weiterhin per
+`icacls` eine eigene, Administratoren-only-ACL, unabhängig vom übergeordneten Ordner.
 
 **Bewusst zurückgestellt: sauberes Deinstallieren der lokalen Windows-Installation.** Aktuell gibt
 es dafür kein Skript (anders als `deploy/instanz-entfernen.sh` für die Linux-Server-Seite) – Node.js,
