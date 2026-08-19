@@ -271,6 +271,29 @@ if (Test-Couchdb) {
         exit 1
     }
 
+    # Der Windows-Dienst kann trotz erfolgreicher Datei-Installation noch auf einen veralteten Ort
+    # zeigen, wenn zuvor schon einmal ein Dienst mit diesem Namen registriert war (z.B. von einem
+    # frueheren fehlgeschlagenen Versuch) - der Installer registriert den Dienst dann u.U. nicht
+    # sauber neu. Live erlebt: Dateien lagen korrekt unter $CouchdbInstallDir, der Dienst zeigte
+    # aber noch auf ein laengst nicht mehr vorhandenes Laufwerk ("Das System kann die angegebene
+    # Datei nicht finden", Ereignis-ID 7000) - CouchDB liess sich dadurch nicht starten. Der
+    # Dienst wird ueber NSSM (Non-Sucking Service Manager) betrieben, dessen eigentliches Ziel
+    # zusaetzlich zum SCM-Pfad separat in der Registry steht.
+    $nssmPfad = Join-Path $CouchdbInstallDir "bin\nssm.exe"
+    $serviceInfo = Get-CimInstance -ClassName Win32_Service -Filter "Name='Apache CouchDB'" -ErrorAction SilentlyContinue
+    if ($serviceInfo -and $serviceInfo.PathName -notmatch [regex]::Escape($nssmPfad)) {
+        Bestaetige-Systemaenderung -Titel "CouchDB-Dienstpfad korrigieren" `
+            -Erklaerung "Der Windows-Dienst fuer CouchDB zeigt noch auf einen veralteten Installationsort von einem frueheren Versuch, nicht auf die gerade installierten Dateien - dadurch startet CouchDB nicht." `
+            -Auswirkung "Es wird nur der hinterlegte Pfad des bereits vorhandenen CouchDB-Dienstes korrigiert, damit er die gerade installierten Dateien findet. Es wird nichts zusaetzlich installiert."
+        $couchdbCmd = Join-Path $CouchdbInstallDir "bin\couchdb.cmd"
+        $binDir = Join-Path $CouchdbInstallDir "bin"
+        & sc.exe config "Apache CouchDB" binPath= "`"$nssmPfad`"" | Out-Null
+        Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Apache CouchDB\Parameters" -Name "Application" -Value $couchdbCmd
+        Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Apache CouchDB\Parameters" -Name "AppDirectory" -Value $binDir
+        Write-Host "Dienstpfad korrigiert."
+    }
+    try { Start-Service -Name "Apache CouchDB" -ErrorAction SilentlyContinue } catch {}
+
     Write-Host "Warte auf CouchDB ..."
     $ok = $false
     for ($i = 0; $i -lt 30; $i++) {

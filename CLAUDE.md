@@ -1275,6 +1275,36 @@ registriert, aber der hinterlegte Zielordner existiert nicht oder ist leer), und
 `Bestaetige-Systemaenderung` an, ihn per `msiexec /x <ProductCode> /quiet` zu entfernen, bevor die
 eigentliche (Neu-)Installation startet.
 
+**Tatsächliche Wurzel des Ganzen: eine leere Wechseldatenträger-Laufwerksbuchstabe verwirrt die
+installereigene Laufwerksauswahl (2026-08-19, live aufgeklärt):** Auch nach dem Karteileichen-Fix
+schlug `CostFinalize` auf dem Testrechner (11 Laufwerksbuchstaben, u. a. mehrere Netzlaufwerke)
+weiterhin fehl – per `Win32_LogicalDisk` verifiziert: `F:` war ein **leerer Kartenleser-Steckplatz**
+(`DriveType 2 = Removable`, kein Datenträger eingelegt, 0 Byte). Der CouchDB-Installer hat eine
+eigene (fehlerhafte) Logik zur Bestimmung von „PROGRAMFILESFORSURE" (eigene WiX-Direktorie, nicht
+die MSI-Standardeigenschaft `ProgramFilesFolder`), die diesen leeren Steckplatz als Ziel wählte –
+unabhängig vom per `APPLICATIONFOLDER` vorgegebenen Wert, sowohl bei Installation **als auch bei
+Deinstallation** (beide durchlaufen `CostFinalize`). Nachdem der Nutzer diesem Laufwerk in der
+Datenträgerverwaltung den Buchstaben entzogen hatte, löste dieselbe Logik korrekt auf ein echtes
+Laufwerk auf (`S:`, 20 TB frei) – seitdem tritt Error 1324 nicht mehr auf. **Kein Fix in diesem
+Skript möglich** (die Laufwerksauswahl passiert intern im MSI-Paket, nicht überschreibbar) – das
+war ausschließlich über die Windows-eigene Datenträgerverwaltung lösbar. Falls das Problem bei
+anderen Nutzern wieder auftaucht: gezielt nach leeren/medialosen Wechseldatenträger-Buchstaben
+suchen (`Get-CimInstance Win32_LogicalDisk`, `DriveType 2` ohne `VolumeName`/Größe).
+
+**Nachwirkung: verwaister Windows-Dienst zeigt noch auf den alten (falschen) Pfad, obwohl die
+Dateien schon am richtigen Ort liegen (2026-08-19):** Nach dem Beheben von Karteileiche +
+Laufwerksbuchstabe installierten sich die CouchDB-Dateien korrekt nach `$CouchdbInstallDir`, der
+bereits registrierte Windows-Dienst „Apache CouchDB" (betrieben über NSSM, Non-Sucking Service
+Manager) behielt aber seinen alten `ImagePath` (`sc`/`Win32_Service.PathName`, zeigt auf
+`nssm.exe`) **und** die separaten NSSM-eigenen Parameter (`HKLM:\SYSTEM\CurrentControlSet\Services\
+Apache CouchDB\Parameters`, `Application`/`AppDirectory`) bei – der MSI-Reparaturlauf registriert
+den bereits vorhandenen Dienst offenbar nicht automatisch neu. Folge: Dienststart schlug mit
+„Das System kann die angegebene Datei nicht finden" (Ereignis-ID 7000, Service Control Manager)
+fehl, `Test-Couchdb` lief in den 60-Sekunden-Timeout. `installieren-windows.ps1` prüft jetzt nach
+jeder Installation, ob `Win32_Service.PathName` zum aktuellen `$CouchdbInstallDir` passt, und
+korrigiert bei Abweichung (wieder über `Bestaetige-Systemaenderung`) sowohl den SCM-`binPath` als
+auch die beiden NSSM-Parameter, bevor der Dienst gestartet wird.
+
 **Bewusst zurückgestellt: sauberes Deinstallieren der lokalen Windows-Installation.** Aktuell gibt
 es dafür kein Skript (anders als `deploy/instanz-entfernen.sh` für die Linux-Server-Seite) – Node.js,
 der CouchDB-Windows-Dienst, die Desktop-Verknüpfung und der Projektordner selbst (inkl.
