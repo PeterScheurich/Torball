@@ -400,7 +400,14 @@ $StartCmd = Join-Path $RepoRoot "Start-Torball.cmd"
 cd /d "%~dp0backend"
 start "Torball-Turniere (Server - dieses Fenster offen lassen)" cmd /k node --env-file=.env dist\index.js
 timeout /t 3 /nobreak >nul
-start "" http://localhost:$EffectivePort
+rem Port bei JEDEM Start neu aus .env lesen (nicht wie frueher einmalig beim Erzeugen dieser Datei
+rem festgeschrieben) - sonst oeffnet sich nach einer spaeteren Port-Aenderung in backend\.env
+rem weiterhin die alte URL. "tokens=2 delims==" liefert den Wert hinter dem "="; funktioniert auch,
+rem wenn die allererste Zeile durch das Byte-Order-Mark von PowerShells Set-Content mit unsichtbaren
+rem Extra-Zeichen beginnt, weil nur nach dem GLEICHHEITSZEICHEN gesplittet wird.
+set "STARTPORT=$EffectivePort"
+for /f "tokens=2 delims==" %%P in ('findstr "PORT=" .env') do set "STARTPORT=%%P"
+start "" http://localhost:%STARTPORT%
 "@ | Set-Content -Path $StartCmd -Encoding ascii
 
 $UpdateCmd = Join-Path $RepoRoot "Aktualisieren-Torball.cmd"
