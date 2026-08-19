@@ -57,7 +57,11 @@ export function LoginPage() {
 
       {ersteinrichtungVerfuegbar && (
         <p>
-          Es existiert noch kein Benutzer. <Link to="/ersteinrichtung">Ersteinrichtung starten</Link>
+          Es existiert noch kein Benutzer.
+          <br />
+          <Link to="/ersteinrichtung" className="button-link">
+            Ersteinrichtung starten
+          </Link>
         </p>
       )}
 

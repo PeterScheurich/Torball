@@ -105,6 +105,13 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+/* Lokale Installation: bewusst nicht in --danger (Rot ist fuer echte Warnungen reserviert, siehe
+   umgebungs-banner-demo) - eine reine Standort-Kennzeichnung, deshalb der ruhigere Fokus-Blauton. */
+.umgebungs-banner-lokal {
+  background: var(--focus-ring);
+  color: var(--bg);
+}
+
 /* Wartungsmodus: gleiche volle-Breite-Balken-Optik wie .umgebungs-banner, fuer den Admin-Hinweis
    "Sperre ist aktiv" bzw. den Kurzfrist-Countdown-Hinweis (siehe App.tsx). */
 .wartungs-banner {

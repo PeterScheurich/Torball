@@ -140,6 +140,12 @@ export function TurnierVerwaltenPage() {
       .then((status) => setAusgecheckt(status.ausgecheckt))
       .catch(() => setAusgecheckt(false));
   };
+  // Nur fuer die Spielzeit-/Spielmodus-/Protokollierung-Sperre unten geladen (eigener, schlanker
+  // State statt den vollen Spielplan-State aus SpielplanVerwaltung.tsx hochzuziehen) - dieselbe
+  // Bedingung wie spielplanGesperrt dort: irgendein Spiel ist nicht mehr "geplant" oder hat ein
+  // abgeschlossenes Ergebnis.
+  const [spiele, setSpiele] = useState<Spiel[]>([]);
+  const spielplanGesperrt = spiele.some((s) => s.status !== "geplant" || s.ergebnisAbgeschlossen);
   const logoInputRef = useRef<HTMLInputElement>(null);
   // Aktiver Reiter steckt in der URL (?tab=...), nicht nur im lokalen State - sonst
   // springt ein Reload (F5) immer zurueck auf "Uebersicht", egal auf welchem Reiter
@@ -160,6 +166,9 @@ export function TurnierVerwaltenPage() {
     getTurnier(turnierId)
       .then(setTurnier)
       .catch((err) => setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden"));
+    getSpiele(turnierId)
+      .then(setSpiele)
+      .catch(() => setSpiele([]));
     ladeCheckoutStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [turnierId]);
@@ -562,7 +571,7 @@ export function TurnierVerwaltenPage() {
                 <td>
                   <select
                     id="spielplanModus"
-                    disabled={istGesperrt}
+                    disabled={istGesperrt || spielplanGesperrt}
                     value={turnier.spielplanModus}
                     onChange={(e) => spielplanModusAendern(e.target.value === "doppelt" ? "doppelt" : "einfach")}
                   >
@@ -578,7 +587,7 @@ export function TurnierVerwaltenPage() {
                 <td>
                   <select
                     id="protokollierungsart"
-                    disabled={istGesperrt}
+                    disabled={istGesperrt || spielplanGesperrt}
                     value={turnier.protokollierungsart}
                     onChange={(e) =>
                       protokollierungsartAendern(e.target.value === "digital" ? "digital" : "manuell")
@@ -591,6 +600,12 @@ export function TurnierVerwaltenPage() {
                     <p>
                       Die digitale Live-Protokollierung ist noch nicht umgesetzt - für Ergebniserfassung aktuell
                       auf „Manuell" umstellen.
+                    </p>
+                  )}
+                  {spielplanGesperrt && !istGesperrt && (
+                    <p className="feld-hinweis">
+                      Spielmodus und Protokollierung sind gesperrt, sobald der Spielplan läuft – ein Wechsel mitten im
+                      Turnier ließe sich fachlich nicht sauber abfangen.
                     </p>
                   )}
                 </td>
@@ -778,6 +793,7 @@ export function TurnierVerwaltenPage() {
             onSpeichern={regelnSpeichern}
             standardWerte={getSystemkonfiguration}
             hinweis="Diese Regeln gelten nur für dieses Turnier. Die Standardwerte für neue Turniere legst du unter Stammdaten → Standardregeln fest."
+            spielzeitGesperrt={spielplanGesperrt}
           />
         </fieldset>
       </div>

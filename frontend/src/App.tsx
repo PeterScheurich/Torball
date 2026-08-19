@@ -37,6 +37,7 @@ import { FehlerMeldenPage } from "./pages/FehlerMeldenPage";
 import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
 import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { UmgebungsBanner } from "./components/UmgebungsBanner";
+import { LokaleInstallationBanner } from "./components/LokaleInstallationBanner";
 import { Fusszeile } from "./components/Fusszeile";
 import { useAuth } from "./auth";
 import { getWartungStatus, kanbanBoardVerfuegbar, mailPostfachVerfuegbar } from "./api";
@@ -326,6 +327,7 @@ function App() {
   return (
     <>
       <UmgebungsBanner />
+      <LokaleInstallationBanner />
       {wartung?.aktiv && istAdmin && (
         <div className="wartungs-banner" role="alert">
           ⚠ Wartungsmodus ist aktiv – andere Personen sehen aktuell nur die Wartungsseite.

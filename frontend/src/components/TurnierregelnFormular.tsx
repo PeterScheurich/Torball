@@ -23,6 +23,14 @@ interface Props {
    * die zuletzt synchronisierten bzw. vorgegebenen Werte).
    */
   standardWerte?: () => Promise<Turnierregeln>;
+  /**
+   * Sperrt gezielt nur spielzeitMinuten/anzahlHalbzeiten/pauseMinuten (nicht das ganze Formular),
+   * sobald der Spielplan bereits laeuft (Nutzer-Vorgabe 2026-08-19) - nur diese drei Felder
+   * bestimmen die Spieldauer-Berechnung (siehe zeitplanung.ts), eine nachtraegliche Aenderung
+   * wuerde die bereits geplanten/gespielten Startzeiten aus dem Tritt bringen. Alle anderen
+   * Regel-Felder wirken sich nur auf Anzeige/Ergebnistabelle aus und bleiben aenderbar.
+   */
+  spielzeitGesperrt?: boolean;
 }
 
 /**
@@ -36,7 +44,7 @@ function mitFeldDefaults(w: Turnierregeln): Turnierregeln {
   return { ...w, forfaitErgebnis: w.forfaitErgebnis || "3:0" };
 }
 
-export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWerte }: Props) {
+export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWerte, spielzeitGesperrt }: Props) {
   const [r, setR] = useState<Turnierregeln>(() => mitFeldDefaults(werte));
   const [gespeichert, setGespeichert] = useState(false);
   const [speichert, setSpeichert] = useState(false);
@@ -115,21 +123,21 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
               <th scope="row"><label htmlFor="spielzeitMinuten">Spielzeit je Halbzeit (Minuten)</label></th>
               <td>
                 <input id="spielzeitMinuten" type="number" min={1} required value={r.spielzeitMinuten}
-                  onChange={(e) => zahl("spielzeitMinuten", e.target.value)} />
+                  onChange={(e) => zahl("spielzeitMinuten", e.target.value)} disabled={spielzeitGesperrt} />
               </td>
             </tr>
             <tr>
               <th scope="row"><label htmlFor="anzahlHalbzeiten">Anzahl Halbzeiten</label></th>
               <td>
                 <input id="anzahlHalbzeiten" type="number" min={1} required value={r.anzahlHalbzeiten}
-                  onChange={(e) => zahl("anzahlHalbzeiten", e.target.value)} />
+                  onChange={(e) => zahl("anzahlHalbzeiten", e.target.value)} disabled={spielzeitGesperrt} />
               </td>
             </tr>
             <tr>
               <th scope="row"><label htmlFor="pauseMinuten">Pause zwischen Halbzeiten (Minuten)</label></th>
               <td>
                 <input id="pauseMinuten" type="number" min={0} required value={r.pauseMinuten}
-                  onChange={(e) => zahl("pauseMinuten", e.target.value)} />
+                  onChange={(e) => zahl("pauseMinuten", e.target.value)} disabled={spielzeitGesperrt} />
               </td>
             </tr>
             <tr>
@@ -142,6 +150,12 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
           </tbody>
         </table>
       </div>
+      {spielzeitGesperrt && (
+        <p className="feld-hinweis">
+          Spielzeit, Anzahl Halbzeiten und Pause sind gesperrt, sobald der Spielplan läuft – eine nachträgliche
+          Änderung würde die bereits geplanten Startzeiten durcheinanderbringen.
+        </p>
+      )}
 
       <h3>Timeouts &amp; Wechsel</h3>
       <div className="tabellen-wrapper">

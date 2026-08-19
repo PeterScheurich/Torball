@@ -296,6 +296,36 @@ des gespeicherten Dokuments). `TurnierListePage.tsx` zeigt dafür statt des `Tur
 Stop-Schild-Emoji (🛑, `role="img"` + `aria-label`/`title`) vor dem Namen. Im Browser verifiziert
 (per direkt in CouchDB angelegtem `TurnierCheckout`-Testdokument).
 
+**Lokale Installation optisch erkennbar (2026-08-20, Nutzer-Feedback):** neue Komponente
+`LokaleInstallationBanner.tsx`, analog `UmgebungsBanner.tsx` aber – anders als dieses – zur
+Laufzeit per `GET /sync/status` (`istLokaleInstallation`) statt build-zeit-gesteuert ermittelt, da
+dieselbe gebaute Anwendung sowohl als Zentrale Plattform als auch als lokale Installation läuft
+(`SERVE_FRONTEND`-Flag). Grund: bei mehreren offenen Browser-Reitern (z. B. während der
+Turnier-Sync-Kopplung) war bisher nur an der URL zu erkennen, auf welcher Instanz man sich gerade
+befindet. **Bewusst NICHT in `--danger`/Rot wie `umgebungs-banner-demo`** (Nutzer-Vorgabe) – das
+ist hier kein Warnhinweis vor Datenverlust, nur eine Standort-Kennzeichnung: neue CSS-Klasse
+`.umgebungs-banner-lokal` mit `var(--focus-ring)` (der vorhandene, bisher nur für Fokus-Ringe
+genutzte Blauton) als ruhigerer, trotzdem deutlich abgehobener Hintergrund.
+
+**Spielzeit/Spielmodus/Protokollierung gesperrt, sobald der Spielplan läuft (2026-08-20,
+Nutzer-Vorgabe):** `TurnierVerwaltenPage.tsx` lädt dafür einen eigenen schlanken `spiele`-State
+(nur für diese Sperre, unabhängig vom vollen Spielplan-State in `SpielplanVerwaltung.tsx`) und
+berechnet `spielplanGesperrt` mit derselben Bedingung wie dort (`spiele.some(s => s.status !==
+"geplant" || s.ergebnisAbgeschlossen)`). `TurnierregelnFormular.tsx` bekommt dafür einen neuen
+optionalen Prop `spielzeitGesperrt`, der **gezielt nur** `spielzeitMinuten`/`anzahlHalbzeiten`/
+`pauseMinuten` deaktiviert (nicht das ganze Formular wie beim bestehenden `istGesperrt`/
+`turnierGesperrt()`-Mechanismus für abgeschlossene Turniere) – alle anderen Regel-Felder wirken
+sich nur auf Anzeige/Ergebnistabelle aus und bleiben änderbar. Dieselbe `spielplanGesperrt`-
+Bedingung sperrt zusätzlich die Dropdowns „Spielmodus"/„Protokollierung" im Übersicht-Reiter (dort
+bereits vorhandenes `disabled={istGesperrt}` um `|| spielplanGesperrt` ergänzt). Im Browser
+verifiziert (Test-Turnier mit bereits gespielten Spielen: alle drei Felder + beide Dropdowns
+gesperrt; ein Turnier ohne begonnenen Spielplan bleibt unverändert änderbar).
+
+**Login-Seite: Ersteinrichtung als Button (2026-08-20):** `LoginPage.tsx` zeigt den Hinweis „Es
+existiert noch kein Benutzer" jetzt mit einem `.button-link`-gestylten Link statt eines reinen
+Text-Links (Nutzer hatte ihn live übersehen, siehe Backlog-Notiz oben in dieser Session) –
+dieselbe Klasse, die z. B. „Neues Turnier anlegen" in `TurnierListePage.tsx` schon verwendet.
+
 **Offline-/Lokal-Betrieb ist laut Spezifikation (Abschnitt 17/19) ein
 Kernfeature mit drei Betriebsmodi (Standalone, Lokales Netzwerk, Zentrale
 Plattform), kein optionales Extra** – bei neuen Architektur-Entscheidungen
