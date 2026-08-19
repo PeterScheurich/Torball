@@ -122,13 +122,35 @@ if (Test-Couchdb) {
     $msiPath = Join-Path $env:TEMP "apache-couchdb-$CouchdbVersion.msi"
     $shaPath = "$msiPath.sha256"
     Invoke-WebRequest -Uri $CouchdbMsiUrl -OutFile $msiPath
-    Invoke-WebRequest -Uri $CouchdbSha256Url -OutFile $shaPath
 
-    $expectedHash = ((Get-Content $shaPath) -split "\s+")[0]
-    $actualHash = (Get-FileHash -Path $msiPath -Algorithm SHA256).Hash
-    if ($actualHash.ToLower() -ne $expectedHash.ToLower()) {
-        Write-Error "Pruefsumme des CouchDB-Installers stimmt nicht ueberein - Abbruch (moeglicher Download-Fehler). Bitte erneut versuchen."
-        exit 1
+    # Die .sha256-Datei liegt auf demselben Hoster (couchdb.neighbourhood.ie -> DigitalOcean
+    # Spaces) wie der Installer selbst, aber als eigenes Objekt - kann unabhaengig vom .msi
+    # nicht verfuegbar sein (live erlebt: .msi lud problemlos, .sha256 lieferte 403 AccessDenied,
+    # offenbar eine Bucket-Berechtigung nur fuer dieses eine Objekt). Kein Abbruch bei fehlender
+    # Pruefsumme - das waere ein reines Fremd-Server-Problem, keines dieser Installation -,
+    # sondern eine bewusste Nachfrage, ob trotzdem fortgefahren werden soll.
+    $pruefsummeVerfuegbar = $true
+    try {
+        Invoke-WebRequest -Uri $CouchdbSha256Url -OutFile $shaPath -ErrorAction Stop
+    } catch {
+        $pruefsummeVerfuegbar = $false
+    }
+
+    if ($pruefsummeVerfuegbar) {
+        $expectedHash = ((Get-Content $shaPath) -split "\s+")[0]
+        $actualHash = (Get-FileHash -Path $msiPath -Algorithm SHA256).Hash
+        if ($actualHash.ToLower() -ne $expectedHash.ToLower()) {
+            Write-Error "Pruefsumme des CouchDB-Installers stimmt nicht ueberein - Abbruch (moeglicher Download-Fehler). Bitte erneut versuchen."
+            exit 1
+        }
+    } else {
+        Write-Host ""
+        Write-Warning "Die Pruefsummen-Datei konnte nicht vom CouchDB-Anbieter (couchdb.neighbourhood.ie) heruntergeladen werden - das liegt an dessen Server, nicht an dieser Installation. Der Installer selbst wurde erfolgreich heruntergeladen, nur die Verifikation war nicht moeglich."
+        $weiter = Frage-MitDefault -Text "Trotzdem mit der heruntergeladenen (nicht verifizierten) Installationsdatei fortfahren? (j/n)" -Standard "n"
+        if ($weiter -notin @("j", "J", "ja", "Ja", "JA")) {
+            Write-Host "Abgebrochen."
+            exit 1
+        }
     }
 
     Write-Host "Installiere CouchDB als Windows-Dienst (unbeaufsichtigt) ..."
