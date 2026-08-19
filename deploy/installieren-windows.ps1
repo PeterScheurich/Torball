@@ -453,12 +453,13 @@ $Shortcut = $WshShell.CreateShortcut((Join-Path ([Environment]::GetFolderPath("D
 $Shortcut.TargetPath = $StartCmd
 $Shortcut.WorkingDirectory = $RepoRoot
 $Shortcut.Description = "Torball-Turniere starten"
-# Dasselbe Icon wie im Browser-Tab der Webseite (frontend/public/favicon.ico, landet durch den
-# Build oben unverändert in frontend/dist/) - fällt auf das Windows-Standard-.exe-Symbol zurück,
-# falls die Datei aus irgendeinem Grund fehlen sollte.
-$FaviconPfad = Join-Path $RepoRoot "frontend\dist\favicon.ico"
-if (Test-Path $FaviconPfad) {
-    $Shortcut.IconLocation = $FaviconPfad
+# Eigenes mehrstufiges .ico (16-256px, aus frontend/public/images/torball-logo-1024.png erzeugt,
+# siehe dortiger Kommentar) statt des Browser-favicon.ico - das ist nur 16x16 und wirkte auf dem
+# Desktop (dort meist 32-48px groß dargestellt) sichtbar unscharf hochskaliert (Nutzer-Feedback
+# 2026-08-19). Faellt auf das Windows-Standard-.exe-Symbol zurueck, falls die Datei fehlen sollte.
+$AppIconPfad = Join-Path $RepoRoot "frontend\dist\images\torball-app-icon.ico"
+if (Test-Path $AppIconPfad) {
+    $Shortcut.IconLocation = $AppIconPfad
 }
 $Shortcut.Save()
 

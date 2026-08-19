@@ -1418,11 +1418,17 @@ Server zu beenden), bleibt aber über die Taskleiste weiterhin erreichbar, falls
 mal die Konsolenausgabe gebraucht wird (bewusst nicht komplett versteckt/als Dienst - gerade in der
 Beta-Phase war genau diese Ausgabe wiederholt der einzige Weg, einen Fehler zu diagnostizieren).
 
-**Desktop-Verknüpfung nutzt dasselbe Icon wie die Webseite (2026-08-19, Nutzer-Vorgabe):**
-`installieren-windows.ps1` setzt `$Shortcut.IconLocation` auf `frontend\dist\favicon.ico` (identisch
-mit `frontend/public/favicon.ico`, landet unverändert durch den Vite-Build dorthin – kein
-gesondertes Icon-Asset nötig) statt des generischen Windows-`.exe`-Symbols. Fällt auf das
-Standard-Symbol zurück, falls die Datei aus irgendeinem Grund fehlen sollte.
+**Desktop-Verknüpfung nutzt ein eigenes hochauflösendes Icon (2026-08-19, zweistufig):** Erster
+Anlauf zeigte auf `frontend/dist/favicon.ico` (Browser-Tab-Icon) – wirkte auf dem Desktop (dort
+i. d. R. 32–48 px groß dargestellt) sichtbar unscharf, da `favicon.ico` nur eine einzige 16×16-
+Auflösung enthält und hochskaliert werden musste (Nutzer-Feedback). Fix: `frontend/public/images/
+torball-app-icon.ico` – ein selbst erzeugtes **mehrstufiges** Icon (16/32/48/64/128/256 px je als
+PNG-Payload im ICO-Container, per `System.Drawing` aus `torball-logo-1024.png` gerendert, siehe
+Kommentar an der Datei bzw. `git log` für das Erzeugungsskript – keine Laufzeit-Abhängigkeit,
+einmalig erzeugt und mitversioniert) statt des Favicons. Landet wie die anderen `images/`-Assets
+unverändert über den Vite-Build nach `frontend/dist/images/`. `installieren-windows.ps1` setzt
+`$Shortcut.IconLocation` entsprechend um, fällt auf das Windows-Standard-`.exe`-Symbol zurück,
+falls die Datei fehlen sollte.
 
 **`Aktualisieren-Torball.cmd` ist seit 2026-08-19 eine normale, mitversionierte Datei im
 Projekt-Wurzelverzeichnis, nicht mehr generiert.** Ihr Inhalt war schon immer rein statisch (kein
