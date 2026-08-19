@@ -165,8 +165,29 @@ if (Test-Couchdb) {
     )
     $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru
     if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
-        Write-Error "CouchDB-Installation fehlgeschlagen (Exit-Code $($proc.ExitCode)). Details: $logPath"
-        exit 1
+        # Bekannter Windows-Installer-Fehler bei diesem (aelteren, WiX-basierten) MSI-Paket: sind
+        # 8.3-Kurznamen (z.B. "PROGRA~1") systemweit deaktiviert - seit einigen Windows-Versionen
+        # verbreitet als Standard/Haertungsmassnahme, live auf einem Testrechner so vorgefunden -,
+        # kann CostFinalize keinen Kurznamen fuer den (noch nicht existierenden) Zielordner
+        # ermitteln und bricht mit Error 1324 ("... contains an invalid character") ab, obwohl der
+        # Pfad selbst voellig normal ist. Kein Fehler dieses Skripts oder des CouchDB-Pakets an
+        # sich - behebbar durch (Wieder-)Aktivieren der Kurznamen-Erzeugung, danach erneuter
+        # Versuch ohne Neustart noetig.
+        $logInhalt = if (Test-Path $logPath) { Get-Content -Path $logPath -Raw -Encoding Unicode } else { "" }
+        if ($proc.ExitCode -eq 1603 -and $logInhalt -match "1324") {
+            Write-Host ""
+            Write-Warning "Die CouchDB-Installation ist an einem bekannten Windows-Problem gescheitert: 8.3-Kurznamen sind auf diesem System deaktiviert, der Installer benoetigt sie aber (Details: $logPath)."
+            $aktivieren = Frage-MitDefault -Text "8.3-Kurznamen jetzt aktivieren und die Installation erneut versuchen? (j/n)" -Standard "j"
+            if ($aktivieren -in @("j", "J", "ja", "Ja", "JA")) {
+                Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "NtfsDisable8dot3NameCreation" -Value 0
+                Write-Host "Kurznamen aktiviert. Installation wird erneut versucht ..."
+                $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru
+            }
+        }
+        if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
+            Write-Error "CouchDB-Installation fehlgeschlagen (Exit-Code $($proc.ExitCode)). Details: $logPath"
+            exit 1
+        }
     }
 
     Write-Host "Warte auf CouchDB ..."
