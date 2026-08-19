@@ -17,7 +17,9 @@
 # Das Backend liefert dabei das gebaute Frontend selbst mit aus (SERVE_FRONTEND=true, siehe
 # backend/src/index.ts) - ein Prozess, kein separater Webserver noetig.
 #
-# Idempotent: mehrfaches Ausfuehren aktualisiert (Build neu, .env/Verknuepfung bleiben erhalten).
+# Idempotent: mehrfaches Ausfuehren aktualisiert (git pull bei Git-Installation, Build neu,
+# .env/Verknuepfung bleiben erhalten). Bei einer ZIP-Installation (kein .git-Ordner) gibt es
+# keinen Quellcode zum Nachladen - dafuer muss ein neues Quellcode-ZIP her, siehe AKTUALISIEREN.md.
 # Fuer eine spaetere Anpassung einzelner Werte (z.B. Port) bzw. zur Aktualisierung ohne die
 # CouchDB-/Node-Pruefungen erneut zu durchlaufen: "Aktualisieren-Torball.cmd" bzw. das
 # Konsolen-Tool torball ("npm run torball -- konfiguration:anzeigen|konfiguration:setzen|aktualisieren",
@@ -365,6 +367,16 @@ Write-Host ""
 Write-Host "== [4/6] App bauen (npm install, shared zuerst) =="
 Push-Location $RepoRoot
 try {
+    # Bei einem erneuten Lauf auf einer bereits bestehenden Git-Installation gleich den neuesten
+    # Stand holen - sonst baut dieses Skript sonst nur den ohnehin schon vorhandenen (ggf.
+    # veralteten) Quellcode neu, was beim erneuten Ausfuehren leicht als "hat aktualisiert"
+    # missverstanden wird (Nutzer-Vorgabe 2026-08-20, analog zum "torball aktualisieren"-Befehl).
+    # Bei einer ZIP-Installation (kein .git-Ordner) gibt es hier nichts zu holen - unveraendert.
+    if (Test-Path (Join-Path $RepoRoot ".git")) {
+        Write-Host "Git-Repository erkannt - hole neuesten Quellcode (git pull) ..."
+        git pull
+        if ($LASTEXITCODE -ne 0) { throw "git pull fehlgeschlagen" }
+    }
     npm install
     if ($LASTEXITCODE -ne 0) { throw "npm install fehlgeschlagen" }
     npm run build --workspace=shared

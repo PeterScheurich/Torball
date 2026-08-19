@@ -26,7 +26,8 @@ Ergebnisse.
 ## Woher kommt der neue Quellcode?
 
 - **Installation aus einem Git-Repository** (`git clone`): `Aktualisieren-Torball.cmd` zieht den
-  neuesten Stand automatisch per `git pull`.
+  neuesten Stand automatisch per `git pull` – genauso ein erneuter Lauf von `Setup.cmd` (prüft
+  dabei zusätzlich nochmal Node.js/CouchDB, dauert also etwas länger).
 - **Installation aus einem heruntergeladenen ZIP** (kein Git-Repository vorhanden):
   `Aktualisieren-Torball.cmd` baut nur den vorhandenen Stand neu – **es wird dabei kein neuer
   Quellcode heruntergeladen.** Das Skript weist am Ende deutlich darauf hin, falls das auf diese

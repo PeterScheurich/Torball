@@ -1507,6 +1507,16 @@ mit den konkreten naechsten Schritten (neues ZIP herunterladen, `backend/.env` u
 `Setup.cmd` erneut ausfuehren). Betrifft `torball-aktualisieren` auf dem Server (dort immer ein
 Git-Checkout, also irrelevant) nicht, nur den lokalen Windows-Installationsweg.
 
+**`Setup.cmd` erneut ausfuehren aktualisiert jetzt auch (2026-08-20, Nutzer-Nachfrage):** Bisher
+machte `installieren-windows.ps1` selbst nirgends einen `git pull` - ein erneuter Lauf baute bei
+einer Git-Installation nur den ohnehin schon im Ordner liegenden (ggf. veralteten) Stand neu, ohne
+neuen Code zu holen (bei einer ZIP-Installation aendert das nichts, siehe Bugfix oben - dort gibt
+es ohnehin nichts nachzuladen). Naheliegende, aber vorher nicht erfuellte Erwartung: „nochmal
+installieren" sollte auch aktualisieren. Fix: vor dem Bauen (Schritt 4/6) jetzt derselbe `git
+pull`-Versuch wie in `torball aktualisieren` (nur falls `.git` vorhanden) - ohne
+`Bestaetige-Systemaenderung`-Rueckfrage, da eine reine Projektordner-Aenderung (kein
+Systemeingriff, siehe Abgrenzung oben).
+
 **Deinstaller fürs lokale Windows-Setup (`Deinstallieren-Torball.cmd` → `deploy/
 deinstallieren-windows.ps1`, 2026-08-19):** Gegenstück zu `deploy/instanz-entfernen.sh` auf der
 Linux-Server-Seite, war zuvor bewusst zurückgestellt. Nutzt dasselbe Erklären-und-Zustimmen-Muster
