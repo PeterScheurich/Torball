@@ -19,6 +19,7 @@ export const STANDARD_TURNIERREGELN: Turnierregeln = {
   spielzeitMinuten: 5,
   anzahlHalbzeiten: 2,
   pauseMinuten: 2,
+  pauseZwischenSpielenMinuten: 10,
   seitenwechsel: true,
   timeoutsJeHalbzeit: 1,
   timeoutDauerSekunden: 30,

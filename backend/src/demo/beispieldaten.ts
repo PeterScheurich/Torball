@@ -618,6 +618,7 @@ async function erzeugeSpieltag2(
     })),
     spielzeitMinuten: neuesTurnier.spielzeitMinuten,
     pauseMinuten: neuesTurnier.pauseMinuten,
+    pauseZwischenSpielenMinuten: neuesTurnier.pauseZwischenSpielenMinuten,
     anzahlHalbzeiten: neuesTurnier.anzahlHalbzeiten,
     startzeit: neuesTurnier.startzeit,
     bundeslandBeruecksichtigen: neuesTurnier.bundeslandBeruecksichtigen,

@@ -190,6 +190,7 @@ export async function oeffentlichRoutes(app: FastifyInstance): Promise<void> {
             spielzeitMinuten: turnier.spielzeitMinuten,
             anzahlHalbzeiten: turnier.anzahlHalbzeiten,
             pauseMinuten: turnier.pauseMinuten,
+            pauseZwischenSpielenMinuten: turnier.pauseZwischenSpielenMinuten,
             seitenwechsel: turnier.seitenwechsel,
             timeoutsJeHalbzeit: turnier.timeoutsJeHalbzeit,
             timeoutDauerSekunden: turnier.timeoutDauerSekunden,

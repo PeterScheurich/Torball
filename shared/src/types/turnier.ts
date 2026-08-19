@@ -47,6 +47,7 @@ export interface SpielplanBasis {
   mannschaften: { id: string; name: string }[];
   spielzeitMinuten: number;
   pauseMinuten: number;
+  pauseZwischenSpielenMinuten: number;
   anzahlHalbzeiten: number;
   startzeit?: string;
   bundeslandBeruecksichtigen: boolean;
@@ -63,6 +64,11 @@ export interface Turnierregeln {
   spielzeitMinuten: number;
   anzahlHalbzeiten: number;
   pauseMinuten: number;
+  /** Pause zwischen zwei Spielen auf demselben Feld (Abschnitt 8: "konfigurierbare Toleranz") -
+   *  fliesst zusaetzlich zur Halbzeitpause (pauseMinuten) in die Startzeit-Berechnung des jeweils
+   *  naechsten Spiels ein, da im Torball nur die Netto-Spielzeit gezaehlt wird und Spiele dadurch
+   *  ueblicherweise laenger dauern als die reine Spielzeit (siehe zeitplanung.ts). */
+  pauseZwischenSpielenMinuten: number;
   seitenwechsel: boolean;
   timeoutsJeHalbzeit: number;
   timeoutDauerSekunden: number;

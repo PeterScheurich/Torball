@@ -901,6 +901,7 @@ export interface OeffentlicheTurnierseite {
     spielzeitMinuten: number;
     anzahlHalbzeiten: number;
     pauseMinuten: number;
+    pauseZwischenSpielenMinuten: number;
     seitenwechsel: boolean;
     timeoutsJeHalbzeit: number;
     timeoutDauerSekunden: number;

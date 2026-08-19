@@ -1,14 +1,18 @@
 import type { Turnier } from "@torball/shared";
 
 /**
- * Grobe Schaetzung der Gesamtdauer eines Spiels inkl. Halbzeitpause. Enthaelt
- * bewusst keinen zusaetzlichen Wechselpuffer zwischen zwei Spielen auf
- * demselben Feld - dafuer sieht Abschnitt 8 eine "konfigurierbare Toleranz"
- * vor, die hier noch nicht modelliert ist; die Turnierleitung darf
- * Startzeiten laut Spezifikation ohnehin jederzeit manuell nachjustieren.
+ * Grobe Schaetzung der Gesamtdauer eines Spiels inkl. Halbzeitpause UND der Pause bis zum
+ * naechsten Spiel auf demselben Feld (Abschnitt 8: "konfigurierbare Toleranz", 2026-08-20
+ * ergaenzt - vorher fehlte dieser Wechselpuffer komplett). Die Turnierleitung darf Startzeiten
+ * laut Spezifikation ohnehin jederzeit manuell nachjustieren, das hier ist nur der Vorschlag.
+ * `?? 0` als Absicherung fuer Turniere, die vor Einfuehrung des Feldes angelegt wurden.
  */
 export function spieldauerMinuten(turnier: Turnier): number {
-  return turnier.spielzeitMinuten * turnier.anzahlHalbzeiten + turnier.pauseMinuten;
+  return (
+    turnier.spielzeitMinuten * turnier.anzahlHalbzeiten +
+    turnier.pauseMinuten +
+    (turnier.pauseZwischenSpielenMinuten ?? 0)
+  );
 }
 
 /** Berechnet die geplante Startzeit eines Slots aus Turnier-Startzeit + Slot-Index * Spieldauer. */

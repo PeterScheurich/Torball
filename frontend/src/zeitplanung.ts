@@ -9,7 +9,11 @@ import type { Turnier } from "@torball/shared";
  * einfachere Weg. Muss inhaltlich mit dem Backend-Pendant synchron bleiben.
  */
 export function spieldauerMinuten(turnier: Turnier): number {
-  return turnier.spielzeitMinuten * turnier.anzahlHalbzeiten + turnier.pauseMinuten;
+  return (
+    turnier.spielzeitMinuten * turnier.anzahlHalbzeiten +
+    turnier.pauseMinuten +
+    (turnier.pauseZwischenSpielenMinuten ?? 0)
+  );
 }
 
 export function berechneStartzeit(turnier: Turnier, slot: number): string | undefined {

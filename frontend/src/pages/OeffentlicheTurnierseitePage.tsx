@@ -556,8 +556,12 @@ export function OeffentlicheTurnierseitePage() {
                       </td>
                     </tr>
                     <tr>
-                      <th scope="row">Pause</th>
+                      <th scope="row">Pause zwischen Halbzeiten</th>
                       <td>{daten.regeln.pauseMinuten} Min.</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Pause zwischen Spielen</th>
+                      <td>{daten.regeln.pauseZwischenSpielenMinuten} Min.</td>
                     </tr>
                     <tr>
                       <th scope="row">Timeouts</th>

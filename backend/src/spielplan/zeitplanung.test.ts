@@ -18,6 +18,7 @@ function turnier(ueberschreibung: Partial<Turnier> = {}): Turnier {
     spielzeitMinuten: 5,
     anzahlHalbzeiten: 2,
     pauseMinuten: 2,
+    pauseZwischenSpielenMinuten: 0,
     seitenwechsel: true,
     timeoutsJeHalbzeit: 1,
     timeoutDauerSekunden: 30,
@@ -65,4 +66,17 @@ test("datumUndStartzeitAus nach einem Spieldauer-Verschub (spaeterer Slot) liefe
   assert.equal(spieldauerMinuten(t), 25);
   const iso = berechneStartzeit(t, 1)!;
   assert.deepEqual(datumUndStartzeitAus(iso), { datum: "2026-08-23", startzeit: "00:15" });
+});
+
+test("spieldauerMinuten beruecksichtigt die Pause zwischen Spielen zusaetzlich zur Halbzeitpause", () => {
+  const t = turnier({ spielzeitMinuten: 10, anzahlHalbzeiten: 2, pauseMinuten: 5, pauseZwischenSpielenMinuten: 3 });
+  // 10*2 + 5 (Halbzeitpause) + 3 (Pause zwischen Spielen) = 28
+  assert.equal(spieldauerMinuten(t), 28);
+});
+
+test("spieldauerMinuten faellt bei fehlendem pauseZwischenSpielenMinuten (Turnier vor Einfuehrung des Feldes) auf 0 zurueck", () => {
+  const t = turnier({ spielzeitMinuten: 10, anzahlHalbzeiten: 2, pauseMinuten: 5 });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  delete (t as any).pauseZwischenSpielenMinuten;
+  assert.equal(spieldauerMinuten(t), 25);
 });

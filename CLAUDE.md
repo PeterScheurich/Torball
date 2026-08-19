@@ -595,6 +595,29 @@ wiederverwendete `TurnierregelnFormular` (Reiter „Regeln" je Turnier via
 Assistenten-Schritt). Die „n. a."-Aktionen der Ergebniserfassung lesen
 `turnier.forfaitErgebnis` (Format „Sieger:Verlierer", Fallback „3:0").
 
+**Pause zwischen Spielen fehlte in der Spezifikation komplett (2026-08-20, live vom Nutzer selbst
+bemerkt):** `zeitplanung.ts`s `spieldauerMinuten()` enthielt bis dahin nur Spielzeit ×
+Halbzeiten + Halbzeitpause – keinen Puffer zwischen zwei aufeinanderfolgenden Spielen auf
+demselben Feld, obwohl genau das schon als „konfigurierbare Toleranz" in Abschnitt 8 der
+Spezifikation erwähnt war (dort aber nie als eigenes Feld modelliert). Neues Feld
+`Turnierregeln.pauseZwischenSpielenMinuten` (Standardwert `10`, Nutzer-Einschätzung: realistisch,
+da im Torball nur Netto-Spielzeit gezählt wird und Spiele dadurch üblicherweise länger dauern als
+die angegebene Spielzeit) – fließt zusätzlich zur Halbzeitpause in `spieldauerMinuten()` ein
+(Backend **und** Frontend-Duplikat `frontend/src/zeitplanung.ts`, `?? 0`-Absicherung für Turniere
+ohne das Feld). Wegen des einen gemeinsamen `Turnierregeln`-Typs technisch harmlos, aber
+**mechanisch breit gestreut** – betroffen: `STANDARD_TURNIERREGELN`, `TurnierregelnFormular.tsx`
+(neues Eingabefeld, gesperrt über denselben `spielzeitGesperrt`-Mechanismus wie
+Spielzeit/Halbzeiten/Halbzeitpause), `SpielplanBasis`-Typ + alle drei Stellen, die einen
+Schnappschuss davon anlegen (`spielplan.ts`, `turnier.ts` „ableiten", `beispieldaten.ts`),
+`spielplanBasisDiff.ts` (neuer Änderungs-Hinweis), die öffentliche Turnierseite
+(`oeffentlich.ts`/`OeffentlicheTurnierseitePage.tsx`) sowie `REGEL_FELDER` in `turnier.ts`
+(Regeln-gesperrt-Gate bei abgeleiteten Turnieren). Migration bestehender Turniere ohne das Feld
+bewusst nicht behandelt (Nutzer-Vorgabe: noch in der alleinigen Testphase, bestehende Test-Spiele
+werden ohnehin gelöscht) – `beispieldaten.ts` (Demo-Basisdaten) wurde trotzdem mitgezogen, da die
+Demo-Instanz sich nächtlich aus diesen Basisdaten neu aufbaut. Im Browser Ende-zu-Ende verifiziert
+(Wert im Formular gespeichert, per `GET .../spielplan-vorschlag` bestätigt: Slot-Abstand
+enthält korrekt Spielzeit + Halbzeitpause + neue Pause).
+
 **Anlage-Assistent (mehrstufig, per Route, nicht als Wizard-Komponente):**
 Grunddaten (`TurnierAnlegenPage`) → Regeln (`SpielregelnErfassenPage`) →
 Mannschaften (`MannschaftenErfassenPage`) → **optional** Schiedsrichter

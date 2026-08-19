@@ -35,7 +35,12 @@ export function spielplanBasisAenderungen(turnier: Turnier, mannschaften: Mannsc
     aenderungen.push(`Spielzeit: ${basis.spielzeitMinuten} → ${turnier.spielzeitMinuten} min`);
   }
   if (basis.pauseMinuten !== turnier.pauseMinuten) {
-    aenderungen.push(`Pause: ${basis.pauseMinuten} → ${turnier.pauseMinuten} min`);
+    aenderungen.push(`Pause zwischen Halbzeiten: ${basis.pauseMinuten} → ${turnier.pauseMinuten} min`);
+  }
+  if (basis.pauseZwischenSpielenMinuten !== turnier.pauseZwischenSpielenMinuten) {
+    aenderungen.push(
+      `Pause zwischen Spielen: ${basis.pauseZwischenSpielenMinuten} → ${turnier.pauseZwischenSpielenMinuten} min`,
+    );
   }
   if (basis.anzahlHalbzeiten !== turnier.anzahlHalbzeiten) {
     aenderungen.push(`Halbzeiten: ${basis.anzahlHalbzeiten} → ${turnier.anzahlHalbzeiten}`);

@@ -141,6 +141,14 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
               </td>
             </tr>
             <tr>
+              <th scope="row"><label htmlFor="pauseZwischenSpielenMinuten">Pause zwischen Spielen (Minuten)</label></th>
+              <td>
+                <input id="pauseZwischenSpielenMinuten" type="number" min={0} required
+                  value={r.pauseZwischenSpielenMinuten}
+                  onChange={(e) => zahl("pauseZwischenSpielenMinuten", e.target.value)} disabled={spielzeitGesperrt} />
+              </td>
+            </tr>
+            <tr>
               <th scope="row"><label htmlFor="seitenwechsel">Seitenwechsel zur Halbzeit</label></th>
               <td>
                 <input id="seitenwechsel" type="checkbox" checked={r.seitenwechsel}
@@ -152,8 +160,8 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
       </div>
       {spielzeitGesperrt && (
         <p className="feld-hinweis">
-          Spielzeit, Anzahl Halbzeiten und Pause sind gesperrt, sobald der Spielplan läuft – eine nachträgliche
-          Änderung würde die bereits geplanten Startzeiten durcheinanderbringen.
+          Spielzeit, Anzahl Halbzeiten sowie beide Pausen sind gesperrt, sobald der Spielplan läuft – eine
+          nachträgliche Änderung würde die bereits geplanten Startzeiten durcheinanderbringen.
         </p>
       )}
 

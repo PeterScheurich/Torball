@@ -226,6 +226,7 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
           .map((m) => ({ id: m._id, name: m.name })),
         spielzeitMinuten: turnier.spielzeitMinuten,
         pauseMinuten: turnier.pauseMinuten,
+        pauseZwischenSpielenMinuten: turnier.pauseZwischenSpielenMinuten,
         anzahlHalbzeiten: turnier.anzahlHalbzeiten,
         startzeit: turnier.startzeit,
         bundeslandBeruecksichtigen: turnier.bundeslandBeruecksichtigen,
