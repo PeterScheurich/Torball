@@ -1334,6 +1334,14 @@ wird – node muss den `.env`-Wert dann gar nicht mehr gegen einen bestehenden �
 schon korrekt vorliegt. Robuster als die Ursache (die konkrete Herkunft der Fremd-Variable) zu
 jagen, und deckt jeden ähnlichen Fall auf einem anderen Rechner mit ab.
 
+**Server-Fenster startet minimiert mit warnendem Titel (2026-08-19, Nutzer-Vorgabe):** `Start-
+Torball.cmd` öffnet das Server-Konsolenfenster über `start "Torball-Turniere-Server - NICHT
+SCHLIESSEN!" /min cmd /k ...` statt eines normal sichtbaren Fensters – landet damit nur noch in der
+Taskleiste (kein Risiko mehr, es beim Arbeiten aus Versehen wegzuklicken/zu schließen und damit den
+Server zu beenden), bleibt aber über die Taskleiste weiterhin erreichbar, falls im Fehlerfall doch
+mal die Konsolenausgabe gebraucht wird (bewusst nicht komplett versteckt/als Dienst - gerade in der
+Beta-Phase war genau diese Ausgabe wiederholt der einzige Weg, einen Fehler zu diagnostizieren).
+
 **`Aktualisieren-Torball.cmd` ist seit 2026-08-19 eine normale, mitversionierte Datei im
 Projekt-Wurzelverzeichnis, nicht mehr generiert.** Ihr Inhalt war schon immer rein statisch (kein
 installationsspezifischer Wert, nur `cd backend && npm run torball -- aktualisieren`) – `deploy/

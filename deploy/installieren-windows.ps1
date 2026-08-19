@@ -439,7 +439,11 @@ rem allererste Zeile durch das Byte-Order-Mark von PowerShells Set-Content mit u
 rem Extra-Zeichen beginnt, weil nur nach dem GLEICHHEITSZEICHEN gesplittet wird.
 set "PORT=$EffectivePort"
 for /f "tokens=2 delims==" %%P in ('findstr "PORT=" .env') do set "PORT=%%P"
-start "Torball-Turniere (Server - dieses Fenster offen lassen)" cmd /k node --env-file=.env dist\index.js
+rem /min startet das Server-Fenster minimiert (nur in der Taskleiste) - bleibt so nicht im Weg fuer
+rem ein versehentliches Wegklicken, ist aber bei Bedarf weiterhin ueber die Taskleiste erreichbar
+rem (z.B. um im Fehlerfall die Ausgabe zu sehen). Titel weist zusaetzlich deutlich darauf hin, dass
+rem dieses Fenster den Server darstellt und nicht geschlossen werden soll.
+start "Torball-Turniere-Server - NICHT SCHLIESSEN!" /min cmd /k node --env-file=.env dist\index.js
 timeout /t 3 /nobreak >nul
 start "" http://localhost:%PORT%
 "@ | Set-Content -Path $StartCmd -Encoding ascii
