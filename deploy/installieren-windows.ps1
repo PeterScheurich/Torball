@@ -322,6 +322,19 @@ if (Test-Path $DbPassFile) {
 
 $authHeader = @{ Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$CouchAdminUser`:$CouchAdminPass")) }
 
+# System-Datenbanken sicherstellen (_users, _replicator, _global_changes): der unbeaufsichtigte
+# MSI-Installer (ADMINUSER/ADMINPASSWORD als Parameter, kein interaktiver Einrichtungsassistent)
+# legt zwar den Admin-Zugang an, richtet dabei aber NICHT die internen System-Datenbanken ein -
+# das uebernimmt sonst der "Cluster-Setup"-Einrichtungsassistent von Fauxton, den es hier nie gibt.
+# Ohne die Datenbank "_users" kann sich kein regulaerer (Nicht-Admin-)Benutzer wie torball_backend
+# anmelden - CouchDB meldet dann "Name or password is incorrect", obwohl das Passwort stimmt (der
+# eigentliche Grund ist ein 404 "Database does not exist" beim Nachschlagen des Benutzers, das aber
+# nirgends sichtbar wird, weil nano/das Backend nur den 401 der Anmeldung selbst sieht). Live
+# erlebt. PUT ist idempotent - eine bereits vorhandene Datenbank liefert 412, wird ignoriert.
+foreach ($systemDb in @("_users", "_replicator", "_global_changes")) {
+    try { Invoke-RestMethod -Method Put -Uri "http://127.0.0.1:5984/$systemDb" -Headers $authHeader -ErrorAction Stop | Out-Null } catch { }
+}
+
 try { Invoke-RestMethod -Method Put -Uri "http://127.0.0.1:5984/$Db" -Headers $authHeader | Out-Null } catch { }
 # Bewusst erst lesen (fuer die _rev) und dann schreiben statt einfach blind PUT + Fehler ignorieren:
 # existiert der Benutzer schon (z.B. von einem frueheren Lauf mit einem inzwischen anderen
@@ -411,16 +424,18 @@ $StartCmd = Join-Path $RepoRoot "Start-Torball.cmd"
 @"
 @echo off
 cd /d "%~dp0backend"
+rem Port aus backend\.env lesen und im Prozessumfeld EXPLIZIT setzen, bevor der Server startet:
+rem eine evtl. bereits auf diesem Windows-Konto vorhandene PORT-Umgebungsvariable wuerde sonst den
+rem Wert aus .env stillschweigend ueberstimmen (Node uebernimmt per "--env-file" keine Werte, die
+rem im Prozessumfeld schon existieren) - live erlebt: Server startete trotz PORT=3001 in .env auf
+rem Port 3000. "tokens=2 delims==" liefert den Wert hinter dem "="; funktioniert auch, wenn die
+rem allererste Zeile durch das Byte-Order-Mark von PowerShells Set-Content mit unsichtbaren
+rem Extra-Zeichen beginnt, weil nur nach dem GLEICHHEITSZEICHEN gesplittet wird.
+set "PORT=$EffectivePort"
+for /f "tokens=2 delims==" %%P in ('findstr "PORT=" .env') do set "PORT=%%P"
 start "Torball-Turniere (Server - dieses Fenster offen lassen)" cmd /k node --env-file=.env dist\index.js
 timeout /t 3 /nobreak >nul
-rem Port bei JEDEM Start neu aus .env lesen (nicht wie frueher einmalig beim Erzeugen dieser Datei
-rem festgeschrieben) - sonst oeffnet sich nach einer spaeteren Port-Aenderung in backend\.env
-rem weiterhin die alte URL. "tokens=2 delims==" liefert den Wert hinter dem "="; funktioniert auch,
-rem wenn die allererste Zeile durch das Byte-Order-Mark von PowerShells Set-Content mit unsichtbaren
-rem Extra-Zeichen beginnt, weil nur nach dem GLEICHHEITSZEICHEN gesplittet wird.
-set "STARTPORT=$EffectivePort"
-for /f "tokens=2 delims==" %%P in ('findstr "PORT=" .env') do set "STARTPORT=%%P"
-start "" http://localhost:%STARTPORT%
+start "" http://localhost:%PORT%
 "@ | Set-Content -Path $StartCmd -Encoding ascii
 
 $UpdateCmd = Join-Path $RepoRoot "Aktualisieren-Torball.cmd"

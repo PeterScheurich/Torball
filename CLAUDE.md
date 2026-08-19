@@ -1305,6 +1305,34 @@ jeder Installation, ob `Win32_Service.PathName` zum aktuellen `$CouchdbInstallDi
 korrigiert bei Abweichung (wieder über `Bestaetige-Systemaenderung`) sowohl den SCM-`binPath` als
 auch die beiden NSSM-Parameter, bevor der Dienst gestartet wird.
 
+**Unbeaufsichtigter MSI-Installer richtet die CouchDB-Systemdatenbanken nicht ein (2026-08-19, live
+erlebt):** Nach erfolgreicher Installation + korrektem App-Benutzer-Passwort scheiterte der
+Backend-Start trotzdem mit „Name or password is incorrect" beim allerersten Zugriff auf die
+`torball`-Datenbank. Ursache per Diagnose-Skript gefunden: `GET /_users/org.couchdb.user:...`
+lieferte nicht 401, sondern **404 „Database does not exist"** – die interne Systemdatenbank
+`_users` fehlte komplett. Normalerweise legt der interaktive Fauxton-„Cluster-Setup"-Assistent
+(„Single Node Setup") beim ersten Login diese drei Systemdatenbanken (`_users`, `_replicator`,
+`_global_changes`) an; der unbeaufsichtigte MSI-Weg dieses Skripts (`ADMINUSER`/`ADMINPASSWORD` als
+Installer-Parameter statt des Assistenten) setzt zwar den Admin-Zugang, durchläuft diesen
+Einrichtungsschritt aber nie – bestätigt durch `GET /_cluster_setup` → `{"state":"cluster_disabled"}`.
+Ohne `_users` kann sich kein regulärer (Nicht-Admin-)Benutzer wie `torball_backend` authentifizieren,
+das eigentliche Symptom (401 „Name or password is incorrect") verschleiert damit den wahren Fehler.
+Fix: `installieren-windows.ps1` legt jetzt vor dem App-Datenbank-Schritt alle drei Systemdatenbanken
+per einfachem `PUT /_users` bzw. `/_replicator` bzw. `/_global_changes` an (idempotent, ein 412 bei
+bereits vorhandener Datenbank wird ignoriert) – betrifft **jede** Neuinstallation auf einem frischen
+CouchDB, nicht nur den einen Testrechner.
+
+**Node ignoriert `--env-file`-Werte, wenn dieselbe Variable im Prozessumfeld schon existiert
+(2026-08-19, live erlebt):** Trotz `PORT=3001` in `backend/.env` startete der Server weiterhin auf
+Port 3000 – Node übernimmt laut eigener Dokumentation aus `--env-file` **keine** Werte für
+Variablen, die im aufrufenden Prozessumfeld bereits gesetzt sind (auf diesem Testrechner offenbar
+eine dauerhaft hinterlegte `PORT`-Umgebungsvariable, Ursache nicht abschließend geklärt). `Start-
+Torball.cmd` liest den Port jetzt selbst aus `.env` (`findstr`, siehe Kommentar im generierten
+Skript) und setzt ihn per `set "PORT=..."` **explizit im Prozessumfeld**, bevor `node` gestartet
+wird – node muss den `.env`-Wert dann gar nicht mehr gegen einen bestehenden überschreiben, weil er
+schon korrekt vorliegt. Robuster als die Ursache (die konkrete Herkunft der Fremd-Variable) zu
+jagen, und deckt jeden ähnlichen Fall auf einem anderen Rechner mit ab.
+
 **Bewusst zurückgestellt: sauberes Deinstallieren der lokalen Windows-Installation.** Aktuell gibt
 es dafür kein Skript (anders als `deploy/instanz-entfernen.sh` für die Linux-Server-Seite) – Node.js,
 der CouchDB-Windows-Dienst, die Desktop-Verknüpfung und der Projektordner selbst (inkl.
