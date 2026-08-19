@@ -5,6 +5,7 @@ import {
   getSpiele,
   getSystemkonfiguration,
   getTurnier,
+  getTurnierCheckoutStatus,
   turnierAbschliessen,
   turnierRegelnEntsperren,
   turnierWiederOeffnen,
@@ -129,6 +130,16 @@ export function TurnierVerwaltenPage() {
   const [feldNamen, setFeldNamen] = useState<Record<string, string> | undefined>();
   const [fehler, setFehler] = useState<string | undefined>();
   const [linkHinweis, setLinkHinweis] = useState<string | undefined>();
+  // Ist das Turnier per Turnier-Sync an eine lokale Installation ausgecheckt, ist es auch hier auf
+  // dem Server schreibgeschuetzt (siehe turnierAusgecheckt() im Backend) - fuer die Kennzeichnung
+  // im Namen (siehe unten) unabhaengig vom Turnier-Sync-Formular im Uebersicht-Reiter geladen, da
+  // der Name auf JEDEM Reiter sichtbar ist.
+  const [ausgecheckt, setAusgecheckt] = useState(false);
+  const ladeCheckoutStatus = () => {
+    getTurnierCheckoutStatus(turnierId)
+      .then((status) => setAusgecheckt(status.ausgecheckt))
+      .catch(() => setAusgecheckt(false));
+  };
   const logoInputRef = useRef<HTMLInputElement>(null);
   // Aktiver Reiter steckt in der URL (?tab=...), nicht nur im lokalen State - sonst
   // springt ein Reload (F5) immer zurueck auf "Uebersicht", egal auf welchem Reiter
@@ -149,6 +160,8 @@ export function TurnierVerwaltenPage() {
     getTurnier(turnierId)
       .then(setTurnier)
       .catch((err) => setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden"));
+    ladeCheckoutStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [turnierId]);
 
   // Nur beim ersten Laden aus dem Turnier uebernehmen, nicht bei jeder Aktualisierung
@@ -408,7 +421,13 @@ export function TurnierVerwaltenPage() {
       <p>
         <Link to="/">&larr; Zurück zur Turnierliste</Link>
       </p>
-      <h1>{turnier.name}</h1>
+      <h1>
+        {ausgecheckt ? (
+          <span style={{ color: "var(--danger)" }}>{turnier.name} (gesperrt)</span>
+        ) : (
+          turnier.name
+        )}
+      </h1>
       {fehler && <p role="alert">{fehler}</p>}
 
       {/* Hinweis auf den gesperrten Zustand. Inhalte sind bei abgeschlossenem Turnier
@@ -655,7 +674,7 @@ export function TurnierVerwaltenPage() {
             eine per Turnierleitung-Code angemeldete Sitzung (kein echtes Benutzerkonto, siehe
             turnierCode.ts) gibt es das nicht, deshalb hier ausgeblendet statt einer Funktion, die
             ohnehin nichts Sinnvolles anzeigen koennte. */}
-        {benutzer && <TurnierSync turnierId={turnierId} />}
+        {benutzer && <TurnierSync turnierId={turnierId} onCheckoutGeaendert={ladeCheckoutStatus} />}
 
         <h2>Öffentliche Turnierseite</h2>
         <p>

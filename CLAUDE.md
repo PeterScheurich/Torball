@@ -272,9 +272,22 @@ direkte Server-Änderung wäre also ohnehin sinnlos. Eingebaut an denselben Stel
 (zentral in `pruefeSpielZugriff`, wirkt automatisch auch in `ergebnis.ts`), `spielplan.ts`) sowie
 zusätzlich in `ergebnisToken.ts`s öffentlicher (kein Login) `PUT /ergebnis-erfassung/:tokenWert/…`
 – ein alter, noch aktiver externer Erfassungslink hätte sonst am Sperr-Mechanismus vorbei
-weiterschreiben können. **Noch offen:** die passende Kennzeichnung im Frontend (Turnierliste +
-`TurnierVerwaltenPage`-Kopfzeile) – aktuell reagiert das Frontend auf die Sperre nur über die
-Fehlermeldung beim Speichern, noch nicht proaktiv wie bei `turnierGesperrt()`.
+weiterschreiben können.
+
+**Frontend-Kennzeichnung der Sperre (2026-08-19, bewusst schlank statt vollständigem
+`istGesperrt`-Muster):** Nutzer-Vorgabe: statt jedes einzelne Feld wie bei `turnierGesperrt()`
+proaktiv zu deaktivieren, wird nur der Turniername in der `<h1>` (erscheint auf jedem Reiter, da
+`TurnierVerwaltenPage` eine einzige Komponente mit allen Tabs ist, nicht separate Routen) rot
+(`color: var(--danger)`) mit Zusatz „(gesperrt)" dargestellt, sobald `GET /turniere/:id/checkout-status`
+`ausgecheckt: true` liefert – der Rest bleibt bewusst unverändert bedienbar und zeigt die
+serverseitige 409-Fehlermeldung erst beim tatsächlichen Speicherversuch; Details erklärt stattdessen
+das Hilfe-Thema „Lokale Installation & Turnier-Sync" (neue Frage „Warum ist der Turniername auf
+dem Server rot…"). `TurnierSync.tsx` bekommt dafür einen neuen optionalen `onCheckoutGeaendert`-
+Callback (nach erfolgreichem Download-Anfordern/Freigabe-aufheben), damit die Kennzeichnung in der
+einbettenden Seite sofort reagiert, ohne denselben Status doppelt zu pollen. Dieselbe Behandlung
+zusätzlich in `SpielleitungCodePage.tsx` (eigene, unabhängige `<h1>` – nutzt `TurnierVerwaltenPage`
+nicht mit). **Weiterhin offen:** eine Kennzeichnung in der Turnierliste selbst (`TurnierListePage`) –
+dort ist noch nichts umgesetzt.
 
 **Offline-/Lokal-Betrieb ist laut Spezifikation (Abschnitt 17/19) ein
 Kernfeature mit drei Betriebsmodi (Standalone, Lokales Netzwerk, Zentrale
@@ -1397,6 +1410,12 @@ Taskleiste (kein Risiko mehr, es beim Arbeiten aus Versehen wegzuklicken/zu schl
 Server zu beenden), bleibt aber über die Taskleiste weiterhin erreichbar, falls im Fehlerfall doch
 mal die Konsolenausgabe gebraucht wird (bewusst nicht komplett versteckt/als Dienst - gerade in der
 Beta-Phase war genau diese Ausgabe wiederholt der einzige Weg, einen Fehler zu diagnostizieren).
+
+**Desktop-Verknüpfung nutzt dasselbe Icon wie die Webseite (2026-08-19, Nutzer-Vorgabe):**
+`installieren-windows.ps1` setzt `$Shortcut.IconLocation` auf `frontend\dist\favicon.ico` (identisch
+mit `frontend/public/favicon.ico`, landet unverändert durch den Vite-Build dorthin – kein
+gesondertes Icon-Asset nötig) statt des generischen Windows-`.exe`-Symbols. Fällt auf das
+Standard-Symbol zurück, falls die Datei aus irgendeinem Grund fehlen sollte.
 
 **`Aktualisieren-Torball.cmd` ist seit 2026-08-19 eine normale, mitversionierte Datei im
 Projekt-Wurzelverzeichnis, nicht mehr generiert.** Ihr Inhalt war schon immer rein statisch (kein

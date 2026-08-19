@@ -453,6 +453,13 @@ $Shortcut = $WshShell.CreateShortcut((Join-Path ([Environment]::GetFolderPath("D
 $Shortcut.TargetPath = $StartCmd
 $Shortcut.WorkingDirectory = $RepoRoot
 $Shortcut.Description = "Torball-Turniere starten"
+# Dasselbe Icon wie im Browser-Tab der Webseite (frontend/public/favicon.ico, landet durch den
+# Build oben unverändert in frontend/dist/) - fällt auf das Windows-Standard-.exe-Symbol zurück,
+# falls die Datei aus irgendeinem Grund fehlen sollte.
+$FaviconPfad = Join-Path $RepoRoot "frontend\dist\favicon.ico"
+if (Test-Path $FaviconPfad) {
+    $Shortcut.IconLocation = $FaviconPfad
+}
 $Shortcut.Save()
 
 Write-Host ""

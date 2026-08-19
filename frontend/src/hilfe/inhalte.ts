@@ -664,15 +664,25 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
-        frage: "Was passiert mit Ergebnissen, während das Turnier lokal verwaltet wird?",
+        frage: "Was passiert mit Änderungen, während das Turnier lokal verwaltet wird?",
         text: [
-          "Ergebnisse, die auf der lokalen Installation erfasst werden, übertragen sich automatisch zum Server, sobald eine Verbindung besteht – auch nach einem zwischenzeitlichen Verbindungsausfall.",
+          "Alles, was auf der lokalen Installation geändert wird – Ergebnisse, aber auch Mannschaften, Regeln, Schiedsrichter und mehr – überträgt sich automatisch zum Server, sobald eine Verbindung besteht (etwa alle 45 Sekunden), auch nach einem zwischenzeitlichen Verbindungsausfall. Die lokale Installation gilt für die Dauer des Downloads als der maßgebliche Stand.",
+        ],
+      },
+      {
+        frage: "Warum ist der Turniername auf dem Server rot und trägt den Zusatz „(gesperrt)“?",
+        text: [
+          "Das erscheint, sobald ein Turnier an eine lokale Installation heruntergeladen wurde. Weil die lokale Installation ab diesem Zeitpunkt der maßgebliche Stand ist, lässt sich das Turnier auf dem Server bewusst nicht mehr bearbeiten – eine Änderung dort würde beim nächsten automatischen Abgleich ohnehin wieder überschrieben. Lesen (z. B. den Spielplan ansehen) bleibt weiterhin möglich.",
+          {
+            hinweis:
+              "Betrifft nur den Server – auf der lokalen Installation selbst lässt sich das Turnier ganz normal weiterbearbeiten.",
+          },
         ],
       },
       {
         frage: "Wie gebe ich ein Turnier wieder frei?",
         text: [
-          "Im „Turnier-Sync“-Abschnitt auf dem Server über „Freigabe aufheben“. Danach gilt ausschließlich der Serverstand als gültig – die lokale Installation kann keine Ergebnisse mehr automatisch übertragen. Das ist eine bewusste Aktion, die nur die Turnierleitung selbst auslöst.",
+          "Im „Turnier-Sync“-Abschnitt auf dem Server über „Freigabe aufheben“. Danach gilt ausschließlich der Serverstand als gültig, die rote Kennzeichnung verschwindet und das Turnier ist auf dem Server wieder normal bearbeitbar – die lokale Installation kann aber nichts mehr automatisch übertragen. Das ist eine bewusste Aktion, die nur die Turnierleitung selbst auslöst (z. B. bei Verlust oder Defekt des lokalen Rechners).",
         ],
       },
     ],

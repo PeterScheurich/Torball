@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import type { Turnier } from "@torball/shared";
-import { getTurnier } from "../api";
+import { getTurnier, getTurnierCheckoutStatus } from "../api";
 import { ErgebnisVerwaltung } from "../components/ErgebnisVerwaltung";
 import { SpielplanVerwaltung } from "../components/SpielplanVerwaltung";
 
@@ -17,11 +17,17 @@ export function SpielleitungCodePage() {
   const turnierId = id!;
   const [turnier, setTurnier] = useState<Turnier | undefined>();
   const [fehler, setFehler] = useState<string | undefined>();
+  // Siehe TurnierVerwaltenPage.tsx: dieselbe Kennzeichnung fuer ein per Turnier-Sync an eine
+  // lokale Installation ausgechecktes (und damit hier ebenfalls schreibgeschuetztes) Turnier.
+  const [ausgecheckt, setAusgecheckt] = useState(false);
 
   useEffect(() => {
     getTurnier(turnierId)
       .then(setTurnier)
       .catch((err) => setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden"));
+    getTurnierCheckoutStatus(turnierId)
+      .then((status) => setAusgecheckt(status.ausgecheckt))
+      .catch(() => setAusgecheckt(false));
   }, [turnierId]);
 
   if (!turnier) {
@@ -32,7 +38,13 @@ export function SpielleitungCodePage() {
 
   return (
     <>
-      <h1>{turnier.name}</h1>
+      <h1>
+        {ausgecheckt ? (
+          <span style={{ color: "var(--danger)" }}>{turnier.name} (gesperrt)</span>
+        ) : (
+          turnier.name
+        )}
+      </h1>
       <p>Angemeldet als Spielleitung (Turnier-Code).</p>
 
       {istGesperrt && (

@@ -18,7 +18,16 @@ import {
  * auf derselben Seite auftauchen, weil dieselbe Codebasis sowohl als Server als auch als lokale
  * Installation laeuft - welcher Abschnitt sichtbar ist, ergibt sich aus den geladenen Daten.
  */
-export function TurnierSync({ turnierId }: { turnierId: string }) {
+export function TurnierSync({
+  turnierId,
+  onCheckoutGeaendert,
+}: {
+  turnierId: string;
+  /** Wird nach einer erfolgreichen Aenderung des Checkout-Status aufgerufen (Download angefordert/
+   *  Freigabe aufgehoben) - so kann die einbettende Seite z.B. eine Kennzeichnung im Titel sofort
+   *  aktualisieren, ohne selbst denselben Status doppelt zu pollen. */
+  onCheckoutGeaendert?: () => void;
+}) {
   const [checkoutStatus, setCheckoutStatus] = useState<TurnierCheckoutStatus | undefined>();
   const [instanzen, setInstanzen] = useState<VerbundeneInstanzProfil[]>([]);
   const [lokaleSyncStatus, setLokaleSyncStatus] = useState<LokaleSyncStatus | undefined>();
@@ -52,6 +61,7 @@ export function TurnierSync({ turnierId }: { turnierId: string }) {
       await turnierDownloadAnfordern(turnierId, zielInstanzId, stammdatenMitnehmen);
       setHinweis("Download angefordert – erscheint dort in Kürze automatisch.");
       checkoutLaden();
+      onCheckoutGeaendert?.();
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Anfordern des Downloads");
     }
@@ -71,6 +81,7 @@ export function TurnierSync({ turnierId }: { turnierId: string }) {
     try {
       await turnierCheckoutFreigeben(turnierId);
       checkoutLaden();
+      onCheckoutGeaendert?.();
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Aufheben der Freigabe");
     }
