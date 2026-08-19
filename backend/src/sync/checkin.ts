@@ -1,17 +1,25 @@
 import type { FastifyBaseLogger } from "fastify";
-import type { Spiel, Turnier } from "@torball/shared";
+import type { Turnier } from "@torball/shared";
 import { findAllBySelector, findById, insertDoc } from "../repository";
 import { aktuelleLokaleSyncKonfiguration } from "../lokaleSyncKonfiguration";
 import { importiereTurnierExport } from "./import";
-import type { TurnierExportPaket } from "./export";
+import { sammleTurnierExport, type TurnierExportPaket } from "./export";
 
 /**
  * Turnier-Sync (Grundlage, Abschnitt 21.3/23): periodischer Herzschlag DIESER Installation zu
  * einem gekoppelten Zentralen-Plattform-Server (siehe routes/instanzSync.ts, POST
  * /instanzen/checkin). Backend-seitig (nicht an einen offenen Browser-Tab gebunden), damit ein
- * angestossener Download tatsaechlich ankommt und Ergebnisse weiterlaufen, auch wenn gerade
- * niemand die Ergebnisverwaltung offen hat. Netzwerkfehler werden bewusst still uebersprungen -
- * das ist der ganze Zweck dieses Mechanismus (Resilienz gegen Verbindungsausfaelle).
+ * angestossener Download tatsaechlich ankommt und Aenderungen weiterlaufen, auch wenn gerade
+ * niemand die Anwendung offen hat. Netzwerkfehler werden bewusst still uebersprungen - das ist
+ * der ganze Zweck dieses Mechanismus (Resilienz gegen Verbindungsausfaelle).
+ *
+ * Ueberträgt bei jedem Check-in den VOLLSTAENDIGEN Stand jedes ausgecheckten Turniers (nicht nur
+ * Ergebnisse wie zuvor, 2026-08-19 umgestellt - Nutzer-Vorgabe): waehrend eines aktiven Checkouts
+ * ist die lokale Installation der alleinige fuehrende Stand (1:1-Beziehung, kein Merge), ein
+ * vollstaendiges Ueberschreiben pro Check-in haelt den Server-Stand automatisch "relativ aktuell",
+ * ohne in einen echten bidirektionalen Konfliktabgleich investieren zu muessen. "Freigabe
+ * aufheben" bleibt der bewusste manuelle Notausstieg (z.B. bei Verlust/Defekt des lokalen
+ * Rechners) - dann gilt der letzte erfolgreich uebertragene Stand.
  */
 const CHECKIN_INTERVALL_MS = 45_000;
 
@@ -35,10 +43,10 @@ async function fuehreCheckinAus(logger: FastifyBaseLogger): Promise<void> {
     lokalerSyncCheckoutId: { $exists: true },
   });
 
-  const ergebnisPush = await Promise.all(
+  const vollstaendigeUebertragung = await Promise.all(
     ausgecheckteTurniere.map(async (turnier) => ({
       turnierId: turnier._id,
-      spiele: await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id }),
+      export: await sammleTurnierExport(turnier._id, { stammdatenMitnehmen: true }),
     })),
   );
 
@@ -53,7 +61,7 @@ async function fuehreCheckinAus(logger: FastifyBaseLogger): Promise<void> {
     antwort = await fetch(`${konfiguration.serverUrl}/api/instanzen/checkin`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${konfiguration.instanzToken}` },
-      body: JSON.stringify({ ergebnisPush, bestaetigteCheckoutIds: unbestaetigteCheckoutIds }),
+      body: JSON.stringify({ vollstaendigeUebertragung, bestaetigteCheckoutIds: unbestaetigteCheckoutIds }),
     });
   } catch {
     return; // Server nicht erreichbar - naechster Versuch beim naechsten Intervall

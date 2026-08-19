@@ -6,6 +6,8 @@ import {
   hatMindestens,
   istAbgeleitet,
   MANNSCHAFTEN_ABGELEITET_FEHLER,
+  turnierAusgecheckt,
+  TURNIER_AUSGECHECKT_FEHLER,
   TURNIER_GESPERRT_FEHLER,
   turnierGesperrt,
 } from "../auth/turnierZugriff";
@@ -156,6 +158,10 @@ async function ladeMitSchreibzugriff(
     reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
     return undefined;
   }
+  if (await turnierAusgecheckt(turnier._id)) {
+    reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
+    return undefined;
+  }
   // Mannschaften eines abgeleiteten Turniers (zweiter Spieltag) sind hart gesperrt - kein
   // Aendern/Loeschen/Umsortieren, kein Entsperren (fachlich: gleiche Teams ueber beide Spieltage).
   if (istAbgeleitet(turnier)) {
@@ -197,6 +203,9 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
       }
       if (turnierGesperrt(turnier)) {
         return reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
+      }
+      if (await turnierAusgecheckt(turnier._id)) {
+        return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
       }
       if (istAbgeleitet(turnier)) {
         return reply.code(409).send({ error: MANNSCHAFTEN_ABGELEITET_FEHLER });
@@ -260,6 +269,9 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
       if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+      }
+      if (await turnierAusgecheckt(turnier._id)) {
+        return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
       }
 
       const bestehende = await findAllBySelector<MannschaftImTurnier>({

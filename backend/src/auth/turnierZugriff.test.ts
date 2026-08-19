@@ -203,6 +203,47 @@ test(
 );
 
 test(
+  "turnierAusgecheckt: true bei angefordertem/aktivem Checkout, false ohne bzw. nach Freigabe",
+  { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
+  async () => {
+    const { turnier, aufraeumen, newId, insertDoc } = await testSetup();
+    const { turnierAusgecheckt } = await import("./turnierZugriff");
+    const { findById, deleteDoc } = await import("../repository");
+    const checkoutId = newId("turnierCheckout");
+    try {
+      assert.equal(await turnierAusgecheckt(turnier._id), false, "ohne Checkout-Dokument");
+
+      await insertDoc({
+        _id: checkoutId,
+        docType: "turnierCheckout",
+        checkoutId,
+        turnierId: turnier._id,
+        instanzId: "verbundeneInstanz:irrelevant",
+        status: "angefordert",
+        stammdatenMitnehmen: false,
+        angefordertAm: new Date().toISOString(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
+      assert.equal(await turnierAusgecheckt(turnier._id), true, "Status 'angefordert' zaehlt bereits als ausgecheckt");
+
+      const angefordert = await findById(checkoutId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await insertDoc({ ...(angefordert as object), status: "aktiv" } as any);
+      assert.equal(await turnierAusgecheckt(turnier._id), true, "Status 'aktiv'");
+
+      const aktiv = await findById(checkoutId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await insertDoc({ ...(aktiv as object), status: "freigegeben" } as any);
+      assert.equal(await turnierAusgecheckt(turnier._id), false, "nach Freigabe nicht mehr gesperrt");
+    } finally {
+      const doc = await findById(checkoutId);
+      if (doc) await deleteDoc(checkoutId, (doc as { _rev: string })._rev);
+      await aufraeumen();
+    }
+  },
+);
+
+test(
   "Ein passender Turnier-Code hat Vorrang vor einer vorhandenen TurnierBerechtigung",
   { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
   async () => {

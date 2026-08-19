@@ -1,8 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import type { Benutzer, Spiel, TurnierCheckout, VerbundeneInstanz } from "@torball/shared";
+import type { Benutzer, TurnierCheckout, VerbundeneInstanz } from "@torball/shared";
 import { findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { erzeugeToken, hashe } from "../auth/token";
-import { sammleTurnierExport } from "../sync/export";
+import { sammleTurnierExport, type TurnierExportPaket } from "../sync/export";
+import { importiereTurnierExport } from "../sync/import";
 import { findeAktivesCheckout, findeInstanzPerToken, liesInstanzToken } from "../sync/instanz";
 
 /**
@@ -29,7 +30,7 @@ const kopplungEinloesenSchema = {
 } as const;
 
 interface CheckinBody {
-  ergebnisPush?: { turnierId: string; spiele: Partial<Spiel>[] }[];
+  vollstaendigeUebertragung?: { turnierId: string; export: TurnierExportPaket }[];
   bestaetigteCheckoutIds?: string[];
 }
 
@@ -86,28 +87,16 @@ export async function instanzSyncRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
-    // Ergebnis-Push: nur fuer Turniere entgegennehmen, die tatsaechlich aktiv an DIESE Instanz
-    // ausgecheckt sind (kein Push auf ein fremdes/nicht ausgechecktes Turnier moeglich).
-    for (const eintrag of req.body.ergebnisPush ?? []) {
+    // Vollstaendige Turnierdaten-Uebernahme: nur fuer Turniere entgegennehmen, die tatsaechlich
+    // aktiv an DIESE Instanz ausgecheckt sind (kein Ueberschreiben eines fremden/nicht
+    // ausgechecktes Turniers moeglich). ersetzen:true, weil die lokale Instanz waehrend eines
+    // aktiven Checkouts der alleinige fuehrende Stand ist (1:1-Beziehung, kein Merge) - ersetzt bei
+    // jedem Check-in konsequent den kompletten Turnierstand auf dem Server, nicht nur Ergebnisse
+    // wie zuvor (2026-08-19 umgestellt, siehe Kommentar in sync/checkin.ts).
+    for (const eintrag of req.body.vollstaendigeUebertragung ?? []) {
       const checkout = await findeAktivesCheckout(eintrag.turnierId);
       if (!checkout || checkout.instanzId !== instanz.instanzId || checkout.status !== "aktiv") continue;
-      for (const spielUpdate of eintrag.spiele) {
-        if (!spielUpdate._id) continue;
-        const bestehend = await findById<Spiel>(spielUpdate._id);
-        if (!bestehend || bestehend.turnierId !== eintrag.turnierId) continue;
-        await insertDoc({
-          ...bestehend,
-          ergebnisA: spielUpdate.ergebnisA,
-          ergebnisB: spielUpdate.ergebnisB,
-          ergebnisAbgeschlossen: spielUpdate.ergebnisAbgeschlossen ?? bestehend.ergebnisAbgeschlossen,
-          status: spielUpdate.status ?? bestehend.status,
-          istForfait: spielUpdate.istForfait ?? bestehend.istForfait,
-          runde: spielUpdate.runde ?? bestehend.runde,
-          feldId: spielUpdate.feldId ?? bestehend.feldId,
-          startzeitGeplant: spielUpdate.startzeitGeplant ?? bestehend.startzeitGeplant,
-          schiedsrichterId: spielUpdate.schiedsrichterId ?? bestehend.schiedsrichterId,
-        });
-      }
+      await importiereTurnierExport(eintrag.export, { ersetzen: true });
     }
 
     // Ausstehende Downloads: alle noch nicht bestaetigten ("angefordert") Checkouts dieser

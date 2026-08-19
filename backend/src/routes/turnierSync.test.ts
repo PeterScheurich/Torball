@@ -363,6 +363,75 @@ test(
   },
 );
 
+test(
+  "Ausgechecktes Turnier ist auch ausserhalb von routes/turnierSync.ts schreibgeschuetzt (PUT /turniere/:id -> 409)",
+  { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
+  async () => {
+    const Fastify = (await import("fastify")).default;
+    const fastifyCookie = (await import("@fastify/cookie")).default;
+    const { authPreHandler } = await import("../auth/plugin");
+    const { turnierRoutes } = await import("./turnier");
+    const { erstelleSession } = await import("../auth/session");
+    const { insertDoc, newId, findById, deleteDoc } = await import("../repository");
+
+    const app = Fastify();
+    await app.register(fastifyCookie);
+    app.addHook("preHandler", authPreHandler);
+    await app.register(turnierRoutes);
+
+    const benutzerId = await neuerBenutzer("admin");
+    const turnierId = await neuesTurnier(benutzerId);
+    const { token: sessionToken } = await erstelleSession(benutzerId);
+    const cookie = `torball_session=${sessionToken}`;
+
+    const checkoutId = newId("turnierCheckout");
+    await insertDoc({
+      _id: checkoutId,
+      docType: "turnierCheckout",
+      checkoutId,
+      turnierId,
+      instanzId: "verbundeneInstanz:irrelevant",
+      status: "aktiv",
+      stammdatenMitnehmen: false,
+      angefordertAm: new Date().toISOString(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    const aufzuraeumendeIds = [benutzerId, turnierId, checkoutId];
+    try {
+      const versuch = await app.inject({
+        method: "PUT",
+        url: `/turniere/${turnierId}`,
+        headers: { cookie },
+        payload: { name: "Waehrend Checkout umbenannt" },
+      });
+      assert.equal(versuch.statusCode, 409);
+      assert.match(versuch.json().error, /lokalen Installation/);
+
+      const turnierUnveraendert = (await findById(turnierId)) as { name: string };
+      assert.equal(turnierUnveraendert.name, "Sync-Test-Turnier");
+
+      // Nach Freigabe wieder normal aenderbar.
+      const checkout = await findById(checkoutId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await insertDoc({ ...(checkout as object), status: "freigegeben" } as any);
+      const versuchNachFreigabe = await app.inject({
+        method: "PUT",
+        url: `/turniere/${turnierId}`,
+        headers: { cookie },
+        payload: { name: "Nach Freigabe umbenannt" },
+      });
+      assert.equal(versuchNachFreigabe.statusCode, 200);
+    } finally {
+      for (const id of aufzuraeumendeIds) {
+        const doc = await findById(id);
+        if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
+      }
+      await app.close();
+    }
+  },
+);
+
 /** Hilfsfunktion: legt eine VerbundeneInstanz direkt an (ohne den Kopplungscode-Umweg), fuer
  *  Tests, die nur den fertig gekoppelten Zustand brauchen. */
 async function erstelleTestInstanz(benutzerId: string) {
@@ -382,6 +451,87 @@ async function erstelleTestInstanz(benutzerId: string) {
   } as any);
   return { erstelleInstanz: { instanzId, instanzToken: token } };
 }
+
+test(
+  "Check-in: vollstaendige Turnierdaten-Uebertragung ueberschreibt den Server-Stand eines aktiv " +
+    "ausgecheckten Turniers, ignoriert aber Turniere ohne aktiven Checkout dieser Instanz",
+  { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
+  async () => {
+    const Fastify = (await import("fastify")).default;
+    const { instanzSyncRoutes } = await import("./instanzSync");
+    const { findById, insertDoc, deleteDoc, newId } = await import("../repository");
+
+    const app = Fastify();
+    await app.register(instanzSyncRoutes);
+
+    const benutzerId = await neuerBenutzer("admin");
+    const turnierId = await neuesTurnier(benutzerId);
+    const fremdesTurnierId = await neuesTurnier(benutzerId); // kein Checkout dafuer - muss unberuehrt bleiben
+
+    const { erstelleInstanz } = await erstelleTestInstanz(benutzerId);
+    const checkoutId = newId("turnierCheckout");
+    await insertDoc({
+      _id: checkoutId,
+      docType: "turnierCheckout",
+      checkoutId,
+      turnierId,
+      instanzId: erstelleInstanz.instanzId,
+      status: "aktiv",
+      stammdatenMitnehmen: false,
+      angefordertAm: new Date().toISOString(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    const aufzuraeumendeIds = [benutzerId, turnierId, fremdesTurnierId, erstelleInstanz.instanzId, checkoutId];
+    try {
+      const bestehendesTurnier = await findById(turnierId);
+      const geaendertesExportPaket = {
+        turnier: { ...(bestehendesTurnier as object), name: "Nach Check-in umbenannt", spielzeitMinuten: 7 },
+        mannschaften: [],
+        spieler: [],
+        spiele: [],
+        schiedsrichter: [],
+        vereine: [],
+        teams: [],
+        wettbewerb: null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any;
+      // Auch ein Paket fuer ein Turnier OHNE aktiven Checkout dieser Instanz mitschicken - darf
+      // serverseitig ignoriert werden (Sicherheitscheck: keine Instanz darf ein fremdes/nicht
+      // ausgechecktes Turnier ueberschreiben).
+      const fremdesExportPaket = {
+        ...geaendertesExportPaket,
+        turnier: { ...geaendertesExportPaket.turnier, _id: fremdesTurnierId, name: "Sollte nie ankommen" },
+      };
+
+      const checkin = await app.inject({
+        method: "POST",
+        url: "/instanzen/checkin",
+        headers: { authorization: `Bearer ${erstelleInstanz.instanzToken}` },
+        payload: {
+          vollstaendigeUebertragung: [
+            { turnierId, export: geaendertesExportPaket },
+            { turnierId: fremdesTurnierId, export: fremdesExportPaket },
+          ],
+        },
+      });
+      assert.equal(checkin.statusCode, 200);
+
+      const turnierNachher = (await findById(turnierId)) as { name: string; spielzeitMinuten: number };
+      assert.equal(turnierNachher.name, "Nach Check-in umbenannt");
+      assert.equal(turnierNachher.spielzeitMinuten, 7);
+
+      const fremdesTurnierNachher = (await findById(fremdesTurnierId)) as { name: string };
+      assert.equal(fremdesTurnierNachher.name, "Sync-Test-Turnier", "unveraendert, da kein aktiver Checkout");
+    } finally {
+      for (const id of aufzuraeumendeIds) {
+        const doc = await findById(id);
+        if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
+      }
+      await app.close();
+    }
+  },
+);
 
 test(
   "Download anfordern/Freigabe aufheben: Checkout-Status-Uebergaenge, kein doppelter aktiver Checkout",

@@ -1,5 +1,6 @@
 import type { Benutzer, Turnier, TurnierBerechtigung, TurnierId, TurnierRolle } from "@torball/shared";
 import { findAllBySelector } from "../repository";
+import { findeAktivesCheckout } from "../sync/instanz";
 
 /**
  * Dreistufig statt binaer (seit Abschnitt 21.2/21.3, Nutzer-Vorgabe 13.08.2026): "schreiben_voll"
@@ -98,6 +99,26 @@ export function turnierGesperrt(turnier: Turnier): boolean {
  *  Turnier abgelehnt wird. */
 export const TURNIER_GESPERRT_FEHLER =
   "Turnier ist abgeschlossen. Zum Bearbeiten zuerst wieder öffnen.";
+
+/**
+ * Turnier-Sync (Abschnitt 21.3/23): ein an eine lokale Installation ausgechecktes Turnier
+ * (`TurnierCheckout`, Status "angefordert" oder "aktiv") ist auf dem Server ebenfalls
+ * schreibgeschuetzt - waehrend des Checkouts ist die lokale Instanz der alleinige fuehrende Stand
+ * (1:1-Beziehung, kein Merge, siehe sync/checkin.ts). Ohne diese Sperre koennte jemand auf dem
+ * Server unbemerkt Aenderungen vornehmen, die beim naechsten automatischen Check-in wieder
+ * ueberschrieben wuerden (Nutzer-Vorgabe 2026-08-19). Anders als bei `turnierGesperrt()` bewusst
+ * OHNE Ausnahme fuer die Oeffentlich-Freigabe: die oeffentlich*-Felder werden seit der
+ * Voll-Synchronisation im Check-in ebenfalls automatisch vom lokalen Stand ueberschrieben - eine
+ * direkte Server-Aenderung waere spaetestens beim naechsten Check-in ohnehin wieder verloren,
+ * ein Sperren verhindert also nur eine sinnlose, unbemerkt verpuffende Aenderung.
+ */
+export async function turnierAusgecheckt(turnierId: TurnierId): Promise<boolean> {
+  return (await findeAktivesCheckout(turnierId)) !== null;
+}
+
+export const TURNIER_AUSGECHECKT_FEHLER =
+  "Turnier wird gerade auf einer lokalen Installation verwaltet und ist hier deshalb " +
+  "schreibgeschützt. Über \"Turnier-Sync\" in der Übersicht lässt sich die Freigabe aufheben.";
 
 /** Ein aus einem Vorgaenger abgeleitetes Turnier (Datenuebernahme / zweiter Spieltag). Erkennbar
  *  am gesetzten basisTurnierId. In so einem Turnier sind die Mannschaften hart gesperrt. */

@@ -3,7 +3,7 @@ import type { FastifyInstance } from "fastify";
 import type { ErgebnisAenderung, ErgebnisToken, MannschaftImTurnier, Spiel, Turnier } from "@torball/shared";
 import { findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireZugriff } from "../auth/plugin";
-import { hatMindestens, zuschreibung } from "../auth/turnierZugriff";
+import { hatMindestens, turnierAusgecheckt, TURNIER_AUSGECHECKT_FEHLER, zuschreibung } from "../auth/turnierZugriff";
 
 /**
  * Abschnitt 14/20.14: Der Token-Wert selbst wird - anders als Einladungs-/
@@ -155,6 +155,12 @@ export async function ergebnisTokenRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(409).send({
           error: "Das Ergebnis ist bereits abgeschlossen. Änderungen sind nur noch durch die Turnierleitung möglich.",
         });
+      }
+      // Dieser Link ist oeffentlich (kein Login) - die Ausgecheckt-Sperre muss deshalb auch hier
+      // greifen, sonst koennte ein alter, noch aktiver Link auf dieser (Server-)Instanz weiterhin
+      // Ergebnisse schreiben, waehrend eine lokale Installation eigentlich der fuehrende Stand ist.
+      if (await turnierAusgecheckt(token.turnierId)) {
+        return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
       }
 
       const aenderungId = newId("ergebnisAenderung");

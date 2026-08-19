@@ -2,7 +2,14 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { Klassifizierung, MannschaftImTurnier, Spieler, SpielerStatus, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireZugriff } from "../auth/plugin";
-import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt, type Zugriffsstufe } from "../auth/turnierZugriff";
+import {
+  hatMindestens,
+  turnierAusgecheckt,
+  TURNIER_AUSGECHECKT_FEHLER,
+  TURNIER_GESPERRT_FEHLER,
+  turnierGesperrt,
+  type Zugriffsstufe,
+} from "../auth/turnierZugriff";
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 
 /** Turnier eines Spielers ueber seine Mannschaft ermitteln (fuer die Bearbeitet-Markierung). */
@@ -84,6 +91,11 @@ async function ladeMannschaftMitZugriff(
   // Kaderaenderungen sind bei abgeschlossenem Turnier gesperrt.
   if (stufe !== "lesen" && turnierGesperrt(turnier)) {
     reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
+    return undefined;
+  }
+  // Ebenso bei einem an eine lokale Installation ausgecheckten Turnier.
+  if (stufe !== "lesen" && (await turnierAusgecheckt(turnier._id))) {
+    reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
     return undefined;
   }
   return mannschaft;

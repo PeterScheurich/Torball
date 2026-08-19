@@ -237,6 +237,45 @@ Turnier-Sync-Feature war dadurch seit seiner Einführung (2026-08-13) gegen eine
 nginx-gefrontete Zentrale Plattform nie funktionsfähig, nur eine direkte Backend-zu-Backend-
 Verbindung ohne nginx dazwischen hätte funktioniert (im bisherigen Testbetrieb offenbar nie geprüft).
 
+**Check-in überträgt seit 2026-08-19 den vollständigen Turnierstand, nicht mehr nur Ergebnisse
+(Nutzer-Entscheidung nach Live-Test):** Live beim ersten echten Kopplungsversuch aufgefallen, dass
+Regel-/Mannschafts-/Schiedsrichter-Änderungen sowie die `oeffentlich*`-Freigabe-Häkchen NIE zum
+Server zurückgemeldet wurden – der Check-in (`backend/src/sync/checkin.ts`, alle 45s) pushte bisher
+nur ausgewählte Spiel-Felder (`ergebnisA/B`, `status`, …). Der bestehende „Zum Server hochladen"-
+Knopf sah wie ein manueller Ausweg aus, funktioniert aber bei einem bereits ausgecheckten Turnier
+serverseitig gar nicht (409 „wird gerade aktiv verwaltet", greift unabhängig vom `ersetzen`-Flag).
+Abgewogene Alternativen: (a) Check-in um eine vollständige Übertragung erweitern (jede lokale
+Änderung landet automatisch beim nächsten Zyklus auf dem Server), oder (b) nur den 409-Guard für die
+eigene Instanz lockern (rein manuell ausgelöst). Nutzer-Entscheidung für (a) – bewusst **kein**
+echter bidirektionaler Konfliktabgleich („wer hat Recht"), sondern derselbe Export/Import-
+Mechanismus wie beim initialen Download/Upload (`sammleTurnierExport`/`importiereTurnierExport`,
+`ersetzen: true`), jetzt bei **jedem** Check-in statt nur einmalig. Hält den Server-Stand
+automatisch „relativ aktuell", solange eine Verbindung besteht; „Freigabe aufheben" bleibt der
+bewusste manuelle Notausstieg bei Rechnerverlust/-defekt der lokalen Installation (dann gilt der
+letzte erfolgreich übertragene Stand). `CheckinBody.ergebnisPush` (nur Spiel-Felder) ist komplett
+entfallen, ersetzt durch `vollstaendigeUebertragung` (`{turnierId, export: TurnierExportPaket}[]`).
+
+**Server-seitige Schreibsperre für ausgecheckte Turniere (2026-08-19, Nutzer-Vorgabe, direkte Folge
+der Voll-Synchronisation oben):** Ohne die Voll-Synchronisation war die Gefahr eher theoretisch (nur
+Ergebnisse gingen automatisch zurück); mit ihr würde eine direkte Server-Änderung spätestens beim
+nächsten Check-in ohnehin überschrieben – ein Sperren verhindert also nur eine sinnlose, unbemerkt
+verpuffende Änderung, verhindert aber vor allem Verwirrung bei mehreren Personen mit Zugriff auf
+dasselbe (geteiltes) Turnier. `turnierAusgecheckt(turnierId)` (`backend/src/auth/turnierZugriff.ts`)
+prüft per `findeAktivesCheckout()`, ob ein `TurnierCheckout` mit Status `angefordert` **oder**
+`aktiv` existiert (beide zählen als gesperrt – auch der kurze Zeitraum zwischen Anfordern und
+Bestätigung soll keine Server-Änderungen mehr zulassen). Anders als `turnierGesperrt()`
+(abgeschlossenes Turnier) **ohne** Ausnahme für die Öffentlich-Freigabe: die `oeffentlich*`-Felder
+werden durch die Voll-Synchronisation ebenfalls automatisch vom lokalen Stand überschrieben, eine
+direkte Server-Änderung wäre also ohnehin sinnlos. Eingebaut an denselben Stellen, die bereits
+`turnierGesperrt()` prüfen (`turnier.ts` inkl. `/abschliessen`, `/wieder-oeffnen`,
+`/regeln-entsperren`, DELETE; `mannschaft.ts`, `spieler.ts`, `schiedsrichter.ts`, `spiel.ts`
+(zentral in `pruefeSpielZugriff`, wirkt automatisch auch in `ergebnis.ts`), `spielplan.ts`) sowie
+zusätzlich in `ergebnisToken.ts`s öffentlicher (kein Login) `PUT /ergebnis-erfassung/:tokenWert/…`
+– ein alter, noch aktiver externer Erfassungslink hätte sonst am Sperr-Mechanismus vorbei
+weiterschreiben können. **Noch offen:** die passende Kennzeichnung im Frontend (Turnierliste +
+`TurnierVerwaltenPage`-Kopfzeile) – aktuell reagiert das Frontend auf die Sperre nur über die
+Fehlermeldung beim Speichern, noch nicht proaktiv wie bei `turnierGesperrt()`.
+
 **Offline-/Lokal-Betrieb ist laut Spezifikation (Abschnitt 17/19) ein
 Kernfeature mit drei Betriebsmodi (Standalone, Lokales Netzwerk, Zentrale
 Plattform), kein optionales Extra** – bei neuen Architektur-Entscheidungen

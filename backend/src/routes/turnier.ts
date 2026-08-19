@@ -14,7 +14,14 @@ import type {
 } from "@torball/shared";
 import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth, requireRolle, requireZugriff } from "../auth/plugin";
-import { hatMindestens, REGELN_GESPERRT_FEHLER, turnierGesperrt, zuschreibung } from "../auth/turnierZugriff";
+import {
+  hatMindestens,
+  REGELN_GESPERRT_FEHLER,
+  turnierAusgecheckt,
+  TURNIER_AUSGECHECKT_FEHLER,
+  turnierGesperrt,
+  zuschreibung,
+} from "../auth/turnierZugriff";
 import { aktuelleTurnierregeln } from "../konfiguration";
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 import { berechneStartzeit } from "../spielplan/zeitplanung";
@@ -181,6 +188,11 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
       }
+      // Ausgechecktes Turnier: komplett schreibgeschuetzt, auch die Veroeffentlichungs-Felder
+      // (anders als beim Abschluss-Whitelist unten - siehe Begruendung bei TURNIER_AUSGECHECKT_FEHLER).
+      if (await turnierAusgecheckt(bestehend._id)) {
+        return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
+      }
       // Bei abgeschlossenem Turnier nur noch die Veroeffentlichungs-Felder zulassen (siehe oben);
       // jeder andere Feldwechsel wird abgelehnt, bis das Turnier wieder geoeffnet wird.
       if (turnierGesperrt(bestehend)) {
@@ -226,6 +238,9 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }
+    if (await turnierAusgecheckt(bestehend._id)) {
+      return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
+    }
     // Wiederoeffnen zaehlt als Bearbeitung; die Abschluss-Metadaten werden dabei zurueckgesetzt
     // (bei erneutem Abschliessen neu gesetzt).
     const zuschreiber = zuschreibung(req);
@@ -251,6 +266,9 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+    }
+    if (await turnierAusgecheckt(bestehend._id)) {
+      return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
     }
 
     const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: bestehend._id });
@@ -307,6 +325,9 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+    }
+    if (await turnierAusgecheckt(bestehend._id)) {
+      return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
     }
     const zuschreiber = zuschreibung(req);
     return insertDoc({
@@ -537,6 +558,9 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+    }
+    if (await turnierAusgecheckt(bestehend._id)) {
+      return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
     }
 
     // Turnier-Unterobjekte (Mannschaft-im-Turnier, Spiel) haben laut Datenmodell keine

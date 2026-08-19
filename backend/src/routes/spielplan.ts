@@ -7,6 +7,8 @@ import { berechneStartzeit } from "../spielplan/zeitplanung";
 import { requireZugriff } from "../auth/plugin";
 import {
   hatMindestens,
+  turnierAusgecheckt,
+  TURNIER_AUSGECHECKT_FEHLER,
   TURNIER_GESPERRT_FEHLER,
   turnierGesperrt,
   zuschreibung,
@@ -156,6 +158,9 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
       // Bei abgeschlossenem Turnier kein Spielplan-Speichern mehr (erst wieder oeffnen).
       if (turnierGesperrt(turnier)) {
         return reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
+      }
+      if (await turnierAusgecheckt(turnier._id)) {
+        return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
       }
 
       // "Spielplan neu generieren" (Abschnitt 8) ist vorgesehen, darf aber keine bereits

@@ -2,7 +2,14 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { SchiedsrichterImTurnier, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireZugriff } from "../auth/plugin";
-import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt, type Zugriffsstufe } from "../auth/turnierZugriff";
+import {
+  hatMindestens,
+  turnierAusgecheckt,
+  TURNIER_AUSGECHECKT_FEHLER,
+  TURNIER_GESPERRT_FEHLER,
+  turnierGesperrt,
+  type Zugriffsstufe,
+} from "../auth/turnierZugriff";
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 
 // CRUD fuer turnierbezogene Schiedsrichter (SchiedsrichterImTurnier haengt am turnierId).
@@ -93,6 +100,10 @@ async function ladeTurnierMitZugriff(
   }
   if (stufe !== "lesen" && turnierGesperrt(turnier)) {
     reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
+    return undefined;
+  }
+  if (stufe !== "lesen" && (await turnierAusgecheckt(turnier._id))) {
+    reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
     return undefined;
   }
   return turnier;

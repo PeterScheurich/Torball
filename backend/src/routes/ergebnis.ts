@@ -2,7 +2,13 @@ import type { FastifyInstance } from "fastify";
 import type { MannschaftImTurnier, Spiel, Turnier } from "@torball/shared";
 import { findAllBySelector, findById, insertDoc } from "../repository";
 import { requireZugriff } from "../auth/plugin";
-import { hatMindestens, TURNIER_GESPERRT_FEHLER, turnierGesperrt } from "../auth/turnierZugriff";
+import {
+  hatMindestens,
+  turnierAusgecheckt,
+  TURNIER_AUSGECHECKT_FEHLER,
+  TURNIER_GESPERRT_FEHLER,
+  turnierGesperrt,
+} from "../auth/turnierZugriff";
 import { berechneGesamttabelle, berechneTabelle } from "../ergebnisse/tabelle";
 import { pruefeSpielZugriff } from "./spiel";
 
@@ -72,6 +78,9 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
     }
     if (turnierGesperrt(turnier)) {
       return reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
+    }
+    if (await turnierAusgecheckt(turnier._id)) {
+      return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
     }
 
     const alle = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id });

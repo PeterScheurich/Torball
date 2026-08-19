@@ -6,6 +6,8 @@ import { schlageSchiedsrichterVor } from "../spielplan/schiedsrichterZuordnung";
 import { requireZugriff } from "../auth/plugin";
 import {
   hatMindestens,
+  turnierAusgecheckt,
+  TURNIER_AUSGECHECKT_FEHLER,
   TURNIER_GESPERRT_FEHLER,
   turnierGesperrt,
   zuschreibung,
@@ -77,6 +79,11 @@ export async function pruefeSpielZugriff(
   // Schreibende Zugriffe (Spielplan-Anpassung, Ergebnisse) sind bei abgeschlossenem Turnier gesperrt.
   if (mindestens !== "lesen" && turnierGesperrt(turnier)) {
     reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
+    return false;
+  }
+  // Ebenso bei einem an eine lokale Installation ausgecheckten Turnier (siehe TURNIER_AUSGECHECKT_FEHLER).
+  if (mindestens !== "lesen" && (await turnierAusgecheckt(turnier._id))) {
+    reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
     return false;
   }
   return true;
@@ -219,6 +226,9 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
       if (!(await hatMindestens(turnier, req, "schreiben_spielbetrieb"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
       }
+      if (await turnierAusgecheckt(turnier._id)) {
+        return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
+      }
 
       const bestehende = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id });
       const gesperrt = bestehende.some((spiel) => spiel.status !== "geplant" || spiel.ergebnisAbgeschlossen);
@@ -270,6 +280,9 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
       if (!(await hatMindestens(turnier, req, "schreiben_spielbetrieb"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+      }
+      if (await turnierAusgecheckt(turnier._id)) {
+        return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
       }
 
       const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id });
