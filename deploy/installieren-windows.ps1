@@ -144,7 +144,7 @@ if (Test-Couchdb) {
 } else {
     Bestaetige-Systemaenderung -Titel "CouchDB installieren" `
         -Erklaerung "CouchDB ist die Datenbank, in der Torball-Turniere alle Turnierdaten speichert (Mannschaften, Spielplaene, Ergebnisse usw.) - ohne CouchDB hat die App keinen Ort, um Daten zu speichern." `
-        -Auswirkung "CouchDB wird als Hintergrunddienst installiert: es startet automatisch mit Windows und laeuft dauerhaft im Hintergrund, auch wenn Torball-Turniere gerade nicht benutzt wird (aehnlich wie z.B. ein Antivirenprogramm). Es ist ausschliesslich von diesem Rechner selbst erreichbar, nicht ueber das Internet. Laesst sich jederzeit ganz normal ueber 'Apps & Features' wieder entfernen."
+        -Auswirkung "CouchDB wird als Hintergrunddienst installiert (nach C:\CouchDB, nicht wie sonst ueblich nach 'Programme'): es startet automatisch mit Windows und laeuft dauerhaft im Hintergrund, auch wenn Torball-Turniere gerade nicht benutzt wird (aehnlich wie z.B. ein Antivirenprogramm). Es ist ausschliesslich von diesem Rechner selbst erreichbar, nicht ueber das Internet. Laesst sich jederzeit ganz normal ueber 'Apps & Features' wieder entfernen."
     Write-Host "CouchDB nicht gefunden - lade offiziellen Installer herunter (Version $CouchdbVersion) ..."
     $CouchAdminUser = "admin"
     $CouchAdminPass = New-ZufallsPasswort
@@ -187,8 +187,17 @@ if (Test-Couchdb) {
 
     Write-Host "Installiere CouchDB als Windows-Dienst (unbeaufsichtigt) ..."
     $logPath = Join-Path $ConfDir "couchdb-install.log"
+    # Installationsordner bewusst NICHT unter "Program Files" (der MSI-Standard): auf Rechnern, auf
+    # denen "Program Files" selbst keinen 8.3-Kurznamen hat (z.B. weil 8.3-Kurznamen von Anfang an
+    # deaktiviert waren, kein reines "seither deaktiviert"), scheitert CostFinalize sonst mit Error
+    # 1324/Exit-Code 1603 - per direkter MSI-Tabellenabfrage (Property "APPLICATIONFOLDER", von
+    # "PROGRAMFILESFORSURE" alias Program Files abgeleitet) und Testinstallation verifiziert: mit
+    # einem Zielordner ausserhalb von Program Files tritt der Fehler gar nicht erst auf. Vermeidet
+    # damit von vornherein jede Notwendigkeit, eine Windows-Systemeinstellung anzufassen.
+    $CouchdbInstallDir = "C:\CouchDB\"
     $msiArgs = @(
         "/i", "`"$msiPath`"",
+        "APPLICATIONFOLDER=$CouchdbInstallDir",
         "/quiet", "/norestart",
         "INSTALLSERVICE=1",
         "ADMINUSER=$CouchAdminUser",
@@ -197,17 +206,14 @@ if (Test-Couchdb) {
     )
     $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru
     if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
-        # Bekannter Windows-Installer-Fehler bei diesem (aelteren, WiX-basierten) MSI-Paket: sind
-        # 8.3-Kurznamen (z.B. "PROGRA~1") systemweit deaktiviert - seit einigen Windows-Versionen
-        # verbreitet als Standard/Haertungsmassnahme, live auf einem Testrechner so vorgefunden -,
-        # kann CostFinalize keinen Kurznamen fuer den (noch nicht existierenden) Zielordner
-        # ermitteln und bricht mit Error 1324 ("... contains an invalid character") ab, obwohl der
-        # Pfad selbst voellig normal ist. Kein Fehler dieses Skripts oder des CouchDB-Pakets an
-        # sich. Wie bei Node.js/CouchDB oben: nicht stillschweigend aendern, sondern erklaeren und
-        # per Bestaetige-Systemaenderung um Zustimmung fragen (Nutzer-Vorgabe 2026-08-19) - eine
-        # rein textuelle Anleitung zum Selbermachen in einer Admin-Kommandozeile war fuer die
-        # Zielgruppe (auch technisch wenig versierte Personen) in einem frueheren Anlauf zu viel
-        # verlangt.
+        # Reine Vorsichtsmassnahme, sollte durch APPLICATIONFOLDER oben (Installation ausserhalb
+        # Program Files) jetzt eigentlich nicht mehr auftreten - falls Error 1324 trotzdem irgendwo
+        # anders auftaucht (z.B. ein voellig anderer Zielordner, der ebenfalls keinen 8.3-Kurznamen
+        # hat), hier trotzdem noch ein Fallback: 8.3-Kurznamen sind dann systemweit deaktiviert,
+        # CostFinalize kann keinen Kurznamen fuer den (noch nicht existierenden) Zielordner
+        # ermitteln. Kein Fehler dieses Skripts oder des CouchDB-Pakets an sich. Wie bei Node.js/
+        # CouchDB oben: nicht stillschweigend aendern, sondern erklaeren und per
+        # Bestaetige-Systemaenderung um Zustimmung fragen (Nutzer-Vorgabe 2026-08-19).
         $logInhalt = if (Test-Path $logPath) { Get-Content -Path $logPath -Raw -Encoding Unicode } else { "" }
         if ($proc.ExitCode -eq 1603 -and $logInhalt -match "1324") {
             # Die Registry-Einstellung allein reicht nicht - live festgestellt (zweiter Testlauf):

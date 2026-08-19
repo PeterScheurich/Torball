@@ -1222,17 +1222,34 @@ erkannt, `Get-Content -Encoding Unicode` nötig, da die Logs UTF-16 sind). Reine
 Zustimmungs-Mechanismus bewusst **nicht** – die sind Kernzweck der Installation selbst, nicht
 optionale Eingriffe ins Betriebssystem.
 
-**8.3-Kurznamen-Fix braucht einen Neustart – live falsch eingeschätzt, dann korrigiert
-(2026-08-19):** Erster Anlauf ging davon aus, `NtfsDisable8dot3NameCreation` per Registry setzen
-und sofort erneut installieren reiche aus („kein Neustart nötig", stand so in der Auswirkungs-Erklärung).
-Zweiter Testlauf hat das widerlegt: Der Registry-Wert stand bereits auf aktiviert (vom ersten Lauf),
-der sofortige erneute `msiexec`-Versuch scheiterte trotzdem identisch mit demselben Error 1324 –
-Windows übernimmt diese Einstellung offenbar erst nach einem Neustart (vermutlich beim
-Volume-Mount ausgewertet, nicht pro Dateizugriff). Das Skript prüft den aktuellen Registry-Wert
-jetzt vor der Rückfrage (setzt ihn nur, wenn noch nicht geschehen, um nicht wiederholt zu fragen)
-und fordert danach **immer** zum Neustart auf, statt einen zwecklosen sofortigen Retry zu versuchen.
-Lehre: eine Auswirkungs-Behauptung wie „kein Neustart nötig" nicht ungeprüft übernehmen, auch wenn
-sie plausibel klingt – hier live durch einen zweiten Testlauf widerlegt.
+**8.3-Kurznamen-Theorie war nur die halbe Wahrheit – eigentlicher Fix: Installationsordner
+verlegen, keine Windows-Einstellung anfassen (2026-08-19, mehrstufig aufgeklärt):** Erster Anlauf
+ging davon aus, `NtfsDisable8dot3NameCreation` per Registry setzen und sofort erneut installieren
+reiche aus. Ein zweiter Testlauf widerlegte das („kein Neustart nötig" stimmte nicht – dachte
+zunächst, ein Neustart würde reichen). Ein **dritter** Testlauf (Nutzer hatte den Rechner
+zwischenzeitlich zweimal neu gestartet) widerlegte auch das: derselbe Error 1324 trat weiterhin auf,
+obwohl der Registry-Wert nachweislich (`Get-ItemProperty`) auf aktiviert stand und der Neustart
+erfolgt war. Direkte Untersuchung auf dem Testrechner (`dir /x C:\` zeigt keinen `PROGRA~1`-Eintrag)
+ergab den eigentlichen Grund: **„Program Files" selbst hat auf diesem Rechner nie einen 8.3-Kurznamen
+bekommen** (vermutlich seit der Windows-Ersteinrichtung mit deaktivierten Kurznamen) – das
+Registry-Umschalten wirkt nur auf *neu* erzeugte Ordner, nicht rückwirkend auf einen bereits
+bestehenden Ordner wie „Program Files". `CostFinalize` (die native MSI-Aktion, die Error 1324 wirft)
+braucht aber genau dafür einen Kurznamen, weil der CouchDB-Installer standardmäßig dorthin
+installiert. Per direkter MSI-Tabellenabfrage (`WindowsInstaller.Installer`-COM-Objekt, `Property`-
+und `Directory`-Tabellen: `APPLICATIONFOLDER` als öffentliche, per Kommandozeile überschreibbare
+WiX-Eigenschaft, deren Default via `PROGRAMFILESFORSURE` an „Program Files" hängt) und einem
+nicht-elevierten Testlauf (`msiexec /i ... APPLICATIONFOLDER=C:\CouchDB\`, brach zwar mangels
+Adminrechten mit Exit-Code 1625 ab, aber **ohne** Error 1324 im Log) verifiziert: mit einem
+Zielordner außerhalb „Program Files" tritt der Fehler gar nicht erst auf. **Der eigentliche Fix ist
+daher, CouchDB nach `C:\CouchDB` statt nach „Program Files" zu installieren** (`APPLICATIONFOLDER=
+C:\CouchDB\` in `$msiArgs`, mit entsprechendem Hinweis in der `Bestaetige-Systemaenderung`-Erklärung)
+– keine Windows-Systemeinstellung nötig, kein Neustart, kein Sonderfall für die Zielgruppe. Der
+8.3-Kurznamen-Zustimmungspfad bleibt als reiner Fallback im Code (falls Error 1324 aus einem anderen
+Grund an anderer Stelle nochmal auftaucht), sollte aber durch den geänderten Zielordner in der Praxis
+nicht mehr greifen. Lehre: eine Auswirkungs-Behauptung wie „kein Neustart nötig" nicht ungeprüft
+übernehmen, auch wenn sie plausibel klingt – und bei einem wiederkehrenden Fehlerbild eher die
+Ursachen-Annahme selbst hinterfragen (z. B. direkt in der MSI-Datei nachsehen), statt nur den
+nächsten naheliegenden Workaround zu versuchen.
 
 **Bewusst zurückgestellt: sauberes Deinstallieren der lokalen Windows-Installation.** Aktuell gibt
 es dafür kein Skript (anders als `deploy/instanz-entfernen.sh` für die Linux-Server-Seite) – Node.js,
