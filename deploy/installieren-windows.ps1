@@ -210,17 +210,28 @@ if (Test-Couchdb) {
         # verlangt.
         $logInhalt = if (Test-Path $logPath) { Get-Content -Path $logPath -Raw -Encoding Unicode } else { "" }
         if ($proc.ExitCode -eq 1603 -and $logInhalt -match "1324") {
-            Bestaetige-Systemaenderung -Titel "Windows-Kompatibilitaetsfunktion einschalten" `
-                -Erklaerung "Die CouchDB-Installation ist an einer Windows-Einstellung gescheitert: auf diesem Rechner ist eine aeltere Kompatibilitaetsfunktion abgeschaltet ('8.3-Kurznamen', z.B. 'PROGRA~1' statt 'Program Files'), die der CouchDB-Installer intern noch braucht." `
-                -Auswirkung "Diese Funktion wird wieder eingeschaltet. Windows erzeugt dann zusaetzlich zu den normalen Dateinamen auch kurze Zusatznamen fuer neue Dateien/Ordner - auf einem normalen PC praktisch nicht spuerbar, kein Neustart noetig. Laesst sich jederzeit wieder abschalten (falls gewuenscht: 'fsutil 8dot3name set 1' in einer Administrator-Eingabeaufforderung)."
-            Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "NtfsDisable8dot3NameCreation" -Value 0
-            Write-Host "Eingeschaltet. Installation wird erneut versucht ..."
-            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru
-        }
-        if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
-            Write-Error "CouchDB-Installation fehlgeschlagen (Exit-Code $($proc.ExitCode)). Details: $logPath"
+            # Die Registry-Einstellung allein reicht nicht - live festgestellt (zweiter Testlauf):
+            # Wert stand bereits auf aktiviert (von einem vorherigen Lauf dieses Skripts), der
+            # sofortige erneute Versuch scheiterte trotzdem identisch. Windows uebernimmt diese
+            # Einstellung offenbar erst nach einem Neustart (wird beim Volume-Mount ausgewertet,
+            # nicht pro Dateizugriff) - ein direkter Retry ohne Neustart ist also zwecklos. Deshalb:
+            # Wert nur EINMAL setzen (falls noch nicht geschehen) und danach immer zum Neustart
+            # auffordern, statt es sofort nochmal zu versuchen.
+            $bereitsAktiviert = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "NtfsDisable8dot3NameCreation" -ErrorAction SilentlyContinue).NtfsDisable8dot3NameCreation -eq 0
+            if (-not $bereitsAktiviert) {
+                Bestaetige-Systemaenderung -Titel "Windows-Kompatibilitaetsfunktion einschalten" `
+                    -Erklaerung "Die CouchDB-Installation ist an einer Windows-Einstellung gescheitert: auf diesem Rechner ist eine aeltere Kompatibilitaetsfunktion abgeschaltet ('8.3-Kurznamen', z.B. 'PROGRA~1' statt 'Program Files'), die der CouchDB-Installer intern noch braucht." `
+                    -Auswirkung "Diese Funktion wird wieder eingeschaltet. Windows erzeugt dann zusaetzlich zu den normalen Dateinamen auch kurze Zusatznamen fuer neue Dateien/Ordner - auf einem normalen PC praktisch nicht spuerbar. Wird aber erst nach einem Neustart von Windows wirksam (siehe unten). Laesst sich jederzeit wieder abschalten (falls gewuenscht: 'fsutil 8dot3name set 1' in einer Administrator-Eingabeaufforderung)."
+                Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "NtfsDisable8dot3NameCreation" -Value 0
+            }
+            Write-Host ""
+            Write-Warning "Diese Windows-Einstellung wird erst nach einem Neustart wirksam - ein erneuter Versuch jetzt wuerde wieder fehlschlagen."
+            Write-Host "Bitte den Rechner neu starten und danach 'Setup.cmd' erneut ausfuehren."
+            Write-Host ""
             exit 1
         }
+        Write-Error "CouchDB-Installation fehlgeschlagen (Exit-Code $($proc.ExitCode)). Details: $logPath"
+        exit 1
     }
 
     Write-Host "Warte auf CouchDB ..."

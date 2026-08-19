@@ -1222,6 +1222,18 @@ erkannt, `Get-Content -Encoding Unicode` nötig, da die Logs UTF-16 sind). Reine
 Zustimmungs-Mechanismus bewusst **nicht** – die sind Kernzweck der Installation selbst, nicht
 optionale Eingriffe ins Betriebssystem.
 
+**8.3-Kurznamen-Fix braucht einen Neustart – live falsch eingeschätzt, dann korrigiert
+(2026-08-19):** Erster Anlauf ging davon aus, `NtfsDisable8dot3NameCreation` per Registry setzen
+und sofort erneut installieren reiche aus („kein Neustart nötig", stand so in der Auswirkungs-Erklärung).
+Zweiter Testlauf hat das widerlegt: Der Registry-Wert stand bereits auf aktiviert (vom ersten Lauf),
+der sofortige erneute `msiexec`-Versuch scheiterte trotzdem identisch mit demselben Error 1324 –
+Windows übernimmt diese Einstellung offenbar erst nach einem Neustart (vermutlich beim
+Volume-Mount ausgewertet, nicht pro Dateizugriff). Das Skript prüft den aktuellen Registry-Wert
+jetzt vor der Rückfrage (setzt ihn nur, wenn noch nicht geschehen, um nicht wiederholt zu fragen)
+und fordert danach **immer** zum Neustart auf, statt einen zwecklosen sofortigen Retry zu versuchen.
+Lehre: eine Auswirkungs-Behauptung wie „kein Neustart nötig" nicht ungeprüft übernehmen, auch wenn
+sie plausibel klingt – hier live durch einen zweiten Testlauf widerlegt.
+
 **Bewusst zurückgestellt: sauberes Deinstallieren der lokalen Windows-Installation.** Aktuell gibt
 es dafür kein Skript (anders als `deploy/instanz-entfernen.sh` für die Linux-Server-Seite) – Node.js,
 der CouchDB-Windows-Dienst, die Desktop-Verknüpfung und der Projektordner selbst (inkl.
