@@ -128,7 +128,9 @@ export async function turnierSyncRoutes(app: FastifyInstance): Promise<void> {
       const exportPaket = await sammleTurnierExport(turnier._id, { stammdatenMitnehmen: true });
       let antwort: Response;
       try {
-        antwort = await fetch(`${konfiguration.serverUrl}/turniere/sync-import`, {
+        // Praefix "/api" noetig, siehe Kommentar bei kopplung-einloesen in routes/sync.ts - der
+        // Zentrale-Plattform-Server erreicht seine Backend-Routen von aussen nur darueber (nginx).
+        antwort = await fetch(`${konfiguration.serverUrl}/api/turniere/sync-import`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${konfiguration.instanzToken}` },
           body: JSON.stringify({ export: exportPaket, ersetzen: req.body?.ersetzen ?? false }),

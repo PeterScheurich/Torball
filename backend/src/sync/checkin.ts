@@ -44,7 +44,13 @@ async function fuehreCheckinAus(logger: FastifyBaseLogger): Promise<void> {
 
   let antwort: Response;
   try {
-    antwort = await fetch(`${konfiguration.serverUrl}/instanzen/checkin`, {
+    // Der Zentrale-Plattform-Server laeuft im Regelfall als eigener Prozess hinter nginx (nicht im
+    // SERVE_FRONTEND-Einzelprozess-Modus dieser Installation) - dessen Backend-Routen liegen intern
+    // an der Wurzel, sind von aussen aber nur unter dem von nginx durchgereichten "/api"-Praefix
+    // erreichbar (siehe deploy-instanz.sh, location /api/). Ohne dieses Praefix landet die Anfrage
+    // stattdessen bei nginx' SPA-Auslieferung (HTML statt JSON) - live erlebt, siehe kopplung-
+    // einloesen in routes/sync.ts fuer denselben Fix.
+    antwort = await fetch(`${konfiguration.serverUrl}/api/instanzen/checkin`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${konfiguration.instanzToken}` },
       body: JSON.stringify({ ergebnisPush, bestaetigteCheckoutIds: unbestaetigteCheckoutIds }),

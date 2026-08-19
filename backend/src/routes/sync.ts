@@ -54,7 +54,13 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
       const serverUrl = req.body.serverUrl.replace(/\/+$/, "");
       let antwort: Response;
       try {
-        antwort = await fetch(`${serverUrl}/instanzen/kopplung-einloesen`, {
+        // Der Zentrale-Plattform-Server laeuft im Regelfall hinter nginx, das die Backend-Routen
+        // nur unter "/api" durchreicht (siehe deploy-instanz.sh, location /api/) - dessen Backend
+        // selbst registriert sie intern an der Wurzel. Ohne dieses Praefix landet die Anfrage bei
+        // nginx' SPA-Auslieferung (200 OK mit HTML statt der erwarteten JSON-Antwort) und scheitert
+        // hier scheinbar grundlos mit "Kopplung fehlgeschlagen." - live erlebt (2026-08-19), per
+        // curl gegen die echte Prod-Domain verifiziert. Gleicher Fix noetig in sync/checkin.ts.
+        antwort = await fetch(`${serverUrl}/api/instanzen/kopplung-einloesen`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ kopplungscode: req.body.kopplungscode, bezeichnung: req.body.bezeichnung }),

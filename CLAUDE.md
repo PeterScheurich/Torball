@@ -220,6 +220,23 @@ Historie erhalten. Volle bidirektionale PouchDB↔CouchDB-Synchronisation
 (Abschnitt 17/23) bleibt bewusst zurückgestellt – deutlich komplexer, als für
 diesen (häufigeren) Anwendungsfall nötig.
 
+**Bugfix 2026-08-19: alle drei ausgehenden Instanz-zu-Instanz-Aufrufe fehlte das `/api`-Präfix.**
+`sync/checkin.ts`, `routes/sync.ts` (Kopplung einlösen) und `routes/turnierSync.ts` (Upload) riefen
+`${serverUrl}/instanzen/...` bzw. `${serverUrl}/turniere/sync-import` direkt auf – der
+Zentrale-Plattform-Server läuft aber normalerweise als eigener Prozess hinter nginx
+(`SERVE_FRONTEND=false`), dessen Backend-Routen intern zwar an der Wurzel liegen, von außen aber
+nur unter dem von nginx durchgereichten `/api`-Präfix erreichbar sind (`location /api/` in
+`deploy-instanz.sh`). Ohne dieses Präfix landete die Anfrage stattdessen bei nginx' normaler
+SPA-Auslieferung (`location /`) – **200 OK mit HTML statt der erwarteten JSON-Antwort**, `.json()`
+scheiterte dabei still (`.catch(() => ({}))`), wodurch die Kopplung mit der nichtssagenden
+Meldung „Kopplung fehlgeschlagen." scheiterte statt einer aussagekräftigen Fehlermeldung. Live
+beim ersten echten Kopplungsversuch von einer lokalen Windows-Installation gegen die echte
+Prod-Domain aufgefallen, per `curl` verifiziert (ohne `/api`: 405 + `text/html`; mit `/api`: 404 +
+korrekte JSON-Fehlermeldung „Kopplungscode ist ungültig oder abgelaufen."). Das komplette
+Turnier-Sync-Feature war dadurch seit seiner Einführung (2026-08-13) gegen eine echte
+nginx-gefrontete Zentrale Plattform nie funktionsfähig, nur eine direkte Backend-zu-Backend-
+Verbindung ohne nginx dazwischen hätte funktioniert (im bisherigen Testbetrieb offenbar nie geprüft).
+
 **Offline-/Lokal-Betrieb ist laut Spezifikation (Abschnitt 17/19) ein
 Kernfeature mit drei Betriebsmodi (Standalone, Lokales Netzwerk, Zentrale
 Plattform), kein optionales Extra** – bei neuen Architektur-Entscheidungen
