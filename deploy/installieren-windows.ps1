@@ -49,11 +49,45 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 Write-Host "Torball-Turniere - lokale Installation"
 Write-Host "Projektordner: $RepoRoot"
 Write-Host ""
+Write-Host "Um Torball-Turniere auf diesem Rechner lokal zu nutzen, werden ein paar zusaetzliche"
+Write-Host "Programme/Funktionen benoetigt, die hier vielleicht noch fehlen. Fuer jeden solchen"
+Write-Host "Schritt fragt dieses Skript vorher nach, erklaert kurz, worum es geht und was es fuer"
+Write-Host "diesen Rechner bedeutet - es aendert nichts ohne deine Zustimmung. Lehnst du einen"
+Write-Host "noetigen Schritt ab, kann die Installation an der Stelle nicht weitergehen."
+Write-Host ""
 
 function Update-EnvPath {
     $machine = [Environment]::GetEnvironmentVariable("Path", "Machine")
     $user = [Environment]::GetEnvironmentVariable("Path", "User")
     $env:Path = "$machine;$user"
+}
+
+# Fragt einen Wert ab; leere Eingabe (nur Enter) uebernimmt den vorgeschlagenen Standard.
+function Frage-MitDefault {
+    param([string]$Text, [string]$Standard)
+    $eingabe = Read-Host "$Text [$Standard]"
+    if ([string]::IsNullOrWhiteSpace($eingabe)) { return $Standard }
+    return $eingabe
+}
+
+# Erklaert eine bevorstehende Aenderung an DIESEM Rechner (nicht am Projektordner selbst) und
+# fragt um ausdrueckliche Zustimmung, bevor sie ausgefuehrt wird. Bricht bei Ablehnung die gesamte
+# Installation ab (Nutzer-Vorgabe 2026-08-19: keine Aenderung an einem fremden Rechner ohne
+# informierte Zustimmung - lieber keine Installation als eine ungewollte Systemaenderung; die
+# Zielgruppe ist ausdruecklich auch technisch wenig versiert, deshalb Alltagssprache statt
+# Fachbegriffen in Titel/Erklaerung/Auswirkung).
+function Bestaetige-Systemaenderung {
+    param([string]$Titel, [string]$Erklaerung, [string]$Auswirkung)
+    Write-Host ""
+    Write-Host "-- $Titel --"
+    Write-Host $Erklaerung
+    Write-Host "Auswirkung auf diesen Rechner: $Auswirkung"
+    $antwort = Frage-MitDefault -Text "Einverstanden? (j/n)" -Standard "j"
+    if ($antwort -notin @("j", "J", "ja", "Ja", "JA")) {
+        Write-Host ""
+        Write-Host "Ohne diesen Schritt kann die Installation nicht fortgesetzt werden. Abgebrochen."
+        exit 1
+    }
 }
 
 # --- [1/6] Node.js ---------------------------------------------------------------------------
@@ -63,6 +97,9 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
         Write-Error "winget nicht gefunden. Bitte Node.js LTS manuell von https://nodejs.org installieren und dieses Skript erneut starten."
         exit 1
     }
+    Bestaetige-Systemaenderung -Titel "Node.js installieren" `
+        -Erklaerung "Node.js ist die Software-Umgebung, mit der die Torball-Turniere-App laeuft (sie ist in der Programmiersprache JavaScript geschrieben) - ohne Node.js kann die App auf diesem Rechner nicht gestartet werden." `
+        -Auswirkung "Node.js wird ganz normal als eigenstaendiges Programm installiert (ueber den offiziellen Windows-Paketmanager 'winget'), so wie jede andere Software auch. Es laeuft nur, wenn eine Anwendung wie Torball-Turniere es aufruft - nicht dauerhaft im Hintergrund. Laesst sich jederzeit ganz normal ueber 'Apps & Features' wieder entfernen."
     Write-Host "Installiere Node.js LTS (winget) ..."
     winget install -e --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
     Update-EnvPath
@@ -93,14 +130,6 @@ function New-ZufallsPasswort {
     -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 24 | ForEach-Object { [char]$_ })
 }
 
-# Fragt einen Wert ab; leere Eingabe (nur Enter) uebernimmt den vorgeschlagenen Standard.
-function Frage-MitDefault {
-    param([string]$Text, [string]$Standard)
-    $eingabe = Read-Host "$Text [$Standard]"
-    if ([string]::IsNullOrWhiteSpace($eingabe)) { return $Standard }
-    return $eingabe
-}
-
 if (Test-Couchdb) {
     Write-Host "CouchDB laeuft bereits unter http://127.0.0.1:5984."
     if (Test-Path $CouchAdminFile) {
@@ -113,6 +142,9 @@ if (Test-Couchdb) {
         $CouchAdminPass = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
     }
 } else {
+    Bestaetige-Systemaenderung -Titel "CouchDB installieren" `
+        -Erklaerung "CouchDB ist die Datenbank, in der Torball-Turniere alle Turnierdaten speichert (Mannschaften, Spielplaene, Ergebnisse usw.) - ohne CouchDB hat die App keinen Ort, um Daten zu speichern." `
+        -Auswirkung "CouchDB wird als Hintergrunddienst installiert: es startet automatisch mit Windows und laeuft dauerhaft im Hintergrund, auch wenn Torball-Turniere gerade nicht benutzt wird (aehnlich wie z.B. ein Antivirenprogramm). Es ist ausschliesslich von diesem Rechner selbst erreichbar, nicht ueber das Internet. Laesst sich jederzeit ganz normal ueber 'Apps & Features' wieder entfernen."
     Write-Host "CouchDB nicht gefunden - lade offiziellen Installer herunter (Version $CouchdbVersion) ..."
     $CouchAdminUser = "admin"
     $CouchAdminPass = New-ZufallsPasswort
@@ -171,29 +203,24 @@ if (Test-Couchdb) {
         # kann CostFinalize keinen Kurznamen fuer den (noch nicht existierenden) Zielordner
         # ermitteln und bricht mit Error 1324 ("... contains an invalid character") ab, obwohl der
         # Pfad selbst voellig normal ist. Kein Fehler dieses Skripts oder des CouchDB-Pakets an
-        # sich. Bewusst KEINE automatische Reparatur (Nutzer-Vorgabe: dieses Skript darf keine
-        # Systemeinstellungen fremder Rechner selbststaendig aendern, auch nicht nach Rueckfrage) -
-        # stattdessen eine ausfuehrliche Anleitung zum Selbermachen, da der noetige Schritt (Windows-
-        # Systemeinstellung per Admin-Kommandozeile aendern) fuer technisch wenig versierte Personen
-        # nicht selbsterklaerend ist.
+        # sich. Wie bei Node.js/CouchDB oben: nicht stillschweigend aendern, sondern erklaeren und
+        # per Bestaetige-Systemaenderung um Zustimmung fragen (Nutzer-Vorgabe 2026-08-19) - eine
+        # rein textuelle Anleitung zum Selbermachen in einer Admin-Kommandozeile war fuer die
+        # Zielgruppe (auch technisch wenig versierte Personen) in einem frueheren Anlauf zu viel
+        # verlangt.
         $logInhalt = if (Test-Path $logPath) { Get-Content -Path $logPath -Raw -Encoding Unicode } else { "" }
         if ($proc.ExitCode -eq 1603 -and $logInhalt -match "1324") {
-            Write-Host ""
-            Write-Warning "Die CouchDB-Installation ist an einem bekannten Windows-Problem gescheitert: 8.3-Kurznamen sind auf diesem System deaktiviert, der Installer benoetigt sie aber."
-            Write-Host ""
-            Write-Host "So behebst du das:"
-            Write-Host "  1. Windows-Startmenue oeffnen, 'PowerShell' eintippen."
-            Write-Host "  2. Im Suchergebnis rechtsklicken -> 'Als Administrator ausfuehren' waehlen"
-            Write-Host "     (Windows fragt danach nochmal um Bestaetigung - zustimmen)."
-            Write-Host "  3. In dem sich oeffnenden blauen Fenster genau eingeben und Enter druecken:"
-            Write-Host "         fsutil 8dot3name set 0"
-            Write-Host "  4. Das Fenster kann danach geschlossen werden, ein Neustart ist nicht noetig."
-            Write-Host "  5. Dieses Installationsskript (Setup.cmd) erneut starten."
-            Write-Host ""
+            Bestaetige-Systemaenderung -Titel "Windows-Kompatibilitaetsfunktion einschalten" `
+                -Erklaerung "Die CouchDB-Installation ist an einer Windows-Einstellung gescheitert: auf diesem Rechner ist eine aeltere Kompatibilitaetsfunktion abgeschaltet ('8.3-Kurznamen', z.B. 'PROGRA~1' statt 'Program Files'), die der CouchDB-Installer intern noch braucht." `
+                -Auswirkung "Diese Funktion wird wieder eingeschaltet. Windows erzeugt dann zusaetzlich zu den normalen Dateinamen auch kurze Zusatznamen fuer neue Dateien/Ordner - auf einem normalen PC praktisch nicht spuerbar, kein Neustart noetig. Laesst sich jederzeit wieder abschalten (falls gewuenscht: 'fsutil 8dot3name set 1' in einer Administrator-Eingabeaufforderung)."
+            Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "NtfsDisable8dot3NameCreation" -Value 0
+            Write-Host "Eingeschaltet. Installation wird erneut versucht ..."
+            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru
+        }
+        if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
+            Write-Error "CouchDB-Installation fehlgeschlagen (Exit-Code $($proc.ExitCode)). Details: $logPath"
             exit 1
         }
-        Write-Error "CouchDB-Installation fehlgeschlagen (Exit-Code $($proc.ExitCode)). Details: $logPath"
-        exit 1
     }
 
     Write-Host "Warte auf CouchDB ..."

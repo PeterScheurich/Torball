@@ -1201,20 +1201,26 @@ dieser Version gilt der folgende Ablauf:
   ist noch offen. Details: `docs/Protokolle/2026-08-12-windows-installer-option-a.md`,
   Bugfix-Hintergrund: „Nebenbefunde" in `docs/Protokolle/2026-08-13-turnier-sync-grundlage.md`.
 
-**Windows-Installer: keine automatischen Systemeinstellungs-Änderungen, auch nicht nach
-Rückfrage (2026-08-19, Nutzer-Vorgabe):** Zielgruppe sind explizit auch technisch wenig versierte
-Personen – die Installation muss „problemlos" laufen, und alles, was nicht einfach ist, braucht
-eine ausführliche Anleitung statt eines automatischen Fixes. Konkreter Fall: Ist auf dem
-Zielrechner die 8.3-Kurznamen-Erzeugung deaktiviert (`NtfsDisable8dot3NameCreation`, auf modernen
-Windows-Systemen verbreitet), scheitert der CouchDB-MSI-Installer (aus WiX gebaut) mit Exit-Code
-1603 / „Error 1324 ... contains an invalid character" (CostFinalize kann keinen Kurznamen für den
-noch nicht existierenden Zielordner ermitteln – Pfad selbst ist unauffällig). `installieren-windows.ps1`
-erkennt dieses Fehlerbild gezielt (Exit-Code 1603 + „1324" im MSI-Log, per `Get-Content -Encoding
-Unicode` gelesen – die Logs sind UTF-16), ändert aber **nichts selbst**, sondern gibt eine
-Schritt-für-Schritt-Anleitung aus (Admin-PowerShell öffnen, `fsutil 8dot3name set 0`, Skript erneut
-starten) und bricht dann ab. Dasselbe Prinzip gilt für jede künftige ähnliche Fallunterscheidung in
-diesem Skript – ein Vorschlag „soll ich das jetzt beheben?" mit anschließender automatischer
-Änderung ist hier bewusst **nicht** vorgesehen, selbst mit Rückfrage/Zustimmung im Skript.
+**Windows-Installer: jede Änderung an DIESEM Rechner (nicht am Projektordner selbst) erst erklären
+und um Zustimmung fragen, alltagssprachlich statt fachlich (2026-08-19, Nutzer-Vorgabe, zweistufig
+entwickelt):** Zielgruppe sind explizit auch technisch wenig versierte Personen. Erster Anlauf war
+„gar keine automatische Änderung, nur eine Anleitung zum Selbermachen in einer Admin-Kommandozeile"
+– das erwies sich als **zu viel verlangt** für die Zielgruppe (Nutzer-Feedback nach eigenem Test:
+„das wird so nicht funktionieren"). Die jetzige Lösung: `Bestaetige-Systemaenderung` (Helper-Funktion
+in `installieren-windows.ps1`, ganz oben definiert) zeigt vor jeder System-Änderung einen kurzen
+Titel + eine Erklärung („worum geht es") + eine Auswirkung („was bedeutet das für diesen Rechner",
+auch wenn die Antwort „praktisch nichts" ist) in Alltagssprache, fragt per J/N (Default J) um
+Zustimmung, und **führt die Änderung bei Zustimmung selbst aus** – bei Ablehnung bricht die gesamte
+Installation ab, ohne dass diese eine Änderung stillschweigend übersprungen wird. Gilt einheitlich
+für **alle drei** System-Änderungen des Skripts, nicht nur den einen Sonderfall: Node.js-Installation
+(Schritt 1), CouchDB-Installation (Schritt 2) und – als Sonderfall, der erst zur Laufzeit erkannt
+wird – das (Wieder-)Aktivieren der 8.3-Kurznamen-Erzeugung, falls der CouchDB-MSI-Installer (aus
+WiX gebaut, auf modernen Windows-Systemen mit deaktivierten Kurznamen) mit Exit-Code 1603 / „Error
+1324 ... contains an invalid character" scheitert (Fehlerbild per Exit-Code + „1324" im MSI-Log
+erkannt, `Get-Content -Encoding Unicode` nötig, da die Logs UTF-16 sind). Reine Projektordner-Änderungen
+(npm install/build, `backend/.env`, Start-/Update-Skripte, Desktop-Verknüpfung) durchlaufen diesen
+Zustimmungs-Mechanismus bewusst **nicht** – die sind Kernzweck der Installation selbst, nicht
+optionale Eingriffe ins Betriebssystem.
 
 **Bewusst zurückgestellt: sauberes Deinstallieren der lokalen Windows-Installation.** Aktuell gibt
 es dafür kein Skript (anders als `deploy/instanz-entfernen.sh` für die Linux-Server-Seite) – Node.js,
