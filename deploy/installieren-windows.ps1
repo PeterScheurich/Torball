@@ -171,23 +171,29 @@ if (Test-Couchdb) {
         # kann CostFinalize keinen Kurznamen fuer den (noch nicht existierenden) Zielordner
         # ermitteln und bricht mit Error 1324 ("... contains an invalid character") ab, obwohl der
         # Pfad selbst voellig normal ist. Kein Fehler dieses Skripts oder des CouchDB-Pakets an
-        # sich - behebbar durch (Wieder-)Aktivieren der Kurznamen-Erzeugung, danach erneuter
-        # Versuch ohne Neustart noetig.
+        # sich. Bewusst KEINE automatische Reparatur (Nutzer-Vorgabe: dieses Skript darf keine
+        # Systemeinstellungen fremder Rechner selbststaendig aendern, auch nicht nach Rueckfrage) -
+        # stattdessen eine ausfuehrliche Anleitung zum Selbermachen, da der noetige Schritt (Windows-
+        # Systemeinstellung per Admin-Kommandozeile aendern) fuer technisch wenig versierte Personen
+        # nicht selbsterklaerend ist.
         $logInhalt = if (Test-Path $logPath) { Get-Content -Path $logPath -Raw -Encoding Unicode } else { "" }
         if ($proc.ExitCode -eq 1603 -and $logInhalt -match "1324") {
             Write-Host ""
-            Write-Warning "Die CouchDB-Installation ist an einem bekannten Windows-Problem gescheitert: 8.3-Kurznamen sind auf diesem System deaktiviert, der Installer benoetigt sie aber (Details: $logPath)."
-            $aktivieren = Frage-MitDefault -Text "8.3-Kurznamen jetzt aktivieren und die Installation erneut versuchen? (j/n)" -Standard "j"
-            if ($aktivieren -in @("j", "J", "ja", "Ja", "JA")) {
-                Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "NtfsDisable8dot3NameCreation" -Value 0
-                Write-Host "Kurznamen aktiviert. Installation wird erneut versucht ..."
-                $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru
-            }
-        }
-        if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
-            Write-Error "CouchDB-Installation fehlgeschlagen (Exit-Code $($proc.ExitCode)). Details: $logPath"
+            Write-Warning "Die CouchDB-Installation ist an einem bekannten Windows-Problem gescheitert: 8.3-Kurznamen sind auf diesem System deaktiviert, der Installer benoetigt sie aber."
+            Write-Host ""
+            Write-Host "So behebst du das:"
+            Write-Host "  1. Windows-Startmenue oeffnen, 'PowerShell' eintippen."
+            Write-Host "  2. Im Suchergebnis rechtsklicken -> 'Als Administrator ausfuehren' waehlen"
+            Write-Host "     (Windows fragt danach nochmal um Bestaetigung - zustimmen)."
+            Write-Host "  3. In dem sich oeffnenden blauen Fenster genau eingeben und Enter druecken:"
+            Write-Host "         fsutil 8dot3name set 0"
+            Write-Host "  4. Das Fenster kann danach geschlossen werden, ein Neustart ist nicht noetig."
+            Write-Host "  5. Dieses Installationsskript (Setup.cmd) erneut starten."
+            Write-Host ""
             exit 1
         }
+        Write-Error "CouchDB-Installation fehlgeschlagen (Exit-Code $($proc.ExitCode)). Details: $logPath"
+        exit 1
     }
 
     Write-Host "Warte auf CouchDB ..."

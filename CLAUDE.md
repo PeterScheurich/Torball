@@ -1201,6 +1201,26 @@ dieser Version gilt der folgende Ablauf:
   ist noch offen. Details: `docs/Protokolle/2026-08-12-windows-installer-option-a.md`,
   Bugfix-Hintergrund: „Nebenbefunde" in `docs/Protokolle/2026-08-13-turnier-sync-grundlage.md`.
 
+**Windows-Installer: keine automatischen Systemeinstellungs-Änderungen, auch nicht nach
+Rückfrage (2026-08-19, Nutzer-Vorgabe):** Zielgruppe sind explizit auch technisch wenig versierte
+Personen – die Installation muss „problemlos" laufen, und alles, was nicht einfach ist, braucht
+eine ausführliche Anleitung statt eines automatischen Fixes. Konkreter Fall: Ist auf dem
+Zielrechner die 8.3-Kurznamen-Erzeugung deaktiviert (`NtfsDisable8dot3NameCreation`, auf modernen
+Windows-Systemen verbreitet), scheitert der CouchDB-MSI-Installer (aus WiX gebaut) mit Exit-Code
+1603 / „Error 1324 ... contains an invalid character" (CostFinalize kann keinen Kurznamen für den
+noch nicht existierenden Zielordner ermitteln – Pfad selbst ist unauffällig). `installieren-windows.ps1`
+erkennt dieses Fehlerbild gezielt (Exit-Code 1603 + „1324" im MSI-Log, per `Get-Content -Encoding
+Unicode` gelesen – die Logs sind UTF-16), ändert aber **nichts selbst**, sondern gibt eine
+Schritt-für-Schritt-Anleitung aus (Admin-PowerShell öffnen, `fsutil 8dot3name set 0`, Skript erneut
+starten) und bricht dann ab. Dasselbe Prinzip gilt für jede künftige ähnliche Fallunterscheidung in
+diesem Skript – ein Vorschlag „soll ich das jetzt beheben?" mit anschließender automatischer
+Änderung ist hier bewusst **nicht** vorgesehen, selbst mit Rückfrage/Zustimmung im Skript.
+
+**Bewusst zurückgestellt: sauberes Deinstallieren der lokalen Windows-Installation.** Aktuell gibt
+es dafür kein Skript (anders als `deploy/instanz-entfernen.sh` für die Linux-Server-Seite) – Node.js,
+der CouchDB-Windows-Dienst, die Desktop-Verknüpfung und der Projektordner selbst (inkl.
+`backend/.env` mit Zugangsdaten) müssten aktuell von Hand entfernt werden.
+
 ## Dokumentation
 
 - Größere fachliche oder technische Entscheidungen als Protokoll unter
