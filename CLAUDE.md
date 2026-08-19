@@ -1260,6 +1260,21 @@ versteckten/geschützten `C:\ProgramData` – für die Zielgruppe leichter wiede
 an der Sicherheit: die einzelne sicherheitsrelevante Datei (Admin-Passwort) bekommt weiterhin per
 `icacls` eine eigene, Administratoren-only-ACL, unabhängig vom übergeordneten Ordner.
 
+**Verwaiste CouchDB-Installationsregistrierung: Windows Installer merkt sich einen fehlgeschlagenen
+Versuch dauerhaft (2026-08-19, live aufgefallen):** Ein Testlauf, bei dem `msiexec` aus einem
+anderen Grund fehlschlug (siehe 8.3-Kurznamen-Historie oben), hatte das Produkt trotzdem bereits bei
+Windows registriert – inklusive eines vom CouchDB-Installer selbst falsch gewählten Zielordners
+(auf dem Testrechner ein leeres Laufwerk `F:`, aus dessen eigener Laufwerksauswahl-Logik, bevor
+`APPLICATIONFOLDER` gesetzt wurde). Jeder weitere Installationsversuch lief seitdem automatisch in
+den MSI-„Reparatur"-Modus statt einer Neuinstallation und übernahm dabei den alten, kaputten
+Zielordner aus der Registrierung – der `APPLICATIONFOLDER`-Wert im Skript wurde dabei
+stillschweigend ignoriert (per `Get-Package -Name "Apache CouchDB"` und MSI-Log verifiziert: „Product
+registered: entering maintenance mode"). `installieren-windows.ps1` prüft jetzt vor jeder
+CouchDB-Installation per `Get-Package`, ob ein solcher Karteileichen-Eintrag existiert (Produkt
+registriert, aber der hinterlegte Zielordner existiert nicht oder ist leer), und bietet über
+`Bestaetige-Systemaenderung` an, ihn per `msiexec /x <ProductCode> /quiet` zu entfernen, bevor die
+eigentliche (Neu-)Installation startet.
+
 **Bewusst zurückgestellt: sauberes Deinstallieren der lokalen Windows-Installation.** Aktuell gibt
 es dafür kein Skript (anders als `deploy/instanz-entfernen.sh` für die Linux-Server-Seite) – Node.js,
 der CouchDB-Windows-Dienst, die Desktop-Verknüpfung und der Projektordner selbst (inkl.

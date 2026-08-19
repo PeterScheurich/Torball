@@ -194,6 +194,26 @@ if (Test-Couchdb) {
         }
     }
 
+    # Verwaiste Installations-Registrierung erkennen und entfernen: schlaegt eine Installation
+    # fehl, kann Windows das Produkt trotzdem als "installiert" fuehren (mit dem damaligen,
+    # moeglicherweise nicht mehr passenden Zielordner). Jeder weitere Versuch landet dann
+    # automatisch im "Reparatur"-Modus und uebernimmt den ALTEN Zielordner aus der Registrierung -
+    # der APPLICATIONFOLDER-Wert weiter unten wird dabei stillschweigend ignoriert. Live erlebt:
+    # ein frueher Testlauf (noch ohne den APPLICATIONFOLDER-Fix) hatte CouchDB mit einem vom
+    # Installer selbst falsch gewaehlten, leeren Laufwerk registriert - jeder folgende Versuch
+    # scheiterte seitdem an genau diesem Karteileichen-Eintrag, unabhaengig vom eigentlichen Fehler.
+    $vorhandenesPaket = Get-Package -Name "Apache CouchDB" -ErrorAction SilentlyContinue
+    if ($vorhandenesPaket) {
+        $zielInhaltVorhanden = (Test-Path $vorhandenesPaket.Source) -and
+            ((Get-ChildItem $vorhandenesPaket.Source -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0)
+        if (-not $zielInhaltVorhanden) {
+            Bestaetige-Systemaenderung -Titel "Fehlerhaften CouchDB-Installationseintrag entfernen" `
+                -Erklaerung "Ein frueherer, fehlgeschlagener Installationsversuch hat einen unvollstaendigen Eintrag hinterlassen: Windows fuehrt CouchDB als installiert, obwohl am hinterlegten Ort ('$($vorhandenesPaket.Source)') keine Dateien liegen. Dieser Eintrag verhindert eine saubere Neuinstallation." `
+                -Auswirkung "Es wird nur dieser eine fehlerhafte Eintrag entfernt - kein echtes Programm, da nie erfolgreich installiert. Danach kann CouchDB regulaer neu installiert werden."
+            Start-Process -FilePath "msiexec.exe" -ArgumentList @("/x", $vorhandenesPaket.FastPackageReference, "/quiet", "/norestart") -Wait | Out-Null
+        }
+    }
+
     Write-Host "Installiere CouchDB als Windows-Dienst (unbeaufsichtigt) ..."
     $logPath = Join-Path $ConfDir "couchdb-install.log"
     # Installationsordner bewusst NICHT unter "Program Files" (der MSI-Standard): auf Rechnern, auf
