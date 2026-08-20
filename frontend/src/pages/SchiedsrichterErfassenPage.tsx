@@ -19,7 +19,8 @@ export function SchiedsrichterErfassenPage() {
         <Link to={`/turniere/${encodeURIComponent(turnierId)}/mannschaften-erfassen`}>Zurück zu Mannschaften</Link>
       </p>
       <h1>Schiedsrichter</h1>
-      <p className="feld-hinweis">
+      {/* Bewusst volle Textfarbe (kein .feld-hinweis): Einleitungssatz, der gelesen werden soll (siehe CLAUDE.md). */}
+      <p>
         Optional: Erfasse hier die Schiedsrichter für dieses Turnier. Wird einer Person eine Mannschaft zugeordnet,
         vermeidet die spätere Schiedsrichter-Einteilung, dass sie das eigene Team pfeift. Du kannst den Schritt auch
         einfach überspringen.

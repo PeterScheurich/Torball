@@ -110,6 +110,9 @@ export function SystemeinstellungenPage() {
   }
 
   async function smtpPasswortEntfernen() {
+    if (!window.confirm("Wirklich das gespeicherte SMTP-Passwort entfernen? Der Wert lässt sich danach nicht wiederherstellen.")) {
+      return;
+    }
     try {
       const ergebnis = await updateSystemeinstellungen({
         selbstregistrierungErlaubt,
@@ -286,7 +289,7 @@ export function SystemeinstellungenPage() {
               {smtpTestLaeuft ? "Verbindung wird getestet…" : "Verbindung testen"}
             </button>
             {smtpPasswortGesetzt && (
-              <button type="button" onClick={smtpPasswortEntfernen}>
+              <button type="button" className="button-loeschen" onClick={smtpPasswortEntfernen}>
                 Passwort entfernen
               </button>
             )}

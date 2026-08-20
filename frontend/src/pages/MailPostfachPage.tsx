@@ -208,6 +208,8 @@ export function MailPostfachPage() {
   }
 
   async function geheimwertEntfernen(feld: "imapPasswort" | "anthropicApiKey") {
+    const label = feld === "imapPasswort" ? "das gespeicherte IMAP-Passwort" : "den gespeicherten API-Key";
+    if (!window.confirm(`Wirklich ${label} entfernen? Der Wert lässt sich danach nicht wiederherstellen.`)) return;
     try {
       const ergebnis = await updateMailPostfachEinstellungen({
         berichtszeit: einstellungenForm.berichtszeit,
@@ -409,7 +411,7 @@ export function MailPostfachPage() {
               {imapTestLaeuft ? "Verbindung wird getestet…" : "Verbindung testen"}
             </button>
             {imapPasswortGesetzt && (
-              <button type="button" onClick={() => geheimwertEntfernen("imapPasswort")}>
+              <button type="button" className="button-loeschen" onClick={() => geheimwertEntfernen("imapPasswort")}>
                 Passwort entfernen
               </button>
             )}
@@ -448,7 +450,7 @@ export function MailPostfachPage() {
               {apiKeyTestLaeuft ? "API-Key wird getestet…" : "API-Key testen"}
             </button>
             {anthropicApiKeyGesetzt && (
-              <button type="button" onClick={() => geheimwertEntfernen("anthropicApiKey")}>
+              <button type="button" className="button-loeschen" onClick={() => geheimwertEntfernen("anthropicApiKey")}>
                 API-Key entfernen
               </button>
             )}

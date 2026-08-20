@@ -39,9 +39,8 @@ export function TurnierPruefung({ turnier }: { turnier: Turnier }) {
   return (
     <section>
       <h2>Turnier prüfen</h2>
-      <p className="feld-hinweis">
-        Prüft die Angaben gegen die Regeln und zeigt Auffälligkeiten – ohne etwas zu blockieren.
-      </p>
+      {/* Bewusst volle Textfarbe (kein .feld-hinweis): Einleitungssatz, der gelesen werden soll (siehe CLAUDE.md). */}
+      <p>Prüft die Angaben gegen die Regeln und zeigt Auffälligkeiten – ohne etwas zu blockieren.</p>
       <button type="button" onClick={pruefen} disabled={laedt}>
         {laedt ? "Prüfe…" : "Turnier prüfen"}
       </button>

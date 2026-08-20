@@ -590,7 +590,7 @@ export function ProfilPage() {
                   <td>{formatiereZeitstempel(instanz.erstelltAm)}</td>
                   <td>{instanz.letzterKontaktAm ? formatiereZeitstempel(instanz.letzterKontaktAm) : "noch nie"}</td>
                   <td>
-                    <button type="button" onClick={() => instanzEntfernen(instanz._id)}>
+                    <button type="button" className="button-loeschen" onClick={() => instanzEntfernen(instanz._id)}>
                       Widerrufen
                     </button>
                   </td>

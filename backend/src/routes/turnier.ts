@@ -260,6 +260,14 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       if (bestehend.regelnGesperrt && Object.keys(req.body).some((k) => (REGEL_FELDER as string[]).includes(k))) {
         return reply.code(409).send({ error: REGELN_GESPERRT_FEHLER });
       }
+      // logoDataUrl landet u. a. auf der oeffentlichen Turnierseite als <img src> - nur echte
+      // Bild-Data-URLs akzeptieren (null loescht das Logo, fehlend laesst es unveraendert).
+      // <img> fuehrt zwar keine Skripte aus, aber ein beliebiger String hat in dem Feld
+      // trotzdem nichts verloren (Sicherheitsdurchsicht Frontend-Review, 2026-08-20).
+      const logo = (req.body as { logoDataUrl?: unknown }).logoDataUrl;
+      if (logo !== undefined && logo !== null && (typeof logo !== "string" || !logo.startsWith("data:image/"))) {
+        return reply.code(400).send({ error: "Das Turnier-Logo muss eine Bild-Data-URL (data:image/…) sein." });
+      }
       const zuschreiber = zuschreibung(req);
       const aktualisiert: Turnier = {
         ...bestehend,

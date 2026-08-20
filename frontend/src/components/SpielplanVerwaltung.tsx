@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spiel, Spielfeld, Turnier } from "@torball/shared";
+import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spiel, Turnier } from "@torball/shared";
 import {
   erzeugeSpielplan,
   getMannschaften,
@@ -14,6 +14,7 @@ import {
   type SpielplanVorschlagEintrag,
 } from "../api";
 import { formatiereUhrzeit } from "../format";
+import { TabListe } from "./TabListe";
 import { schiedsrichterKonflikt } from "../schiedsrichterKonflikt";
 import { spielplanBasisAenderungen } from "../spielplanBasisDiff";
 import { berechneStartzeit, spieldauerMinuten } from "../zeitplanung";
@@ -293,25 +294,6 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
     }
   }
 
-  function FeldTabs({ felder }: { felder: Spielfeld[] }) {
-    if (felder.length <= 1) return null;
-    return (
-      <div role="tablist" aria-label="Spielfeld auswählen" className="feld-tabs">
-        {felder.map((f) => (
-          <button
-            key={f.feldId}
-            type="button"
-            role="tab"
-            aria-selected={aktuellesFeld === f.feldId}
-            className={aktuellesFeld === f.feldId ? "tab tab-aktiv" : "tab"}
-            onClick={() => setAktuellesFeld(f.feldId)}
-          >
-            {f.name}
-          </button>
-        ))}
-      </div>
-    );
-  }
 
   async function anNeuePositionVerschieben(vonVollIndex: number, richtung: -1 | 1) {
     if (!aktuellesFeld) return;
@@ -494,7 +476,18 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
         Neuer Vorschlag
       </button>
 
-      <FeldTabs felder={turnier.felder} />
+      {/* Direkt (kein Wrapper-Funktionskomponent im Komponentenrumpf): eine innen definierte
+          Komponente bekaeme bei jedem Render eine neue Identitaet und wuerde remounten -
+          der per Pfeiltaste gesetzte Fokus ginge dabei verloren (im Browser beobachtet). */}
+      {turnier.felder.length > 1 && (
+        <TabListe
+          ariaLabel="Spielfeld auswählen"
+          className="feld-tabs"
+          tabs={turnier.felder.map((f) => ({ id: f.feldId, label: f.name }))}
+          aktiv={aktuellesFeld ?? turnier.felder[0].feldId}
+          onWechsel={setAktuellesFeld}
+        />
+      )}
 
       {/* Ergebnisbereich steht bewusst immer an derselben Stelle unterhalb der Steuerung:
           Vorschau, falls gerade berechnet, sonst der zuletzt gespeicherte Spielplan - nie beides
@@ -640,26 +633,16 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
         <>
           <p>Spielplan ist bereits erzeugt (Version {turnier.spielplanVersion}).</p>
 
-          <div role="tablist" aria-label="Spielplan-Sicht" className="feld-tabs">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={spielplanSicht === "plan"}
-              className={spielplanSicht === "plan" ? "tab tab-aktiv" : "tab"}
-              onClick={() => setSpielplanSicht("plan")}
-            >
-              Spielplan
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={spielplanSicht === "einteilung"}
-              className={spielplanSicht === "einteilung" ? "tab tab-aktiv" : "tab"}
-              onClick={() => setSpielplanSicht("einteilung")}
-            >
-              Schiedsrichter-Einteilung
-            </button>
-          </div>
+          <TabListe
+            ariaLabel="Spielplan-Sicht"
+            className="feld-tabs"
+            tabs={[
+              { id: "plan", label: "Spielplan" },
+              { id: "einteilung", label: "Schiedsrichter-Einteilung" },
+            ]}
+            aktiv={spielplanSicht}
+            onWechsel={(id) => setSpielplanSicht(id as "plan" | "einteilung")}
+          />
 
           {spielplanSicht === "plan" ? (
             <>

@@ -71,7 +71,8 @@ function ServerVerbindung() {
           Verbunden mit <strong>{status.serverUrl}</strong>
           {status.gekoppeltAm && <> (seit {formatiereZeitstempel(status.gekoppeltAm)})</>}.
         </p>
-        <p className="feld-hinweis">
+        {/* Bewusst volle Textfarbe (kein .feld-hinweis): erklaerender Fliesstext (siehe CLAUDE.md). */}
+        <p>
           Turniere, die von diesem Server hierher heruntergeladen werden, synchronisieren sich automatisch im
           Hintergrund, solange eine Verbindung besteht.
         </p>

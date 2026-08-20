@@ -101,7 +101,8 @@ export function TurnierSync({
   return (
     <section>
       <h2>Turnier-Sync (Lokale Installation)</h2>
-      <p className="feld-hinweis">
+      {/* Bewusst volle Textfarbe (kein .feld-hinweis): Einleitungssatz, der gelesen werden soll (siehe CLAUDE.md). */}
+      <p>
         Betriebsmodus „Lokales Netzwerk": ein Turnier an eine verbundene lokale Installation
         senden oder von dort zum Server hochladen – auch bei unzuverlässigem Internet vor Ort.
       </p>

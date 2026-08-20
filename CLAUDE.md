@@ -1146,6 +1146,15 @@ dieser Version gilt der folgende Ablauf:
   selbst per Umschalter (`aria-expanded`/`aria-controls`, Muster in `VereineVerwaltung.tsx`:
   `erstLadungFertig`-State + `autoEntschieden`-Ref). Kurze Formulare (2–3 Felder, z. B. Team
   anlegen, Benutzer einladen) brauchen die Zuklapp-Mechanik nicht, nur die Tabellen-Form.
+- **Tab-Gruppen (`role="tablist"`): immer über die gemeinsame `TabListe`-Komponente**
+  (`frontend/src/components/TabListe.tsx`) statt handgebauter Button-Reihen – sie liefert
+  Roving-Tabindex plus Pfeil-/Home-/End-Bedienung, die `role="tab"` Screenreadern ankündigt
+  (Frontend-Review Teil 3, 2026-08-20; vorher hatten die kleineren Tab-Gruppen nur die Rollen,
+  nicht die Bedienung). Ausnahme: die Haupt-Reiter in `TurnierVerwaltenPage` behalten ihre
+  eigene, vollständige Umsetzung (inkl. `aria-controls`/`tabpanel`-Verdrahtung). Wichtig:
+  `TabListe` nie in einer im Komponentenrumpf definierten Wrapper-Komponente rendern – die
+  bekommt bei jedem Render eine neue Identität, remountet und verliert den per Pfeiltaste
+  gesetzten Fokus (live beobachtet, siehe Kommentar in `SpielplanVerwaltung.tsx`).
 - Farbschema folgt standardmäßig der Systemeinstellung
   (`prefers-color-scheme`), mit manuellem Umschalter (`[data-theme]`) als
   Override. Zusätzlich Tabellendichte/Zeilenabstand (`[data-dichte]`,

@@ -48,7 +48,9 @@ export function QrCode({ text, dateiname, zeigeDownload = true }: Props) {
     };
   }, [text]);
 
-  if (fehler) return <p className="feld-hinweis">QR-Code konnte nicht erzeugt werden.</p>;
+  // Fehlermeldung in voller Textfarbe + role="alert" (kein gedaempfter .feld-hinweis - eine
+  // Fehlermeldung ist keine Nebeninfo, siehe CLAUDE.md).
+  if (fehler) return <p role="alert">QR-Code konnte nicht erzeugt werden.</p>;
   if (!svg) return null;
 
   const basis = dateinameBereinigt(dateiname);

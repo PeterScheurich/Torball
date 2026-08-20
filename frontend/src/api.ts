@@ -48,6 +48,17 @@ export type BenutzerProfil = Omit<
   "passwortHash" | "zweiFaSecret" | "einladungTokenHash" | "einladungAblauf" | "resetTokenHash" | "resetAblauf"
 > & { hatPasswort: boolean };
 
+/**
+ * Kodiert einen Wert fuer die Verwendung als einzelnes Pfad-Segment. Pflicht fuer alle Werte,
+ * die aus der Browser-URL bzw. von Nutzereingaben stammen (Ergebnis-/Einladungs-/Reset-Token,
+ * Turnier-IDs der oeffentlichen Seiten): ohne Kodierung koennte ein praeparierter Link (z.B.
+ * `..%2F..%2Fbenutzer` als "Token") die Anfrage per Pfad-Traversal auf eine ANDERE API-Route
+ * umlenken - die dann mit dem Session-Cookie der angemeldeten Person ausgefuehrt wuerde.
+ */
+function segment(wert: string): string {
+  return encodeURIComponent(wert);
+}
+
 async function anfrage<T>(pfad: string, init?: RequestInit): Promise<T> {
   let antwort: Response;
   try {
@@ -651,11 +662,14 @@ export function eigenesPasswortAendern(aktuellesPasswort: string, neuesPasswort:
 }
 
 export function getEinladung(token: string): Promise<{ email: string; name: string }> {
-  return anfrage(`/benutzer/einladung/${token}`);
+  return anfrage(`/benutzer/einladung/${segment(token)}`);
 }
 
 export function einladungAnnehmen(token: string, passwort: string): Promise<BenutzerProfil> {
-  return anfrage(`/benutzer/einladung/${token}/annehmen`, { method: "POST", body: JSON.stringify({ passwort }) });
+  return anfrage(`/benutzer/einladung/${segment(token)}/annehmen`, {
+    method: "POST",
+    body: JSON.stringify({ passwort }),
+  });
 }
 
 export function passwortVergessen(email: string): Promise<{ ok: true }> {
@@ -663,11 +677,14 @@ export function passwortVergessen(email: string): Promise<{ ok: true }> {
 }
 
 export function pruefePasswortResetToken(token: string): Promise<{ ok: true }> {
-  return anfrage(`/benutzer/passwort-reset/${token}`);
+  return anfrage(`/benutzer/passwort-reset/${segment(token)}`);
 }
 
 export function passwortReset(token: string, neuesPasswort: string): Promise<{ ok: true }> {
-  return anfrage(`/benutzer/passwort-reset/${token}`, { method: "POST", body: JSON.stringify({ neuesPasswort }) });
+  return anfrage(`/benutzer/passwort-reset/${segment(token)}`, {
+    method: "POST",
+    body: JSON.stringify({ neuesPasswort }),
+  });
 }
 
 export interface TotpEinrichtung {
@@ -729,7 +746,7 @@ export function turnierCodeAnmeldung(
   turnierId: string,
   code: string,
 ): Promise<{ rolle: TurnierCodeRolle; turnierName: string }> {
-  return anfrage(`/turniere/${turnierId}/code-anmeldung`, { method: "POST", body: JSON.stringify({ code }) });
+  return anfrage(`/turniere/${segment(turnierId)}/code-anmeldung`, { method: "POST", body: JSON.stringify({ code }) });
 }
 
 export interface TurnierCodesStatus {
@@ -818,7 +835,7 @@ export interface ErgebnisErfassungDaten {
 }
 
 export function getErgebnisErfassung(tokenWert: string): Promise<ErgebnisErfassungDaten> {
-  return anfrage(`/ergebnis-erfassung/${tokenWert}`);
+  return anfrage(`/ergebnis-erfassung/${segment(tokenWert)}`);
 }
 
 export function ergebnisPerTokenSetzen(
@@ -826,7 +843,7 @@ export function ergebnisPerTokenSetzen(
   spielId: string,
   daten: ErgebnisEingabe & { erfasserName: string; geraetKennung?: string },
 ): Promise<ErgebnisErfassungSpiel> {
-  return anfrage(`/ergebnis-erfassung/${tokenWert}/spiele/${spielId}`, {
+  return anfrage(`/ergebnis-erfassung/${segment(tokenWert)}/spiele/${segment(spielId)}`, {
     method: "PUT",
     body: JSON.stringify(daten),
   });
@@ -919,7 +936,7 @@ export interface OeffentlicheTurnierseite {
 }
 
 export function getOeffentlicheTurnierseite(turnierId: string): Promise<OeffentlicheTurnierseite> {
-  return anfrage(`/oeffentlich/turniere/${turnierId}`);
+  return anfrage(`/oeffentlich/turniere/${segment(turnierId)}`);
 }
 
 /** Ein Turnier in der oeffentlichen Startseiten-Liste (nur Name/Datum/Spielort/Status). */

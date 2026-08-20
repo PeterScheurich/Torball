@@ -135,7 +135,8 @@ export function TurnierFreigabe({
   return (
     <section>
       <h2>Freigabe für andere Benutzer</h2>
-      <p className="feld-hinweis">
+      {/* Bewusst volle Textfarbe (kein .feld-hinweis): Einleitungssatz, der gelesen werden soll (siehe CLAUDE.md). */}
+      <p>
         Gib dieses Turnier für weitere angemeldete Benutzer frei. Ersteller und Administratoren haben ohnehin vollen
         Zugriff und müssen hier nicht eingetragen werden.
       </p>
@@ -232,7 +233,8 @@ export function TurnierFreigabe({
       )}
 
       <h3>Codes für Lokales Netzwerk</h3>
-      <p className="feld-hinweis">
+      {/* Bewusst volle Textfarbe (kein .feld-hinweis): Einleitungssatz, der gelesen werden soll (siehe CLAUDE.md). */}
+      <p>
         Alternativer Zugriff ohne eigenes Konto für Geräte im selben Netzwerk wie der Turnier-Server (Betriebsmodus
         „Lokales Netzwerk"). Wer den Code kennt, meldet sich unter{" "}
         <code>{`${window.location.origin}/turniere/${turnierId}/code`}</code> an.

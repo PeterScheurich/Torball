@@ -8,6 +8,7 @@ import {
 } from "../api";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 import { QrCode } from "../components/QrCode";
+import { TabListe } from "../components/TabListe";
 import { KontextHilfe } from "../components/KontextHilfe";
 import { TurnierLogo } from "../components/TurnierLogo";
 
@@ -198,29 +199,16 @@ function WettbewerbErgebnisse({
 
   return (
     <>
-      <div role="tablist" aria-label="Spieltage" className="unter-tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={gewaehlt === "gesamt"}
-          className={gewaehlt === "gesamt" ? "tab tab-aktiv" : "tab"}
-          onClick={() => setUnterTab("gesamt")}
-        >
-          Gesamt
-        </button>
-        {wettbewerb.spieltage.map((s) => (
-          <button
-            key={s.turnierId}
-            type="button"
-            role="tab"
-            aria-selected={gewaehlt === s.turnierId}
-            className={gewaehlt === s.turnierId ? "tab tab-aktiv" : "tab"}
-            onClick={() => setUnterTab(s.turnierId)}
-          >
-            Spieltag {s.spieltagNummer}
-          </button>
-        ))}
-      </div>
+      <TabListe
+        ariaLabel="Spieltage"
+        className="unter-tablist"
+        tabs={[
+          { id: "gesamt", label: "Gesamt" },
+          ...wettbewerb.spieltage.map((s) => ({ id: s.turnierId, label: `Spieltag ${s.spieltagNummer}` })),
+        ]}
+        aktiv={gewaehlt}
+        onWechsel={setUnterTab}
+      />
 
       {gewaehlt === "gesamt" ? (
         <>
@@ -364,20 +352,12 @@ export function OeffentlicheTurnierseitePage() {
         <p>Diese Turnierseite ist aktuell nicht öffentlich freigegeben.</p>
       ) : (
         <>
-          <div role="tablist" aria-label="Turnierbereiche">
-            {verfuegbareTabs.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                role="tab"
-                aria-selected={aktiverTab === tab}
-                className={aktiverTab === tab ? "tab tab-aktiv" : "tab"}
-                onClick={() => tabSetzen(tab)}
-              >
-                {TAB_LABEL[tab]}
-              </button>
-            ))}
-          </div>
+          <TabListe
+            ariaLabel="Turnierbereiche"
+            tabs={verfuegbareTabs.map((tab) => ({ id: tab, label: TAB_LABEL[tab] }))}
+            aktiv={aktiverTab}
+            onWechsel={(id) => tabSetzen(id as Tab)}
+          />
 
           {aktiverTab === "turnierinfos" && daten.turnierinfos && (
             <div>
