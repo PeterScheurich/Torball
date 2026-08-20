@@ -272,7 +272,10 @@ direkte Server-Änderung wäre also ohnehin sinnlos. Eingebaut an denselben Stel
 (zentral in `pruefeSpielZugriff`, wirkt automatisch auch in `ergebnis.ts`), `spielplan.ts`) sowie
 zusätzlich in `ergebnisToken.ts`s öffentlicher (kein Login) `PUT /ergebnis-erfassung/:tokenWert/…`
 – ein alter, noch aktiver externer Erfassungslink hätte sonst am Sperr-Mechanismus vorbei
-weiterschreiben können.
+weiterschreiben können. **Nachtrag 2026-08-20:** `turnierCode.ts` (`PUT /turniere/:id/codes`) hatte
+die Prüfung als einzige turnierbezogene Schreib-Route übersehen (Nebenbefund aus dem Backend-Review)
+– jetzt ebenfalls `turnierAusgecheckt()` (bewusst nur diese, nicht `turnierGesperrt()`: Codes/Teilen
+bleiben bei bloß abgeschlossenem Turnier erlaubt).
 
 **Sicherheitsprüfung des Sync-Imports (2026-08-20, aus einer Sicherheitsdurchsicht):**
 `importiereTurnierExport` (`backend/src/sync/import.ts`) schreibt jedes Paket-Dokument unter seiner
