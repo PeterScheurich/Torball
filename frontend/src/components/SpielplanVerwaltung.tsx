@@ -156,9 +156,12 @@ interface Props {
    *  (siehe backend/src/routes/spiel.ts), ohne diesen Callback wuerde die Uebersicht das erst nach
    *  einem Neuladen der Seite mitbekommen. */
   onTurnierGeaendert?: (turnier: Turnier) => void;
-  /** Turnier abgeschlossen: Bearbeitung sperren. Die Reihenfolge-/Zeit-/Status-Steuerung ist bei
-   *  abgeschlossenem Turnier ohnehin ueber den Spiel-Status gesperrt (keine "geplant"-Spiele mehr);
-   *  zusaetzlich muss die Schiedsrichter-Einteilung (Auto-Zuordnen + Dropdown) gesperrt werden. */
+  /** Turnier abgeschlossen ODER per Turnier-Sync ausgecheckt: Bearbeitung sperren. Der Spiel-
+   *  Status allein reicht dafuer NICHT: bei einem lediglich ausgecheckten Turnier sind die Spiele
+   *  weiterhin "geplant", die Zeit-/Reihenfolge-Steuerung muss deshalb zusaetzlich ueber diese
+   *  Prop deaktiviert werden (live aufgefallen 2026-08-20: Startzeiten blieben als einzige Felder
+   *  bedienbar, der Server lehnte zwar mit 409 ab, aber die Sperre wirkte inkonsequent). Gilt
+   *  ebenso fuer Vorschlag/Erzeugen/Rueckgaengig und die Schiedsrichter-Einteilung. */
   gesperrt?: boolean;
 }
 
@@ -470,7 +473,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
       <button
         type="button"
         onClick={neuerVorschlag}
-        disabled={mannschaften.length < 2 || spielplanGesperrt}
+        disabled={mannschaften.length < 2 || spielplanGesperrt || gesperrt}
         title={spielplanGesperrt ? "Es sind bereits Ergebnisse erfasst - kein neuer Vorschlag möglich." : undefined}
       >
         Neuer Vorschlag
@@ -622,7 +625,9 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
               </tbody>
             </table>
           </div>
-          <button type="button" onClick={spielplanErzeugen}>
+          {/* gesperrt kann auch bei offenem Vorschlag noch true WERDEN (z.B. "Für lokale Nutzung
+              herunterladen" in TurnierSync setzt ausgecheckt sofort) - deshalb auch hier sperren. */}
+          <button type="button" onClick={spielplanErzeugen} disabled={gesperrt}>
             {spiele.length > 0 ? "Spielplan neu erzeugen" : "Spielplan erzeugen"}
           </button>{" "}
           <button type="button" onClick={() => setVorschlag(undefined)}>
@@ -646,7 +651,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
 
           {spielplanSicht === "plan" ? (
             <>
-              <button type="button" onClick={rueckgaengig} disabled={verlauf.length === 0}>
+              <button type="button" onClick={rueckgaengig} disabled={verlauf.length === 0 || gesperrt}>
                 Rückgängig{verlauf.length > 0 ? ` (${verlauf.length})` : ""}
               </button>
               <div className="tabellen-wrapper">
@@ -703,7 +708,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
                             <td className="reihenfolge-zelle">
                               <span
                                 className="ziehpunkt"
-                                draggable={s.status === "geplant"}
+                                draggable={s.status === "geplant" && !gesperrt}
                                 onDragStart={() => setZiehIndex(vollIndex)}
                                 onDragEnd={() => {
                                   setZiehIndex(null);
@@ -718,7 +723,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
                                 type="button"
                                 className="symbol-button"
                                 onClick={() => anNeuePositionVerschieben(vollIndex, -1)}
-                                disabled={anzeigeIndex === 0 || s.status !== "geplant"}
+                                disabled={anzeigeIndex === 0 || s.status !== "geplant" || gesperrt}
                                 aria-label={`Spiel ${anzeigeIndex + 1} nach vorne verschieben`}
                               >
                                 ▲
@@ -727,7 +732,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
                                 type="button"
                                 className="symbol-button"
                                 onClick={() => anNeuePositionVerschieben(vollIndex, 1)}
-                                disabled={anzeigeIndex === echteAnzahl - 1 || s.status !== "geplant"}
+                                disabled={anzeigeIndex === echteAnzahl - 1 || s.status !== "geplant" || gesperrt}
                                 aria-label={`Spiel ${anzeigeIndex + 1} nach hinten verschieben`}
                               >
                                 ▼
@@ -748,7 +753,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
                                   // nachfolgenden Spiele) ausloesen wuerde.
                                   defaultValue={zeitEingabeWert(s.startzeitGeplant)}
                                   key={s.startzeitGeplant}
-                                  disabled={s.status !== "geplant"}
+                                  disabled={s.status !== "geplant" || gesperrt}
                                   onBlur={(e) => {
                                     const hhmm = e.target.value;
                                     if (hhmm && hhmm !== zeitEingabeWert(s.startzeitGeplant)) {

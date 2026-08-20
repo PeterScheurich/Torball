@@ -325,7 +325,12 @@ außerhalb aller Sperr-`<fieldset>`. Beim bloß **abgeschlossenen** (nicht ausge
 Teilen/Öffentlich-Freigabe unverändert bedienbar (nur `ausgecheckt` sperrt sie, nicht `istGesperrt`).
 Prüf-Hinweis (schon früher notiert): Controls in einem `disabled`-`<fieldset>` melden `.disabled ===
 false` – effektive Sperre mit `el.matches(':disabled')` prüfen (im Browser end-to-end verifiziert).
-Details: `docs/Protokolle/2026-08-20-checkout-sperre-frontend.md`.
+Details: `docs/Protokolle/2026-08-20-checkout-sperre-frontend.md`. **Nachtrag (Nutzer-Fund nach dem
+Ausrollen):** Die Spielplan-Steuerung (Startzeit-Felder, ▲▼/Drag-Reihenfolge, „Neuer Vorschlag"/
+„Spielplan erzeugen"/„Rückgängig") verließ sich bisher allein auf den Spiel-Status (`!== "geplant"`)
+– bei einem lediglich ausgecheckten Turnier sind die Spiele aber weiterhin „geplant", die
+Startzeiten blieben so als einzige Felder bedienbar. `SpielplanVerwaltung`s `gesperrt`-Prop
+deaktiviert jetzt zusätzlich alle diese Stellen (nicht mehr nur die Schiedsrichter-Einteilung).
 
 **Kennzeichnung auch in der Turnierliste (2026-08-19, Nutzer-Vorschlag):** `GET /turniere`
 reichert jedes Turnier um ein reines Anzeige-Feld `ausgecheckt: boolean` an (eine einzige
