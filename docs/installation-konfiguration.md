@@ -220,6 +220,13 @@ Manager) müssen danach separat angepasst werden – das kann das Skript nicht w
 
 Für einen lokalen Betrieb auf einem Windows-Rechner (z. B. offline am Spielort) – zwei Wege:
 
+> **Laienfreundliche Anleitungen:** Im Projekt-Wurzelverzeichnis (und damit in jedem
+> Quellcode-ZIP) liegen zwei ausführliche HTML-Anleitungen für die Zielgruppe ohne
+> Technik-Hintergrund: `Installations-Anleitung.html` (kompletter Installationsablauf inkl. aller
+> Installer-Fragen) und `Lokales-Netzwerk-Anleitung.html` (Netzwerk am Turniertag aufbauen,
+> Ergebniserfassung über Smartphones/Tablets, Fehlersuche). Dieses Kapitel hier bleibt die
+> technische Referenz.
+
 ### Ein-Klick-Installer (empfohlen)
 
 **Systemanforderungen:** Windows 10/11 (64-bit), lokale Administratorrechte (für die
@@ -248,6 +255,12 @@ per Doppelklick starten (fragt bei Bedarf per UAC nach
 Administratorrechten – nötig für die Node-/CouchDB-Installation). Das Skript
 (`deploy/installieren-windows.ps1`) übernimmt automatisiert:
 
+- **Projektordner verlegen** (nur ZIP-Installationen ohne `.git`, Frage mit Standard „ja"):
+  kopiert den entpackten Ordner nach `C:\Torball-Turniere\App` und installiert von dort weiter –
+  die Installation hängt sonst dauerhaft am Entpack-Ort (typisch: der Downloads-Ordner, den ein
+  späteres „Aufräumen" mitlöscht). Nebeneffekt: das ZIP-Update wird zum selben Ablauf (neues ZIP
+  irgendwo entpacken, `Setup.cmd`, Verlegung bejahen – der neue Stand landet über dem alten, die
+  vorhandene `backend/.env` bleibt erhalten, weil sie im ZIP nicht vorkommt).
 - **Node.js LTS** per `winget`, falls nicht vorhanden.
 - **Apache CouchDB** als Windows-Dienst über den offiziellen MSI-Installer (unbeaufsichtigt,
   eigenes Zufalls-Admin-Passwort, Prüfsumme wird vor der Installation verifiziert) – läuft bereits
@@ -257,16 +270,26 @@ Administratorrechten – nötig für die Node-/CouchDB-Installation). Das Skript
   Admin-Zugriff) – analog zu `deploy/deploy-instanz.sh` auf der Linux-Seite.
 - **Bauen** (`npm install`, `shared` zuerst, dann alle Workspaces).
 - **`backend/.env`** – nur angelegt, falls noch keine vorhanden ist; fragt dabei interaktiv nach dem
-  **Port** (Standard `3000`, mit vorgeschlagenem Standardwert, einfach Enter drücken zum
-  Übernehmen). Setzt zusätzlich `SERVE_FRONTEND=true` (siehe unten). SMTP-Mailversand wird nicht
-  hier abgefragt, sondern später über die Oberfläche eingerichtet (siehe oben).
+  **Port** (Standard `3000`, Enter übernimmt; warnt, wenn der gewählte Port auf dem Rechner
+  bereits belegt ist, und schlägt einen freien vor) und nach dem **Netzwerkzugriff** (Standard
+  „ja"): bei Ja wird `HOST=0.0.0.0` gesetzt und eine Windows-Firewall-Regel für den App-Port
+  angelegt (`-Profile Any`, da Hallen-WLANs in Windows oft als „öffentlich" gelten) – nötig für
+  den Betriebsmodus „Lokales Netzwerk" (Turnier-Codes, Ergebniserfassung über Helfer-Geräte);
+  bei Nein bleibt `HOST=127.0.0.1` (nur dieser Rechner). Setzt zusätzlich `SERVE_FRONTEND=true`
+  (siehe unten). SMTP-Mailversand wird nicht hier abgefragt, sondern später über die Oberfläche
+  eingerichtet (siehe oben) – optional und nur mit Internetzugang sinnvoll; ohne SMTP zeigt die
+  App Einladungs-/Reset-Links direkt an.
 - **`Start-Torball.cmd`** + **`Aktualisieren-Torball.cmd`** im Projektordner sowie eine Verknüpfung
   „Torball-Turniere" auf dem Desktop (startet `Start-Torball.cmd`).
 
 Erneutes Ausführen ist unschädlich (Idempotenz wie bei den Linux-Skripten): vorhandene `.env` bleibt
-unangetastet (keine erneute Abfrage), Node/CouchDB werden nur bei Bedarf nachinstalliert, die App
-wird neu gebaut. Start über die Desktop-Verknüpfung (öffnet den Browser auf dem gewählten Port);
-beim allerersten Start führt die Anmeldeseite durch die einmalige Ersteinrichtung des Admin-Kontos.
+unangetastet (keine erneute Port-Abfrage; steht darin noch `HOST=127.0.0.1`, wird das Aktivieren
+des Netzwerkzugriffs einmal **angeboten**, Standard dort „nein"), Node/CouchDB werden nur bei
+Bedarf nachinstalliert, die App wird neu gebaut. Die Firewall-Regel wird bei aktiviertem
+Netzwerkzugriff auf den aktuellen Port nachgezogen (relevant nach einem Port-Wechsel per
+`konfiguration:setzen`). Start über die Desktop-Verknüpfung (öffnet den Browser auf dem gewählten
+Port); beim allerersten Start führt die Anmeldeseite durch die einmalige Ersteinrichtung des
+Admin-Kontos.
 
 **Einzelprozess-Modus (`SERVE_FRONTEND=true`):** Anders als beim Debian-Produktivbetrieb (nginx
 liefert das Frontend + proxied `/api`, siehe unten) liefert das Backend hier das gebaute Frontend
