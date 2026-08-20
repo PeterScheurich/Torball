@@ -1,6 +1,7 @@
 import type { TorballDokument, Turnier, Wettbewerb } from "@torball/shared";
 import { findById, insertDoc } from "../repository";
 import type { TurnierExportPaket } from "./export";
+import { pruefeTurnierExportPaket } from "./validierung";
 
 /**
  * Gegenstueck zu `sammleTurnierExport`: schreibt ein Exportpaket in die eigene CouchDB. Zwei
@@ -15,8 +16,17 @@ import type { TurnierExportPaket } from "./export";
  */
 export async function importiereTurnierExport(
   paket: TurnierExportPaket,
-  optionen: { ersetzen: boolean },
+  optionen: { ersetzen: boolean; erwarteteTurnierId?: string },
 ): Promise<{ warnung?: string }> {
+  // Verpflichtende Sicherheitspruefung (fail closed), bevor irgendetwas geschrieben wird: sonst
+  // koennte ein manipuliertes Paket einer gekoppelten Instanz beliebige Dokumente (fremde Turniere,
+  // benutzer:, systemeinstellungen:global, ...) ueberschreiben oder anlegen - die Schreib-Adresse
+  // ist die mitgelieferte _id, die _rev holt schreibe() bei ersetzen:true selbst. Die aufrufenden
+  // Routen pruefen bereits vorab und antworten sauber; dieser Aufruf hier ist die letzte, nicht zu
+  // umgehende Verteidigungslinie (auch fuer kuenftige Aufrufer). Details: validierung.ts.
+  const fehler = pruefeTurnierExportPaket(paket, optionen.erwarteteTurnierId);
+  if (fehler) throw new Error(`Ungültiges Turnier-Exportpaket: ${fehler}`);
+
   async function schreibe<T extends TorballDokument>(doc: T): Promise<void> {
     const bestehend = optionen.ersetzen ? await findById<T>(doc._id) : null;
     await insertDoc({ ...doc, _rev: bestehend?._rev });

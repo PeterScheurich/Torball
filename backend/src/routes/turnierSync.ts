@@ -6,6 +6,7 @@ import { hatMindestens } from "../auth/turnierZugriff";
 import { findeAktivesCheckout, findeInstanzPerToken, liesInstanzToken } from "../sync/instanz";
 import { importiereTurnierExport } from "../sync/import";
 import { sammleTurnierExport, type TurnierExportPaket } from "../sync/export";
+import { pruefeTurnierExportPaket } from "../sync/validierung";
 import { aktuelleLokaleSyncKonfiguration } from "../lokaleSyncKonfiguration";
 
 /**
@@ -161,6 +162,12 @@ export async function turnierSyncRoutes(app: FastifyInstance): Promise<void> {
     if (!instanz) return reply.code(401).send({ error: "Instanz-Token ist ungültig oder widerrufen." });
 
     const paket = req.body.export;
+    // Inhaltliche Pruefung, bevor irgendetwas geschrieben wird: alle Dokumente muessen zu dem im
+    // Paket genannten Turnier gehoeren und den richtigen Typ tragen - sonst liesse sich ueber den
+    // Upload ein fremdes/systemweites Dokument ueberschreiben oder anlegen (siehe validierung.ts).
+    const paketFehler = pruefeTurnierExportPaket(paket);
+    if (paketFehler) return reply.code(400).send({ error: `Ungültiges Turnier-Exportpaket: ${paketFehler}` });
+
     const turnierId = paket.turnier._id;
     const bestehendesTurnier = await findById<Turnier>(turnierId);
 
@@ -175,12 +182,12 @@ export async function turnierSyncRoutes(app: FastifyInstance): Promise<void> {
       if (!instanzBenutzer || instanzBenutzer.globaleRolle !== "admin") {
         return reply.code(403).send({ error: "Nur ein Admin darf ein bestehendes Turnier auf diese Weise ersetzen." });
       }
-      const { warnung } = await importiereTurnierExport(paket, { ersetzen: true });
+      const { warnung } = await importiereTurnierExport(paket, { ersetzen: true, erwarteteTurnierId: turnierId });
       const checkoutId = await legeAktivesCheckoutAn(turnierId, instanz.instanzId, paket);
       return reply.send({ turnierId, checkoutId, warnung });
     }
 
-    const { warnung } = await importiereTurnierExport(paket, { ersetzen: false });
+    const { warnung } = await importiereTurnierExport(paket, { ersetzen: false, erwarteteTurnierId: turnierId });
     const checkoutId = await legeAktivesCheckoutAn(turnierId, instanz.instanzId, paket);
     return reply.code(201).send({ turnierId, checkoutId, warnung });
   });

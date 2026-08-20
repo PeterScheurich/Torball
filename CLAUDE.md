@@ -274,6 +274,26 @@ zusätzlich in `ergebnisToken.ts`s öffentlicher (kein Login) `PUT /ergebnis-erf
 – ein alter, noch aktiver externer Erfassungslink hätte sonst am Sperr-Mechanismus vorbei
 weiterschreiben können.
 
+**Sicherheitsprüfung des Sync-Imports (2026-08-20, aus einer Sicherheitsdurchsicht):**
+`importiereTurnierExport` (`backend/src/sync/import.ts`) schreibt jedes Paket-Dokument unter seiner
+mitgelieferten `_id` (bei `ersetzen: true` holt es die `_rev` des Zieldokuments selbst) – die
+Schreib-Adresse ist also die `_id`, während Queries (`findAllByType`) über das `docType`-**Feld**
+laufen. Ohne Prüfung konnte eine gekoppelte Instanz darüber **beliebige** Dokumente überschreiben
+oder anlegen (fremdes Turnier, `benutzer:<x>` mit `globaleRolle:"admin"`, `systemeinstellungen:global`,
+…) und sich so zum Admin machen – erreichbar für jeden, der ein Turnier mit `schreiben_voll`
+auschecken kann (Manager auf eigenem Turnier; per `zugriffFuerAlleBenutzer` auf der Demo sogar ein
+„benutzer"). Fix: die reine Funktion `pruefeTurnierExportPaket` (`backend/src/sync/validierung.ts`,
+ohne DB, daher im normalen `npm test` getestet) prüft je Dokument **`_id`-Präfix UND `docType`-Feld**
+(beide nötig – s. o.) sowie die Turnier-Zugehörigkeit (`turnierId`/`mannschaftId`), inklusive der
+create-only-Stammdaten (sonst ließe sich über das `vereine`-Array ein `benutzer:`-Dokument
+**anlegen**). Aufgerufen (fail closed) als nicht umgehbare erste Zeile in `importiereTurnierExport`
+(wirft bei Verstoß) **und** vorab in beiden Routen: `POST /instanzen/checkin` (flaches Body-Schema
+ergänzt, das zuvor fehlte; manipulierter Eintrag wird verworfen+geloggt statt die ganze Anfrage
+abzubrechen, `erwarteteTurnierId = eintrag.turnierId`) und `POST /turniere/sync-import` (400 bei
+Verstoß). **Bei jeder Erweiterung von `TurnierExportPaket` (neuer Dokumenttyp im Export) auch die
+Validierung mitziehen** – sonst würde ein neuer Typ entweder fälschlich abgelehnt oder ungeprüft
+durchgelassen. Details: `docs/Protokolle/2026-08-20-turnier-sync-import-absicherung.md`.
+
 **Frontend-Kennzeichnung der Sperre (2026-08-19, bewusst schlank statt vollständigem
 `istGesperrt`-Muster):** Nutzer-Vorgabe: statt jedes einzelne Feld wie bei `turnierGesperrt()`
 proaktiv zu deaktivieren, wird nur der Turniername in der `<h1>` (erscheint auf jedem Reiter, da

@@ -7,6 +7,11 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Sicherheitskorrektur Turnier-Sync:** Beim Zurückspielen eines Turnierstands von einer lokalen
+  Installation prüft der Server jetzt streng, dass jedes übertragene Dokument tatsächlich zu genau
+  diesem einen Turnier gehört. Zuvor hätte ein manipuliertes Übertragungspaket fremde oder
+  systemweite Daten überschreiben oder anlegen können (u. a. eine unberechtigte Rechteausweitung).
+  Der normale Sync-Betrieb ändert sich dadurch nicht.
 - Neue Turnierregel „Bundesland-Regel bei der Spielplan-Erstellung" (Standard: aus): steuert, ob
   Mannschaften desselben Bundeslands bei der Spielplan-Erzeugung möglichst früh gegeneinander
   eingeplant werden – gedacht für Wettbewerbe mit festem Regionalbezug wie Bundesliga oder

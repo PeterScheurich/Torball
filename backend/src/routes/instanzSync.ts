@@ -5,6 +5,7 @@ import { erzeugeToken, hashe } from "../auth/token";
 import { sammleTurnierExport, type TurnierExportPaket } from "../sync/export";
 import { importiereTurnierExport } from "../sync/import";
 import { findeAktivesCheckout, findeInstanzPerToken, liesInstanzToken } from "../sync/instanz";
+import { pruefeTurnierExportPaket } from "../sync/validierung";
 
 /**
  * Turnier-Sync (Grundlage, Abschnitt 21.3/23): oeffentliche Routen fuer die Kommunikation
@@ -33,6 +34,28 @@ interface CheckinBody {
   vollstaendigeUebertragung?: { turnierId: string; export: TurnierExportPaket }[];
   bestaetigteCheckoutIds?: string[];
 }
+
+// Flaches Body-Schema: begrenzt die aeussere Struktur (bisher fehlte hier jedes Schema), laesst den
+// inneren Aufbau des Exportpakets aber bewusst offen (additionalProperties) - dessen inhaltliche
+// Pruefung uebernimmt pruefeTurnierExportPaket, nicht eine hier haendisch gepflegte, leicht
+// veraltende Schema-Kopie.
+const checkinSchema = {
+  type: "object",
+  properties: {
+    bestaetigteCheckoutIds: { type: "array", items: { type: "string" } },
+    vollstaendigeUebertragung: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["turnierId", "export"],
+        properties: {
+          turnierId: { type: "string", minLength: 1 },
+          export: { type: "object", additionalProperties: true },
+        },
+      },
+    },
+  },
+} as const;
 
 export async function instanzSyncRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: KopplungEinloesenBody }>(
@@ -71,7 +94,7 @@ export async function instanzSyncRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  app.post<{ Body: CheckinBody }>("/instanzen/checkin", async (req, reply) => {
+  app.post<{ Body: CheckinBody }>("/instanzen/checkin", { schema: { body: checkinSchema } }, async (req, reply) => {
     const tokenWert = liesInstanzToken(req);
     if (!tokenWert) return reply.code(401).send({ error: "Instanz-Token fehlt." });
     const instanz = await findeInstanzPerToken(tokenWert);
@@ -96,7 +119,16 @@ export async function instanzSyncRoutes(app: FastifyInstance): Promise<void> {
     for (const eintrag of req.body.vollstaendigeUebertragung ?? []) {
       const checkout = await findeAktivesCheckout(eintrag.turnierId);
       if (!checkout || checkout.instanzId !== instanz.instanzId || checkout.status !== "aktiv") continue;
-      await importiereTurnierExport(eintrag.export, { ersetzen: true });
+      // Inhaltliche Pruefung des Pakets, bevor es geschrieben wird: nur Dokumente, die tatsaechlich
+      // zu genau diesem ausgecheckten Turnier gehoeren, duerfen ersetzt werden. Ein manipuliertes
+      // Paket wird verworfen (nicht die ganze Anfrage abgebrochen - der Rest laeuft weiter), damit
+      // ein einzelner fehlerhafter Eintrag den Check-in nicht komplett scheitern laesst.
+      const fehler = pruefeTurnierExportPaket(eintrag.export, eintrag.turnierId);
+      if (fehler) {
+        req.log.warn({ turnierId: eintrag.turnierId, instanzId: instanz.instanzId, fehler }, "Ungültiges Sync-Paket im Check-in verworfen");
+        continue;
+      }
+      await importiereTurnierExport(eintrag.export, { ersetzen: true, erwarteteTurnierId: eintrag.turnierId });
     }
 
     // Ausstehende Downloads: alle noch nicht bestaetigten ("angefordert") Checkouts dieser
