@@ -84,6 +84,15 @@ Windows-Installation, siehe unten). `konfiguration:setzen` quotet Werte mit
 Leerzeichen/`#` automatisch (gleiche Sonderzeichen-Regel wie in
 „Betrieb / Infrastruktur").
 
+**npm-Override `deepmerge-ts: ^8.0.0`** (Root-`package.json`, 2026-08-21): behebt
+GHSA-ggr8-5vv4-36mx („3 high severity vulnerabilities", in Wahrheit eine Kette
+`mailparser` → `html-to-text` → `deepmerge-ts<8`) – `html-to-text@10` pinnt `^7`, der Fix steckt
+erst in 8. Kann entfallen, sobald `html-to-text` selbst auf `deepmerge-ts@8` geht (bei
+`mailparser`-/`html-to-text`-Updates prüfen). Zudem laufen `npm install`/`npm ci` in den drei
+Betriebs-Läufen (Windows-Installer, `torball aktualisieren`, `deploy-instanz.sh`) mit
+`--no-audit --no-fund` – Audit-Hinweise verunsichern die Zielgruppe nur; beobachtet und behoben
+werden Schwachstellen in der Entwicklung (dort `npm install` ohne Flags).
+
 ## Architektur
 
 **CouchDB als einzige Datenquelle, ein `docType`-Discriminator statt vieler
