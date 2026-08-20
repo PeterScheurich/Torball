@@ -14,6 +14,8 @@ Checkout dieses Repos hat sie nicht.
 - [Testumgebung starten](testumgebung-starten.md)
 - [Besonderheiten der Entwicklungs-Umgebung](entwicklungs-umgebung.md)
 - [Besonderheiten der Demo-Umgebung](demo-umgebung.md)
+- [Entwicklungs-Kanban-Board](kanban-board.md)
+- [Torball-Protokoll-Panel – Konzept](torball-protokoll-panel-konzept.md)
 - [Torball – Gesamtspezifikation (fachlich & technisch)](torball_gesamtspezifikation.md)
 
 ## Weitere Ordner

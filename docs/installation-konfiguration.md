@@ -291,6 +291,29 @@ npm run torball --workspace=backend -- aktualisieren
 das Aktualisieren (Git-Pull falls Git-Repo, `npm install`, Neubau) auch ein Doppelklick auf
 `Aktualisieren-Torball.cmd` im Projektordner.
 
+### Turnier-Sync: lokale Installation mit der Zentralen Plattform koppeln
+
+Wurde ein Turnier auf der Zentralen Plattform geplant, soll am Spieltag aber auf dieser lokalen
+Installation (ohne verlässliches Internet) weiterverwaltet werden, verbindet der **Turnier-Sync**
+beide Instanzen dauerhaft („Instanz-Kopplung"):
+
+1. **Auf der Zentralen Plattform** (im Browser): unter „Mein Profil" einen einmaligen
+   **Kopplungscode** erzeugen.
+2. **Auf der lokalen Installation**: unter „Einstellungen" → „Turnier-Sync (Lokale Installation)"
+   die Server-Adresse und den Kopplungscode eintragen – die Kopplung bleibt danach dauerhaft
+   bestehen (der Code selbst ist nur einmalig gültig).
+3. **Turnier herunterladen**: auf der Zentralen Plattform im Turnier den Download an die lokale
+   Installation anstoßen; die lokale Installation holt ihn beim nächsten automatischen Check-in
+   (läuft alle 45 Sekunden im Hintergrund) ab.
+
+Solange das Turnier „ausgecheckt" ist, ist es auf dem Server gegen direkte Änderungen gesperrt
+(rot gekennzeichneter Turniername bzw. Stop-Schild in der Turnierliste); die lokale Installation
+überträgt den vollständigen Turnierstand bei jedem Check-in automatisch zurück, sobald eine
+Verbindung besteht. Nach dem Turnier gibt „Zum Server hochladen"/„Freigabe aufheben" das Turnier
+auf dem Server wieder frei. Details für Anwender: In-App-Hilfe, Thema „Lokale Installation &
+Turnier-Sync"; technischer Hintergrund: `docs/Protokolle/2026-08-13-turnier-sync-grundlage.md`
+und `docs/Protokolle/2026-08-19-turnier-sync-vollsync-sperre.md`.
+
 ### Manuell
 
 1. **Node.js LTS** installieren (`winget install OpenJS.NodeJS.LTS` oder von nodejs.org).

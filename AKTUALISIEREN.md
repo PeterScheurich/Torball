@@ -16,8 +16,9 @@ Das Skript:
 3. Baut die Anwendung neu.
 
 Am Ende bleibt ein Fenster offen, das mit einer Meldung abschließt – erst dann das Fenster
-schließen. Läuft der Server gerade (eigenes Fenster „Torball-Turniere (Server – dieses Fenster
-offen lassen)“), dieses vorher schließen, danach über die Desktop-Verknüpfung neu starten.
+schließen. Läuft der Server gerade (startet minimiert in der Taskleiste, Fenstertitel
+„Torball-Turniere-Server - NICHT SCHLIESSEN!“), dieses Fenster vorher über die Taskleiste
+schließen, danach über die Desktop-Verknüpfung neu starten.
 
 **Wichtig:** Turnierdaten selbst sind davon nicht betroffen – sie liegen in der Datenbank
 (CouchDB), nicht im Projektordner. Ein Update überschreibt keine Turniere, Mannschaften oder

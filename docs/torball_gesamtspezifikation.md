@@ -23,6 +23,7 @@
 | Erkenntnisse aus der Umsetzung (Selbstregistrierung) | 12.08.2026 | Abschnitt 10.2 präzisiert: entgegen der ursprünglichen Planung („kein Self-Service in der ersten Version") wurde eine optionale, von einem Admin aktivierbare Selbstregistrierung umgesetzt (Systemeinstellungen, standardmäßig aus) – u. a. für Demo-Instanzen, nie mit automatischer Admin-Rolle. Details siehe `docs/Protokolle/2026-08-12-selbstregistrierung.md`. |
 | Spezifikations-Schärfung (Offline-/Lokal-Betrieb, erste Ausbaustufe) | 13.08.2026 | Abschnitte 21.2/21.3 präzisiert: Umsetzungsreihenfolge der drei Betriebsmodi (Abschnitt 19) festgelegt – **zuerst „Lokales Netzwerk" per Turnier-Codes**, da ohne PouchDB/Sync auskommend (ein Host mit lebender CouchDB im LAN); die beiden anderen Ausprägungen (lokal ohne jede Verbindung planen + später hochladen; Sync-Resilienz der Zentralen Plattform per PouchDB↔CouchDB, Abschnitt 23) bleiben als **nächste, noch nicht im Detail spezifizierte Ausbauschritte vorgemerkt**, bewusst nicht verworfen. Zugriffsstufen dafür von einer binären „schreiben" auf eine dreistufige Abstufung geschärft (deckt eine bereits bestehende Ungenauigkeit im Berechtigungsmodell mit auf, siehe 21.2). Noch kein Code, reine Spezifikation.|
 | Erkenntnisse aus der Umsetzung (Pause zwischen Spielen) | 20.08.2026 | Abschnitte 5.1 + 8 präzisiert: Zeitplanung berücksichtigte bisher keinen Puffer zwischen zwei aufeinanderfolgenden Spielen auf demselben Feld, obwohl bereits als „konfigurierbare Toleranz" erwähnt – neues konfigurierbares Feld „Pause zwischen Spielen" (Standard 10 Min.), fließt zusätzlich zur Halbzeitpause in die Startzeit-Berechnung ein. Details siehe `docs/Protokolle/2026-08-20-pause-zwischen-spielen.md`. |
+| Erkenntnisse aus der Umsetzung (Turnier-Sync / Instanz-Kopplung) | 20.08.2026 | Abschnitte 19, 21.3 und 23 aktualisiert: die am 13.08. noch als „vorgemerkt" geführte Sync-Resilienz der Zentralen Plattform ist inzwischen umgesetzt – aber bewusst **ohne** PouchDB↔CouchDB: eine strikte 1:1-Instanz-Kopplung mit Checkout-Modell (Server-Turnier ist entweder frei oder an genau eine lokale Installation ausgecheckt), Voll-Synchronisation per Check-in alle 45 s und serverseitiger Schreibsperre während des Checkouts. Der ursprünglich spezifizierte PouchDB-Sync (23.1/23.2) bleibt für den Standalone-Modus vorgemerkt. Details siehe `docs/Protokolle/2026-08-13-turnier-sync-grundlage.md` und `docs/Protokolle/2026-08-19-turnier-sync-vollsync-sperre.md`. |
 
 Dieses Dokument ersetzt die einzelnen Vorgängerdokumente inhaltlich (führt sie zusammen). Sie bleiben als Historie im Projekt erhalten.
 
@@ -497,10 +498,12 @@ Internet
 ```
 Vollständige Benutzerverwaltung, automatische Synchronisation, öffentlich abrufbare Live-Ergebnisse.
 
-**Umsetzungsreihenfolge (Stand 13.08.2026, siehe 21.3):** „Lokales Netzwerk" zuerst (per
-Turnier-Codes, kommt ohne PouchDB/Sync aus), die Sync-Resilienz der „Zentralen Plattform" und der
-„Standalone"-Modus (beide brauchen voraussichtlich PouchDB↔CouchDB) sind als nächste Ausbauschritte
-vorgemerkt, aber noch nicht spezifiziert.
+**Umsetzungsreihenfolge (Stand 20.08.2026, siehe 21.3 und 23):** „Lokales Netzwerk" wurde zuerst
+umgesetzt (per Turnier-Codes, kommt ohne PouchDB/Sync aus). Die Sync-Resilienz der „Zentralen
+Plattform" ist seit dem 13.08. ebenfalls umgesetzt – bewusst **ohne** PouchDB, über eine strikte
+1:1-Instanz-Kopplung mit Checkout-Modell (siehe 23). Offen bleibt nur noch der „Standalone"-Modus
+(ein Rechner, volle PouchDB-Synchronisation im Browser) – fest für ein kommendes Release
+eingeplant, aber noch nicht gebaut.
 
 ## 20. Datenmodell
 
@@ -848,15 +851,21 @@ das unterscheidet dieses Szenario bewusst von den beiden noch offenen Ausprägun
   wird dem Account zugeordnet → Codes werden ungültig; ohne Account ordnet der Admin das Turnier
   manuell zu.
 
-**Vorgemerkt, noch nicht spezifiziert (nächste Ausbauschritte):**
-- Turnier komplett ohne jede Verbindung planen und erst später (bei Verbindung) auf den zentralen
-  Server hochladen/anlegen – vermutlich ohne echtes bidirektionales Sync lösbar (lokaler Entwurf im
-  Browser, Anlage über die bestehende API sobald online).
-- Echte Sync-Resilienz für die „Zentrale Plattform" (ein am Server angelegtes Turnier am Spielort
-  ohne Verbindung weiternutzen und später synchronisieren) sowie der ursprünglich spezifizierte
-  „Standalone"-Modus – beide vermutlich nur mit dem in Abschnitt 17/23 vorgesehenen PouchDB↔CouchDB
-  an Bord sauber lösbar. Bewusst zurückgestellt, bis der Bedarf (v. a. das noch nicht gebaute
-  digitale Live-Protokoll, Abschnitt 22) das verlangt – nicht verworfen.
+**Stand der weiteren Ausbauschritte (aktualisiert 20.08.2026):**
+- **Umgesetzt (13.08.2026, anders als hier ursprünglich vermutet ohne PouchDB):** die
+  Sync-Resilienz der „Zentralen Plattform" – ein am Server geplantes Turnier am Spielort auf einer
+  lokalen Installation ohne verlässliche Verbindung weiternutzen und später zurückspielen. Gelöst
+  über die **Instanz-Kopplung mit Checkout-Modell** (siehe Abschnitt 23), nicht über
+  PouchDB↔CouchDB. Der am 13.08. hier beschriebene Weg „Benutzer meldet sich an → Turnier wird dem
+  Account zugeordnet → Codes werden ungültig" ist damit für dieses Szenario überholt; Turnier-Codes
+  und Instanz-Kopplung existieren unabhängig nebeneinander (Codes = kontoloser Zugriff auf eine
+  lebende Instanz im LAN, Kopplung = zwei getrennte Instanzen mit zeitweiser Verbindung).
+- **Weiterhin vorgemerkt, noch nicht spezifiziert:** Turnier komplett ohne jede Verbindung planen
+  und erst später (bei Verbindung) auf den zentralen Server hochladen/anlegen – vermutlich ohne
+  echtes bidirektionales Sync lösbar (lokaler Entwurf im Browser, Anlage über die bestehende API
+  sobald online) – sowie der ursprünglich spezifizierte **„Standalone"-Modus** (vermutlich nur mit
+  dem in Abschnitt 17/23 vorgesehenen PouchDB↔CouchDB sauber lösbar; fest für ein kommendes
+  Release eingeplant).
 
 ### 21.4 Passwort-Richtlinien und -Reset
 
@@ -933,6 +942,39 @@ Gespeichert je Abschnitt:
 ```
 
 ## 23. Synchronisation
+
+### 23.0 Umgesetzte erste Ausbaustufe: Instanz-Kopplung mit Checkout-Modell (13.08.2026, erweitert 19.08.2026)
+
+Für den häufigsten Fall – Turnier auf der Zentralen Plattform geplant, am Spieltag kein/
+unzuverlässiges Internet am Spielort – ist **bewusst kein genereller Sync mit Merge-/Konfliktlogik**
+umgesetzt (der bleibt für den Standalone-Modus vorgemerkt, siehe 23.1/23.2), sondern eine strikte
+**1:1-Beziehung („Checkout")** zwischen zwei getrennten CouchDB-Instanzen:
+
+- Zu jedem Zeitpunkt ist ein Server-Turnier entweder **frei** oder an genau **eine** lokale
+  Installation **ausgecheckt** (`TurnierCheckout`, Zustände `angefordert → aktiv → freigegeben`).
+- Die Verbindung ist eine dauerhafte **Instanz-Kopplung**: einmaliger Kopplungscode (im
+  Benutzerprofil erzeugt) wird gegen ein dauerhaftes, gehashtes Instanz-Token getauscht;
+  Authentifizierung der Instanz-zu-Instanz-Aufrufe per `Authorization: Bearer`, nicht per
+  Cookie/Session (zwei Backend-Prozesse, kein Browser).
+- Die lokale Installation meldet sich per **Check-in** (alle 45 s, backend-seitig, nicht an einen
+  offenen Browser-Tab gebunden) aktiv beim Server – der Server kann sie wegen NAT/Firewall i. d. R.
+  nicht direkt erreichen; ein serverseitig angestoßener Download wird als Auftrag hinterlegt und
+  beim nächsten Check-in mitgeliefert.
+- Der Check-in überträgt seit dem 19.08.2026 den **vollständigen Turnierstand** (nicht mehr nur
+  Ergebnisse) automatisch zurück – derselbe Export/Import-Mechanismus wie beim initialen
+  Download/Upload, kein Konfliktabgleich („wer hat Recht"): solange ausgecheckt, ist der lokale
+  Stand maßgeblich.
+- Während des Checkouts ist das Server-Turnier **serverseitig schreibgesperrt** (409) und im
+  Frontend gekennzeichnet (roter Turniername „(gesperrt)", Stop-Schild in der Turnierliste) –
+  eine direkte Server-Änderung würde beim nächsten Check-in ohnehin überschrieben. „Freigabe
+  aufheben" bleibt der manuelle Notausstieg bei Rechnerverlust/-defekt der lokalen Installation.
+- `BenutzerId`-Referenzen werden beim Import verworfen (auf der Zielinstanz bedeutungslos), die
+  denormalisierten `*Name`-Felder bleiben als Historie erhalten.
+
+Details: `docs/Protokolle/2026-08-13-turnier-sync-grundlage.md` (Grundmodell) und
+`docs/Protokolle/2026-08-19-turnier-sync-vollsync-sperre.md` (Voll-Synchronisation + Sperre).
+Die folgenden Unterabschnitte 23.1–23.3 beschreiben den **ursprünglich spezifizierten, weiterhin
+für den Standalone-Modus vorgemerkten** PouchDB-Ansatz.
 
 ### 23.1 Technologie
 

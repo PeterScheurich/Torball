@@ -20,7 +20,7 @@ werden (siehe „Falls Port 3000 schon belegt ist" unten), sonst wirkt die
 Änderung nicht.
 
 **Werte mit Sonderzeichen** (z. B. `#`, Leerzeichen) in `backend/.env` immer
-in Anführungszeichen setzen (`SMTP_PASSWORD="Geheim#123"`) - ohne Anführungs-
+in Anführungszeichen setzen (`COUCHDB_PASSWORD="Geheim#123"`) - ohne Anführungs-
 zeichen wird alles ab einem `#` als Kommentar abgeschnitten, was zu
 schwer nachvollziehbaren Fehlern führt (z. B. „Authentication credentials
 invalid" bei einem eigentlich korrekten Passwort).
@@ -83,6 +83,16 @@ Ohne Befehl oder mit `--hilfe` zeigt es die verfügbaren Befehle. Aktuell:
 
 - `benutzer:liste` – listet alle Benutzer mit E-Mail, Rolle und Sperr-Status.
 - `benutzer:entsperren --email="admin@example.com"` – entsperrt einen Benutzer.
+- `konfiguration:anzeigen` – zeigt die aktuelle `backend/.env` (Passwörter maskiert).
+- `konfiguration:setzen --schluessel="PORT" --wert="3005"` – ändert gezielt einen
+  `.env`-Wert (feste Allowlist, Neustart des Backends nötig).
+- `aktualisieren` – Git-Pull (falls Git-Repo), `npm install`, Neubau aller
+  Workspaces (v. a. für die lokale Windows-Installation gedacht).
+- `demo:beispieldaten` / `demo:snapshot:erstellen` /
+  `demo:snapshot:wiederherstellen` – Demo-Instanz-Befehle, nur bei
+  `DEMO_SNAPSHOT_ERLAUBT=true` (siehe `docs/demo-umgebung.md`).
+- `mail:bericht:erstellen` – manueller Mail-Postfach-Berichtslauf, nur bei
+  `MAIL_POSTFACH_AKTIV=true` (siehe `docs/entwicklungs-umgebung.md`).
 
 Läuft unabhängig vom Backend-Server (keine laufende `npm run dev:backend`-
 Instanz nötig), verbindet sich aber direkt mit derselben CouchDB (braucht also
@@ -91,18 +101,14 @@ dieser Datei ergänzt.
 
 ## E-Mail-Versand (optional)
 
-Für Einladungen und Passwort-Reset per echter Mail in `backend/.env`:
+Der SMTP-Versand (für Einladungen und Passwort-Reset) wird **nicht** mehr über
+`backend/.env` konfiguriert, sondern in der Oberfläche: **Admin →
+Systemeinstellungen → „E-Mail-Versand (SMTP)"** (Host, Port, Zugangsdaten,
+Absender; „Verbindung testen"-Knopf; eigener Schalter „E-Mail-Versand
+aktivieren"). In `backend/.env` gehört nur noch `FRONTEND_URL` (Basis-URL für
+die Links in den Mails, lokal `http://localhost:5173`).
 
-```
-SMTP_HOST=smtp.beispiel.de
-SMTP_PORT=587
-SMTP_USER=turniere@beispiel.de
-SMTP_PASSWORD="das-passwort"
-SMTP_FROM="Torball-Turniere <turniere@beispiel.de>"
-FRONTEND_URL=http://localhost:5173
-```
-
-Fehlen diese Variablen (oder eine davon), fällt das Backend automatisch auf
-die alte Lösung zurück: Der Einladungslink kommt direkt in der API-Antwort
-zurück, der Passwort-Reset-Link landet im Server-Log. Kein Absturz, keine
-Fehlermeldung - einfach kein Mailversand.
+Ist der Versand nicht aktiviert oder unvollständig konfiguriert, fällt das
+Backend automatisch auf die alte Lösung zurück: Der Einladungslink kommt
+direkt in der API-Antwort zurück, der Passwort-Reset-Link landet im
+Server-Log. Kein Absturz, keine Fehlermeldung - einfach kein Mailversand.

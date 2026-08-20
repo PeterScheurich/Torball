@@ -48,10 +48,9 @@ npm run torball --workspace=backend -- demo:snapshot:erstellen
 Alle `demo:*`-Befehle sind zusätzlich hinter `DEMO_SNAPSHOT_ERLAUBT=true` (`backend/.env`)
 gesperrt – bewusst nie auf Prod aktiv, da sie ganze Datenbestände ersetzen/überschreiben.
 
-> **Status (2026-08-13):** Der Mechanismus ist fertig implementiert und committed, aber der
-> systemd-Timer läuft noch nicht auf der echten Demo-Instanz – der nächtliche Reset ist dort
-> aktuell noch **nicht aktiv**. Bis zum Rollout sammeln sich Testdaten dort wie auf einer
-> normalen Instanz an.
+> **Status (2026-08-14):** Der systemd-Timer läuft auf der echten Demo-Instanz – der nächtliche
+> Reset ist dort **aktiv**. Die Beispieldaten wurden zuletzt am 20.08.2026 aktualisiert
+> (`demo:beispieldaten` + `demo:snapshot:erstellen` erneut ausgeführt).
 
 ## Was bewusst NICHT auf der Demo-Instanz aktiv ist
 
@@ -70,5 +69,7 @@ nutzbar (auch auf Prod einsetzbar).
 
 ## Weiterführend
 
-Architektur-Details zu Snapshot/Reset, Systemeinstellungen und der Kanban-Board-Synchronisation
-stehen in `CLAUDE.md` (Abschnitt „Architektur") sowie in `docs/kanban-board.md`.
+Architektur-Details zu Snapshot/Reset und Systemeinstellungen stehen in `CLAUDE.md` (Abschnitt
+„Architektur"). Das Entwicklungs-Kanban-Board (`docs/kanban-board.md`) existiert seit dem
+15.08.2026 nur noch auf der Entwicklungsinstanz – ein Abgleich der Kartenstände mit Demo/Prod
+findet nicht mehr statt.

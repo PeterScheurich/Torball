@@ -31,9 +31,11 @@ Turnierseite und einer barrierefreien Bedienung.
 - **Turnier-Sync für echten Offline-Betrieb**: ein auf der zentralen Plattform
   geplantes Turnier lässt sich auf eine **lokale Installation** herunterladen
   und dort auch ohne (oder mit unzuverlässiger) Internetverbindung am
-  Spielort weiterverwalten – Ergebnisse laufen automatisch zurück, sobald
-  wieder eine Verbindung besteht (siehe „Lokal auf einem Windows-Rechner
-  nutzen" unten).
+  Spielort weiterverwalten – der vollständige Turnierstand (Ergebnisse,
+  Regeln, Mannschaften, Freigaben) läuft automatisch zurück, sobald wieder
+  eine Verbindung besteht; das Server-Turnier ist währenddessen gegen
+  direkte Änderungen gesperrt und entsprechend gekennzeichnet (siehe
+  „Lokal auf einem Windows-Rechner nutzen" unten).
 - **Benutzerverwaltung** mit Rollen, Einladungs-Flow, Zwei-Faktor-Anmeldung,
   optionaler Selbstregistrierung sowie Login-Sperre nach Fehlversuchen; die
   Turnierliste zeigt, wer ein Turnier angelegt/zuletzt bearbeitet/abgeschlossen hat.
@@ -124,8 +126,9 @@ npx tsx --test src/spielplan/planung.test.ts
 ## Konsolen-Tool
 
 Administrative Aufgaben ohne Web-Login – z. B. einen gesperrten Admin entsperren,
-`backend/.env`-Werte wie Port oder SMTP nachträglich ändern, oder die Installation
-aktualisieren (Git-Pull falls vorhanden + Neubau):
+`backend/.env`-Werte wie den Port nachträglich ändern, oder die Installation
+aktualisieren (Git-Pull falls vorhanden + Neubau). Der E-Mail-Versand (SMTP)
+wird dagegen in der Oberfläche gepflegt (Admin → Systemeinstellungen):
 
 ```bash
 npm run torball --workspace=backend -- --hilfe
