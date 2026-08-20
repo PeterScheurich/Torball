@@ -32,11 +32,14 @@ Ergebnisse.
 - **Installation aus einem heruntergeladenen ZIP** (kein Git-Repository vorhanden):
   `Aktualisieren-Torball.cmd` baut nur den vorhandenen Stand neu – **es wird dabei kein neuer
   Quellcode heruntergeladen.** Das Skript weist am Ende deutlich darauf hin, falls das auf diese
-  Installation zutrifft. Für eine neue Version muss vorher das aktuelle Quellcode-ZIP erneut
-  heruntergeladen und der Projektordnerinhalt (außer der eigenen `backend/.env`) damit ersetzt
-  werden. Am einfachsten: neu entpacken in einen anderen Ordner, dann `backend/.env` aus der alten
-  Installation in den neuen Ordner kopieren und dort `Setup.cmd` erneut ausführen (überschreibt
-  eine vorhandene `.env` nicht).
+  Installation zutrifft. Für eine neue Version: das aktuelle Quellcode-ZIP erneut herunterladen,
+  irgendwo entpacken und dort `Setup.cmd` starten – die Frage „Projektordner nach
+  `C:\Torball-Turniere\App` verlegen?“ mit „j“ beantworten. Der neue Quellcode landet dann über
+  dem alten Stand, die vorhandene `backend/.env` (und damit die Konfiguration) bleibt erhalten,
+  ebenso alle Turnierdaten in der Datenbank. (Voraussetzung: die Installation liegt bereits unter
+  `C:\Torball-Turniere\App` – bei älteren Installationen an einem anderen Ort einmalig
+  `backend/.env` in den neu entpackten Ordner kopieren und dort `Setup.cmd` ausführen, ab dann
+  gilt der einfache Weg.)
 
 ## Konfiguration ändern (z. B. Port), ohne neu zu installieren
 

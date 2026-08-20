@@ -638,7 +638,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie richte ich eine lokale Installation ein?",
         text: [
-          "Unter Windows gibt es einen Ein-Klick-Installer: {{download-quellcode}} (direkt von diesem Server) und danach entpacken. Starte darin die Datei „Setup.cmd“ auf der obersten Ebene per Doppelklick – das Skript richtet alles Nötige automatisch ein.",
+          "Unter Windows gibt es einen Ein-Klick-Installer: {{download-quellcode}} (direkt von diesem Server) und danach entpacken. Starte darin die Datei „Setup.cmd“ auf der obersten Ebene per Doppelklick – das Skript richtet alles Nötige automatisch ein und bietet dabei an, den Ordner an seinen dauerhaften Platz (C:\\Torball-Turniere\\App) zu verlegen; diese Frage am besten mit „Ja“ beantworten, damit die Installation nicht im Downloads-Ordner hängen bleibt. Eine ausführliche Schritt-für-Schritt-Anleitung liegt als „Installations-Anleitung.html“ direkt im entpackten Ordner.",
           {
             hinweis:
               "Dafür ist einmalig eine Internetverbindung nötig (für die Downloads) – danach läuft die lokale Installation komplett offline.",

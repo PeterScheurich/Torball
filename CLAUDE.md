@@ -1454,6 +1454,21 @@ dieser Version gilt der folgende Ablauf:
   ist noch offen. Details: `docs/Protokolle/2026-08-12-windows-installer-option-a.md`,
   Bugfix-Hintergrund: „Nebenbefunde" in `docs/Protokolle/2026-08-13-turnier-sync-grundlage.md`.
 
+**Projektordner-Verlegung + Installations-Anleitung (2026-08-21, Nutzer-Fund):** Das Quellcode-ZIP
+wird erfahrungsgemäß im Downloads-Ordner entpackt und dort installiert – die komplette
+Installation (Programmdateien, `backend/.env`, Ziel der Desktop-Verknüpfung) hängt dann an einem
+Ordner, den ein späteres „Downloads aufräumen" mitlöscht. `installieren-windows.ps1` bietet
+deshalb als Schritt 0 an (nur ZIP-Installationen ohne `.git`, Standard „ja"), den Projektordner
+nach **`C:\Torball-Turniere\App`** zu kopieren und von dort weiter zu installieren – gebündelt
+beim übrigen `$TorballOrdner`-Inhalt (CouchDB, Passwortdateien). Nebeneffekt: das ZIP-**Update**
+ist damit derselbe Ablauf (neues ZIP irgendwo entpacken, `Setup.cmd`, Verlegung bejahen – der
+neue Stand landet über dem alten, `backend/.env` bleibt erhalten, weil sie im ZIP nicht vorkommt;
+`AKTUALISIEREN.md` entsprechend angepasst). Bei Ablehnung nur eine Warnung, wenn der Pfad nach
+Downloads/Temp/Desktop aussieht. Dazu **`Installations-Anleitung.html`** im Wurzelverzeichnis
+(landet mit im ZIP neben `Setup.cmd`): ausführliche, laienfreundliche Schritt-für-Schritt-
+Anleitung inkl. aller Installer-Fragen – bei neuen/geänderten Fragen im Installer diese Datei
+mitziehen.
+
 **Netzwerkzugriff der lokalen Windows-Installation (2026-08-21, Nutzer-Fund):** Der Installer
 schrieb immer `HOST=127.0.0.1` – damit war die lokale Installation aus dem LAN **gar nicht**
 erreichbar und der Betriebsmodus „Lokales Netzwerk" (Turnier-Codes, Helfer-Erfassung) lief an

@@ -129,6 +129,45 @@ function Frage-Netzwerkzugriff {
     return ($antwort -in @("j", "J", "ja", "Ja", "JA"))
 }
 
+# --- [0/6] Projektordner an einen dauerhaften Ort verlegen ---------------------------------------
+# Alles, was dieses Skript ausserhalb des Projektordners ablegt, liegt gebuendelt unter
+# C:\Torball-Turniere (Nutzer-Vorgabe 2026-08-19, siehe Kommentar beim CouchDB-Schritt) - und seit
+# 2026-08-21 gehoert auf Wunsch auch der Projektordner selbst dorthin (C:\Torball-Turniere\App):
+# Live-Erfahrung: das Quellcode-ZIP wird typischerweise im Downloads-Ordner entpackt und dort
+# installiert - die komplette Installation (Programmdateien, backend/.env, Ziel der Desktop-
+# Verknuepfung) haengt dann an einem Ordner, der beim naechsten "Downloads aufraeumen" mitgeloescht
+# wird. Nur fuer ZIP-Installationen (kein .git) - wer per git clone installiert, hat seinen
+# Ablageort bewusst gewaehlt. Praktischer Nebeneffekt: ein spaeteres Update per neuem ZIP wird
+# damit zum selben Ablauf (neues ZIP irgendwo entpacken, Setup.cmd starten, Verlegung bejahen -
+# der neue Quellcode landet ueber dem alten in App\, die dortige backend/.env bleibt erhalten,
+# weil sie im ZIP nicht vorkommt).
+$TorballOrdner = "C:\Torball-Turniere"
+$AppZielOrdner = Join-Path $TorballOrdner "App"
+if (-not (Test-Path (Join-Path $RepoRoot ".git")) -and
+    -not $RepoRoot.StartsWith($TorballOrdner, [System.StringComparison]::OrdinalIgnoreCase)) {
+    Write-Host ""
+    Write-Host "-- Projektordner an einen dauerhaften Ort verlegen --"
+    Write-Host "Der Projektordner liegt aktuell unter: $RepoRoot"
+    Write-Host "Die Installation wird DAUERHAFT von diesem Ordner aus laufen (Programmdateien,"
+    Write-Host "Konfiguration, Desktop-Verknuepfung zeigen dorthin). Liegt er z.B. im Downloads-"
+    Write-Host "Ordner, wuerde ein spaeteres 'Downloads aufraeumen' die Installation zerstoeren."
+    Write-Host "Empfehlung: den Ordner jetzt nach $AppZielOrdner verlegen lassen - dort liegt"
+    Write-Host "gebuendelt alles, was zu Torball-Turniere gehoert (auch die Datenbank)."
+    $verlegenAntwort = Frage-MitDefault -Text "Projektordner nach $AppZielOrdner verlegen? (j/n)" -Standard "j"
+    if ($verlegenAntwort -in @("j", "J", "ja", "Ja", "JA")) {
+        New-Item -ItemType Directory -Force -Path $AppZielOrdner | Out-Null
+        Write-Host "Kopiere Projektordner nach $AppZielOrdner ..."
+        Copy-Item -Path (Join-Path $RepoRoot "*") -Destination $AppZielOrdner -Recurse -Force
+        $AlterOrdner = $RepoRoot
+        $RepoRoot = $AppZielOrdner
+        Write-Host "Die Installation laeuft ab jetzt unter $RepoRoot weiter."
+        Write-Host "Der alte Ordner ($AlterOrdner) wird nicht mehr gebraucht und kann NACH Abschluss"
+        Write-Host "der Installation geloescht werden."
+    } elseif ($RepoRoot -match '\\Downloads\\|\\Downloads$|\\Temp\\|\\Desktop\\') {
+        Write-Warning "Der Ordner bleibt an einem Ort, der erfahrungsgemaess irgendwann aufgeraeumt wird - wird er geloescht, funktioniert die Installation nicht mehr (die Turnierdaten in der Datenbank bleiben davon unberuehrt)."
+    }
+}
+
 # --- [1/6] Node.js ---------------------------------------------------------------------------
 Write-Host "== [1/6] Node.js =="
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
@@ -159,8 +198,7 @@ Write-Host "== [2/6] CouchDB =="
 # suchen zu muessen. Bewusst direkt unter C:\ statt unter dem versteckten/geschuetzten
 # C:\ProgramData - fuer die Zielgruppe (auch technisch wenig versiert) leichter wiederzufinden.
 # Sicherheitsrelevante Dateien darin (Admin-Passwort) bleiben trotzdem einzeln per icacls
-# geschuetzt, unabhaengig vom Ordner.
-$TorballOrdner = "C:\Torball-Turniere"
+# geschuetzt, unabhaengig vom Ordner. ($TorballOrdner ist oben beim Verlege-Schritt definiert.)
 New-Item -ItemType Directory -Force -Path $TorballOrdner | Out-Null
 $ConfDir = $TorballOrdner
 $CouchAdminFile = Join-Path $ConfDir "couchdb-admin.txt"
