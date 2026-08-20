@@ -554,7 +554,7 @@ export function ProfilPage() {
 
       <h2>Verbundene Instanzen</h2>
       <p>
-        Lokale Installationen (Betriebsmodus „Lokales Netzwerk", Abschnitt 21.3), die per Kopplungscode dauerhaft mit
+        Lokale Installationen (Betriebsmodus „Lokales Netzwerk"), die per Kopplungscode dauerhaft mit
         diesem Konto verbunden sind. Turniere lassen sich dorthin herunterladen und synchronisieren automatisch
         zurück, solange eine Verbindung besteht.
       </p>

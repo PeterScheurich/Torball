@@ -234,7 +234,7 @@ export function TurnierFreigabe({
       <h3>Codes für Lokales Netzwerk</h3>
       <p className="feld-hinweis">
         Alternativer Zugriff ohne eigenes Konto für Geräte im selben Netzwerk wie der Turnier-Server (Betriebsmodus
-        „Lokales Netzwerk", Abschnitt 21.3). Wer den Code kennt, meldet sich unter{" "}
+        „Lokales Netzwerk"). Wer den Code kennt, meldet sich unter{" "}
         <code>{`${window.location.origin}/turniere/${turnierId}/code`}</code> an.
       </p>
 

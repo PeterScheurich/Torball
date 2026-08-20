@@ -102,7 +102,7 @@ export function TurnierSync({
     <section>
       <h2>Turnier-Sync (Lokale Installation)</h2>
       <p className="feld-hinweis">
-        Betriebsmodus „Lokales Netzwerk" (Abschnitt 21.3/23): ein Turnier an eine verbundene lokale Installation
+        Betriebsmodus „Lokales Netzwerk": ein Turnier an eine verbundene lokale Installation
         senden oder von dort zum Server hochladen – auch bei unzuverlässigem Internet vor Ort.
       </p>
 

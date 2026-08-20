@@ -716,7 +716,7 @@ export function TurnierVerwaltenPage() {
         <h2>Öffentliche Turnierseite</h2>
         <p>
           Wer diesen Link hat, sieht die unten freigeschalteten Bereiche - ohne Anmeldung. Jeder Bereich ist einzeln
-          schaltbar (Abschnitt 13); ohne freigeschalteten Bereich zeigt der Link nur den Turniernamen.
+          schaltbar; ohne freigeschalteten Bereich zeigt der Link nur den Turniernamen.
         </p>
         <ul>
           {SICHTBARKEITS_FELDER.map(({ feld, label }) => (
