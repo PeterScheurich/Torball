@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { Benutzer } from "@torball/shared";
 import { findAllByType, insertDoc, newId } from "../repository";
 import { oeffentlichesProfil } from "../auth/benutzerProfil";
-import { hashePasswort, passwortRegelVerstoss, passwortStimmt } from "../auth/passwort";
+import { hashePasswort, passwortRegelVerstoss, passwortStimmt, verbrenneLoginZeit } from "../auth/passwort";
 import { loescheSessionCookie, SESSION_COOKIE_NAME, setzeSessionCookie } from "../auth/plugin";
 import { erstelleSession, loescheSessionPerToken } from "../auth/session";
 import { totpCodeGueltig } from "../auth/totp";
@@ -100,6 +100,9 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     // E-Mail-Adressen ueberhaupt existieren.
     const ANMELDE_FEHLER = "E-Mail oder Passwort ist falsch.";
     if (!benutzer || !benutzer.passwortHash) {
+      // Genauso viel Zeit verbrennen wie ein echter bcrypt-Vergleich, damit sich ueber die
+      // Antwortzeit nicht ableiten laesst, ob diese E-Mail-Adresse ueberhaupt existiert.
+      await verbrenneLoginZeit(req.body.passwort);
       return reply.code(401).send({ error: ANMELDE_FEHLER });
     }
     if (benutzer.gesperrt) {
@@ -107,9 +110,11 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     }
     // Zeitbasierte Sperre nach zu vielen Fehlversuchen: waehrend der Abkuehlzeit gar nicht erst das
     // Passwort pruefen. Bewusst dieselbe generische Meldung wie bei falschem Passwort (kein Hinweis
-    // auf die Sperre) - sonst liesse sich darueber ausprobieren, ob eine E-Mail existiert; zudem
-    // ist das Antwortverhalten so identisch zum "Konto existiert nicht"-Fall (kein Timing-Leak).
+    // auf die Sperre) - sonst liesse sich darueber ausprobieren, ob eine E-Mail existiert; die
+    // gleiche Zeit verbrennen wie ein echter Vergleich (kein Timing-Leak gegenueber dem falschen
+    // Passwort bzw. dem "Konto existiert nicht"-Fall).
     if (benutzer.loginKontoGesperrtBis && new Date(benutzer.loginKontoGesperrtBis).getTime() > Date.now()) {
+      await verbrenneLoginZeit(req.body.passwort);
       return reply.code(401).send({ error: ANMELDE_FEHLER });
     }
     if (!(await passwortStimmt(req.body.passwort, benutzer.passwortHash))) {

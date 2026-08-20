@@ -953,7 +953,12 @@ turnier-PUT, spielplan-POST) – **nicht** aber von den Ergebnis-Pfaden (`ergebn
 `ergebnisToken.ts`, spiel `…/abschliessen`). **Wichtig:** jede NEUE turnierbezogene Schreib-Route (außer
 Ergebnisse) muss diesen Touch mitziehen, sonst „vergisst" die Liste die Bearbeitung. `abschliessen`
 setzt `abgeschlossenVon/Name/Am`; `wieder-oeffnen` setzt `zuletztBearbeitet` und räumt die
-Abschluss-Felder wieder ab.
+Abschluss-Felder wieder ab. **Diese Zuschreibungs-/Identitätsfelder setzt ausschließlich der Server**
+(Sicherheitsdurchsicht 2026-08-20): `turnier.ts`s POST/PUT strippen `NUR_SERVER_FELDER` (`_id`/
+`docType`/`turnierId`, `erstelltVon*`, `zuletztBearbeitetVon*`, `abgeschlossen*`, `geaendertAm`) per
+`ohneServerFelder()` aus `req.body`, bevor sie ihn übernehmen – sonst ließen sie sich über die
+Schnittstelle fälschen (POST spreizte `...req.body` über die Server-Felder). `status` bleibt bewusst
+erlaubt (entwurf↔aktiv); Abschluss/Archivierung nur über die eigenen Endpunkte.
 
 **Öffentliche Regeln:** fünftes `oeffentlich*`-Flag `oeffentlichRegeln` – zeigt
 die Turnierregeln auf der öffentlichen Seite in einem ein-/ausklappbaren Bereich
@@ -1160,6 +1165,11 @@ dieser Version gilt der folgende Ablauf:
 - Sensible Felder (Passwort-Hash, 2FA-Secret, Einladungs-/Reset-Token-Hashes)
   dürfen nie über die API zurückgegeben werden - immer über
   `oeffentlichesProfil()` (`backend/src/auth/benutzerProfil.ts`) filtern.
+- **Login-Antwortzeit gleich halten** (Sicherheitsdurchsicht 2026-08-20): `/auth/login` ruft an den
+  Pfaden, die sonst ohne bcrypt sofort zurückkehren würden (Konto existiert nicht / Konto in
+  Abkühlzeit), `verbrenneLoginZeit()` (`backend/src/auth/passwort.ts`, bcrypt-Vergleich gegen einen
+  festen Dummy-Hash) auf – sonst verriete die Antwortzeit, ob eine E-Mail registriert ist. Bei einer
+  neuen Login-artigen Prüfung dasselbe Muster mitziehen.
 - Sensible Selbst-Service-Änderungen am eigenen Account (E-Mail, Passwort,
   2FA deaktivieren) verlangen das aktuelle Passwort zur Bestätigung -
   gilt für jede künftige Erweiterung in diese Richtung, nicht nur die

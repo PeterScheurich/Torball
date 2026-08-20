@@ -118,6 +118,41 @@ function mitDefaults(turnier: Turnier): Turnier {
   return { ...turnier, spielplanModus: turnier.spielplanModus ?? "einfach" };
 }
 
+/**
+ * Felder, die AUSSCHLIESSLICH der Server setzt (Identitaet + Audit-/Zuschreibungs-/Abschluss-Daten)
+ * und die deshalb nie aus dem Client-Body uebernommen werden duerfen. Sonst liesse sich ueber POST/
+ * PUT z.B. `erstelltVon`/`zuletztBearbeitetVon` faelschen oder ueber ein direktes `status`-Feld die
+ * `/abschliessen`-Vorbedingung (alle Ergebnisse erfasst) umgehen. `status` bleibt bewusst erlaubt
+ * fuer den normalen entwurf<->aktiv-Wechsel; die Uebergaenge nach abgeschlossen/archiviert laufen
+ * ueber die eigenen Endpunkte. Die denormalisierten Werte setzt der Server aus dem angemeldeten
+ * Konto (POST) bzw. laesst den Bestand stehen (PUT).
+ */
+const NUR_SERVER_FELDER: ReadonlyArray<string> = [
+  "_id",
+  "_rev",
+  "docType",
+  "turnierId",
+  "erstelltVon",
+  "erstelltVonName",
+  "erstelltAm",
+  "erstelltMitKonfigVersion",
+  "geaendertAm",
+  "zuletztBearbeitetVon",
+  "zuletztBearbeitetVonName",
+  "abgeschlossenVon",
+  "abgeschlossenVonName",
+  "abgeschlossenAm",
+];
+
+/** Entfernt die nur-Server-Felder aus einem eingehenden Body (flache Kopie, mutiert das Original
+ *  nicht). Rueckgabetyp bleibt T: entfernt werden nur server-kontrollierte Felder, die uebrigen
+ *  (inkl. Pflichtfelder wie name/datum) bleiben erhalten. */
+function ohneServerFelder<T extends object>(body: T): T {
+  const kopie = { ...body } as Record<string, unknown>;
+  for (const feld of NUR_SERVER_FELDER) delete kopie[feld];
+  return kopie as T;
+}
+
 export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   app.get("/turniere", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
@@ -161,7 +196,9 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         erstelltVonName: req.benutzer!.name,
         erstelltMitKonfigVersion: version,
         ...turnierDefaults(regeln),
-        ...req.body,
+        // Server-kontrollierte Felder aus dem Body entfernen, damit der Client die oben gesetzten
+        // Identitaets-/Zuschreibungsfelder (erstelltVon usw.) nicht ueberschreiben kann.
+        ...ohneServerFelder(req.body),
       };
       const gespeichert = await insertDoc(turnier);
 
@@ -224,7 +261,9 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       const zuschreiber = zuschreibung(req);
       const aktualisiert: Turnier = {
         ...bestehend,
-        ...req.body,
+        // Server-kontrollierte Felder aus dem Body entfernen (Identitaet, erstelltVon, Abschluss-
+        // Daten) - die Bearbeitungs-Zuschreibung setzt der Server unten selbst.
+        ...ohneServerFelder(req.body),
         geaendertAm: new Date().toISOString(),
         zuletztBearbeitetVon: zuschreiber.benutzerId,
         zuletztBearbeitetVonName: zuschreiber.name,
