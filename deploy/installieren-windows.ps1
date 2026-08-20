@@ -507,10 +507,20 @@ if (Test-Path $EnvFile) {
     }
 } else {
     Write-Host "Ein paar Angaben zur Konfiguration (Enter uebernimmt den vorgeschlagenen Standardwert):"
+    # Belegte Ports frueh erkennen: laeuft auf dem Rechner bereits etwas auf dem gewaehlten Port
+    # (z.B. eine Entwicklungsumgebung oder andere Software), wuerde der Server spaeter beim Start
+    # kommentarlos scheitern und der Browser landete verwirrend bei der fremden Anwendung
+    # (live erlebt, 2026-08-21).
     $Port = Frage-MitDefault -Text "Port, unter dem die App laufen soll" -Standard "3000"
-    while ($Port -notmatch '^\d+$') {
-        Write-Host "Bitte eine Zahl eingeben."
-        $Port = Frage-MitDefault -Text "Port, unter dem die App laufen soll" -Standard "3000"
+    while ($true) {
+        while ($Port -notmatch '^\d+$') {
+            Write-Host "Bitte eine Zahl eingeben."
+            $Port = Frage-MitDefault -Text "Port, unter dem die App laufen soll" -Standard "3000"
+        }
+        $portBelegt = Get-NetTCPConnection -LocalPort ([int]$Port) -State Listen -ErrorAction SilentlyContinue
+        if (-not $portBelegt) { break }
+        Write-Warning "Port $Port wird auf diesem Rechner gerade von einem anderen Programm verwendet - die App koennte dann nicht starten. Bitte einen anderen Port waehlen."
+        $Port = Frage-MitDefault -Text "Port, unter dem die App laufen soll" -Standard "$([int]$Port + 5)"
     }
 
     # Standard "ja": der Betriebsmodus "Lokales Netzwerk" (Turnier-Codes, Helfer-Erfassung) ist
@@ -553,7 +563,12 @@ $EffectivePort = if ($PortZeile) { ($PortZeile -split '=', 2)[1].Trim() } else {
 
 # Firewall-Regel erst hier anlegen: jetzt steht der massgebliche Port fest (bei einer
 # Bestandsinstallation kommt er aus der vorhandenen .env, nicht aus einer Eingabe von eben).
-if ($FirewallRegelNoetig -and $EffectivePort -match '^\d+$') {
+# Auch bei einem Update-Lauf mit BEREITS aktiviertem Netzwerkzugriff (HOST=0.0.0.0 in der
+# vorhandenen .env) die Regel neu schreiben: wurde der Port zwischenzeitlich geaendert (z.B. per
+# "konfiguration:setzen"), zeigte die alte Regel sonst dauerhaft auf den falschen Port.
+$hostZeileAktuell = (Get-Content $EnvFile) | Where-Object { $_ -match '^HOST=' } | Select-Object -First 1
+$netzwerkBereitsAktiv = $hostZeileAktuell -and (($hostZeileAktuell -split '=', 2)[1].Trim() -ne "127.0.0.1")
+if (($FirewallRegelNoetig -or $netzwerkBereitsAktiv) -and $EffectivePort -match '^\d+$') {
     Set-TorballFirewallRegel -Port ([int]$EffectivePort)
 }
 
@@ -615,4 +630,6 @@ Write-Host "Beim allerersten Start fuehrt die Anmeldeseite durch die einmalige E
 Write-Host ""
 Write-Host "Spaeter aktualisieren: 'Aktualisieren-Torball.cmd' im Projektordner doppelklicken (siehe auch AKTUALISIEREN.md)."
 Write-Host "Spaeter Konfiguration anpassen (z.B. Port): in backend/ 'npm run torball -- konfiguration:anzeigen' bzw. 'konfiguration:setzen' (siehe --hilfe)."
-Write-Host "E-Mail-Versand (SMTP) fuer Einladungen/Passwort-Reset: im Admin-Menue unter Systemeinstellungen einrichten."
+Write-Host "E-Mail-Versand (SMTP) ist optional und nur sinnvoll, wenn dieser Rechner Internetzugang hat:"
+Write-Host "ohne ihn zeigt die App Einladungs- und Passwort-Reset-Links einfach direkt an (zum Weitergeben"
+Write-Host "von Hand). Bei Bedarf spaeter im Admin-Menue unter Systemeinstellungen einrichten."
