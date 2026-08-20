@@ -1464,10 +1464,14 @@ beim übrigen `$TorballOrdner`-Inhalt (CouchDB, Passwortdateien). Nebeneffekt: d
 ist damit derselbe Ablauf (neues ZIP irgendwo entpacken, `Setup.cmd`, Verlegung bejahen – der
 neue Stand landet über dem alten, `backend/.env` bleibt erhalten, weil sie im ZIP nicht vorkommt;
 `AKTUALISIEREN.md` entsprechend angepasst). Bei Ablehnung nur eine Warnung, wenn der Pfad nach
-Downloads/Temp/Desktop aussieht. Dazu **`Installations-Anleitung.html`** im Wurzelverzeichnis
-(landet mit im ZIP neben `Setup.cmd`): ausführliche, laienfreundliche Schritt-für-Schritt-
-Anleitung inkl. aller Installer-Fragen – bei neuen/geänderten Fragen im Installer diese Datei
-mitziehen.
+Downloads/Temp/Desktop aussieht. Dazu **zwei laienfreundliche HTML-Anleitungen im
+Wurzelverzeichnis** (landen mit im ZIP neben `Setup.cmd`, gleiche selbstständige Gestaltung ohne
+externe Abhängigkeiten): `Installations-Anleitung.html` (kompletter Installationsablauf inkl.
+aller Installer-Fragen – bei neuen/geänderten Fragen im Installer diese Datei mitziehen) und
+`Lokales-Netzwerk-Anleitung.html` (Netzwerk am Turniertag aufbauen: WLAN-Router ohne Internet /
+Hallen-WLAN mit Client-Isolation-Warnung / Handy-Hotspot, Helfer-Geräte per Erfassungslink/QR
+bzw. Turnier-Codes, Fehlersuche; Nutzer-Wunsch 2026-08-21). Beide verlinken sich gegenseitig; die
+In-App-Hilfe (Thema „Lokale Installation") verweist auf beide Dateien im Projektordner.
 
 **Netzwerkzugriff der lokalen Windows-Installation (2026-08-21, Nutzer-Fund):** Der Installer
 schrieb immer `HOST=127.0.0.1` – damit war die lokale Installation aus dem LAN **gar nicht**

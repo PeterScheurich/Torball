@@ -647,6 +647,17 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
+        frage: "Wie arbeiten am Turniertag weitere Geräte (Smartphones/Tablets) mit?",
+        text: [
+          "Alle Geräte müssen dafür im selben lokalen Netzwerk sein wie der Turnier-Rechner – zum Beispiel über einen mitgebrachten WLAN-Router (nur Strom nötig, kein Internet!), das Hallen-WLAN oder notfalls einen Handy-Hotspot. Die Helfer-Geräte brauchen keine eigene App: Sie öffnen die Anwendung einfach im Browser über die Netzwerk-Adresse des Turnier-Rechners.",
+          "Für die reine Ergebniserfassung genügt der Erfassungslink samt QR-Code (Reiter „Ergebnisse“ → „Link erzeugen“); mehr Rechte gibt es über die Turnier-Codes (Reiter „Übersicht“ → „Teilen“). Auf einer lokalen Installation verwenden Link, QR-Code und die angezeigte Anmelde-Adresse automatisch die Netzwerk-Adresse des Rechners.",
+          {
+            hinweis:
+              "Eine ausführliche Schritt-für-Schritt-Anleitung (Netzwerk-Varianten, Ablauf, Fehlersuche) liegt als „Lokales-Netzwerk-Anleitung.html“ direkt im Projektordner der lokalen Installation – neben „Setup.cmd“ und der Installations-Anleitung. Voraussetzung: Beim Installieren wurde die Frage zum Netzwerkzugriff mit „Ja“ beantwortet (nachholbar durch erneutes Ausführen von „Setup.cmd“).",
+          },
+        ],
+      },
+      {
         frage: "Wie verbinde ich die lokale Installation mit dem Server?",
         text: [
           "Auf dem Server (dort, wo das Turnier normalerweise verwaltet wird) erzeugst du unter {{profil}} → „Verbundene Instanzen“ einen Kopplungscode (15 Minuten gültig).",
