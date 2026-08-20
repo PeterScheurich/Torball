@@ -425,6 +425,14 @@ export function TurnierVerwaltenPage() {
   // selbst): die Oeffentlich-Freigabe-Checkboxen und das Teilen.
   const istGesperrt = turnier.status === "abgeschlossen" || turnier.status === "archiviert";
 
+  // Ausgechecktes Turnier (per Turnier-Sync an eine lokale Installation): der Server lehnt JEDE
+  // Aenderung ab (409) - anders als beim Abschluss auch die oeffentlich*-Freigabe. Deshalb hier ALLE
+  // Eingaben deaktivieren, damit man nicht ins Leere tippt (frueher nur der rote Name, Felder blieben
+  // bedienbar - vom Nutzer bemaengelt). Einzige Ausnahme: die "Freigabe aufheben"-Aktion in
+  // TurnierSync (unten) muss aktiv bleiben. Das Teilen (TurnierFreigabe) laesst der Server auch bei
+  // ausgechecktem Turnier zu und bleibt deshalb bewusst bedienbar.
+  const eingabeGesperrt = istGesperrt || ausgecheckt;
+
   return (
     <>
       <p>
@@ -442,10 +450,19 @@ export function TurnierVerwaltenPage() {
       {/* Hinweis auf den gesperrten Zustand. Inhalte sind bei abgeschlossenem Turnier
           schreibgeschuetzt; nur die Oeffentlich-Freigabe und das Teilen bleiben moeglich (sie
           aendern nichts am Turnier selbst). Zum Bearbeiten in der Uebersicht "Wieder oeffnen". */}
-      {turnier.status === "abgeschlossen" && (
+      {turnier.status === "abgeschlossen" && !ausgecheckt && (
         <p className="turnier-gesperrt-hinweis" role="status">
           Dieses Turnier ist <strong>abgeschlossen</strong> – die Turnierdaten sind gesperrt. Zum Bearbeiten im Reiter
           „Übersicht" auf <strong>„Wieder öffnen"</strong>. Die Öffentlich-Freigabe und das Teilen bleiben möglich.
+        </p>
+      )}
+
+      {/* Ausgecheckt hat Vorrang vor dem Abschluss-Hinweis: hier ist wirklich ALLES gesperrt. */}
+      {ausgecheckt && (
+        <p className="turnier-gesperrt-hinweis" role="status">
+          Dieses Turnier wird gerade auf einer <strong>lokalen Installation</strong> verwaltet und ist hier deshalb
+          vollständig <strong>schreibgeschützt</strong>. Zum Bearbeiten auf dem Server zuerst unten unter
+          „Turnier-Sync" die <strong>Freigabe aufheben</strong>.
         </p>
       )}
 
@@ -483,7 +500,7 @@ export function TurnierVerwaltenPage() {
                   <input
                     id="turnierName"
                     required
-                    disabled={istGesperrt}
+                    disabled={eingabeGesperrt}
                     value={allgemein?.name ?? turnier.name}
                     onChange={(e) => setAllgemein((a) => (a ? { ...a, name: e.target.value } : a))}
                     onBlur={() => allgemeinFeldSpeichern("name")}
@@ -523,11 +540,11 @@ export function TurnierVerwaltenPage() {
                 <td>
                   <input id="uebersichtStatus" readOnly className="status-zelle" value={STATUS_LABEL[turnier.status]} />{" "}
                   {turnier.status === "abgeschlossen" ? (
-                    <button type="button" onClick={wiederOeffnen}>
+                    <button type="button" onClick={wiederOeffnen} disabled={ausgecheckt}>
                       Wieder öffnen
                     </button>
                   ) : (
-                    <button type="button" onClick={abschliessen}>
+                    <button type="button" onClick={abschliessen} disabled={ausgecheckt}>
                       Turnier abschließen
                     </button>
                   )}
@@ -549,7 +566,7 @@ export function TurnierVerwaltenPage() {
                         <input
                           id={`spielfeldName-${feld.feldId}`}
                           required
-                          disabled={istGesperrt}
+                          disabled={eingabeGesperrt}
                           value={feldNamen?.[feld.feldId] ?? feld.name}
                           onChange={(e) =>
                             setFeldNamen((f) => (f ? { ...f, [feld.feldId]: e.target.value } : f))
@@ -571,7 +588,7 @@ export function TurnierVerwaltenPage() {
                 <td>
                   <select
                     id="spielplanModus"
-                    disabled={istGesperrt || spielplanGesperrt}
+                    disabled={eingabeGesperrt || spielplanGesperrt}
                     value={turnier.spielplanModus}
                     onChange={(e) => spielplanModusAendern(e.target.value === "doppelt" ? "doppelt" : "einfach")}
                   >
@@ -587,7 +604,7 @@ export function TurnierVerwaltenPage() {
                 <td>
                   <select
                     id="protokollierungsart"
-                    disabled={istGesperrt || spielplanGesperrt}
+                    disabled={eingabeGesperrt || spielplanGesperrt}
                     value={turnier.protokollierungsart}
                     onChange={(e) =>
                       protokollierungsartAendern(e.target.value === "digital" ? "digital" : "manuell")
@@ -602,7 +619,7 @@ export function TurnierVerwaltenPage() {
                       auf „Manuell" umstellen.
                     </p>
                   )}
-                  {spielplanGesperrt && !istGesperrt && (
+                  {spielplanGesperrt && !eingabeGesperrt && (
                     <p className="feld-hinweis">
                       Spielmodus und Protokollierung sind gesperrt, sobald der Spielplan läuft – ein Wechsel mitten im
                       Turnier ließe sich fachlich nicht sauber abfangen.
@@ -628,7 +645,7 @@ export function TurnierVerwaltenPage() {
                   <td>
                     <input
                       id={feld}
-                      disabled={istGesperrt}
+                      disabled={eingabeGesperrt}
                       value={allgemein?.[feld] ?? (turnier[feld as keyof Turnier] as string | undefined) ?? ""}
                       onChange={(e) => setAllgemein((a) => (a ? { ...a, [feld]: e.target.value } : a))}
                       onBlur={() => allgemeinFeldSpeichern(feld)}
@@ -670,7 +687,7 @@ export function TurnierVerwaltenPage() {
                   <textarea
                     id="zusatzinfo"
                     rows={3}
-                    disabled={istGesperrt}
+                    disabled={eingabeGesperrt}
                     value={allgemein?.zusatzinfo ?? turnier.zusatzinfo ?? ""}
                     onChange={(e) => setAllgemein((a) => (a ? { ...a, zusatzinfo: e.target.value } : a))}
                     onBlur={() => allgemeinFeldSpeichern("zusatzinfo")}
@@ -683,7 +700,12 @@ export function TurnierVerwaltenPage() {
 
         <TurnierPruefung turnier={turnier} />
 
-        <TurnierFreigabe turnier={turnier} onGeaendert={setTurnier} />
+        {/* Teilen/Turnier-Codes bleiben bei einem ABGESCHLOSSENEN Turnier bedienbar (aendern nichts
+            am Turnier selbst), werden aber bei einem AUSGECHECKTEN Turnier mitgesperrt - Nutzer-Vorgabe
+            "nur der Freigabe-aufheben-Button (unten in TurnierSync) bleibt aktiv". */}
+        <fieldset className="blank-fieldset" disabled={ausgecheckt}>
+          <TurnierFreigabe turnier={turnier} onGeaendert={setTurnier} />
+        </fieldset>
 
         {/* Sync setzt eine "Verbundene Instanz" am Benutzerkonto voraus (siehe ProfilPage) - fuer
             eine per Turnierleitung-Code angemeldete Sitzung (kein echtes Benutzerkonto, siehe
@@ -703,6 +725,7 @@ export function TurnierVerwaltenPage() {
                 <input
                   type="checkbox"
                   checked={turnier[feld]}
+                  disabled={ausgecheckt}
                   onChange={(e) => sichtbarkeitAendern(feld, e.target.checked)}
                 />{" "}
                 {label}
@@ -760,13 +783,14 @@ export function TurnierVerwaltenPage() {
               type="file"
               accept="image/*"
               className="sr-only"
+              disabled={eingabeGesperrt}
               onChange={logoGewaehlt}
             />
-            <button type="button" onClick={() => logoInputRef.current?.click()} disabled={istGesperrt}>
+            <button type="button" onClick={() => logoInputRef.current?.click()} disabled={eingabeGesperrt}>
               Logo wählen…
             </button>{" "}
             {turnier.logoDataUrl && (
-              <button type="button" onClick={logoZuruecksetzen} disabled={istGesperrt}>
+              <button type="button" onClick={logoZuruecksetzen} disabled={eingabeGesperrt}>
                 Standard-Logo verwenden
               </button>
             )}
@@ -780,14 +804,14 @@ export function TurnierVerwaltenPage() {
           <p className="turnier-gesperrt-hinweis" role="status">
             Diese Regeln wurden aus dem vorherigen Spieltag <strong>übernommen und gesperrt</strong> – beide Spieltage
             sollen gleich gewertet werden.{" "}
-            <button type="button" onClick={regelnEntsperren}>
+            <button type="button" onClick={regelnEntsperren} disabled={ausgecheckt}>
               Regeln entsperren
             </button>
           </p>
         )}
         {/* Bei gesperrten Regeln werden alle Eingaben nativ über das disabled-<fieldset>
             deaktiviert (inkl. Speichern-Knopf des Formulars); zum Ändern erst entsperren. */}
-        <fieldset className="blank-fieldset" disabled={!!turnier.regelnGesperrt || istGesperrt}>
+        <fieldset className="blank-fieldset" disabled={!!turnier.regelnGesperrt || eingabeGesperrt}>
           <TurnierregelnFormular
             werte={turnier}
             onSpeichern={regelnSpeichern}
@@ -814,7 +838,7 @@ export function TurnierVerwaltenPage() {
           turnierId={turnierId}
           spielplanVersion={turnier.spielplanVersion}
           maxSehendeSpieler={turnier.maxSehendeSpieler}
-          gesperrt={istGesperrt}
+          gesperrt={eingabeGesperrt}
         />
       </div>
 
@@ -824,15 +848,20 @@ export function TurnierVerwaltenPage() {
         aria-labelledby="tab-schiedsrichter"
         hidden={aktiverTab !== "schiedsrichter"}
       >
-        <SchiedsrichterVerwaltung turnierId={turnierId} gesperrt={istGesperrt} />
+        <SchiedsrichterVerwaltung turnierId={turnierId} gesperrt={eingabeGesperrt} />
       </div>
 
       <div role="tabpanel" id="panel-spielplan" aria-labelledby="tab-spielplan" hidden={aktiverTab !== "spielplan"}>
-        <SpielplanVerwaltung turnierId={turnierId} gesperrt={istGesperrt} onTurnierGeaendert={setTurnier} />
+        <SpielplanVerwaltung turnierId={turnierId} gesperrt={eingabeGesperrt} onTurnierGeaendert={setTurnier} />
       </div>
 
       <div role="tabpanel" id="panel-ergebnisse" aria-labelledby="tab-ergebnisse" hidden={aktiverTab !== "ergebnisse"}>
-        <ErgebnisVerwaltung turnierId={turnierId} />
+        {/* ErgebnisVerwaltung sperrt Ergebnisfelder selbst ueber ergebnisAbgeschlossen (Abschluss);
+            bei einem ausgecheckten Turnier lehnt der Server aber JEDE Ergebnisaenderung ab, deshalb
+            hier zusaetzlich nativ ueber ein disabled-<fieldset> sperren. */}
+        <fieldset className="blank-fieldset" disabled={ausgecheckt}>
+          <ErgebnisVerwaltung turnierId={turnierId} />
+        </fieldset>
       </div>
     </>
   );

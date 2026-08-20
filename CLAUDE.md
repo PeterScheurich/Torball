@@ -308,6 +308,22 @@ einbettenden Seite sofort reagiert, ohne denselben Status doppelt zu pollen. Die
 zusätzlich in `SpielleitungCodePage.tsx` (eigene, unabhängige `<h1>` – nutzt `TurnierVerwaltenPage`
 nicht mit).
 
+**Nachtrag 2026-08-20: „schlank" zurückgenommen – Felder werden jetzt doch proaktiv deaktiviert**
+(Nutzer-Vorgabe nach einer Feedback-Mail: „Feldinhalte lassen sich trotz Sperre bearbeiten", der
+Server lehnte zwar mit 409 ab, aber die bedienbaren Felder wirkten wie ein nicht greifender Schutz).
+`TurnierVerwaltenPage`/`SpielleitungCodePage` berechnen jetzt `eingabeGesperrt = istGesperrt ||
+ausgecheckt` und deaktivieren damit ALLE Eingaben. **`ausgecheckt` sperrt genau das, was auch der
+Server bei ausgechecktem Turnier ablehnt** – also mehr als `istGesperrt` (Abschluss): zusätzlich die
+`oeffentlich*`-Checkboxen, die Status-Buttons (abschließen/wieder-öffnen), `regeln-entsperren` und –
+per `disabled`-`<fieldset>` – das Teilen/die Turnier-Codes (`TurnierFreigabe`) sowie die
+Ergebnis-Erfassung (`ErgebnisVerwaltung` hat keinen eigenen `gesperrt`-Prop). **Einzige aktiv
+bleibende Aktion: „Freigabe aufheben" in `TurnierSync`** (Nutzer-Vorgabe) – deshalb steht TurnierSync
+außerhalb aller Sperr-`<fieldset>`. Beim bloß **abgeschlossenen** (nicht ausgecheckten) Turnier bleibt
+Teilen/Öffentlich-Freigabe unverändert bedienbar (nur `ausgecheckt` sperrt sie, nicht `istGesperrt`).
+Prüf-Hinweis (schon früher notiert): Controls in einem `disabled`-`<fieldset>` melden `.disabled ===
+false` – effektive Sperre mit `el.matches(':disabled')` prüfen (im Browser end-to-end verifiziert).
+Details: `docs/Protokolle/2026-08-20-checkout-sperre-frontend.md`.
+
 **Kennzeichnung auch in der Turnierliste (2026-08-19, Nutzer-Vorschlag):** `GET /turniere`
 reichert jedes Turnier um ein reines Anzeige-Feld `ausgecheckt: boolean` an (eine einzige
 `findAllBySelector`-Abfrage über alle aktiven `TurnierCheckout`s, kein Datenbank-Zugriff pro

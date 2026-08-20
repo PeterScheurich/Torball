@@ -35,6 +35,10 @@ export function SpielleitungCodePage() {
   }
 
   const istGesperrt = turnier.status === "abgeschlossen" || turnier.status === "archiviert";
+  // Ausgechecktes Turnier: der Server lehnt hier jede Aenderung ab (409) - alle Eingaben sperren,
+  // damit man nicht ins Leere tippt. Freigabe aufheben ist von dieser Code-Ansicht aus ohnehin nicht
+  // moeglich (kein Turnier-Sync-Bereich) - das laeuft ueber die serverseitige Verwaltung/das Konto.
+  const eingabeGesperrt = istGesperrt || ausgecheckt;
 
   return (
     <>
@@ -47,17 +51,28 @@ export function SpielleitungCodePage() {
       </h1>
       <p>Angemeldet als Spielleitung (Turnier-Code).</p>
 
-      {istGesperrt && (
+      {ausgecheckt ? (
         <p className="turnier-gesperrt-hinweis" role="status">
-          Dieses Turnier ist <strong>abgeschlossen</strong> – Spielplan und Ergebnisse sind gesperrt.
+          Dieses Turnier wird gerade auf einer <strong>lokalen Installation</strong> verwaltet und ist hier deshalb
+          <strong> schreibgeschützt</strong>.
         </p>
+      ) : (
+        istGesperrt && (
+          <p className="turnier-gesperrt-hinweis" role="status">
+            Dieses Turnier ist <strong>abgeschlossen</strong> – Spielplan und Ergebnisse sind gesperrt.
+          </p>
+        )
       )}
 
       <h2>Spielplan</h2>
-      <SpielplanVerwaltung turnierId={turnierId} gesperrt={istGesperrt} />
+      <SpielplanVerwaltung turnierId={turnierId} gesperrt={eingabeGesperrt} />
 
       <h2>Ergebnisse</h2>
-      <ErgebnisVerwaltung turnierId={turnierId} />
+      {/* ErgebnisVerwaltung sperrt Ergebnisfelder selbst ueber ergebnisAbgeschlossen; bei einem
+          ausgecheckten Turnier zusaetzlich nativ ueber ein disabled-<fieldset> (siehe TurnierVerwaltenPage). */}
+      <fieldset className="blank-fieldset" disabled={ausgecheckt}>
+        <ErgebnisVerwaltung turnierId={turnierId} />
+      </fieldset>
     </>
   );
 }

@@ -39,6 +39,10 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
   dadurch leer gewordenen Wettbewerb) statt Reste zurückzulassen.
 - Doppeltes Turnier („jeder gegen jeden", zweimal): im zweiten Durchgang werden Heim und Auswärts
   jetzt getauscht (Rückspiel-Prinzip).
+- Ein Turnier, das gerade auf eine lokale Installation ausgecheckt ist, ist auf dem Server jetzt auch
+  im Formular vollständig gesperrt (Eingabefelder deaktiviert), nicht mehr nur der Turniername rot
+  markiert – so ist sofort erkennbar, dass dort nichts geändert werden kann. Einzig „Freigabe
+  aufheben" bleibt bedienbar.
 - Neue Turnierregel „Bundesland-Regel bei der Spielplan-Erstellung" (Standard: aus): steuert, ob
   Mannschaften desselben Bundeslands bei der Spielplan-Erzeugung möglichst früh gegeneinander
   eingeplant werden – gedacht für Wettbewerbe mit festem Regionalbezug wie Bundesliga oder
