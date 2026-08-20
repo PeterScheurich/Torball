@@ -1248,6 +1248,18 @@ dieser Version gilt der folgende Ablauf:
   `gesperrt`/`gesperrtGrund` (bewusste Admin-Sperre, Spec 25.3) bleiben unverändert; `"fehlversuche"`
   entsteht nicht mehr neu, wird für Altbestände aber weiter von einem Reset aufgehoben. Details:
   `docs/Protokolle/2026-08-20-rate-limiting-und-login-sperre.md`.
+- **Sicherheits-Header (2026-08-20, Sicherheitsdurchsicht #3):** gesetzt an ZWEI Auslieferungswegen –
+  backend-seitig als onSend-Hook auf der Root-Instanz (`backend/src/sicherheitsHeader.ts`, deckt API
+  + im `SERVE_FRONTEND`-Modus die statischen Frontend-Dateien) UND in der nginx-Site
+  (`deploy/deploy-instanz.sh`, im `location /`-Block – bewusst NICHT global, sonst bekämen die vom
+  Backend gesetzten `/api`-Header ein Duplikat). Satz: `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY` + CSP `frame-ancestors 'none'; base-uri 'self'; object-src 'none'` (bewusst
+  KEINE Skript-/Style-CSP – würde die Vite-SPA/Google-Fonts/YouTube-Embed brechen), `Referrer-Policy:
+  strict-origin-when-cross-origin`, `Permissions-Policy`. **HSTS nur bei `COOKIE_SECURE=true`, ohne
+  `includeSubDomains`** (die Instanzen teilen die Parent-Domain `*.blindentorball.de` mit anderen
+  Diensten – includeSubDomains würde HTTPS geschwisterweit erzwingen), `max-age` 180 Tage; robusteste
+  Stelle bleibt der externe TLS-Endpunkt (NPM). Details:
+  `docs/Protokolle/2026-08-20-security-header.md`.
 - **Produktions-Installation ist skript-basiert** (`deploy/`): `provision.sh`
   richtet den Debian-Host ein (Node LTS via NodeSource, CouchDB single-node nur
   `127.0.0.1`, nginx, systemd-Template `torball@.service`, Service-User `torball`);

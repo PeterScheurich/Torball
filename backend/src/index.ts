@@ -5,6 +5,7 @@ import fastifyStatic from "@fastify/static";
 import fastifyRateLimit from "@fastify/rate-limit";
 import { authPreHandler } from "./auth/plugin";
 import { ermittleTrustProxy, GLOBAL_RATE_LIMIT } from "./rateLimit";
+import { sicherheitsHeaderHook } from "./sicherheitsHeader";
 import { ensureIndexes } from "./db";
 import { authRoutes } from "./routes/auth";
 import { benutzerRoutes } from "./routes/benutzer";
@@ -145,6 +146,9 @@ const start = async () => {
     // in auth/plugin.ts).
     await server.register(fastifyCookie);
     server.addHook("preHandler", authPreHandler);
+    // Sicherheits-Header auf der Root-Instanz: deckt alle Antworten ab (API + im SERVE_FRONTEND-
+    // Modus auch die statisch ausgelieferten Frontend-Dateien). Siehe sicherheitsHeader.ts.
+    server.addHook("onSend", sicherheitsHeaderHook);
 
     if (serveFrontend) {
       // API-Routen laufen hier tatsaechlich unter /api (siehe Kommentar oben), damit sie nie

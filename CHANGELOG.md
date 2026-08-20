@@ -19,6 +19,9 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
   auf. Zusätzlich sind besonders sensible Aktionen (Registrierung, Passwort-vergessen,
   Ersteinrichtung, Geräte-Kopplung, Turnier-Code-Anmeldung) gegen automatisierte Massenanfragen
   gedrosselt.
+- **Sicherheits-Header** ergänzt (Schutz gegen Einbetten fremder Seiten/Clickjacking, MIME-Sniffing,
+  Weitergabe von Adressen an fremde Seiten; HTTPS-Erzwingung hinter HTTPS). Für Anwender:innen nicht
+  sichtbar, härtet die öffentlich erreichbare Plattform aber ab.
 - Neue Turnierregel „Bundesland-Regel bei der Spielplan-Erstellung" (Standard: aus): steuert, ob
   Mannschaften desselben Bundeslands bei der Spielplan-Erzeugung möglichst früh gegeneinander
   eingeplant werden – gedacht für Wettbewerbe mit festem Regionalbezug wie Bundesliga oder

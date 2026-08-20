@@ -193,9 +193,17 @@ server {
         alias ${DIR}/downloads/;
     }
 
-    # SPA (React Router): unbekannte Pfade auf index.html.
+    # SPA (React Router): unbekannte Pfade auf index.html. Sicherheits-Header hier (nicht global),
+    # damit /api-Antworten sie nicht doppelt bekommen - die setzt das Backend selbst und nginx
+    # reicht sie durch (siehe backend/src/sicherheitsHeader.ts). HSTS bewusst NICHT hier, sondern
+    # am externen TLS-Endpunkt (Nginx Proxy Manager) bzw. backend-seitig gated auf COOKIE_SECURE.
     location / {
         try_files \$uri /index.html;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy "frame-ancestors 'none'; base-uri 'self'; object-src 'none'" always;
+        add_header Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=()" always;
     }
 }
 EOF
