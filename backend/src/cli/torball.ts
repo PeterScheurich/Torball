@@ -253,7 +253,10 @@ async function aktualisieren(): Promise<void> {
     if (istGitRepo) {
       ausfuehren("git pull");
     }
-    ausfuehren("npm install");
+    // --no-audit/--no-fund: die npm-Sicherheits-/Spenden-Hinweise richten sich an Entwickler und
+    // wirken auf die Zielgruppe der lokalen Installation nur beunruhigend - Schwachstellen werden
+    // in der Entwicklung beobachtet und dort behoben (siehe installieren-windows.ps1).
+    ausfuehren("npm install --no-audit --no-fund");
     ausfuehren("npm run build --workspace=shared");
     ausfuehren("npm run build");
   } catch (err) {

@@ -146,8 +146,10 @@ echo "== Bauen (shared zuerst) =="
 # (z.B. "demo") einen auffaelligen Umgebungs-Banner anzeigen kann (siehe UmgebungsBanner.tsx) -
 # rein zur Build-Zeit, kein Laufzeit-API-Aufruf noetig. Wird bei jedem Lauf neu geschrieben.
 echo "VITE_INSTANZ_NAME=${NAME}" > "${DIR}/frontend/.env"
+# --no-audit/--no-fund: Audit-Hinweise gehoeren in die Entwicklung (dort werden Schwachstellen
+# beobachtet/behoben), nicht in den Deploy-Lauf - sie verunsichern nur und kosten Zeit.
 ( cd "$DIR"
-  npm ci
+  npm ci --no-audit --no-fund
   npm run build --workspace=shared
   npm run build )
 

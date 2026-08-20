@@ -474,7 +474,11 @@ try {
         git pull
         if ($LASTEXITCODE -ne 0) { throw "git pull fehlgeschlagen" }
     }
-    npm install
+    # --no-audit/--no-fund: die npm-Sicherheits- und Spenden-Hinweise richten sich an
+    # Entwickler und wirken auf die Zielgruppe nur beunruhigend ("3 high severity
+    # vulnerabilities" klingt nach kaputt/gefaehrlich, ist hier aber nicht handhabbar) -
+    # Schwachstellen werden stattdessen in der Entwicklung beobachtet und dort behoben.
+    npm install --no-audit --no-fund
     if ($LASTEXITCODE -ne 0) { throw "npm install fehlgeschlagen" }
     npm run build --workspace=shared
     if ($LASTEXITCODE -ne 0) { throw "Build von 'shared' fehlgeschlagen" }
