@@ -2,7 +2,9 @@ import path from "node:path";
 import Fastify, { type FastifyInstance } from "fastify";
 import fastifyCookie from "@fastify/cookie";
 import fastifyStatic from "@fastify/static";
+import fastifyRateLimit from "@fastify/rate-limit";
 import { authPreHandler } from "./auth/plugin";
+import { ermittleTrustProxy, GLOBAL_RATE_LIMIT } from "./rateLimit";
 import { ensureIndexes } from "./db";
 import { authRoutes } from "./routes/auth";
 import { benutzerRoutes } from "./routes/benutzer";
@@ -53,7 +55,11 @@ const HOST = process.env.HOST ?? "0.0.0.0";
 // an der Wurzel, weil Proxy/nginx das /api-Praefix bereits vor der Weiterleitung abstreifen
 // (siehe CLAUDE.md) - das aendert sich hier bewusst nicht mit.
 const serveFrontend = process.env.SERVE_FRONTEND === "true";
-const server = Fastify({ logger: true });
+// trustProxy: damit das Rate-Limit (und Logging) die ECHTE Client-IP kennt, statt der IP des
+// davorliegenden Reverse-Proxys (nginx / Nginx Proxy Manager). Konfigurierbar ueber TRUST_PROXY,
+// Default = Loopback + private Netzbereiche (deckt beide Betriebsarten robust ab, nicht faelschbar
+// von aussen - siehe rateLimit.ts::ermittleTrustProxy).
+const server = Fastify({ logger: true, trustProxy: ermittleTrustProxy() });
 
 // Uebersetzt einen unbehandelten CouchDB-Versionskonflikt (409 - tritt auf, wenn zwei Anfragen
 // nahezu gleichzeitig dasselbe Dokument aendern, z.B. eine Ergebniserfassung intern UND parallel
@@ -85,6 +91,24 @@ const registerApiRoutes = async (instance: FastifyInstance): Promise<void> => {
   // per Praefix "/api" verkapselter Kind-Plugin-Kontext registriert; nur so bleibt das statische
   // Ausliefern von frontend/dist (Geschwister-Registrierung, siehe unten) von der Wartungssperre
   // unberuehrt - sonst koennte die SPA-Huelle selbst waehrend aktiver Wartung nicht mehr laden.
+  // Rate-Limiting ZUERST registrieren, damit sein onRoute-Hook alle nachfolgend registrierten
+  // Routen erfasst. `global: true` legt das grosszuegige Standard-Limit ueber alle Routen; einzelne
+  // sicherheitssensible Routen verschaerfen es lokal ueber `config.rateLimit` (siehe rateLimit.ts).
+  // Zaehlung je Client-IP (@fastify/rate-limit-Default req.ip, respektiert trustProxy oben).
+  await instance.register(fastifyRateLimit, {
+    global: true,
+    ...GLOBAL_RATE_LIMIT,
+    // Deutsche Meldung statt der englischen Default-Antwort. WICHTIG: @fastify/rate-limit *wirft*
+    // den Rueckgabewert des errorResponseBuilder; der globale setErrorHandler (unten) macht daraus
+    // reply.send(error). Nur bei einem echten Error-Objekt uebernimmt Fastify dessen statusCode
+    // (429) - ein Plain-Object wuerde als normale 200-Antwort gesendet (live verifiziert). Deshalb
+    // bewusst ein Error mit statusCode, kein Objekt-Literal.
+    errorResponseBuilder: () => {
+      const fehler = new Error("Zu viele Anfragen. Bitte kurz warten und erneut versuchen.");
+      (fehler as Error & { statusCode?: number }).statusCode = 429;
+      return fehler;
+    },
+  });
   instance.addHook("preHandler", wartungPreHandler);
   instance.register(wartungRoutes);
   instance.register(authRoutes);

@@ -65,14 +65,25 @@ export interface Benutzer extends CouchMeta {
 
   /**
    * Brute-Force-Schutz fuer die oeffentlich erreichbare Zentrale Plattform: bei jedem falschen
-   * Passwort hochgezaehlt, bei erfolgreichem Login zurueckgesetzt. Ab
-   * MAX_LOGIN_VERSUCHE (backend/src/routes/auth.ts) wird `gesperrt` automatisch gesetzt.
+   * Passwort hochgezaehlt, bei erfolgreichem Login zurueckgesetzt. Ab einer Schwelle
+   * (FEHLVERSUCHE_SCHWELLE, backend/src/routes/auth.ts) wird `loginKontoGesperrtBis` gesetzt statt
+   * das Konto dauerhaft zu sperren - siehe dort.
    */
   fehlgeschlageneLoginVersuche?: number;
   /**
+   * Zeitbasierte Login-Sperre (Abkuehlzeit) nach zu vielen Fehlversuchen: bis zu diesem Zeitpunkt
+   * werden weitere Login-Versuche abgewiesen, danach ist das Konto automatisch wieder frei (kein
+   * Admin-Eingriff noetig). Bewusst getrennt von `gesperrt` (dauerhafte, bewusste Admin-Sperre),
+   * damit ein Angreifer, der eine E-Mail kennt, ein Konto nicht mehr DAUERHAFT aussperren kann
+   * (frueher: nach 10 Fehlversuchen dauerhaft `gesperrt` - ein DoS-Vektor). Vom Server gesetzt.
+   */
+  loginKontoGesperrtBis?: Zeitstempel;
+  /**
    * Unterscheidet, WARUM `gesperrt` gesetzt ist - wichtig, damit ein Passwort-Reset nur eine
    * automatische Fehlversuche-Sperre aufhebt, nie eine bewusste Admin-Sperre (die haette sich
-   * sonst ueber den Reset-Link aushebeln lassen). Vom Server gesetzt, nie vom Client.
+   * sonst ueber den Reset-Link aushebeln lassen). Vom Server gesetzt, nie vom Client. Der Wert
+   * "fehlversuche" entsteht seit der Umstellung auf `loginKontoGesperrtBis` nicht mehr neu, bleibt
+   * aber fuer Altbestaende (frueher hart gesperrte Konten) erhalten, die ein Reset noch aufhebt.
    */
   gesperrtGrund?: "manuell" | "fehlversuche";
 

@@ -46,19 +46,22 @@ async function aufraeumen(ids: string[]) {
 }
 
 test(
-  "Login: nach 10 falschen Passwoertern wird der Account automatisch gesperrt (gesperrtGrund fehlversuche)",
+  "Login: nach mehreren Fehlversuchen greift eine ZEITBASIERTE Sperre (kein dauerhaftes gesperrt), die von selbst abklingt",
   { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
   async () => {
     const Fastify = (await import("fastify")).default;
+    const fastifyCookie = (await import("@fastify/cookie")).default;
     const { authRoutes } = await import("./auth");
-    const { findById } = await import("../repository");
+    const { findById, insertDoc } = await import("../repository");
 
     const app = Fastify();
+    await app.register(fastifyCookie);
     await app.register(authRoutes);
 
     const benutzerId = await neuerBenutzer();
     try {
-      for (let i = 0; i < 10; i++) {
+      // Fuenf Fehlversuche (Schwelle) -> zeitbasierte Sperre greift, aber KEINE dauerhafte Sperre.
+      for (let i = 0; i < 5; i++) {
         const antwort = await app.inject({
           method: "POST",
           url: "/auth/login",
@@ -68,17 +71,36 @@ test(
       }
 
       const benutzerNachher = await findById<Benutzer>(benutzerId);
-      assert.equal(benutzerNachher!.gesperrt, true);
-      assert.equal(benutzerNachher!.gesperrtGrund, "fehlversuche");
-      assert.equal(benutzerNachher!.fehlgeschlageneLoginVersuche, 10);
+      assert.equal(benutzerNachher!.gesperrt, false, "Konto darf NICHT dauerhaft gesperrt sein");
+      assert.equal(benutzerNachher!.gesperrtGrund, undefined);
+      assert.ok(
+        benutzerNachher!.loginKontoGesperrtBis &&
+          new Date(benutzerNachher!.loginKontoGesperrtBis).getTime() > Date.now(),
+        "loginKontoGesperrtBis sollte in der Zukunft liegen",
+      );
 
-      // Selbst mit dem RICHTIGEN Passwort jetzt 403 statt eines erfolgreichen Logins.
-      const versuchMitRichtigemPasswort = await app.inject({
+      // Waehrend der Abkuehlzeit wird selbst das RICHTIGE Passwort abgewiesen (generischer 401).
+      const waehrendSperre = await app.inject({
         method: "POST",
         url: "/auth/login",
         payload: { email: `${benutzerId}@example.invalid`, passwort: TEST_PASSWORT },
       });
-      assert.equal(versuchMitRichtigemPasswort.statusCode, 403);
+      assert.equal(waehrendSperre.statusCode, 401);
+
+      // Abkuehlzeit "ablaufen" lassen (in die Vergangenheit setzen) -> richtiges Passwort greift wieder.
+      const vorAblauf = await findById<Benutzer>(benutzerId);
+      await insertDoc<Benutzer>({ ...vorAblauf!, loginKontoGesperrtBis: new Date(Date.now() - 1000).toISOString() });
+
+      const nachAblauf = await app.inject({
+        method: "POST",
+        url: "/auth/login",
+        payload: { email: `${benutzerId}@example.invalid`, passwort: TEST_PASSWORT },
+      });
+      assert.equal(nachAblauf.statusCode, 200, "Nach Ablauf der Abkuehlzeit muss der Login gelingen");
+
+      const danach = await findById<Benutzer>(benutzerId);
+      assert.equal(danach!.fehlgeschlageneLoginVersuche, 0, "Zaehler zuruecksetzen");
+      assert.equal(danach!.loginKontoGesperrtBis, undefined, "Abkuehlzeit muss geloescht sein");
     } finally {
       await aufraeumen([benutzerId]);
       await app.close();

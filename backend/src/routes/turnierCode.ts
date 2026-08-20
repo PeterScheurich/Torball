@@ -5,6 +5,7 @@ import { requireZugriff, setzeSessionCookie } from "../auth/plugin";
 import { hatMindestens } from "../auth/turnierZugriff";
 import { hashePasswort, passwortStimmt } from "../auth/passwort";
 import { erstelleCodeSession } from "../auth/session";
+import { CODE_ANMELDUNG_RATE_LIMIT } from "../rateLimit";
 
 /**
  * Turnier-Codes (Abschnitt 21.3, Betriebsmodus "Lokales Netzwerk"): ein Rechner hostet Backend +
@@ -96,7 +97,7 @@ export async function turnierCodeRoutes(app: FastifyInstance): Promise<void> {
   /** Meldet ein Geraet per Turnier-Code an (kein Konto noetig) - legt eine Code-Session an. */
   app.post<{ Params: { id: string }; Body: CodeAnmeldungBody }>(
     "/turniere/:id/code-anmeldung",
-    { schema: { body: codeAnmeldungSchema } },
+    { schema: { body: codeAnmeldungSchema }, config: { rateLimit: CODE_ANMELDUNG_RATE_LIMIT } },
     async (req, reply) => {
       const turnier = await findById<Turnier>(req.params.id);
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });

@@ -6,6 +6,7 @@ import { sammleTurnierExport, type TurnierExportPaket } from "../sync/export";
 import { importiereTurnierExport } from "../sync/import";
 import { findeAktivesCheckout, findeInstanzPerToken, liesInstanzToken } from "../sync/instanz";
 import { pruefeTurnierExportPaket } from "../sync/validierung";
+import { SENSIBEL_RATE_LIMIT } from "../rateLimit";
 
 /**
  * Turnier-Sync (Grundlage, Abschnitt 21.3/23): oeffentliche Routen fuer die Kommunikation
@@ -60,7 +61,7 @@ const checkinSchema = {
 export async function instanzSyncRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: KopplungEinloesenBody }>(
     "/instanzen/kopplung-einloesen",
-    { schema: { body: kopplungEinloesenSchema } },
+    { schema: { body: kopplungEinloesenSchema }, config: { rateLimit: SENSIBEL_RATE_LIMIT } },
     async (req, reply) => {
       const hash = hashe(req.body.kopplungscode);
       const alle = await findAllByType<Benutzer>("benutzer");

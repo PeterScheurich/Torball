@@ -12,6 +12,13 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
   diesem einen Turnier gehört. Zuvor hätte ein manipuliertes Übertragungspaket fremde oder
   systemweite Daten überschreiben oder anlegen können (u. a. eine unberechtigte Rechteausweitung).
   Der normale Sync-Betrieb ändert sich dadurch nicht.
+- **Schutz gegen zu viele Anmeldeversuche:** Wird ein Passwort mehrfach falsch eingegeben, ist die
+  Anmeldung für dieses Konto jetzt nur noch **vorübergehend** gesperrt (die Wartezeit läuft von
+  selbst ab) statt dauerhaft – niemand kann ein fremdes Konto mehr durch absichtliche Falscheingaben
+  dauerhaft aussperren. Ein erfolgreicher Login oder ein Passwort-Reset hebt die Wartezeit sofort
+  auf. Zusätzlich sind besonders sensible Aktionen (Registrierung, Passwort-vergessen,
+  Ersteinrichtung, Geräte-Kopplung, Turnier-Code-Anmeldung) gegen automatisierte Massenanfragen
+  gedrosselt.
 - Neue Turnierregel „Bundesland-Regel bei der Spielplan-Erstellung" (Standard: aus): steuert, ob
   Mannschaften desselben Bundeslands bei der Spielplan-Erzeugung möglichst früh gegeneinander
   eingeplant werden – gedacht für Wettbewerbe mit festem Regionalbezug wie Bundesliga oder

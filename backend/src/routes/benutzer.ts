@@ -9,6 +9,7 @@ import { erzeugeOtpAuthUri, erzeugeQrCodeDataUri, erzeugeTotpSecret, totpCodeGue
 import { erzeugeToken, hashe } from "../auth/token";
 import { sendeMail } from "../mail/transport";
 import { aktuelleSystemeinstellungen, benachrichtigeNeuenAccount, smtpVerbindungAus } from "../systemeinstellungen";
+import { SENSIBEL_RATE_LIMIT } from "../rateLimit";
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
 
@@ -332,7 +333,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         "gesperrt" in req.body
           ? req.body.gesperrt
             ? { gesperrtGrund: "manuell" as const }
-            : { gesperrtGrund: undefined, fehlgeschlageneLoginVersuche: 0 }
+            : { gesperrtGrund: undefined, fehlgeschlageneLoginVersuche: 0, loginKontoGesperrtBis: undefined }
           : {};
 
       const aktualisiert = await insertDoc({ ...bestehend, ...req.body, ...sperrPatch });
@@ -511,7 +512,10 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
    */
   app.post<{ Body: { email: string } }>(
     "/benutzer/passwort-vergessen",
-    { schema: { body: { type: "object", required: ["email"], properties: { email: { type: "string" } } } } },
+    {
+      schema: { body: { type: "object", required: ["email"], properties: { email: { type: "string" } } } },
+      config: { rateLimit: SENSIBEL_RATE_LIMIT },
+    },
     async (req, reply) => {
       const email = req.body.email.trim().toLowerCase();
       const alle = await findAllByType<Benutzer>("benutzer");
@@ -594,6 +598,9 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         resetTokenHash: undefined,
         resetAblauf: undefined,
         fehlgeschlageneLoginVersuche: 0,
+        // Zeitbasierte Fehlversuch-Sperre ebenfalls loeschen: wer den Reset-Link oeffnen konnte, hat
+        // sich ueber die E-Mail-Adresse legitimiert und soll sich sofort wieder anmelden koennen.
+        loginKontoGesperrtBis: undefined,
         ...(hebtFehlversucheSperreAuf ? { gesperrt: false, gesperrtGrund: undefined } : {}),
       });
       // Abschnitt 21.4: "alle aktiven Sessions beendet".

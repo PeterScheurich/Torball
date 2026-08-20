@@ -1224,6 +1224,30 @@ dieser Version gilt der folgende Ablauf:
   `COOKIE_SECURE=true` gesetzt ist (`backend/src/auth/plugin.ts`). In Produktion
   hinter HTTPS zwingend `true`; lokal (HTTP) weglassen/`false`, sonst setzt der
   Browser das Cookie nicht und der Login schlägt ohne erkennbaren Grund fehl.
+- **Rate-Limiting + Brute-Force-Schutz (2026-08-20, Sicherheitsdurchsicht #2):** `@fastify/rate-limit`
+  ist in `backend/src/index.ts` global registriert (Konfiguration zentral in
+  `backend/src/rateLimit.ts`): großzügiges globales Limit (`1000/min` je IP, reine Flut-Absicherung –
+  bewusst hoch, weil Spielort-Geräte hinter NAT eine IP teilen und das Frontend alle 10–30 s pollt),
+  plus strengere Limits an sensiblen Routen über `config.rateLimit` (`SENSIBEL_RATE_LIMIT` 20/10min
+  auf registrieren/bootstrap-admin/passwort-vergessen/kopplung-einloesen, `CODE_ANMELDUNG_RATE_LIMIT`
+  60/10min auf code-anmeldung). **Login selbst bekommt bewusst kein IP-Limit** – die zeitbasierte
+  Konto-Sperre (unten) drosselt Passwort-Raten IP-unabhängig (hinter NAT würde ein IP-Limit einen
+  ganzen Spielort blockieren). Damit das Limit die echte Client-IP kennt, setzt `index.ts`
+  `trustProxy` aus `TRUST_PROXY` (`ermittleTrustProxy()`); **Default** (unset) vertraut Loopback +
+  privaten Netzbereichen – korrekt für externen NPM **und** LAN, von außen nicht fälschbar (die
+  `X-Forwarded-For`-Auswertung endet bei der ersten öffentlichen IP). **Fallstrick (live gefixt):**
+  `@fastify/rate-limit` *wirft* den Rückgabewert des `errorResponseBuilder`; der globale
+  `setErrorHandler` macht daraus `reply.send(error)`, das nur bei einem echten **`Error`-Objekt**
+  den `statusCode` (429) übernimmt – ein Plain-Object wurde als **200** mit 429-Body gesendet.
+  Deshalb gibt der Builder bewusst ein `Error` zurück. **Zeitbasierte Login-Sperre statt harter
+  Sperre:** ab `FEHLVERSUCHE_SCHWELLE = 5` Fehlversuchen setzt `auth.ts` eine eskalierende Abkühlzeit
+  `Benutzer.loginKontoGesperrtBis` (bis 30 Min. gedeckelt), keine dauerhafte `gesperrt`-Sperre mehr
+  (die war ein DoS-Vektor: fremdes Konto per Falscheingaben dauerhaft aussperrbar). Während der
+  Abkühlzeit wird das Passwort nicht geprüft, Antwort bleibt die generische Anmelde-Fehlermeldung
+  (keine Enumeration). Erfolgreicher Login/Passwort-Reset/Admin-Entsperren löschen die Abkühlzeit.
+  `gesperrt`/`gesperrtGrund` (bewusste Admin-Sperre, Spec 25.3) bleiben unverändert; `"fehlversuche"`
+  entsteht nicht mehr neu, wird für Altbestände aber weiter von einem Reset aufgehoben. Details:
+  `docs/Protokolle/2026-08-20-rate-limiting-und-login-sperre.md`.
 - **Produktions-Installation ist skript-basiert** (`deploy/`): `provision.sh`
   richtet den Debian-Host ein (Node LTS via NodeSource, CouchDB single-node nur
   `127.0.0.1`, nginx, systemd-Template `torball@.service`, Service-User `torball`);

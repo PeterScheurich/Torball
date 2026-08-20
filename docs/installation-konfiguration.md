@@ -50,6 +50,7 @@ Prozess neu starten.
 | `FRONTEND_URL` | Basis-URL des Frontends für Links in E-Mails |
 | `COOKIE_SECURE` | Session-Cookie mit `Secure`-Flag ausliefern (nur über HTTPS gültig). **Lokal (HTTP) weglassen bzw. `false`**, sonst setzt der Browser das Cookie nicht und der Login schlägt fehl. **In Produktion hinter HTTPS zwingend `true`.** |
 | `SERVE_FRONTEND` | Einzelprozess-Modus: Backend liefert `frontend/dist` gleich mit aus (siehe Windows-Installer unten). Auf dem Debian-Produktivserver weglassen/`false` – dort übernimmt nginx das Ausliefern. |
+| `TRUST_PROXY` | Steuert, welchem Reverse-Proxy das Backend die Client-IP (`X-Forwarded-For`) glaubt – wichtig, damit das Rate-Limiting die **echte** Client-IP zählt. **Ohne Eintrag** (Default) werden Loopback + private Netzbereiche vertraut; das passt sowohl hinter dem externen Nginx Proxy Manager als auch im reinen LAN und ist von außen nicht fälschbar. Nur anfassen, wenn ein Proxy auf einer **öffentlichen** IP davorsteht (dann dessen IP/Hop-Zahl eintragen). Werte: leer/Default, `false`, `true`, eine Zahl (Hops) oder eine Kommaliste von IPs/CIDR. |
 | `TZ` | Zeitzone für die Interpretation von Turnier-Datum/Startzeit ohne Offset (`Europe/Berlin`). Ohne diese Variable nutzt Node die Systemzeitzone des Rechners – auf einem frischen Debian-Server i. d. R. UTC, nicht deutsche Zeit (führt sonst zu einem 1–2h-Versatz je nach Sommer-/Winterzeit). |
 
 **Werte mit Sonderzeichen** (z. B. `#`, Leerzeichen) immer in Anführungszeichen

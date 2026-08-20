@@ -7,6 +7,7 @@ import { loescheSessionCookie, SESSION_COOKIE_NAME, setzeSessionCookie } from ".
 import { erstelleSession, loescheSessionPerToken } from "../auth/session";
 import { totpCodeGueltig } from "../auth/totp";
 import { aktuelleSystemeinstellungen, benachrichtigeNeuenAccount } from "../systemeinstellungen";
+import { SENSIBEL_RATE_LIMIT } from "../rateLimit";
 
 // Anmelde-bezogene Routen: Login (inkl. optionaler 2FA), Logout, "wer bin ich" (/auth/me)
 // und die einmalige Ersteinrichtung des allerersten Admin-Kontos. Die eigentliche
@@ -46,10 +47,27 @@ const bootstrapAdminSchema = {
   },
 } as const;
 
-/** Brute-Force-Schutz: nach so vielen falschen Passwoertern in Folge wird der Account gesperrt
- *  (gesperrtGrund: "fehlversuche") - nur ein Admin (oder ein erfolgreicher Passwort-Reset, siehe
- *  benutzer.ts) hebt das wieder auf. */
-const MAX_LOGIN_VERSUCHE = 10;
+/**
+ * Brute-Force-Schutz: ab dieser Anzahl falscher Passwoerter in Folge greift eine ZEITBASIERTE
+ * Login-Sperre (`loginKontoGesperrtBis`), keine dauerhafte Konto-Sperre mehr. Frueher wurde das
+ * Konto nach 10 Fehlversuchen dauerhaft `gesperrt` - das war selbst ein DoS-Vektor: wer eine
+ * E-Mail-Adresse kannte, konnte das zugehoerige Konto gezielt und dauerhaft aussperren (nur Admin/
+ * Reset hob das auf). Jetzt kuehlt die Sperre nach kurzer Zeit von selbst wieder ab.
+ */
+const FEHLVERSUCHE_SCHWELLE = 5;
+
+/** Eskalierende Abkuehlzeit ab der Schwelle (in Millisekunden), gedeckelt bei 30 Minuten. Jeder
+ *  weitere Fehlversuch verlaengert das Fenster - ein Brute-Force-Versuch wird so auf wenige
+ *  Versuche pro (wachsendem) Zeitfenster gedrosselt, ein legitimer Nutzer wartet es einfach ab. */
+function abkuehlzeitMs(versuche: number): number {
+  const minuten = Math.min(30, (versuche - FEHLVERSUCHE_SCHWELLE + 1) * 2);
+  return minuten * 60 * 1000;
+}
+
+// SENSIBEL_RATE_LIMIT (striktes IP-Limit fuer sensible Endpunkte) kommt aus ../rateLimit. Login
+// selbst bekommt bewusst KEIN eigenes IP-Limit: die zeitbasierte Sperre pro Konto (oben) drosselt
+// Passwort-Raten unabhaengig von der IP - wichtig hinter NAT, wo viele Geraete eines Spielorts
+// dieselbe IP teilen und ein striktes IP-Limit legitime Anmeldungen blockieren wuerde.
 
 interface RegistrierenBody {
   email: string;
@@ -87,17 +105,23 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     if (benutzer.gesperrt) {
       return reply.code(403).send({ error: "Dieser Account ist gesperrt." });
     }
+    // Zeitbasierte Sperre nach zu vielen Fehlversuchen: waehrend der Abkuehlzeit gar nicht erst das
+    // Passwort pruefen. Bewusst dieselbe generische Meldung wie bei falschem Passwort (kein Hinweis
+    // auf die Sperre) - sonst liesse sich darueber ausprobieren, ob eine E-Mail existiert; zudem
+    // ist das Antwortverhalten so identisch zum "Konto existiert nicht"-Fall (kein Timing-Leak).
+    if (benutzer.loginKontoGesperrtBis && new Date(benutzer.loginKontoGesperrtBis).getTime() > Date.now()) {
+      return reply.code(401).send({ error: ANMELDE_FEHLER });
+    }
     if (!(await passwortStimmt(req.body.passwort, benutzer.passwortHash))) {
       const versuche = (benutzer.fehlgeschlageneLoginVersuche ?? 0) + 1;
-      const gesperrtWegenVersuchen = versuche >= MAX_LOGIN_VERSUCHE;
+      const abgekuehltAb = versuche >= FEHLVERSUCHE_SCHWELLE;
       await insertDoc({
         ...benutzer,
         fehlgeschlageneLoginVersuche: versuche,
-        ...(gesperrtWegenVersuchen ? { gesperrt: true, gesperrtGrund: "fehlversuche" as const } : {}),
+        ...(abgekuehltAb
+          ? { loginKontoGesperrtBis: new Date(Date.now() + abkuehlzeitMs(versuche)).toISOString() }
+          : {}),
       });
-      // Bewusst weiterhin die generische Meldung, auch bei der jetzt greifenden Sperre - sonst
-      // liesse sich ueber eine abweichende Antwort auf dem letzten Versuch ausprobieren, ob die
-      // Zaehlung ueberhaupt existiert. Der naechste Versuch liefert dann ohnehin den 403 oben.
       return reply.code(401).send({ error: ANMELDE_FEHLER });
     }
 
@@ -117,6 +141,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       ...benutzer,
       letzteAnmeldung: new Date().toISOString(),
       fehlgeschlageneLoginVersuche: 0,
+      loginKontoGesperrtBis: undefined,
     });
     return oeffentlichesProfil(aktualisiert);
   });
@@ -148,7 +173,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
    */
   app.post<{ Body: BootstrapAdminBody }>(
     "/auth/bootstrap-admin",
-    { schema: { body: bootstrapAdminSchema } },
+    { schema: { body: bootstrapAdminSchema }, config: { rateLimit: SENSIBEL_RATE_LIMIT } },
     async (req, reply) => {
       const bestehende = await findAllByType<Benutzer>("benutzer");
       if (bestehende.length > 0) {
@@ -195,7 +220,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
    */
   app.post<{ Body: RegistrierenBody }>(
     "/auth/registrieren",
-    { schema: { body: registrierenSchema } },
+    { schema: { body: registrierenSchema }, config: { rateLimit: SENSIBEL_RATE_LIMIT } },
     async (req, reply) => {
       const einstellungen = await aktuelleSystemeinstellungen();
       if (!einstellungen.selbstregistrierungErlaubt) {
