@@ -1,3 +1,4 @@
+import os from "node:os";
 import type { FastifyInstance } from "fastify";
 import type { LokaleSyncKonfiguration } from "@torball/shared";
 import { deleteDoc, findById, insertDoc } from "../repository";
@@ -28,6 +29,19 @@ const verbindenSchema = {
   },
 } as const;
 
+/** IPv4-Adressen dieses Rechners im lokalen Netzwerk (ohne Loopback) - fuer den Hinweis in der
+ *  Oberflaeche, unter welcher Adresse andere Geraete (Helfer-Tablets etc.) die lokale
+ *  Installation erreichen. */
+function lanAdressen(): string[] {
+  const adressen: string[] = [];
+  for (const schnittstellen of Object.values(os.networkInterfaces())) {
+    for (const eintrag of schnittstellen ?? []) {
+      if (eintrag.family === "IPv4" && !eintrag.internal) adressen.push(eintrag.address);
+    }
+  }
+  return adressen;
+}
+
 export async function syncRoutes(app: FastifyInstance): Promise<void> {
   app.get("/sync/status", async () => {
     // istLokaleInstallation spiegelt SERVE_FRONTEND (siehe index.ts) - nur im Einzelprozess-
@@ -35,13 +49,27 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
     // einen Sinn. Ohne dieses Signal zeigte EinstellungenPage.tsx das Kopplungsformular bisher auf
     // JEDER Instanz (auch Dev/Prod/Demo im Browser) - live beim Nutzer aufgefallen.
     const istLokaleInstallation = process.env.SERVE_FRONTEND === "true";
+    // Netzwerk-Infos BEWUSST nur fuer die lokale Installation mitliefern (die Route ist
+    // oeffentlich - eine Server-Instanz soll ihre internen Schnittstellen-Adressen nicht
+    // preisgeben). lanErreichbar: lauscht das Backend auch fuer andere Geraete im Netz oder nur
+    // auf diesem Rechner (HOST=127.0.0.1, der Installer-Default ohne aktivierten Netzwerkzugriff)?
+    // Grundlage fuer den Hinweis bei den Turnier-Codes (TurnierFreigabe.tsx), ohne den der
+    // Betriebsmodus "Lokales Netzwerk" an einer unsichtbaren Huerde scheitert (Nutzer-Fund).
+    const host = process.env.HOST ?? "0.0.0.0";
+    const netzwerk = istLokaleInstallation
+      ? {
+          lanErreichbar: host !== "127.0.0.1" && host !== "localhost" && host !== "::1",
+          netzwerkAdressen: lanAdressen(),
+        }
+      : {};
     const konfiguration = await aktuelleLokaleSyncKonfiguration();
-    if (!konfiguration) return { verbunden: false, istLokaleInstallation };
+    if (!konfiguration) return { verbunden: false, istLokaleInstallation, ...netzwerk };
     return {
       verbunden: true,
       serverUrl: konfiguration.serverUrl,
       gekoppeltAm: konfiguration.gekoppeltAm,
       istLokaleInstallation,
+      ...netzwerk,
     };
   });
 

@@ -92,6 +92,43 @@ function Bestaetige-Systemaenderung {
     }
 }
 
+# Legt (bzw. erneuert) die Windows-Firewall-Regel fuer eingehende Verbindungen auf den App-Port
+# an. -Profile Any statt nur "Privat": Hallen-/Vereins-WLANs stuft Windows haeufig als
+# "oeffentliches Netzwerk" ein - eine auf private Netze beschraenkte Regel wuerde den
+# Hauptanwendungsfall (Helfer-Geraete am Turnierort) stillschweigend blockieren. Der Zugriff
+# bleibt trotzdem aufs lokale Netz beschraenkt (kein Port-Forwarding ins Internet), und die App
+# verlangt weiterhin Anmeldung bzw. Turnier-Code. Loeschen+Neuanlegen statt Aktualisieren haelt
+# die Regel auch bei geaendertem Port aktuell und ist idempotent.
+function Set-TorballFirewallRegel {
+    param([int]$Port)
+    $regelName = "Torball-Turniere Server"
+    Get-NetFirewallRule -DisplayName $regelName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+    New-NetFirewallRule -DisplayName $regelName -Direction Inbound -Action Allow -Protocol TCP `
+        -LocalPort $Port -Profile Any | Out-Null
+    Write-Host "Windows-Firewall-Regel '$regelName' angelegt (eingehend, TCP-Port $Port)."
+}
+
+# Fragt, ob andere Geraete im lokalen Netzwerk auf die App zugreifen koennen sollen (Betriebsmodus
+# "Lokales Netzwerk": Turnier-Codes, Ergebniserfassung durch Helfer-Geraete). Ohne diesen Schritt
+# lauscht die App nur auf dem Rechner selbst (HOST=127.0.0.1) - der Betriebsmodus liefe dann an
+# einer unsichtbaren Huerde ins Leere (Nutzer-Fund 2026-08-21). Kein Bestaetige-Systemaenderung:
+# eine Ablehnung ist hier voellig in Ordnung (die App laeuft dann eben nur lokal), sie darf die
+# Installation nicht abbrechen.
+function Frage-Netzwerkzugriff {
+    param([string]$Standard)
+    Write-Host ""
+    Write-Host "-- Zugriff aus dem lokalen Netzwerk --"
+    Write-Host "Sollen sich andere Geraete im selben Netzwerk mit der App verbinden koennen - z.B. Handys"
+    Write-Host "oder Tablets von Helfern fuer die Ergebniserfassung oder den Zugriff per Turnier-Code?"
+    Write-Host "Auswirkung auf diesen Rechner: Die App wird im lokalen Netzwerk erreichbar gemacht und in"
+    Write-Host "der Windows-Firewall wird eine Regel angelegt, die eingehende Verbindungen auf dem App-Port"
+    Write-Host "erlaubt. Zugriff hat nur, wer im selben (W)LAN ist UND sich in der App anmeldet bzw. einen"
+    Write-Host "Turnier-Code kennt - aus dem Internet ist der Rechner dadurch nicht erreichbar. Ohne diesen"
+    Write-Host "Schritt laesst sich die App nur auf diesem Rechner selbst benutzen."
+    $antwort = Frage-MitDefault -Text "Netzwerkzugriff aktivieren? (j/n)" -Standard $Standard
+    return ($antwort -in @("j", "J", "ja", "Ja", "JA"))
+}
+
 # --- [1/6] Node.js ---------------------------------------------------------------------------
 Write-Host "== [1/6] Node.js =="
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
@@ -413,9 +450,23 @@ try {
 Write-Host ""
 Write-Host "== [5/6] backend/.env =="
 $EnvFile = Join-Path $RepoRoot "backend\.env"
+# Merker fuer die Firewall-Regel - wird weiter unten angewendet, sobald der massgebliche Port
+# feststeht (bei einer Bestandsinstallation steht er erst nach dem Lesen der .env fest).
+$FirewallRegelNoetig = $false
 if (Test-Path $EnvFile) {
     Write-Host "backend/.env existiert bereits - unveraendert gelassen."
     Write-Host "Aenderungen (z.B. Port) spaeter per 'npm run torball -- konfiguration:setzen' in backend/."
+    # Bestandsinstallation ohne Netzwerkzugriff: das Aktivieren einmal ANBIETEN (Standard "nein" -
+    # ein reiner Update-Lauf soll den Zustand nicht ungefragt aendern; wer per erneutem Setup.cmd
+    # gezielt aktivieren will, antwortet mit j). Aeltere Installationen hatten immer HOST=127.0.0.1.
+    $hostZeile = (Get-Content $EnvFile) | Where-Object { $_ -match '^HOST=' } | Select-Object -First 1
+    if ($hostZeile -and ($hostZeile -split '=', 2)[1].Trim() -eq "127.0.0.1") {
+        if (Frage-Netzwerkzugriff -Standard "n") {
+            ((Get-Content $EnvFile) -replace '^HOST=.*', 'HOST=0.0.0.0') | Set-Content -Path $EnvFile -Encoding utf8
+            $FirewallRegelNoetig = $true
+            Write-Host "HOST in backend/.env auf 0.0.0.0 gesetzt - wirkt ab dem naechsten Start der App."
+        }
+    }
 } else {
     Write-Host "Ein paar Angaben zur Konfiguration (Enter uebernimmt den vorgeschlagenen Standardwert):"
     $Port = Frage-MitDefault -Text "Port, unter dem die App laufen soll" -Standard "3000"
@@ -424,12 +475,23 @@ if (Test-Path $EnvFile) {
         $Port = Frage-MitDefault -Text "Port, unter dem die App laufen soll" -Standard "3000"
     }
 
+    # Standard "ja": der Betriebsmodus "Lokales Netzwerk" (Turnier-Codes, Helfer-Erfassung) ist
+    # ein Kernanwendungsfall der lokalen Installation - wer nur allein am Rechner arbeitet,
+    # antwortet mit n und die App bleibt rein lokal (HOST=127.0.0.1, keine Firewall-Regel).
+    $NetzwerkZugriff = Frage-Netzwerkzugriff -Standard "j"
+    $HostWert = if ($NetzwerkZugriff) { "0.0.0.0" } else { "127.0.0.1" }
+    if ($NetzwerkZugriff) { $FirewallRegelNoetig = $true }
+
     # SMTP-Mailversand (Einladungen/Passwort-Reset) wird NICHT hier abgefragt - seit 2026-08-15
     # ueber die Oberflaeche gepflegt (Admin-Menue -> Systemeinstellungen -> "E-Mail-Versand (SMTP)"),
     # kein .env-Wert mehr.
     @"
 PORT=$Port
-HOST=127.0.0.1
+# 0.0.0.0 = auch fuer andere Geraete im lokalen Netzwerk erreichbar (Betriebsmodus "Lokales
+# Netzwerk": Turnier-Codes, Ergebniserfassung durch Helfer); 127.0.0.1 = nur auf diesem Rechner.
+# Nachtraeglich aenderbar durch erneutes Ausfuehren von Setup.cmd (fragt dann danach) - beim
+# Aktivieren gehoert eine Windows-Firewall-Regel fuer den Port dazu.
+HOST=$HostWert
 COUCHDB_URL=http://127.0.0.1:5984
 COUCHDB_DB=$Db
 COUCHDB_USER=$DbUser
@@ -450,6 +512,12 @@ TZ=Europe/Berlin
 # Start-Verknuepfung ist immer die tatsaechliche Datei, nicht die Eingabe von eben.
 $PortZeile = (Get-Content $EnvFile) | Where-Object { $_ -match '^PORT=' } | Select-Object -First 1
 $EffectivePort = if ($PortZeile) { ($PortZeile -split '=', 2)[1].Trim() } else { "3000" }
+
+# Firewall-Regel erst hier anlegen: jetzt steht der massgebliche Port fest (bei einer
+# Bestandsinstallation kommt er aus der vorhandenen .env, nicht aus einer Eingabe von eben).
+if ($FirewallRegelNoetig -and $EffectivePort -match '^\d+$') {
+    Set-TorballFirewallRegel -Port ([int]$EffectivePort)
+}
 
 # --- [6/6] Start-Skript + Desktop-Verknuepfung ---------------------------------------------------
 # "Aktualisieren-Torball.cmd" wird hier bewusst NICHT (mehr) generiert: ihr Inhalt ist rein
@@ -500,6 +568,11 @@ $Shortcut.Save()
 Write-Host ""
 Write-Host "Fertig!"
 Write-Host "Ueber die Desktop-Verknuepfung 'Torball-Turniere' starten (oeffnet http://localhost:$EffectivePort)."
+if ($FirewallRegelNoetig) {
+    Write-Host "Netzwerkzugriff ist aktiv: andere Geraete im selben (W)LAN erreichen die App ueber die"
+    Write-Host "Netzwerk-Adresse dieses Rechners (Port $EffectivePort) - die genaue Adresse zeigt die App im"
+    Write-Host "Turnier unter 'Teilen' bei den Codes fuer das Lokale Netzwerk an."
+}
 Write-Host "Beim allerersten Start fuehrt die Anmeldeseite durch die einmalige Ersteinrichtung des ersten Admin-Kontos."
 Write-Host ""
 Write-Host "Spaeter aktualisieren: 'Aktualisieren-Torball.cmd' im Projektordner doppelklicken (siehe auch AKTUALISIEREN.md)."

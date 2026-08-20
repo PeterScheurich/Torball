@@ -85,6 +85,13 @@ if (Test-Path $StartCmd) {
     Remove-Item -Path $StartCmd -Force
     Write-Host "Start-Torball.cmd entfernt."
 }
+# Vom Installer ggf. angelegte Firewall-Regel (Netzwerkzugriff fuer Helfer-Geraete) mit
+# aufraeumen - reines Entfernen einer Erlaubnis-Regel, macht den Rechner nur restriktiver.
+$fwRegel = Get-NetFirewallRule -DisplayName "Torball-Turniere Server" -ErrorAction SilentlyContinue
+if ($fwRegel) {
+    $fwRegel | Remove-NetFirewallRule
+    Write-Host "Windows-Firewall-Regel 'Torball-Turniere Server' entfernt."
+}
 
 # --- [2/4] Projektdateien: .env + heruntergeladene/gebaute Programmdateien -----------------------
 Write-Host ""

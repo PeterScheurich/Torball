@@ -1454,6 +1454,25 @@ dieser Version gilt der folgende Ablauf:
   ist noch offen. Details: `docs/Protokolle/2026-08-12-windows-installer-option-a.md`,
   Bugfix-Hintergrund: „Nebenbefunde" in `docs/Protokolle/2026-08-13-turnier-sync-grundlage.md`.
 
+**Netzwerkzugriff der lokalen Windows-Installation (2026-08-21, Nutzer-Fund):** Der Installer
+schrieb immer `HOST=127.0.0.1` – damit war die lokale Installation aus dem LAN **gar nicht**
+erreichbar und der Betriebsmodus „Lokales Netzwerk" (Turnier-Codes, Helfer-Erfassung) lief an
+einer unsichtbaren Hürde ins Leere. Jetzt: `installieren-windows.ps1` fragt bei der
+`.env`-Neuanlage per `Frage-Netzwerkzugriff` (Standard „ja"; bewusst KEIN
+`Bestaetige-Systemaenderung`, da eine Ablehnung die Installation nicht abbrechen darf), setzt
+entsprechend `HOST=0.0.0.0` oder `127.0.0.1` und legt bei Ja eine Windows-Firewall-Regel für den
+App-Port an (`Set-TorballFirewallRegel`, `-Profile Any` – Hallen-WLANs gelten in Windows oft als
+„öffentlich"). Bestandsinstallationen mit `HOST=127.0.0.1` bekommen die Frage beim erneuten
+`Setup.cmd`-Lauf angeboten (Standard dort „nein"); der Deinstaller räumt die Regel mit ab.
+`GET /sync/status` liefert **nur** bei `istLokaleInstallation` zusätzlich `lanErreichbar` (HOST ≠
+127.0.0.1) und `netzwerkAdressen` (IPv4 ohne Loopback) – bewusst nicht auf Server-Instanzen
+(öffentliche Route, keine internen IPs preisgeben). `TurnierFreigabe.tsx` zeigt bei den
+Turnier-Codes darauf aufbauend: Warnung, wenn Netzwerkzugriff deaktiviert ist, bzw. die
+tatsächlichen Netzwerk-Adressen, wenn die Sitzung über „localhost" läuft – Links/QR-Codes
+übernehmen die Adresse aus der Browserzeile, ein localhost-QR wäre für andere Geräte wertlos.
+Spätestens mit der digitalen Protokollierung wird dieser Bereich laut Nutzer ohnehin nochmal
+angefasst – das hier ist die bewusst schlanke Lösung für jetzt.
+
 **Windows-Installer: jede Änderung an DIESEM Rechner (nicht am Projektordner selbst) erst erklären
 und um Zustimmung fragen, alltagssprachlich statt fachlich (2026-08-19, Nutzer-Vorgabe, zweistufig
 entwickelt):** Zielgruppe sind explizit auch technisch wenig versierte Personen. Erster Anlauf war

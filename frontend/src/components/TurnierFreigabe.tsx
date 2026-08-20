@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Turnier, TurnierBerechtigung, TurnierRolle } from "@torball/shared";
 import {
   getBenutzerListe,
+  getLokaleSyncStatus,
   getTurnierBerechtigungen,
   getTurnierCodes,
   turnierBerechtigungEntziehen,
@@ -9,6 +10,7 @@ import {
   turnierCodesSetzen,
   updateTurnier,
   type BenutzerProfil,
+  type LokaleSyncStatus,
   type TurnierCodesStatus,
 } from "../api";
 
@@ -56,6 +58,14 @@ export function TurnierFreigabe({
   const [spielleitungCodeEingabe, setSpielleitungCodeEingabe] = useState("");
   const [codesFehler, setCodesFehler] = useState<string | undefined>();
   const [codesHinweis, setCodesHinweis] = useState<string | undefined>();
+  // Nur fuer den Netzwerk-Hinweis bei den Turnier-Codes relevant (lokale Windows-Installation):
+  // andere Geraete erreichen die App nicht unter "localhost", und mit HOST=127.0.0.1 gar nicht.
+  const [syncStatus, setSyncStatus] = useState<LokaleSyncStatus | undefined>();
+  useEffect(() => {
+    getLokaleSyncStatus()
+      .then(setSyncStatus)
+      .catch(() => setSyncStatus(undefined));
+  }, []);
 
   const laden = useCallback(async () => {
     try {
@@ -239,6 +249,37 @@ export function TurnierFreigabe({
         „Lokales Netzwerk"). Wer den Code kennt, meldet sich unter{" "}
         <code>{`${window.location.origin}/turniere/${turnierId}/code`}</code> an.
       </p>
+
+      {/* Lokale Windows-Installation: ohne aktivierten Netzwerkzugriff (HOST=127.0.0.1, der
+          Installer-Default bei verneinter Netzwerk-Frage) koennen sich andere Geraete GAR NICHT
+          verbinden - der Betriebsmodus "Lokales Netzwerk" liefe sonst an einer unsichtbaren
+          Huerde ins Leere (Nutzer-Fund 2026-08-21). */}
+      {syncStatus?.istLokaleInstallation && syncStatus.lanErreichbar === false && (
+        <p role="alert">
+          ⚠ Andere Geräte können sich mit dieser Installation derzeit <strong>nicht</strong> verbinden: Beim
+          Installieren wurde der Zugriff aus dem lokalen Netzwerk nicht aktiviert. Zum Aktivieren{" "}
+          <code>Setup.cmd</code> im Projektordner erneut ausführen und die Frage zum Netzwerkzugriff mit „Ja"
+          beantworten.
+        </p>
+      )}
+      {/* Links/QR-Codes uebernehmen die Adresse aus der Browserzeile - eine unter "localhost"
+          geoeffnete Sitzung erzeugt fuer andere Geraete unbrauchbare Links. */}
+      {syncStatus?.istLokaleInstallation &&
+        syncStatus.lanErreichbar &&
+        ["localhost", "127.0.0.1"].includes(window.location.hostname) &&
+        (syncStatus.netzwerkAdressen?.length ?? 0) > 0 && (
+          <p>
+            Für andere Geräte im Netzwerk gilt statt „localhost" die Netzwerk-Adresse dieses Rechners:{" "}
+            {syncStatus.netzwerkAdressen!.map((adresse, i) => (
+              <span key={adresse}>
+                {i > 0 && " oder "}
+                <code>{`http://${adresse}${window.location.port ? `:${window.location.port}` : ""}/turniere/${turnierId}/code`}</code>
+              </span>
+            ))}
+            . Wichtig: Links und QR-Codes übernehmen die Adresse aus der Browserzeile – zum Weitergeben die App am
+            besten selbst über diese Netzwerk-Adresse öffnen.
+          </p>
+        )}
 
       {codesFehler && <p role="alert">{codesFehler}</p>}
       {codesHinweis && <p>{codesHinweis}</p>}

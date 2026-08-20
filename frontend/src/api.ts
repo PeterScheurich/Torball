@@ -1008,6 +1008,13 @@ export interface LokaleSyncStatus {
   /** Spiegelt SERVE_FRONTEND - nur im Einzelprozess-Modus der Windows-Installation ergibt eine
    *  Kopplung als "lokale Installation" ueberhaupt Sinn (siehe EinstellungenPage.tsx). */
   istLokaleInstallation: boolean;
+  /** Nur bei istLokaleInstallation gesetzt: lauscht das Backend auch fuer andere Geraete im
+   *  lokalen Netzwerk (HOST != 127.0.0.1)? Ohne das laeuft der Betriebsmodus "Lokales Netzwerk"
+   *  (Turnier-Codes, Helfer-Erfassung) ins Leere - siehe Hinweis in TurnierFreigabe.tsx. */
+  lanErreichbar?: boolean;
+  /** Nur bei istLokaleInstallation gesetzt: IPv4-Adressen dieses Rechners im lokalen Netzwerk -
+   *  unter diesen Adressen (plus Port) erreichen andere Geraete die App. */
+  netzwerkAdressen?: string[];
 }
 
 export function getLokaleSyncStatus(): Promise<LokaleSyncStatus> {
