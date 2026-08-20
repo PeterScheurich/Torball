@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type {
+  ErgebnisAenderung,
   ErgebnisToken,
   MannschaftImTurnier,
   Protokollierungsart,
@@ -8,6 +9,7 @@ import type {
   Spieler,
   SpielplanBasis,
   Turnier,
+  TurnierBerechtigung,
   TurnierCheckout,
   Turnierregeln,
   TurnierStatus,
@@ -633,6 +635,14 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
 
     const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: bestehend._id });
     for (const spiel of spiele) {
+      // Ergebnis-Aenderungen haengen am spielId (Audit der Token-Erfassung) - vor dem Spiel mitloeschen.
+      const aenderungen = await findAllBySelector<ErgebnisAenderung>({
+        docType: "ergebnisAenderung",
+        spielId: spiel._id,
+      });
+      for (const a of aenderungen) {
+        await deleteDoc(a._id, a._rev!);
+      }
       await deleteDoc(spiel._id, spiel._rev!);
     }
 
@@ -643,6 +653,33 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     });
     for (const s of schiedsrichter) {
       await deleteDoc(s._id, s._rev!);
+    }
+
+    // Weitere direkt am Turnier haengende Dokumente mitloeschen, sonst bleiben sie als Waisen zurueck
+    // (Backend-Review 2026-08-20, Karte C): Ergebnis-Token (externe Erfassungslinks), vergebene
+    // Berechtigungen und Sync-Checkouts. Ein aktives Checkout ist durch die Sperre oben bereits
+    // ausgeschlossen; freigegebene/alte bleiben sonst liegen.
+    for (const docType of ["ergebnisToken", "turnierBerechtigung", "turnierCheckout"] as const) {
+      const treffer = await findAllBySelector<ErgebnisToken | TurnierBerechtigung | TurnierCheckout>({
+        docType,
+        turnierId: bestehend._id,
+      });
+      for (const t of treffer) {
+        await deleteDoc(t._id, t._rev!);
+      }
+    }
+
+    // Gehoert das Turnier zu einem Wettbewerb (Hin-/Rueckspieltag) und war es der letzte verbliebene
+    // Spieltag, den verwaisten Wettbewerb ebenfalls loeschen - referenziert ihn noch ein anderes
+    // Turnier, bleibt er bestehen.
+    if (bestehend.wettbewerbId) {
+      const andereImWettbewerb = (
+        await findAllBySelector<Turnier>({ docType: "turnier", wettbewerbId: bestehend.wettbewerbId })
+      ).filter((t) => t._id !== bestehend._id);
+      if (andereImWettbewerb.length === 0) {
+        const wettbewerb = await findById<Wettbewerb>(bestehend.wettbewerbId);
+        if (wettbewerb) await deleteDoc(wettbewerb._id, wettbewerb._rev!);
+      }
     }
 
     await deleteDoc(bestehend._id, bestehend._rev!);

@@ -16,7 +16,7 @@ const hatCouchDbKonfiguration =
   !!process.env.COUCHDB_PASSWORD;
 
 test(
-  "DELETE /turniere/:id loescht auch zugehoerige Mannschaften, Spieler, Schiedsrichter und Spiele (Kaskade)",
+  "DELETE /turniere/:id loescht die vollstaendige Kaskade (Mannschaften/Spieler/Schiedsrichter/Spiele + Token/Berechtigungen/Checkouts/Ergebnis-Aenderungen/verwaisten Wettbewerb)",
   { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
   async () => {
     const { findAllBySelector, findById, insertDoc, newId, deleteDoc } = await import("../repository");
@@ -53,11 +53,21 @@ test(
     } as unknown as Parameters<typeof insertDoc>[0]);
     const { token: sessionToken, session } = await erstelleSession(benutzerId);
 
+    const wettbewerbId = newId("wettbewerb");
+    await insertDoc({
+      _id: wettbewerbId,
+      docType: "wettbewerb",
+      wettbewerbId,
+      name: "Kaskaden-Test-Wettbewerb",
+      erstelltAm: new Date().toISOString(),
+    } as unknown as Parameters<typeof insertDoc>[0]);
+
     const turnierId = newId("turnier");
     await insertDoc({
       _id: turnierId,
       docType: "turnier",
       turnierId,
+      wettbewerbId,
       name: "Kaskaden-Test-Turnier",
       datum: "2026-08-10",
       status: "entwurf",
@@ -147,6 +157,54 @@ test(
       ergebnisAbgeschlossen: false,
     } as unknown as Parameters<typeof insertDoc>[0]);
 
+    // Weitere direkt/indirekt am Turnier haengende Dokumente (Backend-Review Karte C).
+    const ergebnisTokenId = newId("ergebnisToken");
+    await insertDoc({
+      _id: ergebnisTokenId,
+      docType: "ergebnisToken",
+      tokenId: ergebnisTokenId,
+      turnierId,
+      tokenWert: "kaskaden-test-token",
+      erstelltAm: new Date().toISOString(),
+      widerrufen: false,
+    } as unknown as Parameters<typeof insertDoc>[0]);
+
+    const berechtigungId = newId("turnierBerechtigung");
+    await insertDoc({
+      _id: berechtigungId,
+      docType: "turnierBerechtigung",
+      berechtigungId,
+      turnierId,
+      benutzerId,
+      rolle: "lesen",
+      vergebenAm: new Date().toISOString(),
+    } as unknown as Parameters<typeof insertDoc>[0]);
+
+    const checkoutId = newId("turnierCheckout");
+    await insertDoc({
+      _id: checkoutId,
+      docType: "turnierCheckout",
+      checkoutId,
+      turnierId,
+      instanzId: "verbundeneInstanz:kaskaden-test",
+      // "freigegeben" (nicht aktiv) - sonst wuerde die Ausgecheckt-Sperre das Loeschen blockieren.
+      status: "freigegeben",
+      stammdatenMitnehmen: false,
+      angefordertAm: new Date().toISOString(),
+    } as unknown as Parameters<typeof insertDoc>[0]);
+
+    const aenderungId = newId("ergebnisAenderung");
+    await insertDoc({
+      _id: aenderungId,
+      docType: "ergebnisAenderung",
+      aenderungId,
+      spielId,
+      erfasserName: "Tester",
+      neuerWertA: 1,
+      neuerWertB: 0,
+      zeitstempel: new Date().toISOString(),
+    } as unknown as Parameters<typeof insertDoc>[0]);
+
     try {
       const response = await app.inject({
         method: "DELETE",
@@ -181,15 +239,43 @@ test(
         0,
         "Schiedsrichter haetten mit dem Turnier mitgeloescht werden muessen",
       );
+
+      // Erweiterte Kaskade (Karte C): keine Waisen-Dokumente zurueckgeblieben.
+      assert.equal(
+        (await findAllBySelector({ docType: "ergebnisToken", turnierId })).length,
+        0,
+        "Ergebnis-Token haetten mitgeloescht werden muessen",
+      );
+      assert.equal(
+        (await findAllBySelector({ docType: "turnierBerechtigung", turnierId })).length,
+        0,
+        "Berechtigungen haetten mitgeloescht werden muessen",
+      );
+      assert.equal(
+        (await findAllBySelector({ docType: "turnierCheckout", turnierId })).length,
+        0,
+        "Checkouts haetten mitgeloescht werden muessen",
+      );
+      assert.equal(
+        (await findAllBySelector({ docType: "ergebnisAenderung", spielId })).length,
+        0,
+        "Ergebnis-Aenderungen haetten mitgeloescht werden muessen",
+      );
+      assert.equal(await findById(wettbewerbId), null, "verwaister Wettbewerb haette mitgeloescht werden muessen");
     } finally {
       // Aufraeumen falls der Test selbst fehlschlaegt, bevor die Kaskade greifen konnte.
       for (const id of [
         turnierId,
+        wettbewerbId,
         mannschaftAId,
         mannschaftBId,
         spielId,
         spielerId,
         schiedsrichterId,
+        ergebnisTokenId,
+        berechtigungId,
+        checkoutId,
+        aenderungId,
         benutzerId,
         session._id,
       ]) {
