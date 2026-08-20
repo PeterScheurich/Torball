@@ -3,6 +3,7 @@ import type { MannschaftImTurnier, Spiel, Turnier } from "@torball/shared";
 import {
   erzeugeErgebnisToken,
   getErgebnisToken,
+  getLokaleSyncStatus,
   getMannschaften,
   getSpiele,
   getTabelle,
@@ -11,6 +12,7 @@ import {
   spielErgebnisSetzen,
   turnierSpieleAbschliessen,
   widerrufeErgebnisToken,
+  type LokaleSyncStatus,
   type TabellenZeile,
 } from "../api";
 import { useErgebnisEingaben } from "../useErgebnisEingaben";
@@ -45,6 +47,15 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
   const [linkHinweis, setLinkHinweis] = useState<string | undefined>();
   const [geradeGespeichert, setGeradeGespeichert] = useState<string | null>(null);
   const { eingaben, setFeld, konflikte, uebernehmeServer } = useErgebnisEingaben(spiele);
+  // Nur fuer den Netzwerk-Hinweis beim Erfassungslink relevant (lokale Windows-Installation):
+  // Link und QR-Code uebernehmen die Adresse aus der Browserzeile - eine "localhost"-Sitzung
+  // erzeugt fuer Helfer-Geraete unbrauchbare Links (gleiches Muster wie TurnierFreigabe.tsx).
+  const [syncStatus, setSyncStatus] = useState<LokaleSyncStatus | undefined>();
+  useEffect(() => {
+    getLokaleSyncStatus()
+      .then(setSyncStatus)
+      .catch(() => setSyncStatus(undefined));
+  }, []);
 
   function markiereGespeichert(spielId: string) {
     setGeradeGespeichert(spielId);
@@ -220,7 +231,18 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
     return fehler ? <p role="alert">{fehler}</p> : <p>Lädt…</p>;
   }
 
-  const erfassungsLink = tokenWert ? `${window.location.origin}/ergebnis-erfassung/${tokenWert}` : undefined;
+  // Link + QR-Code uebernehmen normalerweise die Adresse aus der Browserzeile - auf einer lokalen
+  // Installation, die (wie ueblich) ueber "localhost" geoeffnet wurde, waere beides fuer
+  // Helfer-Geraete wertlos (live erlebt, 2026-08-21). Gibt es GENAU EINE Netzwerk-Adresse, werden
+  // Link und QR deshalb direkt mit ihr gebaut; bei mehreren Adressen (mehrdeutig, z.B. virtuelle
+  // Netzwerkkarten) bleibt die Browser-Adresse und ein Hinweis listet die Alternativen auf.
+  const aufLocalhost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+  const lanAdressen =
+    syncStatus?.istLokaleInstallation && syncStatus.lanErreichbar ? (syncStatus.netzwerkAdressen ?? []) : [];
+  const portTeil = window.location.port ? `:${window.location.port}` : "";
+  const linkBasis =
+    aufLocalhost && lanAdressen.length === 1 ? `http://${lanAdressen[0]}${portTeil}` : window.location.origin;
+  const erfassungsLink = tokenWert ? `${linkBasis}/ergebnis-erfassung/${tokenWert}` : undefined;
   // Abgeschlossenes Turnier: Ergebnis-Aktionen sperren. Die einzelnen Ergebnisfelder sind ohnehin
   // ueber ergebnisAbgeschlossen deaktiviert; zusaetzlich das "Alle abschliessen" sinnlos und der
   // externe Erfassungslink wird beim Abschliessen serverseitig widerrufen (hier nicht mehr anbieten).
@@ -421,6 +443,34 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
             Wer diesen Link hat, kann Endergebnisse dieses Turniers eintragen - ohne eigenen Account. Sinnvoll, um die
             Ergebniserfassung an die Spielleitung vor Ort weiterzugeben.
           </p>
+          {/* Netzwerk-Hinweise fuer die lokale Windows-Installation (gleiches Muster wie bei den
+              Turnier-Codes in TurnierFreigabe.tsx). */}
+          {syncStatus?.istLokaleInstallation && syncStatus.lanErreichbar === false && (
+            <p role="alert">
+              ⚠ Andere Geräte können sich mit dieser Installation derzeit <strong>nicht</strong> verbinden - der Link
+              würde nur auf diesem Rechner funktionieren. Zum Aktivieren des Netzwerkzugriffs <code>Setup.cmd</code> im
+              Projektordner erneut ausführen und die Frage zum Netzwerkzugriff mit „Ja" beantworten.
+            </p>
+          )}
+          {aufLocalhost && lanAdressen.length === 1 && (
+            <p>
+              Link und QR-Code verwenden die Netzwerk-Adresse dieses Rechners (<code>{lanAdressen[0]}</code>), damit
+              sie auch auf anderen Geräten im selben Netzwerk funktionieren.
+            </p>
+          )}
+          {aufLocalhost && lanAdressen.length > 1 && (
+            <p>
+              Dieser Rechner hat mehrere Netzwerk-Adressen - Link und QR-Code verwenden deshalb „localhost" und
+              funktionieren nur hier. Für andere Geräte die App selbst über eine der Netzwerk-Adressen öffnen (
+              {lanAdressen.map((adresse, i) => (
+                <span key={adresse}>
+                  {i > 0 && " oder "}
+                  <code>{`http://${adresse}${portTeil}`}</code>
+                </span>
+              ))}
+              ) und den Link/QR-Code von dort weitergeben.
+            </p>
+          )}
           {erfassungsLink ? (
             <p>
               <input type="text" readOnly value={erfassungsLink} onFocus={(e) => e.target.select()} />
