@@ -18,6 +18,11 @@ import { QrCode } from "./QrCode";
 
 interface Props {
   turnierId: string;
+  /** Wird nach jedem Laden/Aendern mit der aktuellen Spieleliste aufgerufen - wichtig fuer
+   *  Eltern-Seiten, die daraus eigene Sperren ableiten (spielplanGesperrt in
+   *  TurnierVerwaltenPage): sobald hier ein Ergebnis erfasst/abgeschlossen wird, muss die
+   *  Spielzeit-/Spielmodus-Sperre dort sofort greifen, nicht erst nach einem Neuladen. */
+  onGeaendert?: (spiele: Spiel[]) => void;
 }
 
 /** Intervall fuers automatische Aktualisieren (damit zeitgleich per Token-Link erfasste Ergebnisse erscheinen). */
@@ -30,7 +35,7 @@ const AKTUALISIER_INTERVALL_MS = 10_000;
  * erzeugen/widerrufen. Aktualisiert sich per Polling, damit parallel per Link erfasste
  * Ergebnisse erscheinen (Sync-Logik in useErgebnisEingaben.ts).
  */
-export function ErgebnisVerwaltung({ turnierId }: Props) {
+export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
   const [turnier, setTurnier] = useState<Turnier | undefined>();
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [spiele, setSpiele] = useState<Spiel[]>([]);
@@ -60,10 +65,12 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
       setSpiele(s);
       setTabelle(tab);
       setTokenWert(token.tokenWert);
+      onGeaendert?.(s);
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [turnierId]);
 
   /** Leichtgewichtiges Aktualisieren fuers Polling: nur die Daten, die sich mit Ergebnissen aendern. */
@@ -72,9 +79,11 @@ export function ErgebnisVerwaltung({ turnierId }: Props) {
       const [s, tab] = await Promise.all([getSpiele(turnierId), getTabelle(turnierId)]);
       setSpiele(s);
       setTabelle(tab);
+      onGeaendert?.(s);
     } catch {
       /* stiller Poll-Fehler - keine Seiten-Fehlermeldung, der naechste Versuch folgt automatisch */
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [turnierId]);
 
   useEffect(() => {

@@ -125,8 +125,12 @@ export function DruckansichtPage() {
     const nameVon = (mId: string) => mannschaften.find((m) => m._id === mId)?.name ?? mId;
     const feldName = (feldId?: string) => turnier.felder.find((f) => f.feldId === feldId)?.name ?? feldId ?? "";
     const nachRunde = (a: Spiel, b: Spiel) => Number(a.runde) - Number(b.runde);
-    const alsZeile = (s: Spiel, i: number): SpielZeile => ({
-      nr: i + 1,
+    // Spielnummer ueber den GESAMTEN sortierten Spielplan vergeben - das Schiedsrichter-Blatt
+    // filtert pro Person, seine Nummern muessen aber zum ausgehaengten Spielplan passen.
+    const spieleSortiert = [...spiele].sort(nachRunde);
+    const nrVon = new Map(spieleSortiert.map((s, i) => [s._id, i + 1]));
+    const alsZeile = (s: Spiel): SpielZeile => ({
+      nr: nrVon.get(s._id) ?? 0,
       zeit: formatiereUhrzeit(s.startzeitGeplant),
       feld: feldName(s.feldId),
       teamA: nameVon(s.mannschaftAId),
@@ -134,7 +138,7 @@ export function DruckansichtPage() {
     });
 
     if (dokTyp === "spielplan") {
-      const zeilen = [...spiele].sort(nachRunde).map(alsZeile);
+      const zeilen = spieleSortiert.map(alsZeile);
       return baueSpielplanDokument(g, zeilen, mehrereFelder, ergebnisSeiteUrl);
     }
     if (dokTyp === "ergebnisse") {
@@ -152,8 +156,8 @@ export function DruckansichtPage() {
         tordifferenz: z.tordifferenz,
         punkte: z.punkte,
       }));
-      const ergebnisSpiele = [...spiele].sort(nachRunde).map((s, i) => ({
-        ...alsZeile(s, i),
+      const ergebnisSpiele = spieleSortiert.map((s) => ({
+        ...alsZeile(s),
         ergebnis: s.ergebnisA != null && s.ergebnisB != null ? `${s.ergebnisA} : ${s.ergebnisB}` : "–",
       }));
       return baueErgebnisDokument(
@@ -171,10 +175,7 @@ export function DruckansichtPage() {
       const eintraege = pfeifende
         .map((sr) => ({
           name: sr.vorname ? `${sr.vorname} ${sr.name}` : sr.name,
-          spiele: spiele
-            .filter((s) => s.schiedsrichterId === sr._id)
-            .sort(nachRunde)
-            .map(alsZeile),
+          spiele: spieleSortiert.filter((s) => s.schiedsrichterId === sr._id).map(alsZeile),
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
       return baueSchiedsrichterDokument(g, eintraege, mehrereFelder, ergebnisSeiteUrl);

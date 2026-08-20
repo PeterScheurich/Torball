@@ -38,8 +38,10 @@ export function spielplanBasisAenderungen(turnier: Turnier, mannschaften: Mannsc
     aenderungen.push(`Pause zwischen Halbzeiten: ${basis.pauseMinuten} → ${turnier.pauseMinuten} min`);
   }
   if (basis.pauseZwischenSpielenMinuten !== turnier.pauseZwischenSpielenMinuten) {
+    // "—" fuer Basis-Schnappschuesse aus der Zeit vor Einfuehrung des Feldes (sonst stuende
+    // woertlich "undefined" im Hinweis).
     aenderungen.push(
-      `Pause zwischen Spielen: ${basis.pauseZwischenSpielenMinuten} → ${turnier.pauseZwischenSpielenMinuten} min`,
+      `Pause zwischen Spielen: ${basis.pauseZwischenSpielenMinuten ?? "—"} → ${turnier.pauseZwischenSpielenMinuten ?? "—"} min`,
     );
   }
   if (basis.anzahlHalbzeiten !== turnier.anzahlHalbzeiten) {

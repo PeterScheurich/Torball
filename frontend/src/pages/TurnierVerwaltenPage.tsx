@@ -852,7 +852,15 @@ export function TurnierVerwaltenPage() {
       </div>
 
       <div role="tabpanel" id="panel-spielplan" aria-labelledby="tab-spielplan" hidden={aktiverTab !== "spielplan"}>
-        <SpielplanVerwaltung turnierId={turnierId} gesperrt={eingabeGesperrt} onTurnierGeaendert={setTurnier} />
+        {/* onGeaendert haelt den eigenen spiele-State (fuer spielplanGesperrt) aktuell - sonst
+            bliebe die Spielzeit-/Spielmodus-Sperre bis zum naechsten Neuladen der Seite aus,
+            obwohl hier gerade ein Spiel gestartet wurde. */}
+        <SpielplanVerwaltung
+          turnierId={turnierId}
+          gesperrt={eingabeGesperrt}
+          onTurnierGeaendert={setTurnier}
+          onGeaendert={setSpiele}
+        />
       </div>
 
       <div role="tabpanel" id="panel-ergebnisse" aria-labelledby="tab-ergebnisse" hidden={aktiverTab !== "ergebnisse"}>
@@ -860,7 +868,9 @@ export function TurnierVerwaltenPage() {
             bei einem ausgecheckten Turnier lehnt der Server aber JEDE Ergebnisaenderung ab, deshalb
             hier zusaetzlich nativ ueber ein disabled-<fieldset> sperren. */}
         <fieldset className="blank-fieldset" disabled={ausgecheckt}>
-          <ErgebnisVerwaltung turnierId={turnierId} />
+          {/* onGeaendert wie beim Spielplan: ein hier erfasstes Ergebnis muss die
+              Spielzeit-/Spielmodus-Sperre (spielplanGesperrt) sofort ausloesen. */}
+          <ErgebnisVerwaltung turnierId={turnierId} onGeaendert={setSpiele} />
         </fieldset>
       </div>
     </>

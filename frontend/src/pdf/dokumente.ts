@@ -67,6 +67,9 @@ export interface Grunddaten {
 }
 
 export interface SpielZeile {
+  /** Spielnummer im GESAMTEN Spielplan (nicht der Index einer Teilmenge) - wichtig fuers
+   *  Schiedsrichter-Blatt: dessen gefilterte Spiele muessen dieselben Nummern tragen wie
+   *  der ausgehaengte Spielplan, sonst stimmt der Querverweis nicht. */
   nr: number;
   zeit?: string;
   feld?: string;
@@ -129,10 +132,10 @@ function spielSpalten(mehrereFelder: boolean): string[] {
 }
 
 function spielZeilen(spiele: SpielZeile[], mehrereFelder: boolean): string[][] {
-  return spiele.map((s, i) =>
+  return spiele.map((s) =>
     mehrereFelder
-      ? [String(i + 1), s.zeit ?? "", s.feld ?? "", s.teamA, s.teamB]
-      : [String(i + 1), s.zeit ?? "", s.teamA, s.teamB],
+      ? [String(s.nr), s.zeit ?? "", s.feld ?? "", s.teamA, s.teamB]
+      : [String(s.nr), s.zeit ?? "", s.teamA, s.teamB],
   );
 }
 
@@ -245,10 +248,10 @@ export function baueErgebnisDokument(
   const ergebnisSpalten = mehrereFelder
     ? ["#", "Zeit", "Feld", "Mannschaft A", "Ergebnis", "Mannschaft B"]
     : ["#", "Zeit", "Mannschaft A", "Ergebnis", "Mannschaft B"];
-  const ergebnisZeilen = spiele.map((s, i) =>
+  const ergebnisZeilen = spiele.map((s) =>
     mehrereFelder
-      ? [String(i + 1), s.zeit ?? "", s.feld ?? "", s.teamA, s.ergebnis, s.teamB]
-      : [String(i + 1), s.zeit ?? "", s.teamA, s.ergebnis, s.teamB],
+      ? [String(s.nr), s.zeit ?? "", s.feld ?? "", s.teamA, s.ergebnis, s.teamB]
+      : [String(s.nr), s.zeit ?? "", s.teamA, s.ergebnis, s.teamB],
   );
 
   return {

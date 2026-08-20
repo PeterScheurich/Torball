@@ -19,6 +19,7 @@ import { spielplanBasisAenderungen } from "../spielplanBasisDiff";
 import { berechneStartzeit, spieldauerMinuten } from "../zeitplanung";
 
 const BACK_TO_BACK_HINWEIS = "Direktes Folgespiel (Back-to-Back) konnte nicht vermieden werden";
+const DOPPELBELEGUNG_HINWEIS = "Eine Mannschaft dieses Spiels ist in derselben Runde mehrfach eingeplant";
 const UEBERSCHNEIDUNG_HINWEIS = "Neue Startzeit überschneidet sich mit dem vorherigen Spiel auf diesem Feld.";
 const MAX_VERLAUF = 10;
 
@@ -26,6 +27,7 @@ const MAX_VERLAUF = 10;
  * title-Tooltip zur Verfuegung (Maus drueber), damit die Tabelle nicht unnoetig breit wird. */
 const HINWEIS_KURZ: Record<string, string> = {
   [BACK_TO_BACK_HINWEIS]: "Back-to-Back",
+  [DOPPELBELEGUNG_HINWEIS]: "Doppelbelegung",
 };
 
 function hinweisKurz(hinweis: string | undefined): string {
@@ -64,18 +66,26 @@ interface WarnbarerEintrag {
  * Prueft direkte Folgespiele ueber die echte Zeit-Slot-Nachbarschaft (nicht die
  * Listenposition!): bei mehreren Feldern koennen zwei Spiele denselben Slot teilen
  * (= gleichzeitig auf verschiedenen Feldern), eine reine "voriger Listeneintrag"-
- * Pruefung wuerde dann teils die falschen Nachbarn vergleichen.
+ * Pruefung wuerde dann teils die falschen Nachbarn vergleichen. Zusaetzlich wird eine
+ * Doppelbelegung erkannt (Mannschaft zweimal im selben Slot - harte Regel, ueber die
+ * manuelle Runden-Aenderung trotzdem herstellbar); sie hat als schwererer Verstoss
+ * Vorrang vor dem Back-to-Back-Hinweis.
  */
 function slotWarnungen<T extends WarnbarerEintrag>(eintraege: T[]): (string | undefined)[] {
-  const teamsProSlot = new Map<number, Set<string>>();
+  const anzahlProSlot = new Map<number, Map<string, number>>();
   for (const e of eintraege) {
-    const set = teamsProSlot.get(e.slot) ?? new Set<string>();
-    set.add(e.mannschaftAId);
-    set.add(e.mannschaftBId);
-    teamsProSlot.set(e.slot, set);
+    const anzahl = anzahlProSlot.get(e.slot) ?? new Map<string, number>();
+    for (const team of [e.mannschaftAId, e.mannschaftBId]) {
+      anzahl.set(team, (anzahl.get(team) ?? 0) + 1);
+    }
+    anzahlProSlot.set(e.slot, anzahl);
   }
   return eintraege.map((e) => {
-    const vorSlot = teamsProSlot.get(e.slot - 1);
+    const imSlot = anzahlProSlot.get(e.slot);
+    if ([e.mannschaftAId, e.mannschaftBId].some((team) => (imSlot?.get(team) ?? 0) > 1)) {
+      return DOPPELBELEGUNG_HINWEIS;
+    }
+    const vorSlot = anzahlProSlot.get(e.slot - 1);
     const betroffen = vorSlot?.has(e.mannschaftAId) || vorSlot?.has(e.mannschaftBId);
     return betroffen ? BACK_TO_BACK_HINWEIS : undefined;
   });
@@ -359,7 +369,8 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
         slot: index,
         startzeitGeplant: berechneStartzeit(turnier, index),
       }));
-      setVorschlag(neu.map((e, i) => ({ ...e, warnung: slotWarnungen(neu)[i] })));
+      const warnungen = slotWarnungen(neu);
+      setVorschlag(neu.map((e, i) => ({ ...e, warnung: warnungen[i] })));
       return;
     }
 

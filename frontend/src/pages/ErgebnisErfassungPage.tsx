@@ -163,8 +163,9 @@ export function ErgebnisErfassungPage() {
 
       <KontextHilfe>
         <p>
-          Trage für jedes Spiel die Tore beider Mannschaften ein und speichere die Zeile mit dem 💾-Knopf. Die Liste
-          aktualisiert sich automatisch, sodass Eingaben von anderen Geräten von selbst erscheinen.
+          Trage für jedes Spiel die Tore beider Mannschaften ein – gespeichert wird automatisch, sobald du das
+          Eingabefeld verlässt. Die Liste aktualisiert sich automatisch, sodass Eingaben von anderen Geräten von
+          selbst erscheinen.
         </p>
         <p>Dein Name wird bei jeder Eingabe mitprotokolliert.</p>
         <p>Ein bereits abgeschlossenes Ergebnis kann nur noch die Turnierleitung ändern.</p>

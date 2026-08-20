@@ -112,9 +112,18 @@ export function turnierPruefen(daten: PruefDaten): PruefErgebnis[] {
     );
   }
 
-  // Back-to-Back-Spiele (Mannschaft zwei Spiele direkt hintereinander) je Feld
-  const back = spiele.length > 0 ? findeBackToBack(spiele, nameVon) : [];
+  // Doppelbelegung (Mannschaft zweimal im selben Zeit-Slot) und Back-to-Back-Spiele
+  // (zwei Spiele in direkt aufeinanderfolgenden Slots) - beide muessen auch fuer den
+  // gespeicherten, manuell geaenderten Spielplan gelten, nicht nur fuer den Vorschlag.
   if (spiele.length > 0) {
+    const doppelt = findeDoppelteSlotBelegung(spiele, nameVon);
+    ergebnisse.push(
+      doppelt.length === 0
+        ? { titel: "Keine Doppelbelegung", status: "ok", text: "Keine Mannschaft ist in derselben Runde mehrfach eingeplant." }
+        : { titel: "Keine Doppelbelegung", status: "hinweis", text: doppelt.join("; ") + "." },
+    );
+
+    const back = findeBackToBack(spiele, nameVon);
     ergebnisse.push(
       back.length === 0
         ? { titel: "Keine Spiele hintereinander", status: "ok", text: "Keine Mannschaft spielt zweimal direkt nacheinander." }
@@ -144,18 +153,54 @@ export function turnierPruefen(daten: PruefDaten): PruefErgebnis[] {
   return ergebnisse;
 }
 
-/** Findet Mannschaften, die je Feld in aufeinanderfolgenden Runden spielen (Back-to-Back). */
+/** Mannschaften je Zeit-Slot (runde), ueber alle Felder hinweg. */
+function teamsProSlot(spiele: Spiel[]): Map<number, Set<string>> {
+  const map = new Map<number, Set<string>>();
+  for (const s of spiele) {
+    const slot = Number(s.runde);
+    const set = map.get(slot) ?? new Set<string>();
+    set.add(s.mannschaftAId);
+    set.add(s.mannschaftBId);
+    map.set(slot, set);
+  }
+  return map;
+}
+
+/**
+ * Findet Mannschaften, die in direkt aufeinanderfolgenden Zeit-Slots spielen (Back-to-Back).
+ * Gleiche Slot-Mengen-Logik wie slotWarnungen() in SpielplanVerwaltung.tsx: verglichen wird
+ * die echte Slot-Nachbarschaft, nicht benachbarte Listeneintraege - bei mehreren Feldern
+ * teilen sich zwei Spiele denselben Slot, ein Folgespiel kann auch auf dem anderen Feld liegen.
+ */
 function findeBackToBack(spiele: Spiel[], nameVon: (id: string) => string): string[] {
-  const sortiert = [...spiele].sort((a, b) => Number(a.runde) - Number(b.runde));
+  const proSlot = teamsProSlot(spiele);
   const treffer = new Set<string>();
-  for (let i = 1; i < sortiert.length; i += 1) {
-    const vorher = sortiert[i - 1];
-    const jetzt = sortiert[i];
-    if (Number(jetzt.runde) !== Number(vorher.runde) + 1) continue;
-    for (const team of [jetzt.mannschaftAId, jetzt.mannschaftBId]) {
-      if (team === vorher.mannschaftAId || team === vorher.mannschaftBId) {
-        treffer.add(`${nameVon(team)} spielt in Runde ${vorher.runde} und ${jetzt.runde} direkt hintereinander`);
+  for (const spiel of spiele) {
+    const slot = Number(spiel.runde);
+    const vorSlot = proSlot.get(slot - 1);
+    if (!vorSlot) continue;
+    for (const team of [spiel.mannschaftAId, spiel.mannschaftBId]) {
+      if (vorSlot.has(team)) {
+        treffer.add(`${nameVon(team)} spielt in Runde ${slot - 1} und ${slot} direkt hintereinander`);
       }
+    }
+  }
+  return [...treffer];
+}
+
+/** Findet Mannschaften, die im selben Zeit-Slot mehrfach eingeplant sind (harte Regel,
+ *  ueber die manuelle Runden-Aenderung trotzdem herstellbar - deshalb hier pruefen). */
+function findeDoppelteSlotBelegung(spiele: Spiel[], nameVon: (id: string) => string): string[] {
+  const gesehen = new Set<string>();
+  const treffer = new Set<string>();
+  for (const spiel of spiele) {
+    const slot = Number(spiel.runde);
+    for (const team of [spiel.mannschaftAId, spiel.mannschaftBId]) {
+      const schluessel = `${slot}:${team}`;
+      if (gesehen.has(schluessel)) {
+        treffer.add(`${nameVon(team)} ist in Runde ${slot} mehrfach eingeplant`);
+      }
+      gesehen.add(schluessel);
     }
   }
   return [...treffer];
