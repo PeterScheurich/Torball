@@ -35,6 +35,28 @@ test("doppeltes Turnier: jede Paarung genau zweimal", () => {
   assert.equal(durchgang2.length, 3);
 });
 
+test("doppeltes Turnier: 2. Durchgang tauscht Heim/Auswaerts (Rueckspiel)", () => {
+  const teams = [mannschaft("a"), mannschaft("b"), mannschaft("c")];
+  const paarungen = erzeugePaarungen(teams, 2, true);
+
+  // Jede Begegnung des 1. Durchgangs kommt im 2. Durchgang mit vertauschten Seiten wieder vor.
+  const durchgang1 = paarungen.filter((p) => p.durchgang === 1);
+  const durchgang2 = paarungen.filter((p) => p.durchgang === 2);
+  for (const hinspiel of durchgang1) {
+    const rueckspiel = durchgang2.find(
+      (r) => r.mannschaftAId === hinspiel.mannschaftBId && r.mannschaftBId === hinspiel.mannschaftAId,
+    );
+    assert.ok(rueckspiel, `Rueckspiel mit vertauschten Seiten fehlt fuer ${hinspiel.mannschaftAId} vs ${hinspiel.mannschaftBId}`);
+  }
+  // Gegenprobe: keine Begegnung des 2. Durchgangs hat dieselbe Seitenzuordnung wie im 1.
+  for (const rueckspiel of durchgang2) {
+    const gleicheSeiten = durchgang1.some(
+      (h) => h.mannschaftAId === rueckspiel.mannschaftAId && h.mannschaftBId === rueckspiel.mannschaftBId,
+    );
+    assert.equal(gleicheSeiten, false, "2. Durchgang darf keine seitengleiche Wiederholung enthalten");
+  }
+});
+
 test("Vereins-Duell wird als 'verein' priorisiert, auch bei gleichem Bundesland", () => {
   const teams = [
     mannschaft("a", "verein:1", "Bayern"),

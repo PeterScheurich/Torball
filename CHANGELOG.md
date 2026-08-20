@@ -37,6 +37,8 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 - Ein gelöschtes Turnier räumt jetzt alle zugehörigen Daten vollständig mit ab (auch
   Ergebnis-Erfassungslinks, vergebene Freigaben, Sync-Checkouts, Ergebnis-Änderungsverlauf und einen
   dadurch leer gewordenen Wettbewerb) statt Reste zurückzulassen.
+- Doppeltes Turnier („jeder gegen jeden", zweimal): im zweiten Durchgang werden Heim und Auswärts
+  jetzt getauscht (Rückspiel-Prinzip).
 - Neue Turnierregel „Bundesland-Regel bei der Spielplan-Erstellung" (Standard: aus): steuert, ob
   Mannschaften desselben Bundeslands bei der Spielplan-Erzeugung möglichst früh gegeneinander
   eingeplant werden – gedacht für Wettbewerbe mit festem Regionalbezug wie Bundesliga oder

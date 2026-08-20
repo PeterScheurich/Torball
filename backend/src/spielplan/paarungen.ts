@@ -36,11 +36,18 @@ export function erzeugePaarungen(
   const paarungen: Paarung[] = [];
 
   for (let durchgang = 1; durchgang <= wiederholungen; durchgang++) {
+    // Im zweiten Durchgang eines doppelten Turniers Heim/Auswaerts tauschen (wie beim echten
+    // Doppel-Rundenturnier / Rueckspiel). Fuer Torball fachlich nicht entscheidend, aber gewuenscht
+    // (Nutzer-Vorgabe 2026-08-20). Die Prioritaet ist symmetrisch, haengt also nicht von der
+    // Reihenfolge ab. Der spielplanModus "doppelt" ruft diese Funktion mit wiederholungen=2 auf.
+    const tausche = durchgang % 2 === 0;
     for (let i = 0; i < mannschaften.length; i++) {
       for (let j = i + 1; j < mannschaften.length; j++) {
+        const heim = tausche ? mannschaften[j] : mannschaften[i];
+        const auswaerts = tausche ? mannschaften[i] : mannschaften[j];
         paarungen.push({
-          mannschaftAId: mannschaften[i].mannschaftId,
-          mannschaftBId: mannschaften[j].mannschaftId,
+          mannschaftAId: heim.mannschaftId,
+          mannschaftBId: auswaerts.mannschaftId,
           prioritaet: prioritaetVon(mannschaften[i], mannschaften[j], bundeslandBeruecksichtigen),
           durchgang,
         });
