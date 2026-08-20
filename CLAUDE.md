@@ -960,6 +960,24 @@ Abschluss-Felder wieder ab. **Diese Zuschreibungs-/Identitätsfelder setzt aussc
 Schnittstelle fälschen (POST spreizte `...req.body` über die Server-Felder). `status` bleibt bewusst
 erlaubt (entwurf↔aktiv); Abschluss/Archivierung nur über die eigenen Endpunkte.
 
+**Body-Feld-Injektion generell abgesichert (2026-08-20, Backend-Review, Karten A1–A3):** Fastify
+reicht unbekannte Body-Felder **standardmäßig durch** (AJV `removeAdditional: false`, kein
+`additionalProperties: false` in den Schemata – empirisch verifiziert). Jede Route, die den Body per
+`{ ...serverFelder, ...req.body }` oder `{ ...bestehend, ...req.body }` übernimmt, muss deshalb die
+server-kontrollierten Felder vorher strippen (`ohneFelder()` aus `backend/src/eingabe.ts`,
+`IDENTITAETS_FELDER` = `_id`/`_rev`/`docType`) – sonst ließe sich über `_id`/`docType` ein
+Fremd-Dokument **anlegen** (POST mannschaft/verein/team → z. B. Admin-`benutzer`, Rechteausweitung)
+oder ein sensibles Feld in ein bestehendes Dokument **injizieren** (PUT `/benutzer/:id`:
+`passwortHash`/2FA → Konto-Übernahme). Umgesetzt an mannschaft/verein/team (POST+PUT),
+schiedsrichter/spiel/spieler (PUT); `benutzer`-PUT nutzt bewusst eine **Whitelist** (nur
+`name`/`globaleRolle`/`gesperrt`). **Bewusst KEIN globales AJV `removeAdditional`/`additionalProperties:
+false`**: die Turnier-Routen brauchen Passthrough (Regeln/`oeffentlich*`-Flags), und ein globales
+Whitelist-Stripping würde legitime Frontend-Round-trips (ganzes Objekt inkl. `_id`/`_rev`/`docType`
+zurückgesendet) still verändern bzw. mit 400 abweisen. **Bei jeder NEUEN Schreib-Route, die
+`...req.body` spreizt, `ohneFelder()` mitziehen** (POST-Routen, die das Dokument Feld für Feld
+explizit aufbauen – spieler/schiedsrichter/turnierBerechtigung –, sind nicht betroffen). Details:
+`docs/Protokolle/2026-08-20-body-feld-injektion.md`.
+
 **Öffentliche Regeln:** fünftes `oeffentlich*`-Flag `oeffentlichRegeln` – zeigt
 die Turnierregeln auf der öffentlichen Seite in einem ein-/ausklappbaren Bereich
 (`<details>`, eigener Reiter „Regeln"). `forfaitErgebnis` fällt in der Anzeige

@@ -11,6 +11,12 @@ import {
   type Zugriffsstufe,
 } from "../auth/turnierZugriff";
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
+import { IDENTITAETS_FELDER, ohneFelder } from "../eingabe";
+
+// Nie aus dem Body uebernehmen (siehe eingabe.ts): Identitaet + denormalisierte schiedsrichterId +
+// die turnierId (ein Eintrag wechselt nicht das Turnier). Der POST baut das Dokument bereits
+// explizit Feld fuer Feld auf (kein Spread) und ist daher nicht betroffen.
+const NUR_SERVER_PUT = [...IDENTITAETS_FELDER, "schiedsrichterId", "turnierId"] as const;
 
 // CRUD fuer turnierbezogene Schiedsrichter (SchiedsrichterImTurnier haengt am turnierId).
 // Zugriff laeuft ueber das Turnier (turnierZugriff); genau eine Person je Turnier ist
@@ -182,7 +188,7 @@ export async function schiedsrichterRoutes(app: FastifyInstance): Promise<void> 
       const bestehend = await ladeSchiedsrichterMitZugriff(req.params.id, "schreiben_voll", req, reply);
       if (!bestehend) return;
 
-      const aktualisiert: SchiedsrichterImTurnier = { ...bestehend, ...req.body };
+      const aktualisiert: SchiedsrichterImTurnier = { ...bestehend, ...ohneFelder(req.body, NUR_SERVER_PUT) };
       // "nur Turnierleitung" ohne Turnierleitung ist bedeutungslos - konsequent zuruecksetzen.
       if (!aktualisiert.istTurnierleitung) aktualisiert.nurTurnierleitung = false;
       const gespeichert = await insertDoc(aktualisiert);

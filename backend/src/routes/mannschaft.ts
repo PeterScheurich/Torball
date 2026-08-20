@@ -12,6 +12,13 @@ import {
   turnierGesperrt,
 } from "../auth/turnierZugriff";
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
+import { IDENTITAETS_FELDER, ohneFelder } from "../eingabe";
+
+// Server-kontrollierte Felder, die nie aus dem Body uebernommen werden (siehe eingabe.ts):
+// Identitaet + die denormalisierte mannschaftId + die serverseitig vergebene reihenfolge; beim
+// Aendern zusaetzlich turnierId (eine Mannschaft wechselt ihr Turnier nicht).
+const NUR_SERVER_POST = [...IDENTITAETS_FELDER, "mannschaftId", "reihenfolge"] as const;
+const NUR_SERVER_PUT = [...IDENTITAETS_FELDER, "mannschaftId", "turnierId", "reihenfolge"] as const;
 
 interface MannschaftBody {
   turnierId: string;
@@ -231,7 +238,9 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
         docType: "mannschaftImTurnier",
         mannschaftId: id,
         reihenfolge: naechsteReihenfolge,
-        ...req.body,
+        // Zusatzfelder (_id/docType/…) aus dem Body entfernen, damit sie die oben gesetzten
+        // Server-Felder nicht ueberschreiben koennen (sonst z.B. Anlage eines Fremd-Dokuments).
+        ...ohneFelder(req.body, NUR_SERVER_POST),
       };
       const gespeichert = await insertDoc(mannschaft);
       await markiereTurnierBearbeitet(turnier._id, req.benutzer);
@@ -252,7 +261,7 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
           .send({ error: "Dieses Team ist in diesem Turnier bereits als Mannschaft angemeldet" });
       }
 
-      const aktualisiert: MannschaftImTurnier = { ...bestehend, ...req.body };
+      const aktualisiert: MannschaftImTurnier = { ...bestehend, ...ohneFelder(req.body, NUR_SERVER_PUT) };
       const gespeichert = await insertDoc(aktualisiert);
       await markiereTurnierBearbeitet(bestehend.turnierId, req.benutzer);
       return gespeichert;

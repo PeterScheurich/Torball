@@ -2,6 +2,10 @@ import type { FastifyInstance } from "fastify";
 import type { Team, Verein } from "@torball/shared";
 import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth, requireRolle } from "../auth/plugin";
+import { IDENTITAETS_FELDER, ohneFelder } from "../eingabe";
+
+// Nie aus dem Body uebernehmen (siehe eingabe.ts): Identitaet + die denormalisierte vereinId.
+const NUR_SERVER = [...IDENTITAETS_FELDER, "vereinId"] as const;
 
 // CRUD fuer Vereine (turnieruebergreifende Stammdaten; ein Team gehoert immer zu einem Verein).
 // Lesen verlangt nur eine Anmeldung (jede Rolle braucht das z.B. bei der Mannschaftserfassung,
@@ -62,7 +66,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
         _id: id,
         docType: "verein",
         vereinId: id,
-        ...req.body,
+        ...ohneFelder(req.body, NUR_SERVER),
       };
       const gespeichert = await insertDoc(verein);
       return reply.code(201).send(gespeichert);
@@ -77,7 +81,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
       if (!requireRolle(req, reply, ["admin", "manager"])) return;
       const bestehend = await findById<Verein>(req.params.id);
       if (!bestehend) return reply.code(404).send({ error: "Verein nicht gefunden" });
-      const aktualisiert: Verein = { ...bestehend, ...req.body };
+      const aktualisiert: Verein = { ...bestehend, ...ohneFelder(req.body, NUR_SERVER) };
       return insertDoc(aktualisiert);
     },
   );

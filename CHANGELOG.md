@@ -26,6 +26,11 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
   falschem Passwort (verrät über die Antwortzeit nicht mehr, ob eine Adresse registriert ist), und
   die „Wer hat das Turnier angelegt/bearbeitet"-Angaben lassen sich nicht mehr über die Schnittstelle
   fälschen.
+- **Sicherheitskorrektur (aus dem Backend-Review):** Über zusätzliche, nicht vorgesehene Felder in
+  einer Speichern-Anfrage ließen sich bisher fremde/systemweite Daten anlegen (u. a. ein
+  unberechtigtes Admin-Konto) oder in ein anderes Benutzerkonto einschleusen (Passwort/2FA). Solche
+  Zusatzfelder werden jetzt an allen betroffenen Stellen ignoriert. Der normale Betrieb ändert sich
+  dadurch nicht.
 - Neue Turnierregel „Bundesland-Regel bei der Spielplan-Erstellung" (Standard: aus): steuert, ob
   Mannschaften desselben Bundeslands bei der Spielplan-Erzeugung möglichst früh gegeneinander
   eingeplant werden – gedacht für Wettbewerbe mit festem Regionalbezug wie Bundesliga oder

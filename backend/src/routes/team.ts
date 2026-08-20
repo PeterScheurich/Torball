@@ -2,6 +2,10 @@ import type { FastifyInstance } from "fastify";
 import type { Team } from "@torball/shared";
 import { deleteDoc, findAllByType, findById, insertDoc, newId } from "../repository";
 import { requireAuth, requireRolle } from "../auth/plugin";
+import { IDENTITAETS_FELDER, ohneFelder } from "../eingabe";
+
+// Nie aus dem Body uebernehmen (siehe eingabe.ts): Identitaet + die denormalisierte teamId.
+const NUR_SERVER = [...IDENTITAETS_FELDER, "teamId"] as const;
 
 // CRUD fuer Teams (Stammdaten: ein Team gehoert immer zu einem Verein). Lesen verlangt nur eine
 // Anmeldung, Schreiben (Anlegen/Aendern/Loeschen) ist auf Admin/Manager beschraenkt - siehe
@@ -58,7 +62,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
         _id: id,
         docType: "team",
         teamId: id,
-        ...req.body,
+        ...ohneFelder(req.body, NUR_SERVER),
       };
       const gespeichert = await insertDoc(team);
       return reply.code(201).send(gespeichert);
@@ -73,7 +77,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
       if (!requireRolle(req, reply, ["admin", "manager"])) return;
       const bestehend = await findById<Team>(req.params.id);
       if (!bestehend) return reply.code(404).send({ error: "Team nicht gefunden" });
-      const aktualisiert: Team = { ...bestehend, ...req.body };
+      const aktualisiert: Team = { ...bestehend, ...ohneFelder(req.body, NUR_SERVER) };
       return insertDoc(aktualisiert);
     },
   );

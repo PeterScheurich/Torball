@@ -11,6 +11,12 @@ import {
   type Zugriffsstufe,
 } from "../auth/turnierZugriff";
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
+import { IDENTITAETS_FELDER, ohneFelder } from "../eingabe";
+
+// Nie aus dem Body uebernehmen (siehe eingabe.ts): Identitaet + denormalisierte spielerId + die
+// mannschaftId (ein Spieler wechselt hier nicht die Mannschaft). Der POST baut das Dokument bereits
+// explizit Feld fuer Feld auf (kein Spread) und ist daher nicht betroffen.
+const NUR_SERVER_PUT = [...IDENTITAETS_FELDER, "spielerId", "mannschaftId"] as const;
 
 /** Turnier eines Spielers ueber seine Mannschaft ermitteln (fuer die Bearbeitet-Markierung). */
 async function turnierIdVonMannschaft(mannschaftId: string): Promise<string | undefined> {
@@ -166,7 +172,7 @@ export async function spielerRoutes(app: FastifyInstance): Promise<void> {
       const bestehend = await ladeSpielerMitZugriff(req.params.id, "schreiben_voll", req, reply);
       if (!bestehend) return;
 
-      const aktualisiert: Spieler = { ...bestehend, ...req.body };
+      const aktualisiert: Spieler = { ...bestehend, ...ohneFelder(req.body, NUR_SERVER_PUT) };
       const gespeichert = await insertDoc(aktualisiert);
       const turnierId = await turnierIdVonMannschaft(bestehend.mannschaftId);
       if (turnierId) await markiereTurnierBearbeitet(turnierId, req.benutzer);

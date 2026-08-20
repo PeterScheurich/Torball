@@ -14,6 +14,12 @@ import {
   type Zugriffsstufe,
 } from "../auth/turnierZugriff";
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
+import { IDENTITAETS_FELDER, ohneFelder } from "../eingabe";
+
+// Nie aus dem Body uebernehmen (siehe eingabe.ts): Identitaet + denormalisierte spielId + turnierId.
+// Ergebnis-/Status-Felder bleiben den dedizierten Ergebnis-Routen vorbehalten - der Spielplan-PUT
+// aendert bewusst nur runde/feldId/startzeitGeplant/schiedsrichterId (siehe Schema).
+const NUR_SERVER_PUT = [...IDENTITAETS_FELDER, "spielId", "turnierId"] as const;
 
 /** Nur diese Felder darf die Turnierleitung nachtraeglich anpassen (Abschnitt 8: "Reihenfolge,
  * Spielfeld und Startzeiten") sowie die Schiedsrichter-Zuordnung (Abschnitt 5.4, manuell aenderbar). */
@@ -116,7 +122,7 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
       const bestehend = await findById<Spiel>(req.params.id);
       if (!bestehend) return reply.code(404).send({ error: "Spiel nicht gefunden" });
       if (!(await pruefeSpielZugriff(bestehend, req, reply, "schreiben_spielbetrieb"))) return;
-      const aktualisiert: Spiel = { ...bestehend, ...req.body };
+      const aktualisiert: Spiel = { ...bestehend, ...ohneFelder(req.body, NUR_SERVER_PUT) };
       const gespeichert = await insertDoc(aktualisiert);
       await markiereTurnierBearbeitet(bestehend.turnierId, req.benutzer);
       return gespeichert;

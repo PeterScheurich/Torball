@@ -336,7 +336,17 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
             : { gesperrtGrund: undefined, fehlgeschlageneLoginVersuche: 0, loginKontoGesperrtBis: undefined }
           : {};
 
-      const aktualisiert = await insertDoc({ ...bestehend, ...req.body, ...sperrPatch });
+      // Bewusst NUR die im Schema deklarierten Felder uebernehmen (Whitelist), nicht ...req.body:
+      // Fastify reicht unbekannte Body-Felder standardmaessig durch (siehe eingabe.ts), sonst liessen
+      // sich hier sensible Felder wie passwortHash, zweiFaSecret oder die Token-Hashes in ein fremdes
+      // Konto injizieren (Konto-Uebernahme). globaleRolle bleibt an die darfZielRolleVergeben-Pruefung
+      // oben gebunden; gesperrt wird ueber sperrPatch mitgesetzt.
+      const aenderungen: Partial<Pick<Benutzer, "name" | "globaleRolle" | "gesperrt">> = {};
+      if (req.body.name !== undefined) aenderungen.name = req.body.name;
+      if (req.body.globaleRolle !== undefined) aenderungen.globaleRolle = req.body.globaleRolle;
+      if ("gesperrt" in req.body) aenderungen.gesperrt = req.body.gesperrt;
+
+      const aktualisiert = await insertDoc({ ...bestehend, ...aenderungen, ...sperrPatch });
       return oeffentlichesProfil(aktualisiert);
     },
   );
