@@ -111,6 +111,10 @@ type FeldZeile<T> = { eintrag: T } | { platzhalter: true };
  * dieses, sondern nur ein anderes Feld spielt - sonst sieht es in der Feld-Tab-Ansicht
  * so aus, als wuerde eine Mannschaft mehrfach ohne Pause hintereinander spielen, obwohl
  * dazwischen tatsaechlich ein Spiel auf dem anderen Feld liegt (und damit echte Pause).
+ *
+ * Je Slot koennen MEHRERE Spiele desselben Feldes vorkommen (nur ueber die manuelle
+ * Runden-Aenderung herstellbar, dann als "Doppelbelegung" markiert) - alle anzeigen,
+ * nicht nur das letzte: sonst waere genau das Spiel unsichtbar, das die Warnung ausloest.
  */
 function mitFeldPlatzhaltern<T>(
   alle: T[],
@@ -119,10 +123,18 @@ function mitFeldPlatzhaltern<T>(
   schluesselVon: (e: T) => number,
 ): FeldZeile<T>[] {
   const alleSchluessel = [...new Set(alle.map(schluesselVon))].sort((a, b) => a - b);
-  const aufFeld = new Map(alle.filter((e) => feldVon(e) === feldId).map((e) => [schluesselVon(e), e]));
-  return alleSchluessel.map((schluessel) => {
-    const eintrag = aufFeld.get(schluessel);
-    return eintrag ? { eintrag } : { platzhalter: true as const };
+  const aufFeld = new Map<number, T[]>();
+  for (const e of alle) {
+    if (feldVon(e) !== feldId) continue;
+    const liste = aufFeld.get(schluesselVon(e)) ?? [];
+    liste.push(e);
+    aufFeld.set(schluesselVon(e), liste);
+  }
+  return alleSchluessel.flatMap((schluessel): FeldZeile<T>[] => {
+    const eintraege = aufFeld.get(schluessel) ?? [];
+    return eintraege.length > 0
+      ? eintraege.map((eintrag) => ({ eintrag }))
+      : [{ platzhalter: true as const }];
   });
 }
 

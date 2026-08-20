@@ -134,8 +134,10 @@ function ServerVerbindung() {
  * Abschnitt 21.3) gibt es keine angemeldeten Benutzer, die Seite muss also auch ohne
  * Login funktionieren (siehe Route in App.tsx, ausserhalb von GeschuetzteRoute).
  * Angemeldete Benutzer haben zusaetzlich einen kontogebundenen Standardwert in ihrem
- * Profil - diese Seite hier ueberschreibt ihn nur auf DIESEM Geraet (z.B. gemeinsam
- * genutzter Rechner), aendert aber nichts am hinterlegten Konto-Standard selbst. */
+ * Profil - der hat immer Recht (Nutzer-Vorgabe 2026-08-20): beim naechsten Sitzungsstart
+ * ueberschreibt er die Wahl auf diesem Geraet wieder (uebernimmKontoStandards in auth.tsx).
+ * Diese Seite hier wirkt also dauerhaft nur fuer nicht angemeldete Geraete bzw. Konten
+ * ohne gesetzten Standard und aendert nie den hinterlegten Konto-Standard selbst. */
 export function EinstellungenPage() {
   const { benutzer } = useAuth();
 
@@ -146,8 +148,9 @@ export function EinstellungenPage() {
       {benutzer && (
         <p>
           Angemeldet als „{benutzer.name}": deine kontogebundenen Standardwerte legst du stattdessen in{" "}
-          <a href="/profil">deinem Profil</a> fest - die gelten dann auch auf anderen Geräten. Hier änderst du nur,
-          was auf diesem Gerät angezeigt wird.
+          <a href="/profil">deinem Profil</a> fest - die gelten dann auf allen Geräten und werden bei jeder
+          Anmeldung neu angewendet. Was du hier änderst, gilt nur auf diesem Gerät und nur bis zur nächsten
+          Anmeldung.
         </p>
       )}
 

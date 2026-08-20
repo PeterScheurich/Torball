@@ -1152,16 +1152,22 @@ dieser Version gilt der folgende Ablauf:
   „Standard"/„Schmal") und Inhaltsbreite (`[data-breite]`, „Standard"/„Breit":
   `#root` max-width 960px ↔ 1400px) nach demselben Muster.
 - **Zwei-Ebenen-Modell für alle drei Einstellungen** (`frontend/src/theme.ts`,
-  `frontend/src/dichte.ts`, `frontend/src/breite.ts`): geräte-/browserlokal
-  (`localStorage`, Seite `/einstellungen`, auch ohne Login erreichbar) hat immer
-  Vorrang vor dem kontogebundenen Standardwert (`Benutzer.standardTheme`/
-  `standardDichte`/`standardBreite`, wird beim Login nur übernommen, wenn auf dem
-  Gerät noch keine eigene Wahl existiert - siehe `seedeVoreinstellungen()` in
-  `frontend/src/auth.tsx`). **Ein neues solches Zwei-Ebenen-Setting braucht
-  überall dieselben Stellen:** `<name>.ts` (localStorage + `[data-*]`),
-  `<Name>Umschalter`, Init in `main.tsx`, Abschnitt in `EinstellungenPage`,
-  `Benutzer.standard<Name>` (shared) + Profil-Select + `voreinstellungAendern`,
-  `PUT /benutzer/mich` (Body-Typ/Schema-Enum/Handler) und `seedeVoreinstellungen`.
+  `frontend/src/dichte.ts`, `frontend/src/breite.ts`): ein gesetzter kontogebundener
+  Standardwert (`Benutzer.standardTheme`/`standardDichte`/`standardBreite`) **hat immer
+  Recht** - er wird bei jedem Sitzungsstart (Login wie Wiederherstellen per `/auth/me`)
+  angewendet und überschreibt dabei die geräte-/browserlokale Wahl
+  (`uebernimmKontoStandards()` in `frontend/src/auth.tsx`). Die lokale Ebene
+  (`localStorage`, Seite `/einstellungen`, auch ohne Login erreichbar) gilt dauerhaft
+  nur für nicht angemeldete Geräte bzw. Konten ohne gesetzten Standard, angemeldet nur
+  bis zum nächsten Sitzungsstart. **Bewusst so herum seit 2026-08-20 (Nutzer-Vorgabe,
+  Frontend-Review):** vorher galt „lokal gewinnt, Konto-Standard wird nur ohne lokale
+  Wahl übernommen" - da die Übernahme selbst aber als lokale Wahl gespeichert wurde,
+  erreichte eine spätere Änderung des Konto-Standards ein Gerät nie mehr. **Ein neues
+  solches Zwei-Ebenen-Setting braucht überall dieselben Stellen:** `<name>.ts`
+  (localStorage + `[data-*]`), `<Name>Umschalter`, Init in `main.tsx`, Abschnitt in
+  `EinstellungenPage`, `Benutzer.standard<Name>` (shared) + Profil-Select +
+  `voreinstellungAendern`, `PUT /benutzer/mich` (Body-Typ/Schema-Enum/Handler) und
+  `uebernimmKontoStandards`.
 - **Initialisierung gehört nach `main.tsx`, nicht in eine Komponente:**
   `themeInitialisieren()`/`dichteInitialisieren()`/`breiteInitialisieren()` werden
   dort vor dem ersten Render aufgerufen (rein lesend, kein `localStorage`-Schreiben).

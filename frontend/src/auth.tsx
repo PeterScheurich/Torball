@@ -1,25 +1,23 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { getMe, login as apiLogin, logout as apiLogout, type BenutzerProfil, type LoginErgebnis } from "./api";
-import { themeAnwenden, themeLokalUeberschrieben } from "./theme";
-import { dichteAnwenden, dichteLokalUeberschrieben } from "./dichte";
-import { breiteAnwenden, breiteLokalUeberschrieben } from "./breite";
+import { themeAnwenden } from "./theme";
+import { dichteAnwenden } from "./dichte";
+import { breiteAnwenden } from "./breite";
 
 /**
- * Wendet die kontogebundenen Standardwerte (Profil-Einstellungen) als Startwert auf
- * DIESEM Geraet an - aber nur, solange hier noch keine eigene lokale Wahl getroffen
- * wurde (siehe theme.ts/dichte.ts). Eine bereits getroffene lokale Wahl (z.B. auf einem
- * gemeinsam genutzten Rechner) hat weiterhin Vorrang und wird nicht ueberschrieben.
+ * Wendet die kontogebundenen Standardwerte (Profil-Einstellungen) beim Anmelden bzw.
+ * Wiederherstellen der Sitzung auf DIESEM Geraet an. Nutzer-Vorgabe (2026-08-20,
+ * Frontend-Review): der Konto-Standard hat immer Recht - er ueberschreibt auch eine
+ * frueher getroffene lokale Wahl (vorher galt "lokal gewinnt", wodurch eine spaetere
+ * Aenderung des Konto-Standards ein Geraet nie mehr erreichte). Die geraetelokale
+ * Einstellung (/einstellungen) bleibt fuer nicht angemeldete Geraete massgeblich und
+ * wirkt angemeldet bis zum naechsten Sitzungsstart. Ein NICHT gesetzter Konto-Standard
+ * laesst die lokale Wahl unangetastet.
  */
-function seedeVoreinstellungen(profil: BenutzerProfil): void {
-  if (profil.standardTheme && !themeLokalUeberschrieben()) {
-    themeAnwenden(profil.standardTheme);
-  }
-  if (profil.standardDichte && !dichteLokalUeberschrieben()) {
-    dichteAnwenden(profil.standardDichte);
-  }
-  if (profil.standardBreite && !breiteLokalUeberschrieben()) {
-    breiteAnwenden(profil.standardBreite);
-  }
+function uebernimmKontoStandards(profil: BenutzerProfil): void {
+  if (profil.standardTheme) themeAnwenden(profil.standardTheme);
+  if (profil.standardDichte) dichteAnwenden(profil.standardDichte);
+  if (profil.standardBreite) breiteAnwenden(profil.standardBreite);
 }
 
 interface AuthContextWert {
@@ -40,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     getMe()
       .then((profil) => {
-        seedeVoreinstellungen(profil);
+        uebernimmKontoStandards(profil);
         setBenutzer(profil);
       })
       .catch(() => setBenutzer(null))
@@ -50,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, passwort: string, totpCode?: string) => {
     const ergebnis = await apiLogin(email, passwort, totpCode);
     if (!("benoetigtTotp" in ergebnis)) {
-      seedeVoreinstellungen(ergebnis);
+      uebernimmKontoStandards(ergebnis);
       setBenutzer(ergebnis);
     }
     return ergebnis;

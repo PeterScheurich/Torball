@@ -14,9 +14,9 @@ export function BreiteUmschalter() {
     breiteAnwenden(breite);
   }, [breite]);
 
-  // Haelt mehrere gleichzeitig sichtbare Instanzen synchron und uebernimmt einen vom Benutzerkonto
-  // geerbten Standardwert (siehe seedeVoreinstellungen in auth.tsx), sobald er per breiteAnwenden()
-  // angewendet wurde.
+  // Haelt mehrere gleichzeitig sichtbare Instanzen synchron und uebernimmt einen beim
+  // Sitzungsstart angewendeten Konto-Standard (siehe uebernimmKontoStandards in auth.tsx),
+  // sobald er per breiteAnwenden() angewendet wurde.
   useEffect(() => {
     const aktualisieren = () => setBreite(geladeneBreite());
     window.addEventListener(BREITE_GEAENDERT_EVENT, aktualisieren);

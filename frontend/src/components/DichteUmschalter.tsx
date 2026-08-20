@@ -15,8 +15,8 @@ export function DichteUmschalter() {
   }, [dichte]);
 
   // Haelt mehrere gleichzeitig sichtbare Instanzen synchron (z.B. Profil-Seite) und
-  // uebernimmt einen vom Benutzerkonto geerbten Standardwert (siehe seedeVoreinstellungen
-  // in auth.tsx), sobald der irgendwo im Baum per dichteAnwenden() angewendet wurde.
+  // uebernimmt einen beim Sitzungsstart angewendeten Konto-Standard (siehe
+  // uebernimmKontoStandards in auth.tsx), sobald der per dichteAnwenden() angewendet wurde.
   useEffect(() => {
     const aktualisieren = () => setDichte(geladeneDichte());
     window.addEventListener(DICHTE_GEAENDERT_EVENT, aktualisieren);

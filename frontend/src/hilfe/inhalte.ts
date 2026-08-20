@@ -612,7 +612,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
           "Er steuert, wie dicht Tabellen und Eingabefelder dargestellt werden („Standard“ oder „Schmal“). Das hilft, je nach Bildschirm mehr Inhalt auf einen Blick zu sehen.",
           {
             hinweis:
-              "Diese Anzeige-Einstellungen gelten nur für das aktuelle Gerät bzw. den Browser. Angemeldete Benutzer können unter {{profil}} zusätzlich einen kontogebundenen Standardwert hinterlegen.",
+              "Diese Anzeige-Einstellungen gelten nur für das aktuelle Gerät bzw. den Browser. Angemeldete Benutzer können unter {{profil}} zusätzlich einen kontogebundenen Standardwert hinterlegen – der wird bei jeder Anmeldung neu angewendet und hat dann Vorrang vor der Wahl am Gerät.",
           },
         ],
       },

@@ -11,15 +11,10 @@ export function geladenesTheme(): Theme {
   return wert === "light" || wert === "dark" ? wert : "system";
 }
 
-export function themeLokalUeberschrieben(): boolean {
-  return localStorage.getItem(SPEICHER_SCHLUESSEL) !== null;
-}
-
 /** Wendet das gespeicherte Theme auf [data-theme] an, OHNE localStorage zu beschreiben oder
  * das Aenderungs-Event zu feuern - fuer den App-Start (main.tsx) auf JEDER Seite, nicht nur
- * dort, wo ThemeUmschalter gerade gemountet ist. Ein "echtes" themeAnwenden() wuerde hier bei
- * unveraendertem Standard "system" faelschlich einen lokalen Override anlegen und damit den
- * vom Benutzerkonto geerbten Standardwert (siehe seedeVoreinstellungen in auth.tsx) blockieren. */
+ * dort, wo ThemeUmschalter gerade gemountet ist. Rein lesend: der Start stellt nur den
+ * gespeicherten Zustand her, er legt keinen neuen an. */
 export function themeInitialisieren(): void {
   const theme = geladenesTheme();
   if (theme === "system") {
@@ -29,7 +24,9 @@ export function themeInitialisieren(): void {
   }
 }
 
-/** Setzt [data-theme] auf <html> (bzw. entfernt es fuer "system") und merkt sich die Wahl. */
+/** Setzt [data-theme] auf <html> (bzw. entfernt es fuer "system") und merkt sich die Wahl in
+ * diesem Browser. Ein gesetzter Konto-Standard ueberschreibt sie beim naechsten Sitzungsstart
+ * wieder (siehe uebernimmKontoStandards() in auth.tsx - "der Konto-Standard hat immer Recht"). */
 export function themeAnwenden(theme: Theme): void {
   if (theme === "system") {
     document.documentElement.removeAttribute("data-theme");
