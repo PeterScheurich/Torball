@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { Turnier } from "@torball/shared";
 import { findById, insertDoc } from "../repository";
 import { requireZugriff, setzeSessionCookie } from "../auth/plugin";
-import { hatMindestens } from "../auth/turnierZugriff";
+import { hatMindestens, turnierAusgecheckt, TURNIER_AUSGECHECKT_FEHLER } from "../auth/turnierZugriff";
 import { hashePasswort, passwortStimmt } from "../auth/passwort";
 import { erstelleCodeSession } from "../auth/session";
 import { CODE_ANMELDUNG_RATE_LIMIT } from "../rateLimit";
@@ -53,6 +53,14 @@ export async function turnierCodeRoutes(app: FastifyInstance): Promise<void> {
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
       if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+      }
+      // Bei einem an eine lokale Installation ausgecheckten Turnier ist auch das Setzen/Aendern der
+      // Codes gesperrt (wie alle anderen turnierbezogenen Schreib-Routen): der Code-Hash haengt am
+      // Turnier-Dokument und wuerde beim naechsten Check-in ohnehin vom lokalen Stand ueberschrieben.
+      // Bewusst NUR turnierAusgecheckt, nicht turnierGesperrt - bei einem bloss abgeschlossenen
+      // Turnier bleibt das Vergeben von Codes/Freigaben moeglich (aendert nichts am Turnier selbst).
+      if (await turnierAusgecheckt(turnier._id)) {
+        return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
       }
 
       const patch: Pick<Turnier, "turnierleitungCodeHash" | "spielleitungCodeHash"> = {
