@@ -93,6 +93,17 @@ $projektSchritt = Frage-OptionalerSchritt -Titel "Konfigurationsdatei und Progra
     -Erklaerung "Im Projektordner liegen 'backend/.env' (die Zugangsdaten dieser Installation zur Datenbank) sowie mehrere 'node_modules'- und 'dist'-Ordner (heruntergeladene bzw. aus dem Quellcode gebaute Programmdateien, kein eigener Inhalt)." `
     -Auswirkung "Diese Dateien werden geloescht. Der Projektordner selbst und dein eigener Quellcode bleiben erhalten - du kannst den Ordner danach z.B. per Hand in den Papierkorb verschieben, wenn du auch den Rest nicht mehr brauchst."
 if ($projektSchritt) {
+    # Laeuft der Torball-Server noch (minimiertes "NICHT SCHLIESSEN"-Fenster), haelt sein
+    # node-Prozess Dateien in node_modules/dist offen - das Loeschen wuerde dann mittendrin mit
+    # einer wenig hilfreichen "Zugriff verweigert"-Meldung abbrechen. Deshalb gezielt die
+    # node-Prozesse DIESES Projektordners beenden (andere node-Prozesse bleiben unberuehrt).
+    $serverProzesse = Get-CimInstance -ClassName Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -match [regex]::Escape($RepoRoot) }
+    if ($serverProzesse) {
+        Write-Host "Der Torball-Turniere-Server laeuft noch - er wird jetzt beendet, damit die Dateien geloescht werden koennen."
+        $serverProzesse | ForEach-Object { try { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop } catch {} }
+        Start-Sleep -Seconds 1
+    }
     $EnvFile = Join-Path $RepoRoot "backend\.env"
     if (Test-Path $EnvFile) { Remove-Item -Path $EnvFile -Force; Write-Host "backend/.env geloescht." }
     foreach ($ordner in @("node_modules", "backend\node_modules", "frontend\node_modules", "shared\node_modules", "backend\dist", "frontend\dist", "shared\dist")) {

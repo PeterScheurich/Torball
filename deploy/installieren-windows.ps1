@@ -137,8 +137,20 @@ function Test-Couchdb {
     }
 }
 
+# Kryptographischer Zufall statt Get-Random (kein CSPRNG; -Count zieht zudem OHNE Zuruecklegen,
+# also nur unterschiedliche Zeichen). Rejection-Sampling gegen Modulo-Bias: 62 Zeichen, nur
+# Byte-Werte < 248 (= 4*62) verwenden, damit jedes Zeichen exakt gleich wahrscheinlich ist.
 function New-ZufallsPasswort {
-    -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 24 | ForEach-Object { [char]$_ })
+    $zeichen = [char[]](48..57) + [char[]](65..90) + [char[]](97..122)
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $byte = New-Object byte[] 1
+    $ergebnis = ""
+    while ($ergebnis.Length -lt 24) {
+        $rng.GetBytes($byte)
+        if ($byte[0] -lt 248) { $ergebnis += $zeichen[$byte[0] % 62] }
+    }
+    $rng.Dispose()
+    return $ergebnis
 }
 
 if (Test-Couchdb) {
@@ -238,6 +250,12 @@ if (Test-Couchdb) {
         "/l*v", "`"$logPath`""
     )
     $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru
+    # Das ausfuehrliche MSI-Log kann das per Parameter uebergebene ADMINPASSWORD im Klartext
+    # enthalten - sofort (unabhaengig vom Erfolg) auf Administratoren beschraenken, wie die
+    # Passwort-Dateien selbst (Sicherheitsdurchsicht Deploy, 2026-08-20).
+    if (Test-Path $logPath) {
+        icacls $logPath /inheritance:r /grant:r "*S-1-5-32-544:F" | Out-Null
+    }
     if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
         # Reine Vorsichtsmassnahme, sollte durch APPLICATIONFOLDER oben (Installation ausserhalb
         # Program Files) jetzt eigentlich nicht mehr auftreten - falls Error 1324 trotzdem irgendwo
@@ -321,6 +339,10 @@ if (Test-Path $DbPassFile) {
     $DbPass = New-ZufallsPasswort
     Set-Content -Path $DbPassFile -Value $DbPass -NoNewline
 }
+# Wie couchdb-admin.txt nur fuer Administratoren lesbar machen - C:\Torball-Turniere selbst hat
+# bewusst Standard-Rechte (leicht wiederzufinden), die Geheimwert-Dateien darin aber nicht
+# (Sicherheitsdurchsicht Deploy, 2026-08-20; vorher war nur die Admin-Passwort-Datei geschuetzt).
+icacls $DbPassFile /inheritance:r /grant:r "*S-1-5-32-544:F" | Out-Null
 
 $authHeader = @{ Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$CouchAdminUser`:$CouchAdminPass")) }
 

@@ -131,7 +131,6 @@ export interface Turnier extends CouchMeta, Turnierregeln {
 
   protokollierungsart: Protokollierungsart;
 
-  modus?: string;
   /** Jeder-gegen-Jeden einfach oder doppelt; steuert die Spielplan-Erzeugung (Abschnitt 8). */
   spielplanModus: Spielmodus;
   /**
@@ -141,9 +140,11 @@ export interface Turnier extends CouchMeta, Turnierregeln {
    */
   schiedsrichterPlanung?: boolean;
 
+  /** Noch ohne Funktion (die oeffentliche Seite zeigt bisher keine Spielernamen/Kader) - greift
+   *  erst, wenn Kader dort angezeigt werden. Haengt aber bereits in der Abschluss-Whitelist
+   *  (BEI_ABSCHLUSS_ERLAUBTE_FELDER in backend/src/routes/turnier.ts), Spez-Feld aus 20.5. */
   spielernamenOeffentlich: boolean;
 
-  spielplanFreigegeben: boolean;
   spielplanVersion: number;
   spielplanGeaendertAm?: Zeitstempel;
   /** Basiskonfiguration zum Zeitpunkt der letzten Spielplan-Erzeugung (fuer Aenderungs-Hinweis). */

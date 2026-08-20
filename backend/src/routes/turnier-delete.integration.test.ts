@@ -92,7 +92,6 @@ test(
       punkteNiederlage: 0,
       tabellenKriterien: ["punkte", "tordifferenz", "tore", "direkter_vergleich", "freiwuerfe"],
       spielernamenOeffentlich: false,
-      spielplanFreigegeben: false,
       spielplanVersion: 0,
       oeffentlichTurnierinfos: false,
       oeffentlichAnfahrtDokumente: false,

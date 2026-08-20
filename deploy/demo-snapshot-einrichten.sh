@@ -30,7 +30,11 @@ NAME="${1:?Instanzname fehlt (z. B. demo)}"
 STUNDE="${2:-0}"
 
 [[ $EUID -eq 0 ]] || { echo "Bitte als root ausfuehren."; exit 1; }
+[[ "$NAME" =~ ^[a-z0-9-]+$ ]] || { echo "Ungueltiger Instanzname '${NAME}' - erlaubt sind nur Kleinbuchstaben, Ziffern und Bindestriche."; exit 1; }
 [[ "$NAME" != "prod" ]] || { echo "Sicherheitsnetz: nicht gegen die Instanz 'prod' ausfuehren."; exit 1; }
+# Stunde validieren (0-23), sonst entstuende ein systemd-Timer mit ungueltigem OnCalendar-Wert,
+# der erst beim Aktivieren mit einer wenig hilfreichen Meldung scheitert.
+[[ "$STUNDE" =~ ^([0-9]|1[0-9]|2[0-3])$ ]] || { echo "Ungueltige Stunde '${STUNDE}' - erlaubt ist 0-23."; exit 1; }
 [[ -f "${CONF_DIR}/couchdb-admin" ]] || { echo "CouchDB-Admin fehlt - erst deploy/provision.sh ausfuehren."; exit 1; }
 
 DIR="${BASE_DIR}/${NAME}"
@@ -42,15 +46,33 @@ PW_FILE="${CONF_DIR}/db-${NAME}.pass"
 [[ -f "$PW_FILE" ]] || { echo "DB-Passwort fuer '${NAME}' fehlt (${PW_FILE}) - erst deploy/deploy-instanz.sh ausfuehren."; exit 1; }
 
 COUCH_ADMIN_PASS="$(cat "${CONF_DIR}/couchdb-admin")"
-AUTH=(-s -u "admin:${COUCH_ADMIN_PASS}" -H "Content-Type: application/json")
+# Zugangsdaten per curl-Konfigurationsdatei statt als ps-sichtbares Kommandozeilen-Argument;
+# HTTP-Status pruefen statt Fehler zu schlucken (gleiches Muster wie deploy-instanz.sh,
+# Sicherheitsdurchsicht Deploy 2026-08-20).
+CURL_AUTH_CFG="$(mktemp "${CONF_DIR}/curl-auth.XXXXXX")"
+chmod 600 "$CURL_AUTH_CFG"
+printf 'user = "admin:%s"\n' "$COUCH_ADMIN_PASS" > "$CURL_AUTH_CFG"
+trap 'rm -f "$CURL_AUTH_CFG"' EXIT
+
+couch_pruefe() {
+  local beschreibung="$1"; shift
+  local erlaubte="$1"; shift
+  local code
+  code="$(curl -s -o /dev/null -w '%{http_code}' -K "$CURL_AUTH_CFG" -H "Content-Type: application/json" "$@")"
+  if [[ " ${erlaubte} " != *" ${code} "* ]]; then
+    echo "FEHLER: ${beschreibung} fehlgeschlagen (HTTP ${code}, erwartet: ${erlaubte})." >&2
+    exit 1
+  fi
+}
 
 echo "== [1/4] CouchDB: '_golden'-Datenbank anlegen =="
-curl "${AUTH[@]}" -X PUT "http://127.0.0.1:5984/${GOLDEN_DB}" >/dev/null || true
+couch_pruefe "Datenbank ${GOLDEN_DB} anlegen" "201 412" -X PUT "http://127.0.0.1:5984/${GOLDEN_DB}"
 # Derselbe Instanz-DB-Benutzer wie fuer die Live-DB (kein zweites Passwort noetig) - als admins
 # (nicht nur members), analog zur Live-DB (siehe deploy-instanz.sh): demo:snapshot:* laeuft unter
 # diesem Benutzer und braucht auf BEIDEN Datenbanken vollen Zugriff.
-curl "${AUTH[@]}" -X PUT "http://127.0.0.1:5984/${GOLDEN_DB}/_security" \
-  -d "{\"admins\":{\"names\":[\"torball_${NAME}\"],\"roles\":[]},\"members\":{\"names\":[\"torball_${NAME}\"],\"roles\":[]}}" >/dev/null
+couch_pruefe "Zugriffsrechte (_security) fuer ${GOLDEN_DB} setzen" "200" \
+  -X PUT "http://127.0.0.1:5984/${GOLDEN_DB}/_security" \
+  -d "{\"admins\":{\"names\":[\"torball_${NAME}\"],\"roles\":[]},\"members\":{\"names\":[\"torball_${NAME}\"],\"roles\":[]}}"
 
 echo "== [2/4] backend/.env: DEMO_SNAPSHOT_ERLAUBT aktivieren =="
 if grep -q '^DEMO_SNAPSHOT_ERLAUBT=' "${DIR}/backend/.env"; then

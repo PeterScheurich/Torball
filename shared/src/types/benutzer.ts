@@ -40,10 +40,11 @@ export interface Benutzer extends CouchMeta {
 
   /**
    * Persoenliche Anzeige-Voreinstellungen, kontogebunden (nicht geraetegebunden wie
-   * das gleichnamige Gegenstueck im Browser-localStorage): wirken als Startwert auf
-   * jedem Geraet, auf dem sich dieser Benutzer neu anmeldet, solange dort noch keine
-   * eigene lokale Wahl getroffen wurde (siehe seedeVoreinstellungen in auth.tsx).
-   * Unbesetzt = "system" (Theme folgt OS) bzw. "standard" (Dichte).
+   * das gleichnamige Gegenstueck im Browser-localStorage). Ein gesetzter Wert hat
+   * IMMER Recht (Nutzer-Vorgabe 2026-08-20): er wird bei jedem Sitzungsstart auf dem
+   * jeweiligen Geraet angewendet und ueberschreibt dabei eine dort getroffene lokale
+   * Wahl (siehe uebernimmKontoStandards in frontend/src/auth.tsx). Unbesetzt = die
+   * lokale Geraete-Einstellung bleibt massgeblich ("system" bzw. "standard").
    */
   standardTheme?: Theme;
   standardDichte?: Dichte;

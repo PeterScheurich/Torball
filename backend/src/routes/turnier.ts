@@ -105,7 +105,6 @@ function turnierDefaults(
     spielplanModus: "einfach",
     ...regeln,
     spielernamenOeffentlich: false,
-    spielplanFreigegeben: false,
     spielplanVersion: 0,
     oeffentlichTurnierinfos: false,
     oeffentlichAnfahrtDokumente: false,
@@ -478,7 +477,6 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         // Veranstaltungsreihe - die neue Turnierleitung des abgeleiteten Spieltags soll das
         // aktiv neu entscheiden (Nutzer-Vorgabe 2026-08-14), nicht durch den Spread erben.
         zugriffFuerAlleBenutzer: undefined,
-        spielplanFreigegeben: false,
         spielplanVersion: 1,
         spielplanGeaendertAm: jetzt,
         spielplanBasis: undefined,

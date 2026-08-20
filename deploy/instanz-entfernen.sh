@@ -16,6 +16,9 @@ BASE_DIR="/opt/torball"
 CONF_DIR="/etc/torball"
 
 NAME="${1:?Instanzname fehlt (z. B. prod) - Nutzung: deploy/instanz-entfernen.sh <name>}"
+# Besonders wichtig HIER: der Name landet unten in einem "rm -rf" - ein Wert wie "../x" darf
+# /opt/torball unter keinen Umstaenden verlassen (Sicherheitsdurchsicht Deploy, 2026-08-20).
+[[ "$NAME" =~ ^[a-z0-9-]+$ ]] || { echo "Ungueltiger Instanzname '${NAME}' - erlaubt sind nur Kleinbuchstaben, Ziffern und Bindestriche."; exit 1; }
 DIR="${BASE_DIR}/${NAME}"
 DB="torball_${NAME}"
 
@@ -24,6 +27,12 @@ DB="torball_${NAME}"
 [[ -d "$DIR" ]] || { echo "Keine Instanz '${NAME}' gefunden unter ${DIR} - nichts zu tun."; exit 1; }
 
 COUCH_ADMIN_PASS="$(cat "${CONF_DIR}/couchdb-admin")"
+# Zugangsdaten per curl-Konfigurationsdatei statt als ps-sichtbares Kommandozeilen-Argument
+# (gleiches Muster wie deploy-instanz.sh, Sicherheitsdurchsicht Deploy 2026-08-20).
+CURL_AUTH_CFG="$(mktemp "${CONF_DIR}/curl-auth.XXXXXX")"
+chmod 600 "$CURL_AUTH_CFG"
+printf 'user = "admin:%s"\n' "$COUCH_ADMIN_PASS" > "$CURL_AUTH_CFG"
+trap 'rm -f "$CURL_AUTH_CFG"' EXIT
 
 echo "Folgendes wird UNWIDERRUFLICH entfernt:"
 echo "  - systemd-Service torball@${NAME}"
@@ -53,7 +62,7 @@ else
 fi
 
 echo "== CouchDB: Datenbank + Benutzer loeschen =="
-AUTH=(-s -u "admin:${COUCH_ADMIN_PASS}")
+AUTH=(-s -K "$CURL_AUTH_CFG")
 curl "${AUTH[@]}" -X DELETE "http://127.0.0.1:5984/${DB}" >/dev/null || true
 # Der _users-Eintrag braucht zum Loeschen die aktuelle _rev - erst abrufen, dann mit Rev loeschen.
 USER_REV="$(curl "${AUTH[@]}" "http://127.0.0.1:5984/_users/org.couchdb.user:torball_${NAME}" \

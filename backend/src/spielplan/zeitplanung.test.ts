@@ -36,7 +36,6 @@ function turnier(ueberschreibung: Partial<Turnier> = {}): Turnier {
     forfaitErgebnis: "3:0",
     bundeslandBeruecksichtigen: false,
     spielernamenOeffentlich: false,
-    spielplanFreigegeben: false,
     spielplanVersion: 0,
     oeffentlichTurnierinfos: false,
     oeffentlichAnfahrtDokumente: false,

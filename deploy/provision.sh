@@ -65,10 +65,38 @@ EOF
   DEBIAN_FRONTEND=noninteractive apt-get install -y couchdb
 fi
 systemctl enable --now couchdb
-# System-Datenbanken anlegen (idempotent), damit der Single-Node-Betrieb sauber ist.
-sleep 2
+
+# Zugangsdaten nicht als Kommandozeilen-Argument (in "ps" fuer jeden lokalen Prozess sichtbar),
+# sondern ueber eine kurzlebige, nur fuer root lesbare curl-Konfigurationsdatei - gleiches Muster
+# wie in deploy-instanz.sh (Sicherheitsdurchsicht Deploy, 2026-08-20).
+CURL_AUTH_CFG="$(mktemp "${CONF_DIR}/curl-auth.XXXXXX")"
+chmod 600 "$CURL_AUTH_CFG"
+printf 'user = "admin:%s"\n' "$COUCH_ADMIN_PASS" > "$CURL_AUTH_CFG"
+trap 'rm -f "$CURL_AUTH_CFG"' EXIT
+
+# Auf tatsaechliche Erreichbarkeit warten statt pauschal zu schlafen: ein zu fruehes, still
+# fehlschlagendes Anlegen der System-Datenbanken (frueher "|| true") fiele sonst erst viel
+# spaeter als kryptischer Anmeldefehler des Instanz-Benutzers auf (ohne "_users" kann sich kein
+# regulaerer CouchDB-Benutzer anmelden - live beim Windows-Installer erlebt, siehe CLAUDE.md).
+echo "Warte auf CouchDB ..."
+COUCH_BEREIT=false
+for _ in $(seq 1 30); do
+  if [[ "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:5984/" || true)" == "200" ]]; then
+    COUCH_BEREIT=true
+    break
+  fi
+  sleep 2
+done
+[[ "$COUCH_BEREIT" == true ]] || { echo "FEHLER: CouchDB antwortet nicht unter http://127.0.0.1:5984 (systemctl status couchdb pruefen)."; exit 1; }
+
+# System-Datenbanken anlegen (idempotent: 412 = existiert bereits). Jeder andere Status ausser
+# 201/412 (z.B. 401 bei falschem Admin-Passwort) ist ein echter Fehler und bricht ab.
 for sysdb in _users _replicator _global_changes; do
-  curl -s -u "admin:${COUCH_ADMIN_PASS}" -X PUT "http://127.0.0.1:5984/${sysdb}" >/dev/null || true
+  code="$(curl -s -o /dev/null -w '%{http_code}' -K "$CURL_AUTH_CFG" -X PUT "http://127.0.0.1:5984/${sysdb}")"
+  if [[ "$code" != "201" && "$code" != "412" ]]; then
+    echo "FEHLER: System-Datenbank ${sysdb} konnte nicht angelegt werden (HTTP ${code})." >&2
+    exit 1
+  fi
 done
 
 echo "== [5/7] Service-Benutzer + Basisverzeichnis =="
@@ -90,6 +118,16 @@ WorkingDirectory=/opt/torball/%i/backend
 ExecStart=/usr/bin/node --env-file=/opt/torball/%i/backend/.env dist/index.js
 Restart=on-failure
 RestartSec=3
+# Haertung (Sicherheitsdurchsicht Deploy, 2026-08-20): das Backend schreibt im Betrieb nichts
+# auf die Platte (alle Daten in CouchDB, Logs ins Journal) - diese Einschraenkungen kosten daher
+# nichts, machen einen kompromittierten Prozess aber deutlich weniger nuetzlich. ProtectSystem=full
+# haengt /usr, /boot und /etc nur lesbar ein (/opt bleibt unberuehrt). Wirkt erst nach einem
+# erneuten provision.sh-Lauf + Service-Neustart - bei Problemen zuerst auf der Demo-Instanz
+# testen (systemctl restart torball@demo), dann erst prod.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
 
 [Install]
 WantedBy=multi-user.target

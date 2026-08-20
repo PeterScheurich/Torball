@@ -35,6 +35,11 @@ NAME="${1:?Instanzname fehlt (z. B. prod)}"
 FE_PORT="${2:?frontend_port fehlt (z. B. 8080)}"
 BE_PORT="${3:?backend_port fehlt (z. B. 3001)}"
 SERVER_NAME="${4:-_}"
+# Der Instanzname landet in Pfaden (/opt/torball/<name>), DB-/Service-Namen und wird von
+# instanz-entfernen.sh sogar in ein "rm -rf" eingesetzt - nur einfache Kleinbuchstaben/Ziffern/
+# Bindestriche zulassen, damit ein Tippfehler wie "../x" oder ein Leerzeichen nie Pfade
+# verlassen oder Namen zerlegen kann (Sicherheitsdurchsicht Deploy, 2026-08-20).
+[[ "$NAME" =~ ^[a-z0-9-]+$ ]] || { echo "Ungueltiger Instanzname '${NAME}' - erlaubt sind nur Kleinbuchstaben, Ziffern und Bindestriche."; exit 1; }
 # FRONTEND_URL braucht einen echten, erreichbaren Host - "_" ist nur fuer nginx' server_name als
 # Catch-all sinnvoll (s.u.), nicht als URL-Bestandteil. Ohne uebergebenen server_name faellt
 # FRONTEND_URL stattdessen auf die primaere IP-Adresse des Hosts zurueck, damit Links in E-Mails
@@ -55,6 +60,34 @@ DIR="${BASE_DIR}/${NAME}"
 DB="torball_${NAME}"
 COUCH_ADMIN_PASS="$(cat "${CONF_DIR}/couchdb-admin")"
 
+# CouchDB-Zugangsdaten NICHT als "-u admin:..." auf die curl-Kommandozeile legen - Argumente sind
+# waehrend des Aufrufs fuer JEDEN lokalen Prozess in der Prozessliste (ps) sichtbar, auch fuer den
+# unprivilegierten Service-Benutzer. Stattdessen eine kurzlebige, nur fuer root lesbare
+# curl-Konfigurationsdatei (wird beim Skriptende automatisch geloescht). Passwoerter in
+# Request-BODIES gehen aus demselben Grund per stdin (-d @-) statt als Argument.
+# (Sicherheitsdurchsicht Deploy, 2026-08-20 - gleiches Muster in provision.sh/
+# instanz-entfernen.sh/demo-snapshot-einrichten.sh.)
+CURL_AUTH_CFG="$(mktemp "${CONF_DIR}/curl-auth.XXXXXX")"
+chmod 600 "$CURL_AUTH_CFG"
+printf 'user = "admin:%s"\n' "$COUCH_ADMIN_PASS" > "$CURL_AUTH_CFG"
+trap 'rm -f "$CURL_AUTH_CFG"' EXIT
+
+# CouchDB-Aufruf, der den HTTP-Status prueft statt ihn zu verschlucken: curl selbst liefert bei
+# HTTP-Fehlern (401/500/...) Exit 0, ein stilles "|| true" liess solche Fehler frueher unbemerkt
+# durchrutschen - der Service stuerzte dann erst spaeter mit einer kryptischen Meldung ab (gleiche
+# Fehlerklasse wie live beim Windows-Installer erlebt, siehe CLAUDE.md). Erwartete Status-Codes
+# (z.B. 412 "existiert schon" beim idempotenten Anlegen) werden explizit mit uebergeben.
+couch_pruefe() {
+  local beschreibung="$1"; shift
+  local erlaubte="$1"; shift
+  local code
+  code="$(curl -s -o /dev/null -w '%{http_code}' -K "$CURL_AUTH_CFG" -H "Content-Type: application/json" "$@")"
+  if [[ " ${erlaubte} " != *" ${code} "* ]]; then
+    echo "FEHLER: ${beschreibung} fehlgeschlagen (HTTP ${code}, erwartet: ${erlaubte})." >&2
+    exit 1
+  fi
+}
+
 echo "== Port-Plausibilitaetspruefung (nur bei bereits bestehender Instanz) =="
 # Ein vertippter Port (z.B. 8000 statt 8080) faellt sonst nicht auf: backend_port landet zwar seit
 # obigem .env-Fix nicht mehr in einem bereits bestehenden backend/.env, wird aber bedingungslos in
@@ -62,7 +95,9 @@ echo "== Port-Plausibilitaetspruefung (nur bei bereits bestehender Instanz) =="
 # die ganze Instanz, ohne dass beim Ausfuehren selbst etwas auffaellt. Nur ein Hinweis + Rueckfrage,
 # kein hartes Verbot - ein bewusster Port-Wechsel (Instanz umziehen) bleibt moeglich.
 if [[ -f "${DIR}/backend/.env" ]]; then
-  BISHERIGER_BE_PORT="$(grep -m1 '^PORT=' "${DIR}/backend/.env" | cut -d= -f2)"
+  # "|| true": eine .env ohne PORT=-Zeile (untypisch, aber moeglich) darf das Skript nicht ueber
+  # set -e abbrechen - dann entfaellt einfach die Plausibilitaetspruefung.
+  BISHERIGER_BE_PORT="$(grep -m1 '^PORT=' "${DIR}/backend/.env" | cut -d= -f2 || true)"
   if [[ -n "$BISHERIGER_BE_PORT" && "$BISHERIGER_BE_PORT" != "$BE_PORT" ]]; then
     echo "WARNUNG: backend_port=${BE_PORT} weicht vom bisherigen Wert in backend/.env ab (${BISHERIGER_BE_PORT})."
     read -r -p "Wirklich mit ${BE_PORT} fortfahren? Tippe 'ja': " ANTWORT
@@ -120,17 +155,34 @@ echo "== CouchDB: Datenbank + Instanz-Benutzer =="
 PW_FILE="${CONF_DIR}/db-${NAME}.pass"
 [[ -f "$PW_FILE" ]] || { openssl rand -base64 24 > "$PW_FILE"; chmod 600 "$PW_FILE"; }
 DB_PASS="$(cat "$PW_FILE")"
-AUTH=(-s -u "admin:${COUCH_ADMIN_PASS}" -H "Content-Type: application/json")
-curl "${AUTH[@]}" -X PUT "http://127.0.0.1:5984/${DB}" >/dev/null || true
-curl "${AUTH[@]}" -X PUT "http://127.0.0.1:5984/_users/org.couchdb.user:torball_${NAME}" \
-  -d "{\"name\":\"torball_${NAME}\",\"password\":\"${DB_PASS}\",\"roles\":[],\"type\":\"user\"}" >/dev/null || true
+# 412 = Datenbank existiert bereits (idempotenter Wiederholungslauf) - alles andere ausser 201
+# ist ein echter Fehler (z.B. 401 bei falschem Admin-Passwort) und bricht ab.
+couch_pruefe "Datenbank ${DB} anlegen" "201 412" -X PUT "http://127.0.0.1:5984/${DB}"
+# Erst die _rev eines evtl. schon vorhandenen Benutzers holen und MIT ihr schreiben, statt ein
+# PUT-ohne-_rev-409 zu schlucken: existiert der Benutzer mit einem ANDEREN Passwort (z.B. nach
+# manuell neu erzeugter db-<name>.pass), wuerde das stille 409 sonst das alte Passwort in CouchDB
+# stehen lassen, waehrend .env schon das neue enthaelt - "Name or password is incorrect" beim
+# Start (gleicher Fix wie im Windows-Installer, dort live erlebt). Passwort im Body per stdin.
+USER_URL="http://127.0.0.1:5984/_users/org.couchdb.user:torball_${NAME}"
+USER_REV="$(curl -s -K "$CURL_AUTH_CFG" "$USER_URL" | sed -n 's/.*"_rev":"\([^"]*\)".*/\1/p' || true)"
+if [[ -n "$USER_REV" ]]; then
+  USER_REV_FELD="\"_rev\":\"${USER_REV}\","
+else
+  USER_REV_FELD=""
+fi
+couch_pruefe "Instanz-Benutzer torball_${NAME} anlegen/aktualisieren" "201" \
+  -X PUT "$USER_URL" -d @- <<JSON
+{${USER_REV_FELD}"name":"torball_${NAME}","password":"${DB_PASS}","roles":[],"type":"user"}
+JSON
 # Nur diese eine DB fuer den Instanz-Benutzer freigeben (Instanzen sehen sich gegenseitig nicht).
 # Als admins (nicht nur members) eintragen: CouchDB verlangt fuer das Anlegen von Mango-Indizes
 # (ensureIndexes() in backend/src/db.ts, technisch ein Design-Dokument) Admin-Rechte auf der
 # jeweiligen Datenbank - ein reiner "member" bekommt beim Start "forbidden" und der Service
 # stuerzt ab. Bleibt trotzdem auf genau diese eine DB beschraenkt (kein Server-Admin).
-curl "${AUTH[@]}" -X PUT "http://127.0.0.1:5984/${DB}/_security" \
-  -d "{\"admins\":{\"names\":[\"torball_${NAME}\"],\"roles\":[]},\"members\":{\"names\":[\"torball_${NAME}\"],\"roles\":[]}}" >/dev/null
+# Dieses PUT MUSS klappen (200) - ohne _security-Eintrag kann sich das Backend nicht verbinden.
+couch_pruefe "Zugriffsrechte (_security) fuer ${DB} setzen" "200" \
+  -X PUT "http://127.0.0.1:5984/${DB}/_security" \
+  -d "{\"admins\":{\"names\":[\"torball_${NAME}\"],\"roles\":[]},\"members\":{\"names\":[\"torball_${NAME}\"],\"roles\":[]}}"
 
 if [[ -f "${DIR}/backend/.env" ]]; then
   # NUR beim allerersten Deploy neu schreiben - ein Update wuerde sonst jeden manuell gesetzten
