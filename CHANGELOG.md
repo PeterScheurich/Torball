@@ -31,6 +31,9 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
   unberechtigtes Admin-Konto) oder in ein anderes Benutzerkonto einschleusen (Passwort/2FA). Solche
   Zusatzfelder werden jetzt an allen betroffenen Stellen ignoriert. Der normale Betrieb ändert sich
   dadurch nicht.
+- Spielplan speichern: ein (manuell umsortierter) Spielplan wird jetzt serverseitig auf die harten
+  Regeln geprüft, bevor er übernommen wird – keine Mannschaft doppelt im selben Zeit-Slot, keine
+  Paarung gegen sich selbst und keine turnierfremde Mannschaft.
 - Neue Turnierregel „Bundesland-Regel bei der Spielplan-Erstellung" (Standard: aus): steuert, ob
   Mannschaften desselben Bundeslands bei der Spielplan-Erzeugung möglichst früh gegeneinander
   eingeplant werden – gedacht für Wettbewerbe mit festem Regionalbezug wie Bundesliga oder

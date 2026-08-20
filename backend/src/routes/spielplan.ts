@@ -52,6 +52,35 @@ function inhaltlichGleich(
   return bestehendeSchluessel.every((k, i) => k === neueSchluessel[i]);
 }
 
+/**
+ * Prueft eine (ggf. vom Client manuell umsortierte) Eintragsliste, bevor sie als Spielplan
+ * persistiert wird: der `eintraege`-Pfad im POST uebernimmt sie sonst ungeprueft (Backend-Review
+ * 2026-08-20). Deckt die harten Regeln ab (Gesamtspezifikation Abschnitt 8, "Turnier-Fachregeln"):
+ * jede Mannschaft gehoert zu diesem Turnier, kein Team gegen sich selbst, kein Team zweimal im
+ * selben Zeit-Slot. Gibt eine Fehlermeldung zurueck (fuer 400) oder null, wenn alles gueltig ist.
+ * Bewusst KEINE Pruefung, ob die Paarungsmenge exakt der erzeugePaarungen-Ausgabe entspricht - das
+ * wuerde legitimes manuelles Umsortieren/Anpassen zu eng einschraenken.
+ */
+function pruefeSpielplanEintraege(eintraege: SpielplanEintrag[], mannschaftIds: Set<string>): string | null {
+  const belegtProSlot = new Map<number, Set<string>>();
+  for (const e of eintraege) {
+    if (!mannschaftIds.has(e.mannschaftAId) || !mannschaftIds.has(e.mannschaftBId)) {
+      return "Ein Spiel verweist auf eine Mannschaft, die nicht zu diesem Turnier gehört.";
+    }
+    if (e.mannschaftAId === e.mannschaftBId) {
+      return "Ein Spiel darf nicht dieselbe Mannschaft gegen sich selbst enthalten.";
+    }
+    const belegt = belegtProSlot.get(e.slot) ?? new Set<string>();
+    if (belegt.has(e.mannschaftAId) || belegt.has(e.mannschaftBId)) {
+      return "Eine Mannschaft ist im selben Zeit-Slot mehrfach eingeplant.";
+    }
+    belegt.add(e.mannschaftAId);
+    belegt.add(e.mannschaftBId);
+    belegtProSlot.set(e.slot, belegt);
+  }
+  return null;
+}
+
 interface VorschlagErgebnis {
   turnier: Turnier;
   vorschlag: SpielplanEintrag[];
@@ -172,6 +201,16 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
           error: "Spielplan kann nicht neu erzeugt werden: es gibt bereits laufende oder abgeschlossene Spiele",
         });
       }
+
+      // Eintragsliste gegen die harten Regeln pruefen, bevor sie gespeichert wird - der
+      // eintraege-Pfad (manuell umsortierte Vorschau) uebernaehme sie sonst ungeprueft. Fuer den
+      // serverseitig berechneten Vorschlag ist das ein No-Op (er erfuellt die Regeln bereits).
+      const mannschaftenFuerPruefung = await findAllBySelector<MannschaftImTurnier>({
+        docType: "mannschaftImTurnier",
+        turnierId: turnier._id,
+      });
+      const eintragFehler = pruefeSpielplanEintraege(vorschlag, new Set(mannschaftenFuerPruefung.map((m) => m._id)));
+      if (eintragFehler) return reply.code(400).send({ error: eintragFehler });
 
       // Keine neue Version anlegen, wenn sich inhaltlich nichts geaendert hat (z.B. mehrfaches
       // Klicken auf "Spielplan neu erzeugen" ohne zwischenzeitliche Aenderung an Mannschaften
