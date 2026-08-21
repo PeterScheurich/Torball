@@ -463,7 +463,7 @@ auf → doppelt gebuchte Events samt Sequenz-Kollisionen) – `eingabeRef`-Muste
 Zugang: dritter Turnier-Code „Protokollant" (`TurnierCodeRolle`, Stufe `lesen` + eigenes Prädikat
 `darfProtokollieren()` in `turnierZugriff.ts` – bewusst KEINE vierte Zugriffsstufe), eigene Seite
 `ProtokollantCodePage`. Sobald irgendein Spielprotokoll existiert, gilt das Turnier als begonnen:
-`GET /turniere/:id/spielprotokolle` speist dieselbe Sperre wie beim ersten manuellen Ergebnis
+`GET /turniere/:id/spielprotokolle` speist dieselbe Sperre wie beim ersten manuellen Ergebnis - bei digital sperrt sie zusaetzlich das GANZE Regel-Formular samt Vier-Augen-Checkbox (die Regeln wirken dort direkt in die Live-Erfassung)
 (`spielplanGesperrt` in TurnierVerwaltenPage, lädt bei Fenster-Fokus nach). **Bewusst
 zurückgestellt** (Konzept Abschnitt 11): konfigurierbare Tastenbelegung (erst wenn das Protokoll
 rund läuft – Nutzer-Vorgabe), PDF-Spielbericht, Beamer-Sicht, Torschützen-Statistik,

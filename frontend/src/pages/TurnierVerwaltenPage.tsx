@@ -648,7 +648,7 @@ export function TurnierVerwaltenPage() {
                       <label>
                         <input
                           type="checkbox"
-                          disabled={eingabeGesperrt}
+                          disabled={eingabeGesperrt || spielplanGesperrt}
                           checked={Boolean(turnier.protokollBestaetigungErforderlich)}
                           onChange={async (e) => {
                             try {
@@ -856,9 +856,25 @@ export function TurnierVerwaltenPage() {
             </button>
           </p>
         )}
+        {/* Digitale Protokollierung + Turnier begonnen: ALLE Regeln sperren, nicht nur die
+            Spielzeit-Gruppe (Nutzer-Fund 21.08.2026) - anders als beim manuellen Pfad wirken
+            hier auch Timeouts/Wechsel/Trikotnummern/Wertung direkt in die Live-Erfassung. */}
+        {turnier.protokollierungsart === "digital" && spielplanGesperrt && !istGesperrt && (
+          <p className="turnier-gesperrt-hinweis" role="status">
+            Die digitale Protokollierung hat begonnen – die Regeln sind jetzt <strong>gesperrt</strong>, weil sie
+            direkt in die Live-Erfassung wirken (Timeouts, Wechsel, Trikotnummern, Wertung …).
+          </p>
+        )}
         {/* Bei gesperrten Regeln werden alle Eingaben nativ über das disabled-<fieldset>
             deaktiviert (inkl. Speichern-Knopf des Formulars); zum Ändern erst entsperren. */}
-        <fieldset className="blank-fieldset" disabled={!!turnier.regelnGesperrt || eingabeGesperrt}>
+        <fieldset
+          className="blank-fieldset"
+          disabled={
+            !!turnier.regelnGesperrt ||
+            eingabeGesperrt ||
+            (turnier.protokollierungsart === "digital" && spielplanGesperrt)
+          }
+        >
           <TurnierregelnFormular
             werte={turnier}
             onSpeichern={regelnSpeichern}
