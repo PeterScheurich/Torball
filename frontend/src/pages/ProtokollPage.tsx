@@ -225,6 +225,28 @@ export function ProtokollPage() {
     });
   }, [events, turnier]);
 
+  // Rotes Aufblitzen bei NEU auftauchenden Regel-Warnungen (Nutzer-Wunsch 21.08.2026: Warnungen
+  // fielen im Eifer nicht immer sofort auf). Der Zaehler remountet das Overlay (key), dadurch
+  // startet die CSS-Animation auch bei schnell aufeinanderfolgenden Warnungen jedes Mal neu -
+  // kein Timeout/State-Reset noetig, die Animation endet von selbst unsichtbar.
+  const [fehlerBlitz, setFehlerBlitz] = useState(0);
+  const bekannteHinweiseRef = useRef<Set<string> | undefined>(undefined);
+  useEffect(() => {
+    // Erst vergleichen, wenn Protokoll + Events geladen sind (kommen in EINER Antwort) - sonst
+    // wuerde eine beim Oeffnen bereits bestehende Warnung als "neu" blitzen.
+    if (!protokoll || !stand) return;
+    const vorher = bekannteHinweiseRef.current;
+    bekannteHinweiseRef.current = new Set(stand.hinweise);
+    if (!vorher) return;
+    // Aufstellungs-Erinnerungen sind Arbeitsstand beim Einrichten, keine Fehler - sie wuerden
+    // sonst waehrend der Aufstellung bei jedem Klick blitzen.
+    const neue = stand.hinweise.filter((h) => !vorher.has(h) && !h.includes("Aufstellung"));
+    if (neue.length > 0) setFehlerBlitz((z) => z + 1);
+  }, [protokoll, stand]);
+  useEffect(() => {
+    if (fehler) setFehlerBlitz((z) => z + 1);
+  }, [fehler]);
+
   // Automatischer Reset einer offenen Eingabe nach Inaktivitaet (Panel-Konzept, Punkt 2).
   useEffect(() => {
     if (!eingabe.aktion && eingabe.aktuelleNummer === "") return;
@@ -895,6 +917,9 @@ export function ProtokollPage() {
     );
     return (
       <div className="protokoll-erfassung">
+        {/* Rein visueller Aufmerksamkeits-Blitz (s. fehlerBlitz oben) - Screenreader bedient
+            weiterhin die aria-live-Hinweiszeile. */}
+        {fehlerBlitz > 0 && <div key={fehlerBlitz} className="protokoll-fehler-blitz" aria-hidden="true" />}
         <div className="protokoll-vb-kopf">
           <span>
             {spiel.runde ? `Spiel ${spiel.runde}` : "Spiel"}

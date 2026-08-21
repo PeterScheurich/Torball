@@ -2304,6 +2304,29 @@ button:hover:not(:disabled) {
   color: var(--accent-contrast);
 }
 
+/* Kurzes rotes Aufblitzen ueber der ganzen Erfassung, wenn eine neue Regel-Warnung oder ein
+   Fehler auftaucht (Nutzer-Wunsch 21.08.2026: Warnungen fielen im Eifer nicht immer sofort
+   auf). Faengt keine Eingaben ab (pointer-events: none) und endet von selbst unsichtbar
+   (forwards) - das Element darf danach stehen bleiben. */
+.protokoll-fehler-blitz {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: var(--danger);
+  opacity: 0;
+  animation: protokoll-fehler-blitz 0.5s ease-out forwards;
+}
+
+@keyframes protokoll-fehler-blitz {
+  0% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /* Platz fuer die hochgestellten Wurf-Badges (top: -18px, s.o.), damit sie nicht ins
    Gruppen-Label darueber ragen - nur in den Feldspieler-Spalten der Erfassung, nicht in den
    uebrigen Tastengruppen (Verlauf-Ansicht). */
