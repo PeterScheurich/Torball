@@ -2664,7 +2664,9 @@ body.protokoll-vollbild-aktiv .protokoll-vb-hinweise p {
 .protokoll-vb-ereignis-aktionen {
   display: flex;
   gap: 4px;
-  width: 44px;
+  /* Breit genug fuer Stift + Streichen nebeneinander - bei 44px wurde der Stift links
+     abgeschnitten (Nutzer-Screenshot 21.08.2026). */
+  width: 60px;
   flex-shrink: 0;
   justify-content: flex-end;
 }
