@@ -244,7 +244,11 @@ export function berechneProtokollStand(events: Event[], kontext: StandKontext): 
     }
     const wurf = stand.wurf[seite];
     if (wurf.anzahl === 3) stand.hinweise.push(`Mannschaft ${seite}: 3. Wurf in Folge - nächster Wurf wäre ein Foul.`);
-    if (wurf.anzahl >= 4) stand.hinweise.push(`Mannschaft ${seite}: 4. Wurf in Folge - möglicher Foul-Hinweis!`);
+    // Ab dem 4. Wurf zieht JEDER weitere Wurf ohne Unterbrechung eine Strafe nach sich - die
+    // Zahl steht deshalb im Text (Nutzer-Vorgabe 21.08.2026): so ist die Warnung korrekt UND
+    // der Aufmerksamkeits-Blitz (ProtokollPage, vergleicht Hinweis-Texte) feuert bei jedem
+    // weiteren Wurf erneut, nicht nur beim vierten.
+    if (wurf.anzahl >= 4) stand.hinweise.push(`Mannschaft ${seite}: ${wurf.anzahl}. Wurf in Folge - möglicher Foul-Hinweis!`);
     if (stand.fouls[seite] >= 3) stand.hinweise.push(`Mannschaft ${seite}: 3. Foul - Penalty fällig.`);
     if (stand.timeouts[seite] > kontext.timeoutsJeHalbzeit) {
       stand.hinweise.push(`Mannschaft ${seite}: Timeout-Kontingent überschritten - Team-Penalty-Hinweis.`);
