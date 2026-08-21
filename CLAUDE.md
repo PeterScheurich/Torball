@@ -172,9 +172,11 @@ Zugriff):** ein Rechner hostet Backend+CouchDB lebend im LAN; weitere Geräte
 greifen über einen geteilten Code statt eines eigenen Kontos auf **genau ein**
 Turnier zu – kein Offline-Datenmodell, keine Synchronisation nötig, da alle
 Geräte durchgehend gegen dieselbe erreichbare Datenbank arbeiten (anders als
-Turnier-Sync unten). Zwei optionale gehashte Felder direkt am `Turnier`-Dokument
-(`turnierleitungCodeHash`/`spielleitungCodeHash`, analog `passwortHash` – kein
-eigener docType, da nie mehr als zwei Codes pro Turnier). Setzen/Ändern der
+Turnier-Sync unten). Drei optionale gehashte Felder direkt am `Turnier`-Dokument
+(`turnierleitungCodeHash`/`spielleitungCodeHash`/`protokollantCodeHash`, analog
+`passwortHash` – kein eigener docType, da nie mehr als drei Codes pro Turnier;
+der Protokollant-Code kam 2026-08-21 mit der digitalen Protokollierung dazu,
+siehe eigener Abschnitt unten). Setzen/Ändern der
 Codes braucht `schreiben_voll` (`PUT/GET /turniere/:id/codes`,
 `backend/src/routes/turnierCode.ts`); die Anmeldung selbst ist öffentlich
 (`POST /turniere/:id/code-anmeldung`, analog zum `ErgebnisToken`-Muster der
@@ -409,13 +411,63 @@ admin-sichtbares Menü hätte das gebrochen. Bei einem neuen admin-only
 Menüpunkt: erst prüfen, ob die Funktion wirklich *nur* für Admin gedacht ist,
 nicht nur gerade zufällig admin-only umgesetzt wurde.
 
-**Zwei parallele Wege zum Spielergebnis, nur einer ist umgesetzt:** Ein
-Turnier ist entweder `protokollierungsart: "manuell"` (Endergebnisse per
-Formular oder per Token-Link ohne Login, `backend/src/routes/ergebnis.ts` +
-`ergebnisToken.ts`, Tabellenberechnung in `backend/src/ergebnisse/tabelle.ts`)
-oder `"digital"` (vollständiges Live-Ereignisprotokoll je Wurf/Foul/Tor). Nur
-der `manuell`-Pfad existiert bisher – der `digital`-Pfad ist in der
-Spezifikation (Abschnitt 22) beschrieben, aber noch nicht gebaut.
+**Zwei parallele Wege zum Spielergebnis – beide umgesetzt, digital als Beta (2026-08-21):** Ein
+Turnier ist entweder `protokollierungsart: "manuell"` (Endergebnisse per Formular oder per
+Token-Link ohne Login, `backend/src/routes/ergebnis.ts` + `ergebnisToken.ts`, Tabellenberechnung in
+`backend/src/ergebnisse/tabelle.ts`) oder `"digital"` (vollständiges Live-Ereignisprotokoll je
+Wurf/Foul/Tor, siehe nächster Abschnitt). Der digitale Pfad ist bewusst als **Beta**
+gekennzeichnet (Hinweise an der Auswahl + Hilfe-Thema „Digitale Protokollierung (Beta)") – noch
+nicht für den produktiven Einsatz freigegeben; ErgebnisVerwaltung zeigt bei digital keine
+Direkteingabe mehr, sondern je Spiel einen „Protokoll"-Link.
+
+**Digitale Protokollierung (Abschnitt 22, in einem Tag inkl. sechs Feedback-Runden gebaut –
+maßgebliches Design-Dokument mit allen Entscheidungen: `docs/digitales-protokoll-konzept.md`):**
+Event-Sourcing je Spiel: `Spielprotokoll` (Singleton je Spiel) + append-only `Event`-Strom (beide
+docTypes tragen `turnierId` **denormalisiert** – dadurch funktionieren Kaskaden-Löschung in
+`turnier.ts` und die Sync-Export-Validierung ohne Kettenauflösung; `sequenz` vergibt der Server).
+Events werden NIE geändert/gelöscht; Korrektur-Semantik (`backend/src/protokoll/ereignisse.ts`):
+ein Korrektur-Event annulliert sein Ziel, `ANNULLIERT` streicht ersatzlos (Undo), jeder andere Typ
+ist Ersatz und zählt selbst; Korrektur der Korrektur lässt das Original wieder aufleben; einzige
+Typ-Sonderregel: Nicht-ANNULLIERT-Korrektur auf `PROT` = Ergänzung (Protest-Entscheidung), Ziel
+bleibt wirksam. Die UI-Aktion „Tor" erzeugt ein W+G-Doppel-Event mit `zusatz.torPaar` am W – nur
+so markierte Paare werden bei Undo/Streichen GEMEINSAM gestrichen (ein per `G` an einen echten
+separaten Wurf angehängtes Tor lässt den Wurf stehen). **Der volle Live-Reducer läuft NUR im
+Frontend** (`frontend/src/protokoll/stand.ts` – alle Spez.-Prüfungen sind Warnungen, keine
+Blockaden); das Backend hat nur `ergebnisAusEvents()` – der Annullierungs-Filter existiert dadurch
+bewusst doppelt (ereignisse.ts ↔ stand.ts, bei Änderung BEIDE anpassen). Integration in den
+Bestand läuft komplett darüber, dass `routes/protokoll.ts` die vorhandenen `Spiel`-Felder pflegt
+(erstes GO → `laeuft`, Tore → Live-`ergebnisA/B`, `End` → `beendet`, `Fin`/Bestätigung →
+`abgeschlossen`) – Tabelle/öffentliche Seite/PDFs blieben unangetastet; das torlose 0:0 wird
+bewusst erst bei `End` geschrieben (sonst stünde ein angepfiffenes Spiel als Remis in der
+Tabelle). `AUF`-Event (`zusatz.spielerIds`) setzt die Feldbesetzung, `E`-Wechsel schreiben sie
+fort. Vier-Augen-Abschluss je Turnier über `protokollBestaetigungErforderlich` (Checkbox
+Übersicht, `POST /protokolle/:id/bestaetigen`, `schreiben_voll`).
+
+**Protokoll-UI: EINE Route (`/turniere/:turnierId/spiele/:spielId/protokoll`, außerhalb
+`GeschuetzteRoute`), zwei Ansichten in `ProtokollPage.tsx`:** die **Erfassungs-Ansicht**
+(Standard) ist ein Vollbild-Layout – eine body-Klasse `protokoll-vollbild-aktiv` blendet
+App-Kopfzeile/Banner/Fußzeile aus, alle großen Elemente skalieren per `clamp()` mit der
+Viewport-Höhe plus zwei `max-height`-Kompaktstufen (760/640px), Scrollen nur als Sicherheitsnetz;
+`Esc`, dann `Enter` wechselt zur **Verlauf-Ansicht** (volle Ereignisliste, ✎/✕-Korrekturen,
+Abschluss-Workflow) und zurück. Eingabe über die reine Zustandsmaschine
+`frontend/src/protokoll/eingabe.ts` + `TASTATUR_BELEGUNG` (Bildschirm-Buttons, Tastatur und das
+später geplante HID-Panel treiben DIESELBE Maschine). Bedienregeln (alle Nutzer-Vorgaben):
+Team-Taste A = links / B = rechts angezeigte Mannschaft (bei `seiteAVertauscht` mappt `taste()`
+auf die andere Datenseite); Ziffer ohne Aktions-Taste bucht direkt einen Wurf; bei einstelligen
+Trikotnummern buchen ALLE Aktionen mit der letzten Ziffer bzw. 0-Nummern-Aktionen sofort (kein
+Enter); `G` unmittelbar nach einem Wurf = Tor zu genau diesem Wurf; `H` (Halbzeit) tauscht bei
+aktivierter Regel `seitenwechsel` automatisch die Anzeigeseiten; 8-Sekunden-Anzeige zählt nach
+einem Wurf neutral auf BEIDEN Seiten, erst `K` legt die Seite fest. **Lehre aus einem Live-Bug:
+Befehle/Seiteneffekte NIE im setState-Updater ausführen** (React-StrictMode ruft Updater doppelt
+auf → doppelt gebuchte Events samt Sequenz-Kollisionen) – `eingabeRef`-Muster in ProtokollPage.
+Zugang: dritter Turnier-Code „Protokollant" (`TurnierCodeRolle`, Stufe `lesen` + eigenes Prädikat
+`darfProtokollieren()` in `turnierZugriff.ts` – bewusst KEINE vierte Zugriffsstufe), eigene Seite
+`ProtokollantCodePage`. Sobald irgendein Spielprotokoll existiert, gilt das Turnier als begonnen:
+`GET /turniere/:id/spielprotokolle` speist dieselbe Sperre wie beim ersten manuellen Ergebnis
+(`spielplanGesperrt` in TurnierVerwaltenPage, lädt bei Fenster-Fokus nach). **Bewusst
+zurückgestellt** (Konzept Abschnitt 11): konfigurierbare Tastenbelegung (erst wenn das Protokoll
+rund läuft – Nutzer-Vorgabe), PDF-Spielbericht, Beamer-Sicht, Torschützen-Statistik,
+Freiwurf-Führung, „kurzzeitig ausgesetzt"-Status, Tablet-Layout/Wake-Lock, Panel-Firmware.
 
 **Optionale Textfelder leeren: `null` senden, nicht `undefined`.**
 `JSON.stringify` entfernt Felder mit Wert `undefined` komplett aus dem
