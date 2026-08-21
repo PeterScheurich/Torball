@@ -16,6 +16,19 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
   die Turnierleitung) sowie ein eigener Protokollant-Code für Helfer ohne Konto. **Achtung: noch
   nicht ausgiebig getestet und für den produktiven Einsatz nicht freigegeben** – für echte Turniere
   weiterhin „Manuell" verwenden. Details im neuen Hilfe-Thema „Digitale Protokollierung (Beta)".
+  Aus den ersten Praxistests kamen dazu noch:
+  - Die **Spieluhr hält automatisch an** bei Tor, Eigentor, Foul, Strafwurf und Auszeiten – auf all
+    das pfeift der Schiedsrichter neu an, die Zeit läuft in der Unterbrechung nicht. Gestartet wird
+    wie gewohnt von Hand (Leertaste) beim Anpfiff.
+  - **Deutlichere Rückmeldung bei Regelverstößen:** Der Bildschirm blitzt kurz rot auf, sobald eine
+    neue Warnung auftaucht (z. B. der vierte und jeder weitere Wurf in Folge, drittes Foul,
+    überzogene Auszeiten), und die Wurf-Anzeige am Spieler färbt sich dabei rot.
+  - **Klarere Statusanzeige:** „Noch nicht gestartet", „Pause" und „Spiel beendet" stehen jetzt
+    dort, wo vorher pauschal „Unterbrochen" zu lesen war; Warnungen erscheinen zentriert statt am
+    Bildrand.
+  - Sobald zu einem Spiel ein Protokoll begonnen wurde, lässt sich der **Spielplan nicht mehr neu
+    erzeugen** – vorher hätte das in einem kurzen Zeitfenster die Spiele gelöscht und das bereits
+    begonnene Protokoll ins Leere laufen lassen.
 - **Neue Turnierregel „Max. Spieler je Mannschaft"** (Standard 6, z. B. Bundesliga): der Kader warnt
   bei Überschreitung. Außerdem lässt sich ein leerer Kader jetzt per Knopf automatisch mit
   Platzhalter-Spielern anlegen.

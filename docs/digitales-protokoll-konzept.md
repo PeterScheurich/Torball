@@ -264,8 +264,11 @@ Vollbild-tauglich für den Protokollanten-Laptop):
 2. **Status-Zeile je Team:** Foulzähler (0–2, bei 3 → Penalty-Hinweis), verbrauchte
    Timeouts/Wechsel, Kader mit Trikotnummern, letzter Werfer mit Wurfzähler (3-Wurf-Regel).
    *(Vollbild-Seite zusätzlich: Wurfzähler-Badge direkt am Feldspieler-Button des jeweils
-   letzten Werfers je Team - Nutzer-Wunsch, 3. Runde.)*
+   letzten Werfers je Team - Nutzer-Wunsch, 3. Runde; ab dem 4. Wurf rot eingefärbt.)*
    *(In der Umsetzung bewusst KEINE Feldbesetzungs-Verfolgung – siehe Abschnitt 11.)*
+   Der Uhr-Status unterscheidet „noch nicht gestartet" / „Pause" (nach `B`/`VB`) / „Spiel
+   beendet" / „unterbrochen" – pauschales „unterbrochen" war vor dem Anpfiff und in der
+   Halbzeit irreführend (Nutzer-Feedback 21.08.2026).
 3. **Timer A/B** (8-Sekunden-Anzeigen, Spez. 6.2): Timer A startet mit jedem `W`, Timer B mit
    `K`; reine Anzeige mit Signalfarbe bei Ablauf – kein automatisches Foul.
 4. **Eingabebereich:** Team-Kontext-Umschalter (A/B, deutlich sichtbarer farbiger Balken –
@@ -273,9 +276,14 @@ Vollbild-tauglich für den Protokollanten-Laptop):
    Bildschirm-Buttons und Tastatur (`keydown`) treiben **dieselbe** Zustandsmaschine.
 5. **Ereignisliste** (neueste oben): Zeit, Typ, Team, Spieler; annullierte Events
    durchgestrichen; Undo-Knopf; bei Bedarf gezielte Korrektur einzelner Events.
-6. **Hinweis-Bereich** (`aria-live="polite"`): Warnungen aus dem Reducer (3. Wurf, 4. Wurf,
-   drittes Foul → Penalty, Timeout ohne Kontingent, Tordifferenz-Limit, …) – warnen, nie
-   blockieren.
+6. **Hinweis-Bereich** (`aria-live="polite"`, zentriert): Warnungen aus dem Reducer (3. Wurf,
+   4. und jeder weitere Wurf in Folge, drittes Foul → Penalty, Timeout ohne Kontingent,
+   Tordifferenz-Limit, …) – warnen, nie blockieren. Zusätzlich blitzt bei einer NEU
+   auftauchenden Warnung der Bildschirm 0,5 s rot auf (Nutzer-Wunsch 21.08.2026: die Zeile
+   allein wurde im Eifer übersehen). Der Blitz erkennt „neu" am Warnungstext – **ein
+   wiederholbarer Verstoß muss seine Zahl deshalb im Text tragen** (der Wurf-Hinweis zählt ab
+   dem vierten mit: „5. Wurf in Folge", …), sonst bliebe der zweite Verstoß stumm.
+   Aufstellungs-Hinweise sind vom Blitz ausgenommen (ändern sich beim Einrichten laufend).
 
 Barrierefreiheit von Anfang an: komplette Tastatur-Bedienbarkeit ist hier der Kern (nicht
 Beiwerk), sichtbarer Fokus, große Schrift/Kontraste (Halle!), Hinweise über `aria-live`,
