@@ -921,6 +921,7 @@ Der aktuelle Spielstand wird nicht gespeichert, sondern aus der Event-Liste bere
 | FW | Freiwurf | A/B | Ja |
 | HANDOVER | Protokollantenwechsel | - | - |
 | PROT | Protest | A/B | - |
+| AUF | Aufstellung (drei Feldspieler, `zusatz.spielerIds`) – Pflichtschritt vor dem Anpfiff, später erneut buchbar (z. B. Halbzeitpause) | A/B | - |
 | ANNULLIERT | Ersatzlose Streichung (Undo) – nur als Korrektur-Event gültig, zählt selbst nie | - | - |
 
 Die UI-Aktion "Tor" erzeugt ein W+G-Doppel-Event (der Wurf zählt für die
@@ -942,6 +943,11 @@ des Tors streicht beide gemeinsam.
 **E – Wechsel:** Spieler raus auf dem Feld? Spieler rein auf der Bank? Auswechslungskontingent verfügbar? Während Penalty nicht möglich. Sehender Spieler: Limit prüfen.
 
 **HANDOVER:** `zusatz` enthält `{"neuer_protokollant": "<Name>"}`; bisheriger Name ergibt sich aus dem vorherigen HANDOVER-Event bzw. dem ersten Protokollanten.
+
+**AUF – Aufstellung:** Setzt die Feldbesetzung der Mannschaft komplett neu; nachfolgende
+E-Wechsel schreiben sie fort. Vor dem ersten AUF-Event warnt die Software („Aufstellung
+fehlt"); Aktionen von Spielern, die laut Aufstellung nicht auf dem Feld stehen, erzeugen
+einen Hinweis, werden aber gebucht (der Schiedsrichter entscheidet).
 
 **PROT – Protest:** `zusatz` enthält Begründung, z. B. `{"begruendung": "...", "entscheidung": null}`. Die Entscheidung der Turnierleitung wird – sobald verfügbar – als Korrektur-Event mit `korrigiert_event_id` auf das ursprüngliche PROT-Event nachgetragen. Kann auch nach „Spielende" erfasst werden, solange das Protokoll noch nicht abgeschlossen ist. Keine automatische Prüfung.
 

@@ -32,6 +32,11 @@ export interface ProtokollStand {
   timeouts: Record<Mannschaftsseite, number>;
   wechsel: Record<Mannschaftsseite, number>;
   wurf: Record<Mannschaftsseite, WurfStand>;
+  /**
+   * Aktuelle Feldbesetzung (Spieler-IDs, max. 3): letztes AUF-Event je Mannschaft,
+   * fortgeschrieben durch E-Wechsel. Leeres Array = noch keine Aufstellung gebucht.
+   */
+  feld: Record<Mannschaftsseite, string[]>;
   /** Letzter Wurf ohne nachfolgende Kontrolle/Tor - Grundlage fuer die Timer-A-Anzeige (Spez. 6.2). */
   letzterWurf?: { mannschaft: Mannschaftsseite; zeitstempel: string };
   /** Letzte Kontrolle - Grundlage fuer die Timer-B-Anzeige. */
@@ -104,6 +109,7 @@ export function berechneProtokollStand(events: Event[], kontext: StandKontext): 
     timeouts: { A: 0, B: 0 },
     wechsel: { A: 0, B: 0 },
     wurf: { A: { anzahl: 0 }, B: { anzahl: 0 } },
+    feld: { A: [], B: [] },
     spielBeendet: false,
     abgeschlossen: false,
     annullierteIds: annulliert,
@@ -186,7 +192,21 @@ export function berechneProtokollStand(events: Event[], kontext: StandKontext): 
         if (e.mannschaft) stand.timeouts[e.mannschaft] += 1;
         break;
       case "E":
-        if (e.mannschaft) stand.wechsel[e.mannschaft] += 1;
+        if (!e.mannschaft) break;
+        stand.wechsel[e.mannschaft] += 1;
+        // Feldbesetzung fortschreiben: raus ersetzt durch rein (nur wenn eine Aufstellung
+        // existiert - ohne AUF-Event gibt es nichts fortzuschreiben).
+        if (e.spielerId && stand.feld[e.mannschaft].length > 0) {
+          stand.feld[e.mannschaft] = [
+            ...stand.feld[e.mannschaft].filter((id) => id !== e.spielerRausId),
+            e.spielerId,
+          ].slice(0, 3);
+        }
+        break;
+      case "AUF":
+        if (e.mannschaft && Array.isArray(e.zusatz?.spielerIds)) {
+          stand.feld[e.mannschaft] = (e.zusatz.spielerIds as string[]).slice(0, 3);
+        }
         break;
       case "End":
         uhrAnhalten(e.zeitstempel);
@@ -203,6 +223,15 @@ export function berechneProtokollStand(events: Event[], kontext: StandKontext): 
 
   // Regel-Hinweise (Spez. 22.3) - warnen, nie blockieren.
   for (const seite of ["A", "B"] as const) {
+    // Aufstellung ist Pflichtschritt vor dem Anpfiff (Nutzer-Vorgabe 21.08.2026) - solange sie
+    // fehlt/unvollstaendig ist, bleibt der Hinweis stehen (nach Spielende nicht mehr relevant).
+    if (!stand.spielBeendet && stand.feld[seite].length !== 3) {
+      stand.hinweise.push(
+        stand.feld[seite].length === 0
+          ? `Mannschaft ${seite}: Aufstellung fehlt noch - vor dem Anpfiff die drei Feldspieler festlegen.`
+          : `Mannschaft ${seite}: Aufstellung unvollständig (${stand.feld[seite].length} von 3 Spielern).`,
+      );
+    }
     const wurf = stand.wurf[seite];
     if (wurf.anzahl === 3) stand.hinweise.push(`Mannschaft ${seite}: 3. Wurf in Folge - nächster Wurf wäre ein Foul.`);
     if (wurf.anzahl >= 4) stand.hinweise.push(`Mannschaft ${seite}: 4. Wurf in Folge - möglicher Foul-Hinweis!`);

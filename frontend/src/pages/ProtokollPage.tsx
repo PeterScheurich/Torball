@@ -67,6 +67,7 @@ const EVENT_BESCHRIFTUNG: Record<string, string> = {
   FW: "Freiwurf",
   HANDOVER: "Protokollantenwechsel",
   PROT: "Protest",
+  AUF: "Aufstellung",
   ANNULLIERT: "Streichung",
 };
 
@@ -105,6 +106,11 @@ export function ProtokollPage() {
   const [protestText, setProtestText] = useState("");
   const [handoverName, setHandoverName] = useState("");
   const [sendetGerade, setSendetGerade] = useState(false);
+  // Entwurf der Aufstellungs-Auswahl je Team (max. 3) - wird beim Laden/nach fremden Events aus
+  // der berechneten Feldbesetzung uebernommen, waehrend des Auswaehlens aber nicht ueberschrieben.
+  const [aufstellungsWahl, setAufstellungsWahl] = useState<Record<Mannschaftsseite, string[]>>({ A: [], B: [] });
+  const [aufstellungOffen, setAufstellungOffen] = useState(false);
+  const feldStandRef = useRef("");
   // Nur fuer die tickenden Anzeigen (Uhr, 8-Sekunden-Timer) - erzwingt regelmaessiges Rendern.
   const [, setTick] = useState(0);
 
@@ -196,6 +202,17 @@ export function ProtokollPage() {
     return () => window.clearTimeout(timer);
   }, [eingabe, setEingabe]);
 
+  // Aufstellungs-Entwurf mit der berechneten Feldbesetzung synchron halten (nur wenn die sich
+  // tatsaechlich aendert - sonst wuerde jede laufende Auswahl beim naechsten Tick ueberschrieben).
+  useEffect(() => {
+    if (!stand) return;
+    const key = JSON.stringify(stand.feld);
+    if (key !== feldStandRef.current) {
+      feldStandRef.current = key;
+      setAufstellungsWahl({ A: stand.feld.A, B: stand.feld.B });
+    }
+  }, [stand]);
+
   const nameVon = (mannschaftId?: string) => mannschaften.find((m) => m._id === mannschaftId)?.name ?? "?";
   const teamName = (seite: Mannschaftsseite) =>
     nameVon(seite === "A" ? spiel?.mannschaftAId : spiel?.mannschaftBId);
@@ -270,6 +287,20 @@ export function ProtokollPage() {
         return;
       }
       spielerIds.push(spieler._id);
+    }
+    // Feldbesetzungs-Pruefungen (Spez. 22.3) - warnen, nie blockieren: gebucht wird trotzdem.
+    if (stand && stand.feld[team].length > 0) {
+      const aufFeld = (id: string) => stand.feld[team].includes(id);
+      if (["tor", "fehlwurf", "foul", "freiwurf"].includes(aktion) && spielerIds[0] && !aufFeld(spielerIds[0])) {
+        zeigeKurzHinweis(`Hinweis: Nr. ${nummern[0]} steht laut Aufstellung nicht auf dem Feld.`);
+      }
+      if (aktion === "wechsel") {
+        if (spielerIds[0] && !aufFeld(spielerIds[0])) {
+          zeigeKurzHinweis(`Hinweis: Nr. ${nummern[0]} (raus) steht laut Aufstellung nicht auf dem Feld.`);
+        } else if (spielerIds[1] && aufFeld(spielerIds[1])) {
+          zeigeKurzHinweis(`Hinweis: Nr. ${nummern[1]} (rein) steht bereits auf dem Feld.`);
+        }
+      }
     }
     switch (aktion) {
       case "tor":
@@ -405,6 +436,7 @@ export function ProtokollPage() {
   const timerA = stand.uhrLaeuft ? timerRest(stand.letzterWurf) : undefined;
   const timerB = stand.uhrLaeuft ? timerRest(stand.letzteKontrolle) : undefined;
   const eventsAbsteigend = [...events].sort((a, b) => b.sequenz - a.sequenz);
+  const aufstellungUnvollstaendig = stand.feld.A.length !== 3 || stand.feld.B.length !== 3;
 
   if (ohneProtokoll) {
     return (
@@ -442,6 +474,12 @@ export function ProtokollPage() {
       <p>
         Fouls: <strong>{stand.fouls[seite]}</strong> · Timeouts: {stand.timeouts[seite]}/{turnier.timeoutsJeHalbzeit} ·
         Wechsel: {stand.wechsel[seite]}/{turnier.auswechslungenJeHalbzeit}
+      </p>
+      <p>
+        Auf dem Feld:{" "}
+        {stand.feld[seite].length === 0
+          ? "noch keine Aufstellung"
+          : stand.feld[seite].map((id) => spielerName(id) ?? "?").join(", ")}
       </p>
       {stand.wurf[seite].spielerId && (
         <p>
@@ -506,6 +544,89 @@ export function ProtokollPage() {
         {teamStatus(linkeSeite)}
         {teamStatus(rechteSeite)}
       </div>
+
+      {/* Aufstellung (Nutzer-Vorgabe 21.08.2026: vor dem Anpfiff festlegen, welche Spieler auf
+          dem Feld stehen). Solange eine Aufstellung fehlt/unvollstaendig ist, steht der Bereich
+          automatisch offen; danach laesst er sich ueber den Knopf wieder oeffnen (z.B. fuer die
+          Halbzeitpause, in der Wechsel unbegrenzt und ohne Kontingent-Anrechnung erlaubt sind). */}
+      {!stand.spielBeendet && !stand.abgeschlossen && (
+        <section aria-label="Aufstellung" className="protokoll-abschluss">
+          {aufstellungUnvollstaendig || aufstellungOffen ? (
+            <>
+              <h2>Aufstellung</h2>
+              <p>
+                Je Mannschaft die drei Feldspieler antippen und mit „Aufstellung buchen" bestätigen –
+                während des Spiels führt die Wechsel-Aktion die Feldbesetzung automatisch fort.
+              </p>
+              <div className="protokoll-teams">
+                {([linkeSeite, rechteSeite] as Mannschaftsseite[]).map((seite) => (
+                  <div key={seite} className="protokoll-teamstatus">
+                    <h3>{teamName(seite)}</h3>
+                    {kader[seite].length === 0 ? (
+                      <p>Kein Kader erfasst – zuerst Spieler in der Mannschaftsverwaltung anlegen.</p>
+                    ) : (
+                      <div className="protokoll-tastengruppe" role="group" aria-label={`Aufstellung ${teamName(seite)}`}>
+                        {kader[seite].map((spieler) => {
+                          const gewaehlt = aufstellungsWahl[seite].includes(spieler._id);
+                          return (
+                            <button
+                              type="button"
+                              key={spieler._id}
+                              aria-pressed={gewaehlt}
+                              onClick={() =>
+                                setAufstellungsWahl((alt) => ({
+                                  ...alt,
+                                  [seite]: gewaehlt
+                                    ? alt[seite].filter((id) => id !== spieler._id)
+                                    : alt[seite].length >= 3
+                                      ? alt[seite]
+                                      : [...alt[seite], spieler._id],
+                                }))
+                              }
+                            >
+                              {spieler.trikotnummer} {spieler.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      disabled={
+                        aufstellungsWahl[seite].length !== 3 ||
+                        JSON.stringify([...aufstellungsWahl[seite]].sort()) ===
+                          JSON.stringify([...stand.feld[seite]].sort())
+                      }
+                      onClick={async () => {
+                        if (
+                          await sende({
+                            eventTyp: "AUF",
+                            mannschaft: seite,
+                            zusatz: { spielerIds: aufstellungsWahl[seite] },
+                          })
+                        ) {
+                          zeigeKurzHinweis(`Aufstellung ${teamName(seite)} gebucht.`);
+                        }
+                      }}
+                    >
+                      Aufstellung buchen ({aufstellungsWahl[seite].length}/3)
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {!aufstellungUnvollstaendig && (
+                <button type="button" className="button-sekundaer" onClick={() => setAufstellungOffen(false)}>
+                  Aufstellung schließen
+                </button>
+              )}
+            </>
+          ) : (
+            <button type="button" className="button-sekundaer" onClick={() => setAufstellungOffen(true)}>
+              Aufstellung ändern
+            </button>
+          )}
+        </section>
+      )}
 
       {/* Regel-Hinweise - warnen, nie blockieren. */}
       <div aria-live="polite">
@@ -789,6 +910,14 @@ export function ProtokollPage() {
                         )}
                         {e.eventTyp === "PROT" && e.zusatz?.begruendung != null && (
                           <>: {String(e.zusatz.begruendung)}</>
+                        )}
+                        {e.eventTyp === "AUF" && Array.isArray(e.zusatz?.spielerIds) && (
+                          <>
+                            :{" "}
+                            {(e.zusatz.spielerIds as string[])
+                              .map((id) => spielerName(id) ?? "?")
+                              .join(", ")}
+                          </>
                         )}
                       </td>
                       <td>{e.mannschaft ? teamName(e.mannschaft) : "–"}</td>

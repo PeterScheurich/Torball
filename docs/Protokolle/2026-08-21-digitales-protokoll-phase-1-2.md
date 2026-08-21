@@ -42,8 +42,16 @@ Pro-Turnier-Gate `protokollierungsart: "digital"`). Design-Dokument mit allen En
   zusätzlich in einer Ref führen, Befehle außerhalb des Updaters ausführen; Sortierung auf
   beiden Seiten mit deterministischem Tie-Break (`sequenz`, `zeitstempel`, `_id`).
 - **Spezifikations-Lücke Feldbesetzung:** es gibt kein Aufstellungs-Ereignis – „Spieler auf
-  dem Feld" ist aus Wechsel-Events allein nicht berechenbar. Bewusst zurückgestellt (Konzept
-  Abschnitt 11), erster Ausbau zeigt Kader + letzten Werfer.
+  dem Feld" ist aus Wechsel-Events allein nicht berechenbar. Zunächst zurückgestellt, dann
+  **am selben Tag auf Nutzer-Vorgabe nachgezogen** („vor dem Anpfiff muss definiert werden,
+  wer auf dem Feld steht"): neues Event `AUF` (`zusatz.spielerIds`, je Mannschaft) setzt die
+  Start-Drei, `E`-Wechsel schreiben die Feldbesetzung fort; die Seite zeigt die
+  Aufstellungs-Auswahl automatisch, solange sie fehlt (danach über „Aufstellung ändern",
+  z. B. für die Halbzeitpause), warnt bei unvollständiger Aufstellung und bei Aktionen von
+  Spielern, die laut Aufstellung nicht auf dem Feld stehen – gebucht wird trotzdem (warnen,
+  nie blockieren). Browser-verifiziert inkl. Wechsel-Fortschreibung (Nr. 1 raus/Nr. 7 rein →
+  „Auf dem Feld" aktualisiert, Wurf der Nr. 1 erzeugt den Hinweis). Offen bleibt nur noch der
+  abgeleitete Status „kurzzeitig ausgesetzt" (Spez. 20.18).
 - Das anfangs torlose 0:0 wird bewusst erst beim Spielende ans Spiel geschrieben – sonst
   stünde ein gerade angepfiffenes Spiel bereits als 0:0-Remis in der Tabelle
   (`berechneTabelle` wertet jedes Spiel mit gesetztem Ergebnis).

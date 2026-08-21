@@ -20,6 +20,11 @@ export type EventTyp =
   | "FW" // Freiwurf
   | "HANDOVER" // Protokollantenwechsel
   | "PROT" // Protest
+  // Aufstellung: legt fest, welche (max. 3) Spieler einer Mannschaft auf dem Feld stehen -
+  // `zusatz.spielerIds` (string[]). Vor dem Anpfiff Pflichtschritt im UI; spaeter erneut buchbar
+  // (z.B. Halbzeitpause, dort sind Wechsel unbegrenzt und zaehlen nicht aufs Kontingent). Die
+  // laufende Feldbesetzung ergibt sich aus dem letzten AUF-Event plus nachfolgenden E-Wechseln.
+  | "AUF"
   // Ersatzlose Streichung (Undo): nur als Korrektur-Event gueltig (istKorrektur +
   // korrigiertEventId), annulliert das referenzierte Event und zaehlt selbst nie als Ereignis.
   // Eine Korrektur mit einem ANDEREN eventTyp ist dagegen ein Ersatz: sie annulliert das

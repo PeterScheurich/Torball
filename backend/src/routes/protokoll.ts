@@ -43,6 +43,7 @@ const EVENT_TYPEN: EventTyp[] = [
   "FW",
   "HANDOVER",
   "PROT",
+  "AUF",
   "ANNULLIERT",
 ];
 
@@ -265,6 +266,9 @@ export async function protokollRoutes(app: FastifyInstance): Promise<void> {
       }
       if (body.eventTyp === "G" && !body.mannschaft) {
         return reply.code(400).send({ error: "Ein Tor braucht eine Mannschaftsangabe." });
+      }
+      if (body.eventTyp === "AUF" && (!body.mannschaft || !Array.isArray(body.zusatz?.spielerIds))) {
+        return reply.code(400).send({ error: "Eine Aufstellung braucht Mannschaft und Spieler-Liste (zusatz.spielerIds)." });
       }
       if (body.eventTyp === "Fin" && !protokoll.protokollantName) {
         return reply.code(400).send({ error: "Vor dem Abschluss muss das Protokoll unterschrieben werden." });
