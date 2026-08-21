@@ -129,7 +129,21 @@ Mannschaft nach einem F-Event auf 3 steht – rein dokumentarischer System-Hinwe
 Penalty (`P`) erfasst der Protokollant weiterhin manuell, erst dann wird der Foulzähler
 zurückgesetzt (Spez. 6.4/22.3).
 
-### 3.4 Antworten auf die offenen Punkte des Panel-Konzepts
+### 3.4 Ballkontrolle und der zurückrollende Ball (Nutzer-Frage, 3. Runde 21.08.2026)
+
+Die Software leitet die Ballseite NIE selbst ab - der Tastendruck legt sie fest (Spez. 6.2:
+"Welche Mannschaft bei Fristablauf ein Foul erhält, ergibt sich aus dem Tastendruck des
+Protokollanten, nicht aus dem Timer-Zustand"). `K` (Kontrolle) ist deshalb teambezogen:
+`Team-Taste` + `K`. Der Fall "Ball rollt in die Hälfte der werfenden Mannschaft zurück" ist
+damit abgedeckt und sogar billig: nach einem Wurf steht der Team-Kontext noch auf der
+werfenden Mannschaft - ein einzelnes `K` bucht "werfende Mannschaft kontrolliert". Kontrolliert
+die abwehrende Mannschaft (Normalfall), Team-Taste + `K` - oder schlicht deren nächster Wurf.
+**Anzeige-Konsequenz für die Vollbild-Seite:** nach einem Wurf zählt die 8-Sekunden-Zahl
+NEUTRAL auf beiden Seiten (Ballseite offen); erst `K` legt die Seite fest, ab dann zählt nur
+noch dort. **Offener Praxistest-Punkt:** ob zusätzlich eine eigene Schnellaktion ("Ball
+zurück") nötig ist, entscheidet der Live-Test - nach jetzigem Stand reicht `K`.
+
+### 3.5 Antworten auf die offenen Punkte des Panel-Konzepts
 
 1. **Unvollständige Eingabe + Uhr/Halbzeit-Taste:** Die offene Eingabe wird **verworfen**, die
    Uhr-/Halbzeit-Aktion wird gebucht. Begründung: Uhr-Ereignisse sind zeitkritisch (Abpfiff!),
@@ -233,6 +247,8 @@ Vollbild-tauglich für den Protokollanten-Laptop):
    weiterzählend mit deutlichem Hinweis – Spez. 6.1).
 2. **Status-Zeile je Team:** Foulzähler (0–2, bei 3 → Penalty-Hinweis), verbrauchte
    Timeouts/Wechsel, Kader mit Trikotnummern, letzter Werfer mit Wurfzähler (3-Wurf-Regel).
+   *(Vollbild-Seite zusätzlich: Wurfzähler-Badge direkt am Feldspieler-Button des jeweils
+   letzten Werfers je Team - Nutzer-Wunsch, 3. Runde.)*
    *(In der Umsetzung bewusst KEINE Feldbesetzungs-Verfolgung – siehe Abschnitt 11.)*
 3. **Timer A/B** (8-Sekunden-Anzeigen, Spez. 6.2): Timer A startet mit jedem `W`, Timer B mit
    `K`; reine Anzeige mit Signalfarbe bei Ablauf – kein automatisches Foul.
