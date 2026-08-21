@@ -110,7 +110,19 @@ export function ProtokollPage() {
   // der berechneten Feldbesetzung uebernommen, waehrend des Auswaehlens aber nicht ueberschrieben.
   const [aufstellungsWahl, setAufstellungsWahl] = useState<Record<Mannschaftsseite, string[]>>({ A: [], B: [] });
   const [aufstellungOffen, setAufstellungOffen] = useState(false);
-  const feldStandRef = useRef("");
+  const feldStandRef = useRef<Record<Mannschaftsseite, string>>({ A: "", B: "" });
+  /**
+   * Ansicht: "erfassung" = Vollbild-Protokollier-Ansicht (Standard, Nutzer-Vorgabe 21.08.2026 -
+   * das IST die eigentliche Seite zum Protokollieren), "verlauf" = vollstaendige Ereignisliste
+   * mit Korrekturen und Abschluss-Workflow. Esc, dann Enter wechselt zwischen beiden.
+   */
+  const [ansicht, setAnsicht] = useState<"erfassung" | "verlauf">("erfassung");
+  const escArmedRef = useRef(0);
+  // Wechsel-Popup (Nutzer-Wunsch: Bank-Spieler erscheinen nur dort, nicht im Tastenfeld).
+  const [wechselSeite, setWechselSeite] = useState<Mannschaftsseite | null>(null);
+  const [wechselRaus, setWechselRaus] = useState<string | null>(null);
+  const [wechselRein, setWechselRein] = useState<string | null>(null);
+  const wechselDialogRef = useRef<HTMLDialogElement>(null);
   // Nur fuer die tickenden Anzeigen (Uhr, 8-Sekunden-Timer) - erzwingt regelmaessiges Rendern.
   const [, setTick] = useState(0);
 
@@ -209,10 +221,16 @@ export function ProtokollPage() {
   // tatsaechlich aendert - sonst wuerde jede laufende Auswahl beim naechsten Tick ueberschrieben).
   useEffect(() => {
     if (!stand) return;
-    const key = JSON.stringify(stand.feld);
-    if (key !== feldStandRef.current) {
-      feldStandRef.current = key;
-      setAufstellungsWahl({ A: stand.feld.A, B: stand.feld.B });
+    // PRO SEITE vergleichen (Nutzer-Fund 21.08.2026): das Buchen der Aufstellung von Team A
+    // aendert stand.feld nur fuer A - wuerde der komplette Entwurf ersetzt, ginge die noch
+    // ungebuchte Auswahl von Team B dabei verloren.
+    for (const seite of ["A", "B"] as const) {
+      const key = JSON.stringify(stand.feld[seite]);
+      if (key !== feldStandRef.current[seite]) {
+        feldStandRef.current[seite] = key;
+        const neu = stand.feld[seite];
+        setAufstellungsWahl((alt) => ({ ...alt, [seite]: neu }));
+      }
     }
   }, [stand]);
 
@@ -492,6 +510,18 @@ export function ProtokollPage() {
     function beiTaste(e: KeyboardEvent) {
       const ziel = e.target as HTMLElement | null;
       if (ziel && ["INPUT", "TEXTAREA", "SELECT"].includes(ziel.tagName)) return;
+      // Offenes Wechsel-Popup: das native <dialog> uebernimmt die Tastatur (Esc schliesst es).
+      if (wechselDialogRef.current?.open) return;
+      // Esc, dann Enter (innerhalb von 3 s): zwischen Erfassungs- und Verlauf-Ansicht wechseln.
+      // Nur wenn keine Eingabe offen ist - sonst verwirft Esc wie gehabt erst die Eingabe.
+      const offen = eingabeRef.current.aktion !== null || eingabeRef.current.aktuelleNummer !== "";
+      if (e.key === "Escape" && !offen) escArmedRef.current = Date.now();
+      if (e.key === "Enter" && !offen && Date.now() - escArmedRef.current < 3000) {
+        e.preventDefault();
+        escArmedRef.current = 0;
+        setAnsicht((a) => (a === "erfassung" ? "verlauf" : "erfassung"));
+        return;
+      }
       const belegt = TASTATUR_BELEGUNG[e.key.toLowerCase()];
       if (!belegt) return;
       e.preventDefault();
@@ -528,6 +558,39 @@ export function ProtokollPage() {
     }
   }
 
+  /** Klick auf einen Feldspieler-Knopf (Erfassungs-Ansicht): bucht dessen Wurf - bzw. liefert
+   *  die Spielernummer fuer eine bereits gewaehlte 1-Nummern-Aktion (Foul, Tor, Freiwurf). */
+  function spielerKlick(seite: Mannschaftsseite, sp: Spieler) {
+    const z = eingabeRef.current;
+    if (z.aktion === "wechsel") {
+      oeffneWechsel(seite);
+      return;
+    }
+    const aktion = z.aktion && z.team === seite && NUMMERN_JE_AKTION[z.aktion] === 1 ? z.aktion : "fehlwurf";
+    setEingabe({ ...LEERER_ZUSTAND, team: seite });
+    void buche(seite, aktion, [sp.trikotnummer]);
+  }
+
+  function oeffneWechsel(seite: Mannschaftsseite) {
+    setWechselSeite(seite);
+    setWechselRaus(null);
+    setWechselRein(null);
+    setEingabe({ ...LEERER_ZUSTAND, team: seite });
+  }
+
+  useEffect(() => {
+    if (wechselSeite) wechselDialogRef.current?.showModal();
+    else wechselDialogRef.current?.close();
+  }, [wechselSeite]);
+
+  async function wechselBuchen() {
+    if (!wechselSeite || !wechselRaus || !wechselRein) return;
+    if (await sende({ eventTyp: "E", mannschaft: wechselSeite, spielerRausId: wechselRaus, spielerId: wechselRein })) {
+      zeigeKurzHinweis("Wechsel gebucht.");
+      setWechselSeite(null);
+    }
+  }
+
   if (fehler && !turnier) return <p role="alert">{fehler}</p>;
   if (!turnier || !spiel || !stand) return <p>Lädt…</p>;
 
@@ -554,6 +617,91 @@ export function ProtokollPage() {
   const timerB = stand.uhrLaeuft ? timerRest(stand.letzteKontrolle) : undefined;
   const eventsAbsteigend = [...events].sort((a, b) => b.sequenz - a.sequenz);
   const aufstellungUnvollstaendig = stand.feld.A.length !== 3 || stand.feld.B.length !== 3;
+
+  /** Aufstellungs-Auswahl - in beiden Ansichten eingebunden (Erfassung + Verlauf). */
+  // Aufstellung (Nutzer-Vorgabe 21.08.2026: vor dem Anpfiff festlegen, welche Spieler auf dem
+  // Feld stehen). Solange eine Aufstellung fehlt/unvollstaendig ist, steht der Bereich automatisch
+  // offen; danach laesst er sich ueber den Knopf wieder oeffnen (z.B. fuer die Halbzeitpause, in
+  // der Wechsel unbegrenzt und ohne Kontingent-Anrechnung erlaubt sind).
+  const aufstellungsBereich =
+    !stand.spielBeendet && !stand.abgeschlossen && (
+      <section aria-label="Aufstellung" className="protokoll-abschluss">
+        {aufstellungUnvollstaendig || aufstellungOffen ? (
+          <>
+            <h2>Aufstellung</h2>
+            <p>
+              Je Mannschaft die drei Feldspieler antippen und mit „Aufstellung buchen" bestätigen –
+              während des Spiels führt die Wechsel-Aktion die Feldbesetzung automatisch fort.
+            </p>
+            <div className="protokoll-teams">
+              {([linkeSeite, rechteSeite] as Mannschaftsseite[]).map((seite) => (
+                <div key={seite} className="protokoll-teamstatus">
+                  <h3>{teamName(seite)}</h3>
+                  {kader[seite].length === 0 ? (
+                    <p>Kein Kader erfasst – zuerst Spieler in der Mannschaftsverwaltung anlegen.</p>
+                  ) : (
+                    <div className="protokoll-tastengruppe" role="group" aria-label={`Aufstellung ${teamName(seite)}`}>
+                      {kader[seite].map((spieler) => {
+                        const gewaehlt = aufstellungsWahl[seite].includes(spieler._id);
+                        return (
+                          <button
+                            type="button"
+                            key={spieler._id}
+                            aria-pressed={gewaehlt}
+                            onClick={() =>
+                              setAufstellungsWahl((alt) => ({
+                                ...alt,
+                                [seite]: gewaehlt
+                                  ? alt[seite].filter((id) => id !== spieler._id)
+                                  : alt[seite].length >= 3
+                                    ? alt[seite]
+                                    : [...alt[seite], spieler._id],
+                              }))
+                            }
+                          >
+                            {spieler.trikotnummer} {spieler.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    disabled={
+                      aufstellungsWahl[seite].length !== 3 ||
+                      JSON.stringify([...aufstellungsWahl[seite]].sort()) ===
+                        JSON.stringify([...stand.feld[seite]].sort())
+                    }
+                    onClick={async () => {
+                      if (
+                        await sende({
+                          eventTyp: "AUF",
+                          mannschaft: seite,
+                          zusatz: { spielerIds: aufstellungsWahl[seite] },
+                        })
+                      ) {
+                        zeigeKurzHinweis(`Aufstellung ${teamName(seite)} gebucht.`);
+                      }
+                    }}
+                  >
+                    Aufstellung buchen ({aufstellungsWahl[seite].length}/3)
+                  </button>
+                </div>
+              ))}
+            </div>
+            {!aufstellungUnvollstaendig && (
+              <button type="button" className="button-sekundaer" onClick={() => setAufstellungOffen(false)}>
+                Aufstellung schließen
+              </button>
+            )}
+          </>
+        ) : (
+          <button type="button" className="button-sekundaer" onClick={() => setAufstellungOffen(true)}>
+            Aufstellung ändern
+          </button>
+        )}
+      </section>
+    );
 
   if (ohneProtokoll) {
     return (
@@ -582,6 +730,329 @@ export function ProtokollPage() {
           </button>
         </form>
       </>
+    );
+  }
+
+  // ============================ Erfassungs-Ansicht (Vollbild) ============================
+  // Die eigentliche Protokollier-Ansicht (Nutzer-Vorgabe 21.08.2026, Layout aus dem
+  // Design-Canvas "Protokoll-Anzeigeseite"): grosses Scoreboard mit Restzeit + SPIEL LAEUFT,
+  // 8-Sekunden an den Aussenseiten (nach Wurf neutral auf BEIDEN Seiten, erst Kontrolle legt
+  // die Seite fest - Konzept 3.4), Feldspieler-Tasten je Seite (Bank nur im Wechsel-Popup),
+  // kompakte Aktions-Tasten in der Mitte, nur die letzten 5 Ereignisse. Esc, dann Enter
+  // wechselt zur Verlauf-Ansicht (Korrekturen, Abschluss).
+  if (ansicht === "erfassung" && !stand.abgeschlossen) {
+    const feldSpieler = (seite: Mannschaftsseite): Spieler[] =>
+      stand.feld[seite]
+        .map((id) => kader[seite].find((sp) => sp._id === id))
+        .filter((sp): sp is Spieler => Boolean(sp));
+    const bankSpieler = (seite: Mannschaftsseite): Spieler[] =>
+      kader[seite].filter((sp) => !stand.feld[seite].includes(sp._id));
+    const achtSekunden = (seite: Mannschaftsseite): { wert: string; label?: string; abgelaufen: boolean } => {
+      if (stand.uhrLaeuft && stand.letzteKontrolle) {
+        if (stand.letzteKontrolle.mannschaft !== seite) return { wert: "–", abgelaufen: false };
+        const rest = timerRest(stand.letzteKontrolle)!;
+        return { wert: String(Math.max(0, rest)), label: "seit Kontrolle", abgelaufen: rest <= 0 };
+      }
+      if (stand.uhrLaeuft && stand.letzterWurf) {
+        const rest = timerRest(stand.letzterWurf)!;
+        return { wert: String(Math.max(0, rest)), label: "nach Wurf – Seite offen", abgelaufen: rest <= 0 };
+      }
+      return { wert: "–", abgelaufen: false };
+    };
+    const achtBlock = (seite: Mannschaftsseite) => {
+      const a = achtSekunden(seite);
+      return (
+        <div className={`protokoll-vb-acht ${a.abgelaufen ? "protokoll-vb-acht-abgelaufen" : ""}`}>
+          <div className="protokoll-vb-acht-label">8-Sek.</div>
+          <div className="protokoll-vb-acht-wert">{a.wert}</div>
+          {a.label && <div className="protokoll-vb-acht-label">{a.label}</div>}
+        </div>
+      );
+    };
+    const teamKopf = (seite: Mannschaftsseite, tasteLabel: "A" | "B", ausrichtung: "links" | "rechts") => (
+      <div className={`protokoll-vb-team protokoll-vb-team-${ausrichtung}`}>
+        <button
+          type="button"
+          className={`protokoll-vb-teamname ${
+            eingabe.team === seite
+              ? seite === linkeSeite
+                ? "protokoll-vb-teamname-links"
+                : "protokoll-vb-teamname-rechts"
+              : ""
+          }`}
+          aria-pressed={eingabe.team === seite}
+          onClick={() => taste({ art: "team", team: tasteLabel })}
+        >
+          {teamName(seite)}
+        </button>
+        <div className="protokoll-vb-chips">
+          <span>
+            Fouls <strong>{stand.fouls[seite]}</strong>
+          </span>
+          <span>
+            Auszeit {stand.timeouts[seite]}/{turnier.timeoutsJeHalbzeit}
+          </span>
+          <span>
+            Wechsel {stand.wechsel[seite]}/{turnier.auswechslungenJeHalbzeit}
+          </span>
+        </div>
+        {stand.wurf[seite].spielerId && (
+          <div className="protokoll-vb-werfer">
+            Letzter Werfer: {spielerName(stand.wurf[seite].spielerId)} ({stand.wurf[seite].anzahl}. Wurf)
+          </div>
+        )}
+      </div>
+    );
+    const feldKnoepfe = (seite: Mannschaftsseite, tasteLabel: "A" | "B") => (
+      <div className="protokoll-vb-seite">
+        <div className="protokoll-vb-gruppe-label">
+          {teamName(seite)} · Auf dem Feld (Taste {tasteLabel})
+        </div>
+        <div className="protokoll-tastengruppe">
+          {feldSpieler(seite).length === 0 ? (
+            <p>Noch keine Aufstellung.</p>
+          ) : (
+            feldSpieler(seite).map((sp) => (
+              <button
+                type="button"
+                key={sp._id}
+                className="protokoll-vb-spieler"
+                onClick={() => spielerKlick(seite, sp)}
+              >
+                {stand.wurf[seite].spielerId === sp._id && (
+                  <span className="protokoll-vb-badge">{stand.wurf[seite].anzahl}. Wurf</span>
+                )}
+                <span className="protokoll-vb-spieler-nr">{sp.trikotnummer}</span>
+                <span className="protokoll-vb-spieler-name">
+                  {sp.vorname ? `${sp.vorname} ` : ""}
+                  {sp.name}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+        <button type="button" className="button-sekundaer" onClick={() => oeffneWechsel(seite)}>
+          Wechsel …
+        </button>
+      </div>
+    );
+    const aktionsKnopf = (aktion: UiAktion, kuerzel: string) => (
+      <button
+        type="button"
+        key={aktion}
+        disabled={!eingabe.team && aktion !== "tor"}
+        aria-pressed={eingabe.aktion === aktion}
+        onClick={() => taste({ art: "aktion", aktion })}
+        className="protokoll-vb-aktion"
+      >
+        <kbd>{kuerzel}</kbd> {AKTIONS_BESCHRIFTUNG[aktion]}
+      </button>
+    );
+    return (
+      <div className="protokoll-erfassung">
+        <div className="protokoll-vb-kopf">
+          <span>
+            {turnier.name}
+            {spiel.runde ? ` · Spiel ${spiel.runde}` : ""}
+          </span>
+          <button type="button" className="button-sekundaer" onClick={() => setAnsicht("verlauf")}>
+            Vollständiges Protokoll &amp; Korrekturen (Esc, dann Enter)
+          </button>
+        </div>
+        {fehler && <p role="alert">{fehler}</p>}
+
+        <section aria-label="Spielstand" className="protokoll-vb-score">
+          {achtBlock(linkeSeite)}
+          {teamKopf(linkeSeite, "A", "links")}
+          <div className="protokoll-vb-mitte">
+            <div className="protokoll-vb-ergebnis">
+              {linkeSeite === "A" ? stand.ergebnisA : stand.ergebnisB} :{" "}
+              {rechteSeite === "A" ? stand.ergebnisA : stand.ergebnisB}
+            </div>
+            <div>
+              {ABSCHNITT_BESCHRIFTUNG[stand.abschnitt]}
+              {sollSekunden !== undefined && (
+                <>
+                  {" "}
+                  · Restzeit{" "}
+                  <strong className={`protokoll-vb-restzeit ${ueberhang ? "protokoll-ueberhang" : ""}`}>
+                    {ueberhang
+                      ? `-${formatiereSpielzeit(spielzeitSekunden - sollSekunden)}`
+                      : formatiereSpielzeit(sollSekunden - spielzeitSekunden)}
+                  </strong>
+                </>
+              )}
+            </div>
+            <div className={`protokoll-vb-laeuft ${stand.uhrLaeuft ? "" : "protokoll-vb-steht"}`}>
+              <span className="protokoll-vb-punkt"></span>
+              {stand.uhrLaeuft ? "SPIEL LÄUFT" : "SPIEL STEHT"}
+            </div>
+            {ueberhang && (
+              <div className="protokoll-ueberhang">Überhang – Spiel läuft bis zum Abpfiff</div>
+            )}
+          </div>
+          {teamKopf(rechteSeite, "B", "rechts")}
+          {achtBlock(rechteSeite)}
+        </section>
+
+        <div
+          className={`protokoll-kontext ${eingabe.team ? `protokoll-kontext-${eingabe.team === linkeSeite ? "a" : "b"}` : ""}`}
+          aria-live="polite"
+        >
+          {eingabe.team ? (
+            <>
+              <strong>{teamName(eingabe.team)}</strong>
+              {!eingabe.aktion && <> · Spieler-Taste/Ziffer bucht direkt einen Wurf · G nach Wurf = Tor</>}
+              {eingabe.aktion && <> · {AKTIONS_BESCHRIFTUNG[eingabe.aktion]}</>}
+              {(eingabe.nummern.length > 0 || eingabe.aktuelleNummer) && (
+                <> · Nr. {[...eingabe.nummern, eingabe.aktuelleNummer].filter(Boolean).join(" → ")}</>
+              )}
+              {eingabe.aktion && NUMMERN_JE_AKTION[eingabe.aktion] > 0 && <> – Spielernummer wählen</>}
+            </>
+          ) : (
+            <>Kein Team gewählt – Team-Taste A/B oder Mannschaftsname antippen</>
+          )}
+        </div>
+
+        <div aria-live="polite">
+          {stand.hinweise.map((h) => (
+            <p key={h} className="schiri-warnung">
+              ⚠ {h}
+            </p>
+          ))}
+          {hinweisKurz && <p className="gespeichert-hinweis">{hinweisKurz}</p>}
+        </div>
+
+        {aufstellungUnvollstaendig && aufstellungsBereich}
+
+        <div className="protokoll-vb-eingabe">
+          {feldKnoepfe(linkeSeite, "A")}
+          <div className="protokoll-vb-aktionen">
+            <div className="protokoll-vb-gruppe-label">Aktionen (fürs gewählte Team)</div>
+            <div className="protokoll-vb-aktion-grid">
+              {aktionsKnopf("tor", "G")}
+              {aktionsKnopf("fehlwurf", "X")}
+              {aktionsKnopf("kontrolle", "K")}
+              {aktionsKnopf("foul", "F")}
+              {aktionsKnopf("strafwurf", "P")}
+              {aktionsKnopf("auszeit", "T")}
+              {aktionsKnopf("techauszeit", "M")}
+              {aktionsKnopf("freiwurf", "R")}
+              <button
+                type="button"
+                disabled={!eingabe.team}
+                onClick={() => taste({ art: "aktion", aktion: "eigentor" })}
+                className="protokoll-vb-aktion"
+              >
+                Eigentor
+              </button>
+              <button
+                type="button"
+                disabled={!eingabe.aktion}
+                onClick={() => taste({ art: "ok" })}
+                className="protokoll-vb-aktion"
+              >
+                <kbd>Enter</kbd> OK
+              </button>
+            </div>
+            <button type="button" className="protokoll-vb-uhr" onClick={() => taste({ art: "uhr" })}>
+              <kbd>Leertaste</kbd> {stand.uhrLaeuft ? "Uhr Stop" : "Uhr Start"}
+            </button>
+            <div className="protokoll-vb-aktion-grid">
+              <button type="button" className="protokoll-vb-aktion" onClick={() => taste({ art: "halbzeit" })}>
+                <kbd>H</kbd> Halbzeit
+              </button>
+              <button
+                type="button"
+                className="protokoll-vb-aktion button-loeschen"
+                onClick={() => taste({ art: "undo" })}
+              >
+                <kbd>⌫</kbd> Rückgängig
+              </button>
+            </div>
+          </div>
+          {feldKnoepfe(rechteSeite, "B")}
+        </div>
+
+        <div className="protokoll-vb-fuss">
+          <div>
+            <div className="protokoll-vb-gruppe-label">Letzte Ereignisse</div>
+            {eventsAbsteigend
+              .filter((e) => !stand.annullierteIds.has(e._id) && e.eventTyp !== "ANNULLIERT")
+              .slice(0, 5)
+              .map((e) => (
+                <div key={e._id} className="protokoll-vb-ereignis">
+                  {e.spielzeit !== undefined ? formatiereSpielzeit(e.spielzeit) : "–"} ·{" "}
+                  {EVENT_BESCHRIFTUNG[e.eventTyp] ?? e.eventTyp}
+                  {e.istEigentor && " (Eigentor)"}
+                  {e.mannschaft && <> · {teamName(e.mannschaft)}</>}
+                  {e.spielerId && <> · {spielerName(e.spielerId)}</>}
+                </div>
+              ))}
+          </div>
+          <div className="protokoll-vb-fussrechts">
+            <button type="button" className="button-sekundaer" onClick={seitenTauschen}>
+              Seiten tauschen
+            </button>
+            <button type="button" className="button-sekundaer" onClick={() => setAnsicht("verlauf")}>
+              Spielende / Abschluss …
+            </button>
+          </div>
+        </div>
+
+        <dialog ref={wechselDialogRef} className="protokoll-wechsel-dialog" onClose={() => setWechselSeite(null)}>
+          {wechselSeite && (
+            <>
+              <h2>Wechsel – {teamName(wechselSeite)}</h2>
+              <p className="protokoll-vb-gruppe-label">Raus (auf dem Feld)</p>
+              <div className="protokoll-tastengruppe">
+                {feldSpieler(wechselSeite).map((sp) => (
+                  <button
+                    type="button"
+                    key={sp._id}
+                    className="protokoll-vb-spieler"
+                    aria-pressed={wechselRaus === sp._id}
+                    onClick={() => setWechselRaus(sp._id)}
+                  >
+                    <span className="protokoll-vb-spieler-nr">{sp.trikotnummer}</span>
+                    <span className="protokoll-vb-spieler-name">{sp.name}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="protokoll-vb-gruppe-label">Rein (Bank)</p>
+              <div className="protokoll-tastengruppe">
+                {bankSpieler(wechselSeite).length === 0 ? (
+                  <p>Keine weiteren Spieler im Kader.</p>
+                ) : (
+                  bankSpieler(wechselSeite).map((sp) => (
+                    <button
+                      type="button"
+                      key={sp._id}
+                      className="protokoll-vb-spieler"
+                      aria-pressed={wechselRein === sp._id}
+                      onClick={() => setWechselRein(sp._id)}
+                    >
+                      <span className="protokoll-vb-spieler-nr">{sp.trikotnummer}</span>
+                      <span className="protokoll-vb-spieler-name">{sp.name}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+              <p className="feld-hinweis">
+                Per Tastatur geht es auch ohne Popup: E, Nummer raus, Nummer rein – bucht sofort.
+              </p>
+              <div className="protokoll-vb-dialog-aktionen">
+                <button type="button" className="button-sekundaer" onClick={() => setWechselSeite(null)}>
+                  Abbrechen (Esc)
+                </button>
+                <button type="button" disabled={!wechselRaus || !wechselRein} onClick={() => void wechselBuchen()}>
+                  Wechsel buchen
+                </button>
+              </div>
+            </>
+          )}
+        </dialog>
+      </div>
     );
   }
 
@@ -618,6 +1089,13 @@ export function ProtokollPage() {
         Spielprotokoll{spiel.runde ? ` – Spiel ${spiel.runde}` : ""}
       </h1>
       {fehler && <p role="alert">{fehler}</p>}
+      {!stand.abgeschlossen && (
+        <p>
+          <button type="button" onClick={() => setAnsicht("erfassung")}>
+            Zur Erfassungsansicht (Esc, dann Enter)
+          </button>
+        </p>
+      )}
 
       {/* Scoreboard */}
       <section aria-label="Spielstand" className="protokoll-scoreboard">
@@ -669,88 +1147,7 @@ export function ProtokollPage() {
         {teamStatus(rechteSeite)}
       </div>
 
-      {/* Aufstellung (Nutzer-Vorgabe 21.08.2026: vor dem Anpfiff festlegen, welche Spieler auf
-          dem Feld stehen). Solange eine Aufstellung fehlt/unvollstaendig ist, steht der Bereich
-          automatisch offen; danach laesst er sich ueber den Knopf wieder oeffnen (z.B. fuer die
-          Halbzeitpause, in der Wechsel unbegrenzt und ohne Kontingent-Anrechnung erlaubt sind). */}
-      {!stand.spielBeendet && !stand.abgeschlossen && (
-        <section aria-label="Aufstellung" className="protokoll-abschluss">
-          {aufstellungUnvollstaendig || aufstellungOffen ? (
-            <>
-              <h2>Aufstellung</h2>
-              <p>
-                Je Mannschaft die drei Feldspieler antippen und mit „Aufstellung buchen" bestätigen –
-                während des Spiels führt die Wechsel-Aktion die Feldbesetzung automatisch fort.
-              </p>
-              <div className="protokoll-teams">
-                {([linkeSeite, rechteSeite] as Mannschaftsseite[]).map((seite) => (
-                  <div key={seite} className="protokoll-teamstatus">
-                    <h3>{teamName(seite)}</h3>
-                    {kader[seite].length === 0 ? (
-                      <p>Kein Kader erfasst – zuerst Spieler in der Mannschaftsverwaltung anlegen.</p>
-                    ) : (
-                      <div className="protokoll-tastengruppe" role="group" aria-label={`Aufstellung ${teamName(seite)}`}>
-                        {kader[seite].map((spieler) => {
-                          const gewaehlt = aufstellungsWahl[seite].includes(spieler._id);
-                          return (
-                            <button
-                              type="button"
-                              key={spieler._id}
-                              aria-pressed={gewaehlt}
-                              onClick={() =>
-                                setAufstellungsWahl((alt) => ({
-                                  ...alt,
-                                  [seite]: gewaehlt
-                                    ? alt[seite].filter((id) => id !== spieler._id)
-                                    : alt[seite].length >= 3
-                                      ? alt[seite]
-                                      : [...alt[seite], spieler._id],
-                                }))
-                              }
-                            >
-                              {spieler.trikotnummer} {spieler.name}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      disabled={
-                        aufstellungsWahl[seite].length !== 3 ||
-                        JSON.stringify([...aufstellungsWahl[seite]].sort()) ===
-                          JSON.stringify([...stand.feld[seite]].sort())
-                      }
-                      onClick={async () => {
-                        if (
-                          await sende({
-                            eventTyp: "AUF",
-                            mannschaft: seite,
-                            zusatz: { spielerIds: aufstellungsWahl[seite] },
-                          })
-                        ) {
-                          zeigeKurzHinweis(`Aufstellung ${teamName(seite)} gebucht.`);
-                        }
-                      }}
-                    >
-                      Aufstellung buchen ({aufstellungsWahl[seite].length}/3)
-                    </button>
-                  </div>
-                ))}
-              </div>
-              {!aufstellungUnvollstaendig && (
-                <button type="button" className="button-sekundaer" onClick={() => setAufstellungOffen(false)}>
-                  Aufstellung schließen
-                </button>
-              )}
-            </>
-          ) : (
-            <button type="button" className="button-sekundaer" onClick={() => setAufstellungOffen(true)}>
-              Aufstellung ändern
-            </button>
-          )}
-        </section>
-      )}
+      {aufstellungsBereich}
 
       {/* Regel-Hinweise - warnen, nie blockieren. */}
       <div aria-live="polite">

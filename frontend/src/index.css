@@ -2058,3 +2058,348 @@ button:hover:not(:disabled) {
   text-decoration: line-through;
   opacity: 0.6;
 }
+
+/* --- Erfassungs-Ansicht (Vollbild) der digitalen Protokollierung --- */
+
+.protokoll-vb-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+
+.protokoll-vb-score {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.protokoll-vb-acht {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 96px;
+  text-align: center;
+}
+
+.protokoll-vb-acht-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.protokoll-vb-acht-wert {
+  font-size: 4rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.protokoll-vb-acht-abgelaufen .protokoll-vb-acht-wert,
+.protokoll-vb-acht-abgelaufen .protokoll-vb-acht-label {
+  color: var(--danger);
+}
+
+.protokoll-vb-team {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-grow: 1;
+  justify-content: center;
+}
+
+.protokoll-vb-team-rechts {
+  align-items: flex-end;
+  text-align: right;
+}
+
+/* Mannschaftsname als Team-Wahl-Taste - farbliche Kennzeichnung des aktiven Teams
+   (links = Fokus-Blau, rechts = Danger-Rot, analog zum Kontext-Balken). */
+.protokoll-vb-teamname {
+  appearance: none;
+  font: inherit;
+  font-size: 1.6rem;
+  font-weight: 700;
+  background: transparent;
+  color: var(--text);
+  border: 2px solid transparent;
+  border-radius: 6px;
+  padding: 4px 14px;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.protokoll-vb-teamname-links {
+  border-color: var(--focus-ring);
+  background: color-mix(in srgb, var(--focus-ring) 14%, transparent);
+}
+
+.protokoll-vb-teamname-rechts {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+.protokoll-vb-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.protokoll-vb-chips span {
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 10px;
+  background: var(--bg-subtle);
+}
+
+.protokoll-vb-werfer {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.protokoll-vb-mitte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 300px;
+  text-align: center;
+}
+
+.protokoll-vb-ergebnis {
+  font-size: 4rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.protokoll-vb-restzeit {
+  font-size: 2.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* "SPIEL LÄUFT" bewusst sehr gross (Nutzer-Vorgabe: mindestens dreimal so gross wie zuvor). */
+.protokoll-vb-laeuft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.protokoll-vb-laeuft .protokoll-vb-punkt {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.protokoll-vb-steht {
+  color: var(--danger);
+}
+
+.protokoll-vb-steht .protokoll-vb-punkt {
+  background: var(--danger);
+}
+
+.protokoll-vb-eingabe {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  margin: 10px 0;
+}
+
+.protokoll-vb-seite {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.protokoll-vb-eingabe > .protokoll-vb-seite:last-child {
+  align-items: flex-end;
+}
+
+.protokoll-vb-gruppe-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+/* Grosse Feldspieler-Tasten: Nummer dominant, Name klein darunter; Badge = Wurfzaehler des
+   letzten Werfers (Nutzer-Wunsch: direkt am Spieler wahrnehmbar). */
+.protokoll-vb-spieler {
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  position: relative;
+  width: 92px;
+  min-height: 72px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  overflow: visible;
+}
+
+.protokoll-vb-spieler[aria-pressed="true"] {
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.protokoll-vb-spieler-nr {
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.protokoll-vb-spieler-name {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.protokoll-vb-badge {
+  position: absolute;
+  top: -9px;
+  right: -6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.protokoll-vb-aktionen {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 300px;
+}
+
+.protokoll-vb-aktion-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.protokoll-vb-aktion {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.protokoll-vb-aktion[aria-pressed="true"] {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.protokoll-vb-aktion kbd,
+.protokoll-vb-uhr kbd,
+.protokoll-vb-kopf kbd {
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  background: var(--bg);
+}
+
+.protokoll-vb-uhr {
+  min-height: 52px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.protokoll-vb-uhr kbd {
+  background: color-mix(in srgb, var(--accent-contrast) 20%, transparent);
+  color: var(--accent-contrast);
+  border-color: transparent;
+}
+
+.protokoll-vb-fuss {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-subtle);
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-top: auto;
+}
+
+.protokoll-vb-ereignis {
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.protokoll-vb-ereignis:first-of-type {
+  font-weight: 600;
+}
+
+.protokoll-vb-fussrechts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.protokoll-wechsel-dialog {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 20px 24px;
+  max-width: 560px;
+}
+
+.protokoll-wechsel-dialog::backdrop {
+  background: rgba(31, 32, 40, 0.45);
+}
+
+.protokoll-wechsel-dialog h2 {
+  margin-top: 0;
+}
+
+.protokoll-vb-dialog-aktionen {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}

@@ -238,6 +238,16 @@ zusätzlich zu Turnierleitung- und Spielleitung-Code, gleiches Muster (Abschnitt
 
 ## 7. Protokollier-Seite (UI)
 
+**Umsetzungsstand 21.08.2026 (3. Runde):** Die Protokollseite hat seither ZWEI Ansichten in
+einer Route: die **Erfassungs-Ansicht** (Standard - Vollbild-Layout aus dem Design-Canvas
+"Protokoll-Anzeigeseite": grosses Scoreboard mit Restzeit und SPIEL LAEUFT, 8-Sekunden an den
+Aussenseiten mit der Seiten-Logik aus 3.4, Feldspieler-Tasten je Seite mit Wurfzaehler-Badge,
+Bank nur im Wechsel-Popup (natives dialog), kompakte Aktions-Tasten in der Mitte, letzte 5
+Ereignisse) und die **Verlauf-Ansicht** (vollstaendige Ereignisliste, Streichen/Korrigieren,
+Abschluss-Workflow). `Esc`, dann `Enter` wechselt zwischen beiden; Aktionen ohne Spielernummer
+(Kontrolle, Strafwurf, Auszeit, ...) buchen inzwischen ebenfalls sofort ohne OK. Der Rest dieses
+Abschnitts beschreibt die urspruengliche Einzel-Ansicht (heute: Verlauf-Ansicht).
+
 Neue Route `/turniere/:turnierId/spiele/:spielId/protokoll` (`ProtokollPage.tsx`), erreichbar
 aus Spielplan-Sicht und `SpielleitungCodePage`. Aufbau (eine Seite, kein Tab-Wirrwarr –
 Vollbild-tauglich für den Protokollanten-Laptop):

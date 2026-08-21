@@ -1066,7 +1066,7 @@ ist sie fest:
 | Taste | Bedeutung |
 |---|---|
 | A / B | Team-Kontext der links (A) bzw. rechts (B) **angezeigten** Mannschaft – die Tasten folgen der Seitenansicht, nicht der internen A/B-Zuordnung |
-| 0–9 | Spielernummer; **ohne vorher gewählte Aktion bucht die Ziffer direkt einen Wurf** (häufigster Fall). Bei einstelligen Trikotnummern buchen auch alle übrigen Aktionen mit der letzten Ziffer sofort (Tor: G+Ziffer, Wechsel: E+Ziffer+Ziffer) – OK/Enter braucht es nur bei mehrstelligen Nummern |
+| 0–9 | Spielernummer; **ohne vorher gewählte Aktion bucht die Ziffer direkt einen Wurf** (häufigster Fall). Bei einstelligen Trikotnummern buchen auch alle übrigen Aktionen mit der letzten Ziffer sofort (Tor: G+Ziffer, Wechsel: E+Ziffer+Ziffer) – OK/Enter braucht es nur bei mehrstelligen Nummern; Aktionen ohne Spielernummer (Kontrolle, Strafwurf, Auszeit, ...) buchen direkt beim Aktions-Tastendruck |
 | G | Tor. Direkt nach einem gebuchten Wurf genügt G allein – das Tor hängt sich an genau diesen Wurf (Werfer = Torschütze). Als eigenständige Aktion (G + Ziffer) erzeugt es das W+G-Paar |
 | X | Fehlwurf (W) |
 | K | Kontrolle |

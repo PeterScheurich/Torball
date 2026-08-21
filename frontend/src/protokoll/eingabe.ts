@@ -118,6 +118,15 @@ export function verarbeiteTaste(
       };
     case "aktion": {
       if (!zustand.team) return { zustand }; // ohne Team-Kontext keine Aktion (Panel-Konzept)
+      // Aktionen OHNE Spielernummer (Kontrolle, Strafwurf, Auszeit, ...) buchen sofort - ein
+      // zusaetzliches OK waere reine Buerokratie (gleiche Linie wie das Sofort-Buchen der
+      // Ziffern, Nutzer-Vorgabe 21.08.2026). Der Team-Kontext bleibt erhalten.
+      if (NUMMERN_JE_AKTION[taste.aktion] === 0) {
+        return {
+          zustand: { ...LEERER_ZUSTAND, team: zustand.team },
+          befehl: { typ: "buchen", team: zustand.team, aktion: taste.aktion, nummern: [] },
+        };
+      }
       return { zustand: { ...zustand, aktion: taste.aktion, nummern: [], aktuelleNummer: "" } };
     }
     case "ziffer": {
