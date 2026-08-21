@@ -1066,7 +1066,7 @@ ist sie fest:
 | Taste | Bedeutung |
 |---|---|
 | A / B | Team-Kontext A / B |
-| 0–9 | Spielernummer (mehrstellig möglich, OK schließt ab) |
+| 0–9 | Spielernummer; **ohne vorher gewählte Aktion bucht die Ziffer direkt einen Wurf** (häufigster Fall; bei einstelligen Trikotnummern sofort, sonst schließt OK ab) |
 | G | Tor (erzeugt W+G) |
 | X | Fehlwurf (W) |
 | K | Kontrolle |

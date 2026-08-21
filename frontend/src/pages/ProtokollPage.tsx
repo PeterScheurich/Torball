@@ -375,7 +375,7 @@ export function ProtokollPage() {
   function taste(t: Taste) {
     if (!protokoll || stand?.abgeschlossen || sendetGerade) return;
     const vorher = eingabeRef.current;
-    const ergebnis = verarbeiteTaste(vorher, t);
+    const ergebnis = verarbeiteTaste(vorher, t, { einstelligeNummern: turnier?.einstelligeTrikotnummern ?? true });
     setEingabe(ergebnis.zustand);
     // Befehl bewusst AUSSERHALB des setState-Updaters ausfuehren (siehe Kommentar an eingabeRef).
     if (ergebnis.befehl) void fuehreBefehlAus(ergebnis.befehl, vorher);
@@ -648,6 +648,7 @@ export function ProtokollPage() {
             {eingabe.team ? (
               <>
                 <strong>{teamName(eingabe.team)}</strong>
+                {!eingabe.aktion && <> · Ziffer bucht direkt einen Wurf</>}
                 {eingabe.aktion && <> · {AKTIONS_BESCHRIFTUNG[eingabe.aktion]}</>}
                 {(eingabe.nummern.length > 0 || eingabe.aktuelleNummer) && (
                   <> · Nr. {[...eingabe.nummern, eingabe.aktuelleNummer].filter(Boolean).join(" → ")}</>
@@ -688,7 +689,7 @@ export function ProtokollPage() {
                 <button
                   type="button"
                   key={z}
-                  disabled={!eingabe.aktion || NUMMERN_JE_AKTION[eingabe.aktion] === 0}
+                  disabled={!eingabe.team || (eingabe.aktion !== null && NUMMERN_JE_AKTION[eingabe.aktion] === 0)}
                   onClick={() => taste({ art: "ziffer", ziffer: z })}
                 >
                   {z}

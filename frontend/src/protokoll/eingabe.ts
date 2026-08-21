@@ -72,15 +72,32 @@ export interface EingabeErgebnis {
   befehl?: EingabeBefehl;
 }
 
+export interface EingabeOptionen {
+  /**
+   * Turnierregel `einstelligeTrikotnummern`: bei true bucht eine Ziffer den Standard-Wurf
+   * SOFORT (ohne OK) - bei mehrstelligen Nummern sammelt sie stattdessen und OK schliesst ab.
+   */
+  einstelligeNummern: boolean;
+}
+
 /**
- * Verarbeitet eine Taste. Regeln (Panel-Konzept "Bedienlogik" + Konzept 3.4):
+ * Verarbeitet eine Taste. Regeln (Panel-Konzept "Bedienlogik" + Konzept 3.4/8):
  * - Team-Taste setzt/wechselt den Kontext (Toggle), offene Aktions-Eingabe wird verworfen.
+ * - **Ziffer ohne vorher gewaehlte Aktion = Wurf** (der mit Abstand haeufigste Fall,
+ *   Nutzer-Vorgabe 21.08.2026, entspricht der urspruenglichen Spez.-Belegung "0-9 = Wurf"):
+ *   bei einstelligen Trikotnummern bucht die Ziffer den Wurf direkt - Ablauf also z.B.
+ *   `A` `3` -> `B` `5` -> `A` `2`, und rollt der Ball zur werfenden Mannschaft zurueck,
+ *   einfach erneut eine Ziffer desselben Teams. Der Team-Kontext bleibt dabei erhalten.
  * - Uhr/Halbzeit buchen SOFORT, verwerfen eine offene Eingabe und setzen den Team-Kontext
  *   zurueck; Undo/OK erhalten den Kontext (mehrere Aktionen desselben Teams hintereinander).
  * - OK schliesst erst die aktuelle Nummer ab; sind alle Nummern der Aktion beisammen, wird
  *   gebucht (bei einstelligen Nummern also z.B. Team -> Tor -> Ziffer -> OK).
  */
-export function verarbeiteTaste(zustand: EingabeZustand, taste: Taste): EingabeErgebnis {
+export function verarbeiteTaste(
+  zustand: EingabeZustand,
+  taste: Taste,
+  optionen: EingabeOptionen = { einstelligeNummern: true },
+): EingabeErgebnis {
   const offen = zustand.aktion !== null || zustand.aktuelleNummer !== "";
 
   switch (taste.art) {
@@ -104,7 +121,18 @@ export function verarbeiteTaste(zustand: EingabeZustand, taste: Taste): EingabeE
       return { zustand: { ...zustand, aktion: taste.aktion, nummern: [], aktuelleNummer: "" } };
     }
     case "ziffer": {
-      if (!zustand.aktion || NUMMERN_JE_AKTION[zustand.aktion] === 0) return { zustand };
+      if (!zustand.team) return { zustand };
+      // Standard-Aktion Wurf: Ziffer ohne vorherige Aktions-Taste (siehe Funktions-Kommentar).
+      if (!zustand.aktion) {
+        if (optionen.einstelligeNummern) {
+          return {
+            zustand: { ...LEERER_ZUSTAND, team: zustand.team },
+            befehl: { typ: "buchen", team: zustand.team, aktion: "fehlwurf", nummern: [taste.ziffer] },
+          };
+        }
+        return { zustand: { ...zustand, aktion: "fehlwurf", aktuelleNummer: taste.ziffer } };
+      }
+      if (NUMMERN_JE_AKTION[zustand.aktion] === 0) return { zustand };
       return { zustand: { ...zustand, aktuelleNummer: zustand.aktuelleNummer + taste.ziffer } };
     }
     case "ok": {
@@ -162,7 +190,9 @@ export const TASTATUR_BELEGUNG: Record<string, Taste> = {
 export const AKTIONS_BESCHRIFTUNG: Record<UiAktion, string> = {
   tor: "Tor",
   eigentor: "Eigentor",
-  fehlwurf: "Fehlwurf",
+  // Interner Name "fehlwurf" (historisch, Panel-Konzept) - fachlich ist es das W-Event; als
+  // Beschriftung schlicht "Wurf", da eine Ziffer ohne Aktions-Taste genau das bucht.
+  fehlwurf: "Wurf",
   kontrolle: "Kontrolle",
   foul: "Foul",
   strafwurf: "Strafwurf",

@@ -262,6 +262,12 @@ bewusst trivial gehalten): `{ teamKontext: "A"|"B"|null, aktion: UiAktion|null,
 ziffern: number[] }`. Übergänge nach Panel-Konzept: Team wählen → Aktion → Ziffer(n) → OK
 bucht; `Uhr`/`Halbzeit` buchen sofort, verwerfen offene Eingaben und setzen den Team-Kontext
 zurück; `Undo`/`OK` erhalten den Kontext; 10-s-Inaktivitäts-Reset der offenen Eingabe.
+**Standard-Aktion Wurf (Nutzer-Vorgabe 21.08.2026):** eine Ziffer OHNE vorher gewählte
+Aktions-Taste bucht direkt einen Wurf des Spielers – der mit Abstand häufigste Fall
+(`A` `3` → `B` `5` → `A` `2` …; rollt der Ball zurück, erneut eine Ziffer desselben Teams,
+auch derselbe Spieler mehrfach). Bei einstelligen Trikotnummern (Turnierregel, Standard)
+sofort ohne OK, sonst sammelt die Ziffer und OK schließt ab. Entspricht der ursprünglichen
+Spez.-24.4-Idee „0–9 = Wurf".
 
 **Entscheidung: Das Panel-Bedienmodell (Team-Kontext-Toggle) ist DAS Eingabemodell** – auch
 für die normale Tastatur. Die Belegung aus Spez. 24.4 (gleiche Taste + STRG für Team B) wird
