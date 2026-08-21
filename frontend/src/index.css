@@ -2403,3 +2403,71 @@ button:hover:not(:disabled) {
   gap: 8px;
   margin-top: 12px;
 }
+
+/* --- Vollbild-Modus der Erfassungs-Ansicht: App-Chrome ausblenden, eine Bildschirmseite --- */
+
+/* Solange die Erfassung aktiv ist (body-Klasse aus ProtokollPage), verschwinden Kopfzeile,
+   Banner und Fusszeile - die Halle sieht NUR die Erfassung. Browser-Vollbild kommt ueber den
+   "Vollbild an/aus"-Knopf (Fullscreen-API) bzw. F11 dazu. */
+body.protokoll-vollbild-aktiv header,
+body.protokoll-vollbild-aktiv footer.fusszeile,
+body.protokoll-vollbild-aktiv .umgebungs-banner,
+body.protokoll-vollbild-aktiv .wartungs-banner {
+  display: none;
+}
+
+body.protokoll-vollbild-aktiv #root {
+  max-width: none;
+  padding: 8px 16px;
+}
+
+.protokoll-erfassung {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+body.protokoll-vollbild-aktiv .protokoll-erfassung {
+  height: calc(100dvh - 16px);
+  overflow: hidden;
+}
+
+.protokoll-vb-kopf-aktionen {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Feste Namenshoehe (2 Zeilen), damit die Anzeigen beider Seiten IMMER auf gleicher Hoehe
+   liegen - ein langer Name drueckt sonst Chips/Werfer-Zeile nur auf einer Seite nach unten.
+   Mehr als zwei Zeilen werden abgeschnitten (dann lieber kleinere Schrift als mehr Platz). */
+.protokoll-vb-teamname {
+  font-size: 1.35rem;
+  height: 3.9rem;
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.protokoll-vb-teamname-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.25;
+  text-align: inherit;
+}
+
+/* Kompaktere Abstaende, damit alles auf eine Bildschirmhoehe passt. */
+.protokoll-vb-score {
+  margin-bottom: 4px;
+}
+
+.protokoll-vb-eingabe {
+  margin: 6px 0;
+}
+
+body.protokoll-vollbild-aktiv .protokoll-vb-fuss {
+  margin-top: auto;
+}

@@ -191,6 +191,16 @@ export function ProtokollPage() {
     };
   }, [spielId, protokoll?._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Vollbild-Modus: solange die Erfassungs-Ansicht aktiv ist, blendet eine body-Klasse die
+  // App-Kopfzeile, Banner und Fusszeile aus (CSS in index.css) - die Erfassung soll eine ganze
+  // Bildschirmseite fuer sich haben (Nutzer-Vorgabe 21.08.2026).
+  const erfassungAktiv =
+    ansicht === "erfassung" && Boolean(protokoll) && !ohneProtokoll && protokoll?.status !== "abgeschlossen";
+  useEffect(() => {
+    document.body.classList.toggle("protokoll-vollbild-aktiv", erfassungAktiv);
+    return () => document.body.classList.remove("protokoll-vollbild-aktiv");
+  }, [erfassungAktiv]);
+
   // Tickende Anzeigen (Spieluhr, Timer A/B).
   useEffect(() => {
     const intervall = setInterval(() => setTick((t) => t + 1), 500);
@@ -282,10 +292,21 @@ export function ProtokollPage() {
         if (vorher.aktion) zeigeKurzHinweis("Offene Eingabe verworfen.");
         await sende({ eventTyp: stand?.uhrLaeuft ? "STOP" : "GO" });
         return;
-      case "halbzeit":
+      case "halbzeit": {
         if (vorher.aktion) zeigeKurzHinweis("Offene Eingabe verworfen.");
-        await sende({ eventTyp: "B" });
+        const gebucht = await sende({ eventTyp: "B" });
+        // Turnierregel "Seitenwechsel zur Halbzeit": die ANZEIGE-Seiten automatisch mittauschen
+        // (Nutzer-Vorgabe 21.08.2026) - reine Darstellung, keine Daten (seiteAVertauscht).
+        if (gebucht && turnier?.seitenwechsel && protokoll) {
+          try {
+            setProtokoll(await protokollAnzeigeSetzen(protokoll._id, !protokoll.seiteAVertauscht));
+            zeigeKurzHinweis("Halbzeit gebucht – Anzeige-Seiten automatisch getauscht.");
+          } catch {
+            /* Anzeige-Tausch fehlgeschlagen - unkritisch, manuell nachholbar */
+          }
+        }
         return;
+      }
       case "eingabeVerworfen":
         zeigeKurzHinweis("Eingabe verworfen.");
         return;
@@ -549,6 +570,11 @@ export function ProtokollPage() {
     }
   }
 
+  function vollbildUmschalten() {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void document.documentElement.requestFullscreen().catch(() => {});
+  }
+
   async function seitenTauschen() {
     if (!protokoll) return;
     try {
@@ -783,7 +809,7 @@ export function ProtokollPage() {
           aria-pressed={eingabe.team === seite}
           onClick={() => taste({ art: "team", team: tasteLabel })}
         >
-          {teamName(seite)}
+          <span className="protokoll-vb-teamname-text">{teamName(seite)}</span>
         </button>
         <div className="protokoll-vb-chips">
           <span>
@@ -848,16 +874,28 @@ export function ProtokollPage() {
         <kbd>{kuerzel}</kbd> {AKTIONS_BESCHRIFTUNG[aktion]}
       </button>
     );
+    // Aktuelle Protokollfuehrung: letzter wirksamer Protokollantenwechsel, sonst der Startname.
+    const letzterHandover = wirksameSortiert()
+      .filter((e) => e.eventTyp === "HANDOVER")
+      .pop();
+    const aktuellerProtokollant = String(
+      letzterHandover?.zusatz?.neuerProtokollant ?? protokoll?.ersterProtokollantName ?? "",
+    );
     return (
       <div className="protokoll-erfassung">
         <div className="protokoll-vb-kopf">
           <span>
-            {turnier.name}
-            {spiel.runde ? ` · Spiel ${spiel.runde}` : ""}
+            {spiel.runde ? `Spiel ${spiel.runde}` : "Spiel"}
+            {aktuellerProtokollant && <> · Protokoll: {aktuellerProtokollant}</>}
           </span>
-          <button type="button" className="button-sekundaer" onClick={() => setAnsicht("verlauf")}>
-            Vollständiges Protokoll &amp; Korrekturen (Esc, dann Enter)
-          </button>
+          <span className="protokoll-vb-kopf-aktionen">
+            <button type="button" className="button-sekundaer" onClick={vollbildUmschalten}>
+              Vollbild an/aus
+            </button>
+            <button type="button" className="button-sekundaer" onClick={() => setAnsicht("verlauf")}>
+              Vollständiges Protokoll &amp; Korrekturen (Esc, dann Enter)
+            </button>
+          </span>
         </div>
         {fehler && <p role="alert">{fehler}</p>}
 
@@ -885,7 +923,7 @@ export function ProtokollPage() {
             </div>
             <div className={`protokoll-vb-laeuft ${stand.uhrLaeuft ? "" : "protokoll-vb-steht"}`}>
               <span className="protokoll-vb-punkt"></span>
-              {stand.uhrLaeuft ? "SPIEL LÄUFT" : "SPIEL STEHT"}
+              {stand.uhrLaeuft ? "SPIEL LÄUFT" : "UNTERBROCHEN"}
             </div>
             {ueberhang && (
               <div className="protokoll-ueberhang">Überhang – Spiel läuft bis zum Abpfiff</div>
@@ -969,6 +1007,17 @@ export function ProtokollPage() {
               >
                 <kbd>⌫</kbd> Rückgängig
               </button>
+              {/* Gehoert fachlich zur Halbzeit (dort ggf. automatisch, Turnierregel Seitenwechsel),
+                  bleibt aber jederzeit erreichbar - z.B. falls die Anzeige schon vor Spielbeginn
+                  gedreht werden muss. */}
+              <button
+                type="button"
+                className="protokoll-vb-aktion"
+                style={{ gridColumn: "span 2" }}
+                onClick={seitenTauschen}
+              >
+                Anzeige-Seiten tauschen{turnier.seitenwechsel ? " (zur Halbzeit automatisch)" : ""}
+              </button>
             </div>
           </div>
           {feldKnoepfe(rechteSeite, "B")}
@@ -991,9 +1040,6 @@ export function ProtokollPage() {
               ))}
           </div>
           <div className="protokoll-vb-fussrechts">
-            <button type="button" className="button-sekundaer" onClick={seitenTauschen}>
-              Seiten tauschen
-            </button>
             <button type="button" className="button-sekundaer" onClick={() => setAnsicht("verlauf")}>
               Spielende / Abschluss …
             </button>
