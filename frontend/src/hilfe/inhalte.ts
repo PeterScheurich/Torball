@@ -466,6 +466,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
               "F + Ziffer = Foul, P = Strafwurf, T = Auszeit, M = Technische Auszeit, R + Ziffer = Freiwurf, X + Ziffer = Wurf über die Aktionstaste.",
               "E + Ziffer + Ziffer = Wechsel (raus, rein) – oder über den „Wechsel“-Knopf mit Auswahl von Feld und Bank.",
               "Leertaste = Spieluhr starten/anhalten, H = Halbzeit (tauscht bei aktivierter Regel automatisch die Anzeigeseiten), Rücktaste = letztes Ereignis rückgängig, Esc = offene Eingabe verwerfen.",
+              "Bei Tor, Eigentor, Foul, Strafwurf und Auszeiten hält die Spieluhr automatisch an – der Schiedsrichter pfeift danach neu an, erst dann startet die Leertaste die Uhr wieder.",
             ],
           },
           "Alles geht auch per Maus oder Touch: Feldspieler-Tasten, Aktions-Knöpfe und das Wechsel-Fenster. Eine Bluetooth- oder USB-Tastatur (später auch ein eigenes Tastenfeld) funktioniert genauso.",

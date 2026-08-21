@@ -182,6 +182,12 @@ Spielzeit aus „Summe der abgeschlossenen Laufphasen + (jetzt − letztes GO)".
 vom Client berechnete `spielzeit` (Sekunden im Abschnitt) als Protokoll-Wahrheit – die Software
 dokumentiert, der Schiedsrichter entscheidet.
 
+**Automatischer Uhr-Stopp (Nutzer-Vorgabe 21.08.2026):** Aktionen, auf die der Schiedsrichter
+neu anpfeift – Tor/Eigentor, Foul, Strafwurf, Auszeit, technische Auszeit – buchen bei laufender
+Uhr automatisch ein `STOP` hinterher (im Torball zählt Netto-Spielzeit; beim Strafwurf steht die
+Uhr laut Regel ohnehin). Der Neustart bleibt bewusst manuell (Leertaste beim Anpfiff), das
+`STOP` erscheint als normales Ereignis im Protokoll und ist wie jedes andere korrigierbar.
+
 ## 5. Integration in Spiel & Tabelle (das Gate)
 
 Alles hinter `turnier.protokollierungsart === "digital"`; der `manuell`-Pfad bleibt unberührt.

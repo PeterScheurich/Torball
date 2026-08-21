@@ -316,6 +316,15 @@ export function ProtokollPage() {
     }
   }
 
+  /** Uhr automatisch anhalten nach Aktionen, auf die der Schiedsrichter neu anpfeift (Tor/
+   *  Eigentor, Foul, Strafwurf, Auszeit, technische Auszeit - Nutzer-Vorgabe 21.08.2026):
+   *  waehrend dieser Unterbrechungen laeuft keine Spielzeit (Netto-Zeit; beim Strafwurf steht
+   *  die Uhr laut Regel ohnehin). Neu gestartet wird wie gehabt manuell per Leertaste beim
+   *  Anpfiff. */
+  async function uhrAutoStopp() {
+    if (stand?.uhrLaeuft) await sende({ eventTyp: "STOP" });
+  }
+
   async function fuehreBefehlAus(befehl: EingabeBefehl, vorher: EingabeZustand) {
     switch (befehl.typ) {
       case "uhr":
@@ -381,11 +390,11 @@ export function ProtokollPage() {
         // gebuchten Wurf mit nachgeschobenem G (dort darf ein Streichen des Tors den echten
         // Wurf NICHT mitnehmen).
         if (await sende({ eventTyp: "W", mannschaft: team, spielerId: spielerIds[0], zusatz: { torPaar: true } })) {
-          await sende({ eventTyp: "G", mannschaft: team, spielerId: spielerIds[0] });
+          if (await sende({ eventTyp: "G", mannschaft: team, spielerId: spielerIds[0] })) await uhrAutoStopp();
         }
         return;
       case "eigentor":
-        await sende({ eventTyp: "G", mannschaft: team, istEigentor: true });
+        if (await sende({ eventTyp: "G", mannschaft: team, istEigentor: true })) await uhrAutoStopp();
         return;
       case "fehlwurf":
         await sende({ eventTyp: "W", mannschaft: team, spielerId: spielerIds[0] });
@@ -400,16 +409,17 @@ export function ProtokollPage() {
         if (gebucht && stand && stand.fouls[team] + 1 >= 3) {
           await sende({ eventTyp: "PA", mannschaft: team });
         }
+        if (gebucht) await uhrAutoStopp();
         return;
       }
       case "strafwurf":
-        await sende({ eventTyp: "P", mannschaft: team });
+        if (await sende({ eventTyp: "P", mannschaft: team })) await uhrAutoStopp();
         return;
       case "auszeit":
-        await sende({ eventTyp: "T", mannschaft: team });
+        if (await sende({ eventTyp: "T", mannschaft: team })) await uhrAutoStopp();
         return;
       case "techauszeit":
-        await sende({ eventTyp: "TT", mannschaft: team });
+        if (await sende({ eventTyp: "TT", mannschaft: team })) await uhrAutoStopp();
         return;
       case "wechsel":
         await sende({ eventTyp: "E", mannschaft: team, spielerRausId: spielerIds[0], spielerId: spielerIds[1] });
@@ -544,6 +554,7 @@ export function ProtokollPage() {
         void (async () => {
           if (await sende({ eventTyp: "G", mannschaft: letztes.mannschaft, spielerId: letztes.spielerId })) {
             zeigeKurzHinweis(`Tor zum letzten Wurf (${spielerName(letztes.spielerId) ?? "?"}).`);
+            await uhrAutoStopp();
           }
         })();
         return;
