@@ -52,6 +52,11 @@ Verwandte Dokumente: `torball-protokoll-panel-konzept.md` (physisches HID-Tasten
   laut Spez. 20.11 dieser Startwert plus die HANDOVER-Events).
 - `seiteAVertauscht?: boolean` – reine Anzeige-Einstellung „welches Team links/rechts"
   (Spez. 7.3), ändert keine Daten.
+- `turnierleitungBestaetigtAm?` / `turnierleitungBestaetigtVonName?` – nur beim Vier-Augen-
+  Abschluss (Abschnitt 9) gesetzt.
+
+**`Turnier` bekommt zusätzlich:** `protokollantCodeHash?` (dritter Turnier-Code, Abschnitt 6)
+und `protokollBestaetigungErforderlich?: boolean` (Vier-Augen-Abschluss, Abschnitt 9).
 
 Beide neuen docTypes (`spielprotokoll`, `event`) werden additiv in die `TorballDokument`-Union
 aufgenommen. **Wichtig:** `docs/Archiv` zeigt, dass `NIE_ZURUECKSETZEN` (Demo-Snapshot) nur
@@ -188,26 +193,33 @@ Korrektur-Events, nicht über direkte Ergebnis-PUTs.
 
 ## 6. Zugang: Wer darf protokollieren?
 
-**Entscheidung (Empfehlung): kein neuer Auth-Mechanismus – die bestehende Zugriffsstufe
-`schreiben_spielbetrieb` ist exakt die Protokollant-Berechtigung.** Der Backlog-Punkt
-„Protokollant-Token" stammt vom 11.08. – **vor** dem Bau der Turnier-Codes (21.3). Der
-Spielleitung-Code liefert heute schon genau das dort Geforderte: Zugang ohne Konto, per
-Link/QR teilbar, beschränkt auf Spielplan + Ergebnisse, von der Turnierleitung vergeben.
+**Entscheidung (Nutzer, 21.08.2026): ein eigener dritter Turnier-Code „Protokollant"** –
+zusätzlich zu Turnierleitung- und Spielleitung-Code, gleiches Muster (Abschnitt 21.3):
 
-Konkret:
-
-- Alle Protokoll-Routen verlangen `hatMindestens(turnier, req, "schreiben_spielbetrieb")` –
-  damit können protokollieren: Admin, Turnier-Ersteller, Benutzer mit entsprechender
-  `TurnierBerechtigung`, Turnierleitung-Code und Spielleitung-Code.
-- `SpielleitungCodePage` (und die Spielplan-Sicht der normalen Verwaltung) bekommt je Spiel
-  einen Einstieg „Protokollieren" (nur bei `protokollierungsart: "digital"`).
+- Neues optionales Feld `Turnier.protokollantCodeHash` (analog den beiden bestehenden
+  Code-Hashes, gehasht, nie über GET zurückgegeben). Setzen/Ändern über die bestehende Route
+  `PUT/GET /turniere/:id/codes` (erweitert), Anmeldung über die bestehende öffentliche
+  `POST /turniere/:id/code-anmeldung` (prüft den dritten Hash mit).
+- `TurnierCodeSession.rolle` bekommt den dritten Wert `"protokollant"` (eigener Typ
+  `TurnierCodeRolle` in `session.ts`; `TurnierRolle`/`TurnierBerechtigung` bleiben unberührt –
+  „Protokollant" ist keine vergebbare Benutzer-Berechtigung, nur eine Code-Rolle).
+- **Zugriffsstufen-Mapping:** Protokollant-Code → `lesen` (darf Spielplan/Ergebnisse ansehen,
+  nichts davon ändern). Das Protokollieren selbst läuft über ein eigenes Prädikat
+  `darfProtokollieren(turnier, akteur)` in `turnierZugriff.ts`: wahr bei
+  `hatMindestens(schreiben_spielbetrieb)` ODER passendem Protokollant-Code. Die dreistufige
+  `Zugriffsstufe` bleibt damit unangetastet (kein vierter Rang nötig).
+- Frontend: eigene Route `/turniere/:id/code/protokollant` → `ProtokollantCodePage`
+  (außerhalb `GeschuetzteRoute`, wie die beiden bestehenden Code-Seiten): Spielplan
+  **lesend** + je Spiel der Einstieg „Protokollieren". `TurnierFreigabe` zeigt das dritte
+  Code-Feld nur bei `protokollierungsart: "digital"` (bei „manuell" wäre der Code nutzlos).
 - Der **Name** des Protokollanten (die „Unterschrift", Spez. 7.4) ist vom Konto entkoppelt:
   beim ersten Öffnen eines Protokolls wird er abgefragt (Muster `ErgebnisAenderung.erfasserName`)
   und in `ersterProtokollantName` bzw. bei HANDOVER in `zusatz.neuerProtokollant` geführt.
   `erstelltVon` (BenutzerId) bleibt optional daneben, wenn ein echtes Konto angemeldet ist.
-- Eine eigene Protokollant-**Rolle** (nur ein bestimmtes Spiel statt aller Spiele) bleibt
-  bewusst der Rollenkonzept-Revision vorbehalten (bestehender Backlog) – für den realen
-  Turnierbetrieb reicht die Vertrauensstufe „wer den Spielleitung-Code hat, protokolliert".
+  `zuschreibung()` bekommt den Platzhalter „Protokollant-Code" für die Code-Rolle.
+- Protokollieren können damit: Admin, Turnier-Ersteller, `TurnierBerechtigung`-Inhaber ab
+  Spielleitung, Turnierleitung-/Spielleitung-Code **und** Protokollant-Code – letzterer kann
+  ausschließlich protokollieren, sonst nichts schreiben.
 
 ## 7. Protokollier-Seite (UI)
 
@@ -284,14 +296,21 @@ Dem Ablauf aus Spez. 7.4 folgend, auf dem `Spielprotokoll.status` abgebildet:
    die Spielleitung weiterhin möglich (auch PROT nachträglich).
 2. Unterschrift: Protokollant bestätigt mit Namen (`protokollantName`,
    `protokollantBestaetigtAm` am Protokoll).
-3. `Fin`-Event (nur mit Unterschrift möglich) → Protokoll `status: "abgeschlossen"`, Spiel
-   `ergebnisAbgeschlossen: true` – ab jetzt nimmt der Server keine Events mehr an (409),
-   einzige Ausnahme: die Protest-**Entscheidung** der Turnierleitung (Korrektur auf PROT,
-   verlangt `schreiben_voll`).
-4. Die „Bestätigung durch die Turnierleitung" (Spez. 7.4 Punkt 5) ist im ersten Wurf **kein
-   eigener Schritt** – `Fin` durch eine Person mit Spielbetrieb-Zugriff genügt; ein separates
-   Vier-Augen-Prinzip wäre neue Berechtigungs-Mechanik für einen bisher rein papiernen
-   Formalakt (→ offene Entscheidung 12.4).
+3. `Fin`-Event (nur mit Unterschrift möglich) → Protokoll `status: "abgeschlossen"` – ab
+   jetzt nimmt der Server keine Events mehr an (409), einzige Ausnahme: die
+   Protest-**Entscheidung** der Turnierleitung (Korrektur auf PROT, verlangt `schreiben_voll`).
+4. **Bestätigung durch die Turnierleitung (Spez. 7.4 Punkt 5): konfigurierbar je Turnier**
+   (Nutzer-Entscheidung 21.08.2026 – Bundesliga hat härtere Vorschriften als normale
+   Turniere). Neues Feld `Turnier.protokollBestaetigungErforderlich: boolean` (Default
+   `false`, einstellbar neben dem Protokollierung-Dropdown im Übersicht-Reiter, nur bei
+   `digital` sichtbar):
+   - **aus:** `Fin` setzt zugleich Spiel `ergebnisAbgeschlossen: true` + `status:
+     "abgeschlossen"` – fertig (einstufig).
+   - **an (Vier-Augen):** `Fin` schließt nur das Protokoll ab; das Spiel bleibt `beendet`.
+     Erst `POST /protokolle/:id/bestaetigen` (verlangt `schreiben_voll`, also Turnierleitung)
+     setzt `turnierleitungBestaetigtAm/VonName` am Protokoll und `ergebnisAbgeschlossen` +
+     `status: "abgeschlossen"` am Spiel. Das Live-Ergebnis steht dabei längst in der Tabelle
+     (die wertet jedes Spiel mit gesetztem Ergebnis) – die Bestätigung finalisiert nur.
 
 Dazu ein read-only **Spielbericht** (eigene Sicht oder Abschnitt der Protokollseite):
 vollständige Ereignisliste inkl. Korrektur-Historie, Protokollanten-Historie („Person A bis
@@ -306,7 +325,11 @@ später (bestehendes `PdfDokument`-Modell ist vorbereitet, aber nicht Teil des M
 | `POST /spiele/:spielId/protokoll` | Protokoll anlegen (idempotent: existiert schon → 409 mit Verweis), `ersterProtokollantName` Pflicht | `schreiben_spielbetrieb` |
 | `POST /protokolle/:id/events` | Event anhängen (Server vergibt `sequenz`, validiert Typ-Schema, pflegt Spiel-Felder nach Abschnitt 5) | `schreiben_spielbetrieb` |
 | `POST /protokolle/:id/unterschreiben` | Unterschrift (Name) setzen | `schreiben_spielbetrieb` |
+| `POST /protokolle/:id/bestaetigen` | Turnierleitungs-Bestätigung (nur bei `protokollBestaetigungErforderlich`) | `schreiben_voll` |
 | `PUT /protokolle/:id/anzeige` | `seiteAVertauscht` umschalten | `schreiben_spielbetrieb` |
+
+Alle Stufen-Angaben mit `schreiben_spielbetrieb` meinen `darfProtokollieren()` (Abschnitt 6):
+mindestens Spielleitung **oder** Protokollant-Code.
 
 Querschnitt (Projekt-Regeln, gelten alle auch hier): `turnierGesperrt()` +
 `turnierAusgecheckt()` an allen Schreibrouten; `ohneFelder()`-Stripping beim Event-Body
@@ -330,20 +353,17 @@ Sinne der bestehenden Ausnahme); Fastify-Body-Schemata je Route; kein `db.find` 
   Mensch.
 - **Panel-Hardware/Firmware** – folgt separat auf Basis des Keymaps (Abschnitt 8).
 
-## 12. Offene Entscheidungen (vor Umsetzungsbeginn zu klären)
+## 12. Entschiedene Punkte (Nutzer, 21.08.2026)
 
-1. **Protokollant-Zugang:** Spielleitung-Code wiederverwenden (Empfehlung, Abschnitt 6) –
-   oder doch ein eigener dritter Turnier-Code „Protokollant"?
-2. **Live-Ergebnis öffentlich:** Tor-Events aktualisieren `Spiel.ergebnisA/B` sofort → bei
-   freigegebenen Ergebnissen sieht die öffentliche Seite den Spielstand **live** (Empfehlung –
-   das ist ein Feature, kein Leck; Freigabe steuern weiterhin die `oeffentlich*`-Häkchen).
-   Alternative: Ergebnis erst bei `End` in das Spiel schreiben.
-3. **Tor = W+G-Doppel-Event** (Empfehlung, Abschnitt 3.3) – oder nur `G` und die 3-Wurf-Zählung
-   ignoriert Tore?
-4. **Abschluss ohne separaten Turnierleitungs-Bestätigungsschritt** (Empfehlung, Abschnitt 9) –
-   oder Vier-Augen-Prinzip (Unterschrift Protokollant + Bestätigung `schreiben_voll`) von
-   Anfang an?
-5. **MVP-Schnitt** aus Abschnitt 11 so in Ordnung?
+1. **Protokollant-Zugang: eigener dritter Turnier-Code „Protokollant"** (statt Wiederverwendung
+   des Spielleitung-Codes) – Umsetzung siehe Abschnitt 6.
+2. **Live-Ergebnis: sofort bei jedem Tor** – Tor-Events aktualisieren `Spiel.ergebnisA/B`
+   direkt; bei freigegebenen Ergebnissen zeigt die öffentliche Seite den Spielstand live
+   (Freigabe steuern weiterhin die `oeffentlich*`-Häkchen).
+3. **Tor = W+G-Doppel-Event** (Abschnitt 3.3) – die 3-Wurf-Zählung bleibt damit korrekt.
+4. **Turnierleitungs-Bestätigung des Abschlusses: konfigurierbar je Turnier**
+   (`protokollBestaetigungErforderlich`, Default aus – Bundesliga u. ä. schalten es ein),
+   siehe Abschnitt 9.
 
 ## 13. Umsetzungsphasen (nach Freigabe der Entscheidungen)
 
