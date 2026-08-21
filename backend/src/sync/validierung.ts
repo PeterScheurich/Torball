@@ -74,7 +74,7 @@ export function pruefeTurnierExportPaket(paket: TurnierExportPaket, erwarteteTur
 
   // Alle Listen muessen - falls vorhanden - tatsaechlich Arrays sein (ein String o.ae. wuerde die
   // spaeteren for-Schleifen sonst unerwartet durchlaufen).
-  for (const feld of ["mannschaften", "spieler", "spiele", "schiedsrichter", "vereine", "teams"]) {
+  for (const feld of ["mannschaften", "spieler", "spiele", "schiedsrichter", "spielprotokolle", "events", "vereine", "teams"]) {
     if (p[feld] !== undefined && !Array.isArray(p[feld])) return `Feld "${feld}" muss ein Array sein.`;
   }
 
@@ -101,6 +101,16 @@ export function pruefeTurnierExportPaket(paket: TurnierExportPaket, erwarteteTur
   }
   for (const schiri of Array.isArray(p.schiedsrichter) ? p.schiedsrichter : []) {
     const fehler = pruefeDokument(schiri, "schiedsrichterImTurnier", "turnierId", scope);
+    if (fehler) return fehler;
+  }
+  // Digitale Protokollierung (Abschnitt 22): beide Typen tragen die turnierId denormalisiert -
+  // genau damit diese Zugehoerigkeits-Pruefung hier ohne Kettenaufloesung moeglich ist.
+  for (const protokoll of Array.isArray(p.spielprotokolle) ? p.spielprotokolle : []) {
+    const fehler = pruefeDokument(protokoll, "spielprotokoll", "turnierId", scope);
+    if (fehler) return fehler;
+  }
+  for (const event of Array.isArray(p.events) ? p.events : []) {
+    const fehler = pruefeDokument(event, "event", "turnierId", scope);
     if (fehler) return fehler;
   }
 

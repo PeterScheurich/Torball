@@ -21,6 +21,7 @@ import { schiedsrichterStammdatenRoutes } from "./routes/schiedsrichterStammdate
 import { spielplanRoutes } from "./routes/spielplan";
 import { spielRoutes } from "./routes/spiel";
 import { ergebnisRoutes } from "./routes/ergebnis";
+import { protokollRoutes } from "./routes/protokoll";
 import { ergebnisTokenRoutes } from "./routes/ergebnisToken";
 import { oeffentlichRoutes } from "./routes/oeffentlich";
 import { systemkonfigurationRoutes } from "./routes/systemkonfiguration";
@@ -126,6 +127,7 @@ const registerApiRoutes = async (instance: FastifyInstance): Promise<void> => {
   instance.register(spielplanRoutes);
   instance.register(spielRoutes);
   instance.register(ergebnisRoutes);
+  instance.register(protokollRoutes);
   instance.register(ergebnisTokenRoutes);
   instance.register(oeffentlichRoutes);
   instance.register(systemkonfigurationRoutes);

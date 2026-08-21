@@ -18,6 +18,7 @@ import { CODE_ANMELDUNG_RATE_LIMIT } from "../rateLimit";
 interface CodesSetzenBody {
   turnierleitungCode?: string | null;
   spielleitungCode?: string | null;
+  protokollantCode?: string | null;
 }
 
 const codesSetzenSchema = {
@@ -27,6 +28,7 @@ const codesSetzenSchema = {
     // JSON.stringify das Feld nicht komplett aus dem Body fallen laesst).
     turnierleitungCode: { type: ["string", "null"] },
     spielleitungCode: { type: ["string", "null"] },
+    protokollantCode: { type: ["string", "null"] },
   },
 } as const;
 
@@ -63,9 +65,10 @@ export async function turnierCodeRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
       }
 
-      const patch: Pick<Turnier, "turnierleitungCodeHash" | "spielleitungCodeHash"> = {
+      const patch: Pick<Turnier, "turnierleitungCodeHash" | "spielleitungCodeHash" | "protokollantCodeHash"> = {
         turnierleitungCodeHash: turnier.turnierleitungCodeHash,
         spielleitungCodeHash: turnier.spielleitungCodeHash,
+        protokollantCodeHash: turnier.protokollantCodeHash,
       };
       if ("turnierleitungCode" in req.body) {
         patch.turnierleitungCodeHash = req.body.turnierleitungCode
@@ -77,12 +80,18 @@ export async function turnierCodeRoutes(app: FastifyInstance): Promise<void> {
           ? await hashePasswort(req.body.spielleitungCode)
           : undefined;
       }
+      if ("protokollantCode" in req.body) {
+        patch.protokollantCodeHash = req.body.protokollantCode
+          ? await hashePasswort(req.body.protokollantCode)
+          : undefined;
+      }
 
       const gespeichert = await insertDoc({ ...turnier, ...patch });
       // Nie die Hashes an den Client zurueckgeben - nur, ob ein Code jeweils aktiv ist.
       return {
         turnierleitungCodeAktiv: Boolean(gespeichert.turnierleitungCodeHash),
         spielleitungCodeAktiv: Boolean(gespeichert.spielleitungCodeHash),
+        protokollantCodeAktiv: Boolean(gespeichert.protokollantCodeHash),
       };
     },
   );
@@ -97,6 +106,7 @@ export async function turnierCodeRoutes(app: FastifyInstance): Promise<void> {
     return {
       turnierleitungCodeAktiv: Boolean(turnier.turnierleitungCodeHash),
       spielleitungCodeAktiv: Boolean(turnier.spielleitungCodeHash),
+      protokollantCodeAktiv: Boolean(turnier.protokollantCodeHash),
     };
   });
 
@@ -116,12 +126,17 @@ export async function turnierCodeRoutes(app: FastifyInstance): Promise<void> {
         !passtTurnierleitung &&
         turnier.spielleitungCodeHash &&
         (await passwortStimmt(req.body.code, turnier.spielleitungCodeHash));
+      const passtProtokollant =
+        !passtTurnierleitung &&
+        !passtSpielleitung &&
+        turnier.protokollantCodeHash &&
+        (await passwortStimmt(req.body.code, turnier.protokollantCodeHash));
 
-      if (!passtTurnierleitung && !passtSpielleitung) {
+      if (!passtTurnierleitung && !passtSpielleitung && !passtProtokollant) {
         return reply.code(401).send({ error: "Code ist ungültig." });
       }
 
-      const rolle = passtTurnierleitung ? "turnierleitung" : "spielleitung";
+      const rolle = passtTurnierleitung ? "turnierleitung" : passtSpielleitung ? "spielleitung" : "protokollant";
       const { token } = await erstelleCodeSession(turnier._id, rolle);
       setzeSessionCookie(reply, token);
       return { rolle, turnierName: turnier.name };

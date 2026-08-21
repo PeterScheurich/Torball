@@ -1,4 +1,4 @@
-import type { Benutzer, Turnier, TurnierBerechtigung, TurnierId, TurnierRolle } from "@torball/shared";
+import type { Benutzer, Turnier, TurnierBerechtigung, TurnierCodeRolle, TurnierId, TurnierRolle } from "@torball/shared";
 import { findAllBySelector } from "../repository";
 import { findeAktivesCheckout } from "../sync/instanz";
 
@@ -17,17 +17,20 @@ const RANG: Record<Zugriffsstufe, number> = {
   schreiben_voll: 2,
 };
 
-function rolleZuStufe(rolle: TurnierRolle): Zugriffsstufe {
+function rolleZuStufe(rolle: TurnierRolle | TurnierCodeRolle): Zugriffsstufe {
   if (rolle === "turnierleitung") return "schreiben_voll";
   if (rolle === "spielleitung") return "schreiben_spielbetrieb";
+  // "protokollant" (Code-Rolle der digitalen Protokollierung) landet bewusst auf "lesen": darf
+  // Spielplan/Ergebnisse ansehen, aber nichts davon aendern - das Protokollieren selbst laeuft
+  // ueber das eigene Praedikat darfProtokollieren() unten, nicht ueber die Stufen.
   return "lesen";
 }
 
 /** Turnier-Code-Zugriff (Abschnitt 21.3, Betriebsmodus "Lokales Netzwerk") - ohne Benutzerkonto,
- *  gebunden an genau ein Turnier + eine der beiden Schreibrollen. */
+ *  gebunden an genau ein Turnier + eine Code-Rolle. */
 export interface TurnierCodeZugriff {
   turnierId: TurnierId;
-  rolle: Extract<TurnierRolle, "turnierleitung" | "spielleitung">;
+  rolle: TurnierCodeRolle;
 }
 
 /**
@@ -144,7 +147,13 @@ export const REGELN_GESPERRT_FEHLER =
 export function zuschreibung(akteur: Zugriffsakteur): { benutzerId?: string; name: string } {
   if (akteur.benutzer) return { benutzerId: akteur.benutzer._id, name: akteur.benutzer.name };
   if (akteur.turnierCode) {
-    return { name: akteur.turnierCode.rolle === "turnierleitung" ? "Turnierleitung-Code" : "Spielleitung-Code" };
+    const name =
+      akteur.turnierCode.rolle === "turnierleitung"
+        ? "Turnierleitung-Code"
+        : akteur.turnierCode.rolle === "spielleitung"
+          ? "Spielleitung-Code"
+          : "Protokollant-Code";
+    return { name };
   }
   return { name: "Unbekannt" };
 }
@@ -157,4 +166,19 @@ export async function hatMindestens(
   const stufe = await turnierZugriffsstufe(turnier, akteur);
   if (!stufe) return false;
   return RANG[stufe] >= RANG[mindestens];
+}
+
+/**
+ * Digitale Protokollierung (Abschnitt 22): Protokoll anlegen / Events anhaengen / unterschreiben
+ * duerfen alle ab "schreiben_spielbetrieb" (Spielleitung aufwaerts) ODER eine
+ * Protokollant-Code-Session fuer genau dieses Turnier. Bewusst ein eigenes Praedikat statt einer
+ * vierten Zugriffsstufe: der Protokollant-Code soll AUSSCHLIESSLICH protokollieren koennen (sonst
+ * Stufe "lesen"), waehrend eine Stufe zwischen "lesen" und "schreiben_spielbetrieb" ihm ueberall
+ * dort Rechte gaebe, wo Routen nur "lesen" verlangen wuerden - die Dreiteilung bleibt unberuehrt.
+ */
+export async function darfProtokollieren(turnier: Turnier, akteur: Zugriffsakteur): Promise<boolean> {
+  if (akteur.turnierCode?.turnierId === turnier._id && akteur.turnierCode.rolle === "protokollant") {
+    return true;
+  }
+  return hatMindestens(turnier, akteur, "schreiben_spielbetrieb");
 }

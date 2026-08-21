@@ -2,12 +2,14 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type {
   ErgebnisAenderung,
   ErgebnisToken,
+  Event,
   MannschaftImTurnier,
   Protokollierungsart,
   SchiedsrichterImTurnier,
   Spiel,
   Spieler,
   SpielplanBasis,
+  Spielprotokoll,
   Turnier,
   TurnierBerechtigung,
   TurnierCheckout,
@@ -650,6 +652,20 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         await deleteDoc(a._id, a._rev!);
       }
       await deleteDoc(spiel._id, spiel._rev!);
+    }
+
+    // Digitale Protokollierung (Abschnitt 22): Spielprotokolle + Event-Stroeme haengen ueber die
+    // denormalisierte turnierId direkt am Turnier - einzige Stelle, an der Events geloescht werden
+    // (das Append-only-Prinzip gilt innerhalb eines bestehenden Turniers, nicht ueber dessen
+    // vollstaendige Loeschung hinaus).
+    for (const docType of ["spielprotokoll", "event"] as const) {
+      const treffer = await findAllBySelector<Spielprotokoll | Event>({
+        docType,
+        turnierId: bestehend._id,
+      });
+      for (const t of treffer) {
+        await deleteDoc(t._id, t._rev!);
+      }
     }
 
     // Schiedsrichter-im-Turnier haengen direkt am turnierId (ON DELETE CASCADE).

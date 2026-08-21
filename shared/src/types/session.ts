@@ -1,5 +1,4 @@
 import { BenutzerId, CouchMeta, SessionId, TurnierId, Zeitstempel } from "./common";
-import { TurnierRolle } from "./berechtigung";
 
 interface SessionBasis extends CouchMeta {
   docType: "session";
@@ -22,16 +21,23 @@ export interface BenutzerSession extends SessionBasis {
 }
 
 /**
+ * Rollen, die ein Turnier-Code vergeben kann. Bewusst ein EIGENER Typ statt TurnierRolle
+ * (berechtigung.ts): "protokollant" (digitale Protokollierung, Abschnitt 22) existiert nur als
+ * Code-Rolle, nicht als per TurnierBerechtigung vergebbare Benutzer-Berechtigung - und "lesen"
+ * kommt hier umgekehrt bewusst nicht vor (dafuer gibt es keinen eigenen Code).
+ */
+export type TurnierCodeRolle = "turnierleitung" | "spielleitung" | "protokollant";
+
+/**
  * Turnier-Codes (Abschnitt 21.3, "Lokales Netzwerk"): eine Session ohne Benutzerkonto, gebunden an
- * genau ein Turnier + eine der beiden Schreibrollen ("turnierleitung"/"spielleitung" - "lesen"
- * kommt hier bewusst nicht vor, dafuer gibt es keinen eigenen Code). Nutzt dieselbe
+ * genau ein Turnier + eine Code-Rolle. Nutzt dieselbe
  * Cookie-/Token-Infrastruktur wie BenutzerSession (ein Geraet ist entweder als Benutzer oder per
  * Code angemeldet, nie beides gleichzeitig - ein zweites Cookie waere unnoetige Komplexitaet).
  */
 export interface TurnierCodeSession extends SessionBasis {
   sessionArt: "code";
   turnierId: TurnierId;
-  rolle: Extract<TurnierRolle, "turnierleitung" | "spielleitung">;
+  rolle: TurnierCodeRolle;
 }
 
 export type Session = BenutzerSession | TurnierCodeSession;

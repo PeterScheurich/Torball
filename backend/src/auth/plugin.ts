@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import "@fastify/cookie";
-import type { Benutzer, GlobaleRolle, TurnierId, TurnierRolle } from "@torball/shared";
+import type { Benutzer, GlobaleRolle, TurnierCodeRolle, TurnierId } from "@torball/shared";
 import { findById } from "../repository";
 import { beruehreSession, findeSessionPerToken } from "./session";
 
@@ -14,7 +14,7 @@ declare module "fastify" {
      *  entweder das eine oder das andere, siehe shared/src/types/session.ts). Wird NICHT von
      *  requireAuth/requireRolle akzeptiert (die bedeuten weiterhin strikt "echtes Benutzerkonto") -
      *  nur die turnierbezogenen Routen pruefen das gezielt ueber requireZugriff/turnierZugriff.ts. */
-    turnierCode?: { turnierId: TurnierId; rolle: Extract<TurnierRolle, "turnierleitung" | "spielleitung"> };
+    turnierCode?: { turnierId: TurnierId; rolle: TurnierCodeRolle };
   }
 }
 

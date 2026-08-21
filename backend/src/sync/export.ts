@@ -1,8 +1,10 @@
 import type {
+  Event,
   MannschaftImTurnier,
   SchiedsrichterImTurnier,
   Spiel,
   Spieler,
+  Spielprotokoll,
   Team,
   Turnier,
   Verein,
@@ -24,6 +26,13 @@ export interface TurnierExportPaket {
   spieler: Spieler[];
   spiele: Spiel[];
   schiedsrichter: SchiedsrichterImTurnier[];
+  /**
+   * Digitale Protokollierung (Abschnitt 22) - optional (?? [] beim Verarbeiten), damit Pakete
+   * aelterer Instanzen ohne diese Felder weiterhin importierbar bleiben. Bei JEDER weiteren
+   * Erweiterung hier auch pruefeTurnierExportPaket (validierung.ts) mitziehen (CLAUDE.md).
+   */
+  spielprotokolle?: Spielprotokoll[];
+  events?: Event[];
   vereine: Verein[];
   teams: Team[];
   wettbewerb: Wettbewerb | null;
@@ -47,6 +56,8 @@ export async function sammleTurnierExport(
   }
 
   const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId });
+  const spielprotokolle = await findAllBySelector<Spielprotokoll>({ docType: "spielprotokoll", turnierId });
+  const events = await findAllBySelector<Event>({ docType: "event", turnierId });
   const schiedsrichter = await findAllBySelector<SchiedsrichterImTurnier>({
     docType: "schiedsrichterImTurnier",
     turnierId,
@@ -73,5 +84,5 @@ export async function sammleTurnierExport(
 
   const wettbewerb = turnier.wettbewerbId ? await findById<Wettbewerb>(turnier.wettbewerbId) : null;
 
-  return { turnier, mannschaften, spieler, spiele, schiedsrichter, vereine, teams, wettbewerb };
+  return { turnier, mannschaften, spieler, spiele, schiedsrichter, spielprotokolle, events, vereine, teams, wettbewerb };
 }

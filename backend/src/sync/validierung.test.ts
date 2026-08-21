@@ -16,6 +16,8 @@ function gueltigesPaket(): TurnierExportPaket {
     spieler: [{ _id: "spieler:s1", docType: "spieler", mannschaftId, name: "P" }],
     spiele: [{ _id: "spiel:g1", docType: "spiel", turnierId, runde: 1 }],
     schiedsrichter: [{ _id: "schiedsrichterImTurnier:r1", docType: "schiedsrichterImTurnier", turnierId, name: "S" }],
+    spielprotokolle: [{ _id: "spielprotokoll:p1", docType: "spielprotokoll", turnierId, spielId: "spiel:g1" }],
+    events: [{ _id: "event:e1", docType: "event", turnierId, protokollId: "spielprotokoll:p1", eventTyp: "GO" }],
     vereine: [{ _id: "verein:v1", docType: "verein", name: "V" }],
     teams: [{ _id: "team:x1", docType: "team", vereinId: "verein:v1", name: "X" }],
     wettbewerb: null,
@@ -71,6 +73,27 @@ test("ein Wettbewerb mit falschem Typ wird abgewiesen", () => {
   (paket as any).wettbewerb = { _id: "systemeinstellungen:global", docType: "systemeinstellungen" };
   const fehler = pruefeTurnierExportPaket(paket);
   assert.ok(fehler);
+});
+
+test("ein Event eines FREMDEN Turniers wird abgewiesen (digitale Protokollierung)", () => {
+  const paket = gueltigesPaket();
+  (paket as any).events[0].turnierId = "turnier:fremdes";
+  const fehler = pruefeTurnierExportPaket(paket);
+  assert.ok(fehler && fehler.includes("turnierId"));
+});
+
+test("ein als Spielprotokoll getarntes Fremd-Dokument wird abgewiesen", () => {
+  const paket = gueltigesPaket();
+  (paket as any).spielprotokolle[0] = { _id: "benutzer:opfer", docType: "benutzer", turnierId: "turnier:t1" };
+  const fehler = pruefeTurnierExportPaket(paket);
+  assert.ok(fehler && fehler.includes("Präfix"));
+});
+
+test("ein Paket OHNE Protokoll-Felder (aeltere Instanz) bleibt gueltig", () => {
+  const paket = gueltigesPaket();
+  delete (paket as any).spielprotokolle;
+  delete (paket as any).events;
+  assert.equal(pruefeTurnierExportPaket(paket), null);
 });
 
 test("ein Spieler an einer nicht mitgelieferten Mannschaft wird abgewiesen", () => {

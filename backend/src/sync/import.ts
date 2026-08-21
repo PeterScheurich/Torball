@@ -59,6 +59,9 @@ export async function importiereTurnierExport(
   for (const spieler of paket.spieler) await schreibe(spieler);
   for (const spiel of paket.spiele) await schreibe(spiel);
   for (const schiedsrichter of paket.schiedsrichter) await schreibe(schiedsrichter);
+  // Digitale Protokollierung: aeltere Pakete (vor dem Feature) haben die Felder noch nicht.
+  for (const protokoll of paket.spielprotokolle ?? []) await schreibe(protokoll);
+  for (const event of paket.events ?? []) await schreibe(event);
 
   let warnung: string | undefined;
   if (turnier.basisTurnierId && !(await findById(turnier.basisTurnierId))) {

@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import type { BenutzerSession, Session, TurnierCodeSession, TurnierId, TurnierRolle } from "@torball/shared";
+import type { BenutzerSession, Session, TurnierCodeRolle, TurnierCodeSession, TurnierId } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc } from "../repository";
 
 // Server-seitige Sessions (kein JWT). Beim Login wird ein zufaelliger Klartext-Token erzeugt und
@@ -42,7 +42,7 @@ export async function erstelleSession(benutzerId: string): Promise<{ token: stri
  *  Cookie-/Ablauf-Mechanik wie erstelleSession. */
 export async function erstelleCodeSession(
   turnierId: TurnierId,
-  rolle: Extract<TurnierRolle, "turnierleitung" | "spielleitung">,
+  rolle: TurnierCodeRolle,
 ): Promise<{ token: string; session: Session }> {
   const token = randomBytes(32).toString("hex");
   const jetzt = new Date();
