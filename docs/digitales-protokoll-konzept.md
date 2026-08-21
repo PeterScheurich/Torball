@@ -231,8 +231,8 @@ Vollbild-tauglich für den Protokollanten-Laptop):
    tauschbar), Abschnitt (1/2/V1/V2/FW), laufende Spielzeit (tickend, Überhang ins Minus
    weiterzählend mit deutlichem Hinweis – Spez. 6.1).
 2. **Status-Zeile je Team:** Foulzähler (0–2, bei 3 → Penalty-Hinweis), verbrauchte
-   Timeouts/Wechsel, Feldbesetzung (max. 3) mit Wurfzähler je Spieler, Markierung
-   „kurzzeitig ausgesetzt".
+   Timeouts/Wechsel, Kader mit Trikotnummern, letzter Werfer mit Wurfzähler (3-Wurf-Regel).
+   *(In der Umsetzung bewusst KEINE Feldbesetzungs-Verfolgung – siehe Abschnitt 11.)*
 3. **Timer A/B** (8-Sekunden-Anzeigen, Spez. 6.2): Timer A startet mit jedem `W`, Timer B mit
    `K`; reine Anzeige mit Signalfarbe bei Ablauf – kein automatisches Foul.
 4. **Eingabebereich:** Team-Kontext-Umschalter (A/B, deutlich sichtbarer farbiger Balken –
@@ -352,6 +352,13 @@ Sinne der bestehenden Ausnahme); Fastify-Body-Schemata je Route; kein `db.find` 
   Würfe) – im MVP werden Freiwürfe als einfache `FW`-Events erfasst, die Führung macht der
   Mensch.
 - **Panel-Hardware/Firmware** – folgt separat auf Basis des Keymaps (Abschnitt 8).
+- **Feldbesetzungs-/Aufstellungs-Verfolgung** (Spez. 7.3 „Spieler auf dem Feld", 22.3
+  „Ist Spieler auf dem Feld?") – bei der Umsetzung als **Spezifikations-Lücke** erkannt: es
+  gibt kein Aufstellungs-Ereignis, das die Start-Drei je Mannschaft festhält; ohne Startwert
+  ist die Feldbesetzung aus Wechsel-Events allein nicht berechenbar. Im ersten Ausbau zählt
+  `E` nur das Wechsel-Kontingent, angezeigt wird der Kader; eine spätere Lösung braucht ein
+  eigenes Aufstellungs-Event (z. B. je Abschnitt beim GO) und wird zusammen mit dem
+  „kurzzeitig ausgesetzt"-Status (Spez. 20.18) nachgezogen.
 
 ## 12. Entschiedene Punkte (Nutzer, 21.08.2026)
 

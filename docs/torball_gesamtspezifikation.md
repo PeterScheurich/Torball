@@ -707,11 +707,16 @@ Spiel
 
 ```
 Spielprotokoll
-  - protokoll_id, spiel_id (Referenz)
+  - protokoll_id, spiel_id (Referenz), turnier_id (denormalisiert –
+    Kaskaden-Löschung + Sync-Export-Validierung ohne Kettenauflösung)
   - status (offen/beendet/abgeschlossen)
-  - erstellt_von (benutzer_id)
+  - erstellt_von (benutzer_id, optional – Protokollanten haben i. d. R. kein Konto)
+  - erster_protokollant_name (beim Protokoll-Start abgefragt)
   - protokollant_name (letzter Unterzeichner – "Unterschrift")
   - protokollant_bestaetigt_am (timestamp)
+  - turnierleitung_bestaetigt_am / _von_name (nur beim konfigurierbaren
+    Vier-Augen-Abschluss, Turnier-Option protokoll_bestaetigung_erforderlich)
+  - seite_a_vertauscht (reine Anzeige: welches Team links/rechts, 7.3)
 ```
 
 Die vollständige Historie mehrerer Protokollanten während des Spiels wird **nicht redundant gespeichert**, sondern aus den `HANDOVER`-Events plus dem ersten Protokollanten berechnet (konsistent zum Event-Sourcing-Prinzip).
@@ -721,13 +726,24 @@ Die vollständige Historie mehrerer Protokollanten während des Spiels wird **ni
 ```
 Event
   - event_id, protokoll_id (Referenz)
+  - turnier_id, spiel_id (denormalisiert, wie beim Spielprotokoll)
+  - sequenz (vom Server beim Anhängen vergeben – deterministische Reihenfolge,
+    der Zeitstempel allein reicht nicht)
   - zeitstempel (Uhrzeit), spielzeit (Sekunden), halbzeit (1/2/V1/V2/FW)
   - event_typ (siehe Abschnitt 22.2)
   - mannschaft (A/B/null), spieler_id (optional), spieler_raus_id (optional, bei Wechsel)
   - ist_eigentor (boolean), ist_korrektur (boolean), korrigiert_event_id (optional)
   - zusatz (JSON, eventspezifisch, z.B. {"neuer_protokollant": "..."} bei HANDOVER)
-  - erstellt_von (benutzer_id)
+  - erstellt_von (benutzer_id, optional), erstellt_von_name (Protokollant-Name)
 ```
+
+Events sind strikt append-only (einzige Ausnahme: die Kaskaden-Löschung beim
+Turnier-Löschen). Korrektur-Semantik: ein Korrektur-Event annulliert das
+referenzierte Event; trägt es eigene Nutzdaten, gilt es zugleich als Ersatz,
+der Typ `ANNULLIERT` streicht ersatzlos (Undo). Eine Korrektur der Korrektur
+lässt das ursprüngliche Event wieder aufleben. Ausnahme PROT: eine
+Nicht-ANNULLIERT-Korrektur ist eine Ergänzung (Turnierleitungs-Entscheidung),
+das PROT-Event bleibt wirksam. Details: docs/digitales-protokoll-konzept.md.
 
 ### 20.13 Dokument-Anhang
 
@@ -905,6 +921,11 @@ Der aktuelle Spielstand wird nicht gespeichert, sondern aus der Event-Liste bere
 | FW | Freiwurf | A/B | Ja |
 | HANDOVER | Protokollantenwechsel | - | - |
 | PROT | Protest | A/B | - |
+| ANNULLIERT | Ersatzlose Streichung (Undo) – nur als Korrektur-Event gültig, zählt selbst nie | - | - |
+
+Die UI-Aktion "Tor" erzeugt ein W+G-Doppel-Event (der Wurf zählt für die
+3-Wurf-Regel, das Tor erfüllt die "vorheriges Wurf-Event"-Prüfung); ein Undo
+des Tors streicht beide gemeinsam.
 
 ### 22.3 Prüfungen je Event-Typ
 
@@ -1025,30 +1046,39 @@ Hell/Dunkel, Default nach Systemeinstellung (`prefers-color-scheme`). Phase 1: n
 
 ### 24.4 Tastatur-Konfiguration (Protokollierung)
 
-Konfigurierbar pro Turnier. Standardbelegung:
+Bedienmodell (mit der Umsetzung 08/2026 festgelegt, ersetzt die frühere
+STRG-für-Team-B-Belegung – die funktioniert am HID-Tastenpanel nicht, das nur
+einzelne Keycodes sendet): **ein gemeinsamer Satz Aktionstasten plus zwei
+Team-Wahltasten als Kontext-Umschalter** (Toggle), siehe
+`docs/torball-protokoll-panel-konzept.md`. Ablauf: Team wählen → Aktion →
+Spielernummer(n) → OK. Uhr/Halbzeit buchen sofort, verwerfen eine offene
+Eingabe und setzen den Team-Kontext zurück; eine offene Eingabe verfällt
+zudem nach 10 Sekunden Inaktivität. Konfigurierbarkeit pro Turnier bleibt
+vorgesehen (die Belegung ist ein einzelnes Keymap-Objekt), im ersten Ausbau
+ist sie fest:
 
-**Je Team (STRG-Taste für Team B):**
-
-| Taste | Ereignis |
+| Taste | Bedeutung |
 |---|---|
-| 0–9 | Wurf (Spielernummer) |
-| G | Tor |
-| F | Foul |
-| T | Timeout |
-| P | Penalty |
-| E | Wechsel |
+| A / B | Team-Kontext A / B |
+| 0–9 | Spielernummer (mehrstellig möglich, OK schließt ab) |
+| G | Tor (erzeugt W+G) |
+| X | Fehlwurf (W) |
 | K | Kontrolle |
-
-**Für das Spiel:**
-
-| Taste | Ereignis |
-|---|---|
-| Space | GO/STOP (umschalten) |
+| F | Foul |
+| P | Strafwurf (Penalty) |
+| T | Auszeit |
 | M | Technischer Timeout |
-| B | Halbzeit/Pause |
-| End | Spielende |
-| F11 | Protokollantenwechsel |
-| F12 | Abschluss |
+| E | Wechsel (zwei Nummern: raus, rein) |
+| R | Freiwurf |
+| Leertaste | Uhr Start/Stop (umschalten) |
+| H | Halbzeit/Pause |
+| Enter | OK/Bestätigen |
+| Backspace | Undo (ersatzlose Streichung des letzten Events) |
+| Escape | Offene Eingabe verwerfen |
+
+Spielende, Protokollantenwechsel, Protest und Abschluss sind bewusst keine
+Tasten, sondern Bildschirm-Aktionen mit Bestätigung (seltene, folgenreiche
+Schritte).
 
 ## 25. Sicherheit
 
