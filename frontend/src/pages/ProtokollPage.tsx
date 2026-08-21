@@ -960,7 +960,7 @@ export function ProtokollPage() {
           )}
         </div>
 
-        <div aria-live="polite">
+        <div aria-live="polite" className="protokoll-vb-hinweise">
           {stand.hinweise.map((h) => (
             <p key={h} className="schiri-warnung">
               ⚠ {h}
@@ -1039,11 +1039,45 @@ export function ProtokollPage() {
               .filter((e) => !stand.annullierteIds.has(e._id) && e.eventTyp !== "ANNULLIERT")
               .map((e) => (
                 <div key={e._id} className="protokoll-vb-ereignis">
-                  {e.spielzeit !== undefined ? formatiereSpielzeit(e.spielzeit) : "–"} ·{" "}
-                  {EVENT_BESCHRIFTUNG[e.eventTyp] ?? e.eventTyp}
-                  {e.istEigentor && " (Eigentor)"}
-                  {e.mannschaft && <> · {teamName(e.mannschaft)}</>}
-                  {e.spielerId && <> · {spielerName(e.spielerId)}</>}
+                  <span className="protokoll-vb-ereignis-aktionen">
+                  {/* Korrekturen auch direkt hier (Nutzer-Wunsch) - gleiche Aktionen wie in der
+                      Verlauf-Ansicht: Spielernummer korrigieren bzw. ersatzlos streichen. */}
+                  {["W", "G", "F", "FW"].includes(e.eventTyp) && e.spielerId && !e.istEigentor && (
+                    <button
+                      type="button"
+                      className="symbol-button"
+                      aria-label={`Spielernummer von ${EVENT_BESCHRIFTUNG[e.eventTyp]} (Nr. ${e.sequenz}) korrigieren`}
+                      title="Spielernummer korrigieren"
+                      onClick={() => void korrigiereNummer(e)}
+                    >
+                      ✎
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="symbol-button button-loeschen"
+                    aria-label={`${EVENT_BESCHRIFTUNG[e.eventTyp] ?? e.eventTyp} (Nr. ${e.sequenz}) streichen`}
+                    title="Streichen"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Ereignis Nr. ${e.sequenz} (${EVENT_BESCHRIFTUNG[e.eventTyp] ?? e.eventTyp}) streichen?`,
+                        )
+                      ) {
+                        void streiche(e);
+                      }
+                    }}
+                  >
+                    ✕
+                  </button>
+                  </span>
+                  <span className="protokoll-vb-ereignis-text">
+                    {e.spielzeit !== undefined ? formatiereSpielzeit(e.spielzeit) : "–"} ·{" "}
+                    {EVENT_BESCHRIFTUNG[e.eventTyp] ?? e.eventTyp}
+                    {e.istEigentor && " (Eigentor)"}
+                    {e.mannschaft && <> · {teamName(e.mannschaft)}</>}
+                    {e.spielerId && <> · {spielerName(e.spielerId)}</>}
+                  </span>
                 </div>
               ))}
             </div>

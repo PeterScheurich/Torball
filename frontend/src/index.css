@@ -2548,7 +2548,15 @@ body.protokoll-vollbild-aktiv .protokoll-vb-fuss {
 /* Zweite, haertere Kompaktstufe fuer sehr niedrige Fenster (unter ~640px Viewport-Hoehe). */
 @media (max-height: 640px) {
   body.protokoll-vollbild-aktiv .protokoll-erfassung {
-    gap: 3px;
+    gap: 2px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-kontext {
+    padding: 4px 10px;
+    margin-bottom: 2px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-eingabe {
+    margin: 2px 0;
+    gap: 12px;
   }
   body.protokoll-vollbild-aktiv .protokoll-vb-fuss {
     padding: 3px 12px;
@@ -2575,6 +2583,10 @@ body.protokoll-vollbild-aktiv .protokoll-vb-fuss {
   }
   body.protokoll-vollbild-aktiv .protokoll-vb-teamname {
     font-size: 1rem;
+    height: calc(2 * 1.2em + 0.3rem);
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-acht-label {
+    font-size: 0.6rem;
   }
   body.protokoll-vollbild-aktiv .protokoll-vb-chips span {
     font-size: 0.7rem;
@@ -2595,4 +2607,64 @@ body.protokoll-vollbild-aktiv .protokoll-vb-fuss {
   body.protokoll-vollbild-aktiv .protokoll-vb-ereignisliste {
     font-size: 0.78rem;
   }
+}
+
+/* Ereigniszeilen der Erfassungs-Ansicht: Text + kompakte Korrektur-Knoepfe in einer Zeile. */
+.protokoll-vb-ereignis {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.protokoll-vb-ereignis-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.protokoll-vb-ereignis .symbol-button {
+  font-size: 0.72rem;
+  line-height: 1.3;
+  padding: 0 5px;
+  flex-shrink: 0;
+}
+
+/* Hinweis-Bereich der Erfassung: eine Zeile ist fest reserviert, damit ein auftauchender
+   Kurzhinweis ("Korrigiert ...", "Tor zum letzten Wurf") oder eine einzelne Warnung KEINEN
+   Layout-Sprung/Ueberlauf verursacht; mehrere Warnungen duerfen weiterhin umbrechen
+   (dann greift notfalls das Scroll-Sicherheitsnetz). */
+body.protokoll-vollbild-aktiv .protokoll-vb-hinweise {
+  min-height: 1.6em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 16px;
+}
+
+body.protokoll-vollbild-aktiv .protokoll-vb-hinweise p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+
+/* Kompakt-Override fuer den Hinweis-Bereich - steht bewusst NACH dessen Basis-Regeln
+   (gleiche Spezifitaet: die spaetere Regel gewinnt). */
+@media (max-height: 640px) {
+  body.protokoll-vollbild-aktiv .protokoll-vb-hinweise {
+    min-height: 1.2em;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-hinweise p {
+    font-size: 0.8rem;
+  }
+}
+
+/* Feste Aktions-Spalte vor dem Zeilentext, damit alle Textanfaenge buendig sind - auch bei
+   Zeilen ohne Korrektur-Stift (z.B. Uhr/Kontrolle). */
+.protokoll-vb-ereignis-aktionen {
+  display: flex;
+  gap: 4px;
+  width: 44px;
+  flex-shrink: 0;
+  justify-content: flex-end;
 }
