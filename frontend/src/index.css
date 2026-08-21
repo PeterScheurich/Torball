@@ -1953,3 +1953,108 @@ button:hover:not(:disabled) {
     text-decoration: none;
   }
 }
+
+/* --- Digitale Protokollierung (ProtokollPage, docs/digitales-protokoll-konzept.md) --- */
+
+.protokoll-scoreboard {
+  border: 1px solid var(--border, currentColor);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.protokoll-stand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: 1.25rem;
+}
+
+/* Spielstand gross und deutlich - der zentrale Wert der Halle. */
+.protokoll-stand strong {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.protokoll-ueberhang {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.protokoll-teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.protokoll-teamstatus {
+  border: 1px solid var(--border, currentColor);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.protokoll-teamstatus h3 {
+  margin-top: 0;
+}
+
+.protokoll-kader {
+  font-size: 0.95rem;
+}
+
+/* Team-Kontext-Anzeige: das Monitor-Feedback fuers displaylose Panel (Panel-Konzept) -
+   deutlich sichtbarer Balken, Farben je Team analog zum dortigen Vorschlag. */
+.protokoll-kontext {
+  border: 2px solid var(--border, currentColor);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.protokoll-kontext-a {
+  border-color: var(--focus-ring);
+  background: color-mix(in srgb, var(--focus-ring) 14%, transparent);
+}
+
+.protokoll-kontext-b {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+.protokoll-tastenfeld {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.protokoll-tastengruppe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Gross genug fuer hektische Hallen-Bedienung (auch Touch). */
+.protokoll-tastengruppe button {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+.protokoll-tastengruppe button[aria-pressed="true"] {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.protokoll-abschluss,
+.protokoll-sonderfaelle {
+  margin-bottom: 1rem;
+}
+
+/* Annullierte Events bleiben sichtbar (Nachvollziehbarkeit, Spez. 7.1), aber klar als
+   gestrichen erkennbar; zusaetzlich steht "(gestrichen)" als sr-only-Text in der Zelle. */
+.protokoll-gestrichen td {
+  text-decoration: line-through;
+  opacity: 0.6;
+}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import type { MannschaftImTurnier, Spiel, Turnier } from "@torball/shared";
 import {
   erzeugeErgebnisToken,
@@ -247,15 +248,19 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
   // ueber ergebnisAbgeschlossen deaktiviert; zusaetzlich das "Alle abschliessen" sinnlos und der
   // externe Erfassungslink wird beim Abschliessen serverseitig widerrufen (hier nicht mehr anbieten).
   const istGesperrt = turnier.status === "abgeschlossen" || turnier.status === "archiviert";
+  // Digitale Protokollierung: Ergebnisse entstehen aus dem Live-Protokoll je Spiel, nicht aus
+  // direkter Eingabe - die Eingabefelder/n.a.-Knoepfe/der externe Erfassungslink entfallen hier,
+  // stattdessen fuehrt je Spiel ein Link ins Protokoll (Konzept Abschnitt 5).
+  const digital = turnier.protokollierungsart === "digital";
 
   return (
     <div>
       {fehler && <p role="alert">{fehler}</p>}
 
-      {turnier.protokollierungsart !== "manuell" && (
+      {digital && (
         <p>
-          Dieses Turnier ist auf „Digital" eingestellt - die digitale Live-Protokollierung ist noch nicht
-          umgesetzt. Für Ergebniserfassung auf der Übersicht-Seite auf „Manuell" umstellen.
+          Dieses Turnier verwendet die <strong>digitale Protokollierung</strong>: Ergebnisse entstehen aus dem
+          Live-Protokoll des jeweiligen Spiels (Spalte „Aktionen") und werden hier automatisch angezeigt.
         </p>
       )}
 
@@ -285,6 +290,12 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
                       <td>{index + 1}</td>
                       <td>{nameVon(spiel.mannschaftAId)}</td>
                       <td>
+                        {digital ? (
+                          <strong>
+                            {spiel.ergebnisA ?? "–"} : {spiel.ergebnisB ?? "–"}
+                          </strong>
+                        ) : (
+                          <>
                         {/* "n. a." fuer Mannschaft A bewusst VOR dem Feld: sonst laege der Button beim
                             Tabben zwischen den beiden Tore-Feldern und muesste uebersprungen werden.
                             So flankieren beide "n. a."-Knoepfe das Eingabepaar (A : B) und Tab springt
@@ -355,6 +366,8 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
                           </>
                         )}
                         {geradeGespeichert === spiel._id && <div className="gespeichert-hinweis">✓ gespeichert</div>}
+                          </>
+                        )}
                       </td>
                       <td>{nameVon(spiel.mannschaftBId)}</td>
                       <td>
@@ -365,17 +378,23 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
                             : "Offen"}
                       </td>
                       <td>
-                        {!spiel.ergebnisAbgeschlossen && (
-                          <button
-                            type="button"
-                            className="symbol-button"
-                            onClick={() => abschliessenEinzeln(spiel)}
-                            disabled={spiel.ergebnisA == null}
-                            aria-label="Abschließen"
-                            title="Abschließen"
-                          >
-                            ✓
-                          </button>
+                        {digital ? (
+                          <Link className="button-link" to={`/turniere/${turnierId}/spiele/${spiel._id}/protokoll`}>
+                            Protokoll
+                          </Link>
+                        ) : (
+                          !spiel.ergebnisAbgeschlossen && (
+                            <button
+                              type="button"
+                              className="symbol-button"
+                              onClick={() => abschliessenEinzeln(spiel)}
+                              disabled={spiel.ergebnisA == null}
+                              aria-label="Abschließen"
+                              title="Abschließen"
+                            >
+                              ✓
+                            </button>
+                          )
                         )}
                       </td>
                     </tr>
@@ -384,9 +403,11 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
               </tbody>
             </table>
           </div>
-          <button type="button" onClick={abschliessenAlle} disabled={istGesperrt}>
-            Alle erfassten Ergebnisse abschließen
-          </button>
+          {!digital && (
+            <button type="button" onClick={abschliessenAlle} disabled={istGesperrt}>
+              Alle erfassten Ergebnisse abschließen
+            </button>
+          )}
         </>
       )}
 
@@ -431,8 +452,8 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
         </div>
       )}
 
-      <h2>Ergebniserfassung ohne Anmeldung</h2>
-      {istGesperrt ? (
+      {!digital && <h2>Ergebniserfassung ohne Anmeldung</h2>}
+      {digital ? null : istGesperrt ? (
         <p>
           Das Turnier ist abgeschlossen – der externe Erfassungslink ist deaktiviert. Zum Erzeugen eines neuen Links
           das Turnier zuerst wieder öffnen.

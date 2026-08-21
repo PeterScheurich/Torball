@@ -29,7 +29,9 @@ export function TurnierCodeAnmeldenPage() {
       const ziel =
         rolle === "turnierleitung"
           ? `/turniere/${turnierId}/code/turnierleitung`
-          : `/turniere/${turnierId}/code/spielleitung`;
+          : rolle === "spielleitung"
+            ? `/turniere/${turnierId}/code/spielleitung`
+            : `/turniere/${turnierId}/code/protokollant`;
       navigate(ziel, { replace: true });
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler bei der Anmeldung");

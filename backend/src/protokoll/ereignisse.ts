@@ -10,9 +10,14 @@ import type { Event, Mannschaftsseite } from "@torball/shared";
  * inhaltlich uebereinstimmen (kleines, bewusstes Duplikat - CommonJS-Regel, siehe CLAUDE.md).
  */
 
-/** Nach der server-vergebenen Sequenz sortierte Kopie (aelteste zuerst). */
+/** Nach der server-vergebenen Sequenz sortierte Kopie (aelteste zuerst). Tie-Break ueber
+ *  Zeitstempel + _id: zwei praktisch gleichzeitige Requests koennen dieselbe Sequenz erwischt
+ *  haben (kein CouchDB-Konflikt, da verschiedene _ids) - die Reihenfolge bleibt so trotzdem
+ *  ueberall deterministisch gleich. */
 export function sortiertNachSequenz(events: Event[]): Event[] {
-  return [...events].sort((a, b) => a.sequenz - b.sequenz);
+  return [...events].sort(
+    (a, b) => a.sequenz - b.sequenz || a.zeitstempel.localeCompare(b.zeitstempel) || a._id.localeCompare(b._id),
+  );
 }
 
 /**

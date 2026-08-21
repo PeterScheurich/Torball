@@ -56,6 +56,7 @@ export function TurnierFreigabe({
   const [codesStatus, setCodesStatus] = useState<TurnierCodesStatus | undefined>();
   const [turnierleitungCodeEingabe, setTurnierleitungCodeEingabe] = useState("");
   const [spielleitungCodeEingabe, setSpielleitungCodeEingabe] = useState("");
+  const [protokollantCodeEingabe, setProtokollantCodeEingabe] = useState("");
   const [codesFehler, setCodesFehler] = useState<string | undefined>();
   const [codesHinweis, setCodesHinweis] = useState<string | undefined>();
   // Nur fuer den Netzwerk-Hinweis bei den Turnier-Codes relevant (lokale Windows-Installation):
@@ -92,13 +93,17 @@ export function TurnierFreigabe({
       .catch(() => setBenutzerListeFehlt(true));
   }, [laden, codesLaden]);
 
-  async function codeSetzen(feld: "turnierleitungCode" | "spielleitungCode", wert: string | null) {
+  async function codeSetzen(
+    feld: "turnierleitungCode" | "spielleitungCode" | "protokollantCode",
+    wert: string | null,
+  ) {
     setCodesFehler(undefined);
     setCodesHinweis(undefined);
     try {
       setCodesStatus(await turnierCodesSetzen(turnierId, { [feld]: wert }));
       if (feld === "turnierleitungCode") setTurnierleitungCodeEingabe("");
-      else setSpielleitungCodeEingabe("");
+      else if (feld === "spielleitungCode") setSpielleitungCodeEingabe("");
+      else setProtokollantCodeEingabe("");
       setCodesHinweis(wert ? "Code gespeichert." : "Code gelöscht.");
     } catch (err) {
       setCodesFehler(err instanceof Error ? err.message : "Fehler beim Speichern des Codes");
@@ -354,6 +359,39 @@ export function TurnierFreigabe({
                 )}
               </td>
             </tr>
+            {/* Protokollant-Code nur bei digitaler Protokollierung anzeigen - bei "manuell"
+                waere er nutzlos (Konzept Abschnitt 6). */}
+            {turnier.protokollierungsart === "digital" && (
+              <tr>
+                <th scope="row">Protokollant (nur Live-Protokoll)</th>
+                <td>{codesStatus?.protokollantCodeAktiv ? "Aktiv" : "Nicht gesetzt"}</td>
+                <td>
+                  <label className="sr-only" htmlFor="code-protokollant">
+                    Neuer Protokollant-Code
+                  </label>
+                  <input
+                    id="code-protokollant"
+                    autoComplete="off"
+                    value={protokollantCodeEingabe}
+                    onChange={(e) => setProtokollantCodeEingabe(e.target.value)}
+                  />
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    onClick={() => codeSetzen("protokollantCode", protokollantCodeEingabe.trim())}
+                    disabled={!protokollantCodeEingabe.trim()}
+                  >
+                    Speichern
+                  </button>{" "}
+                  {codesStatus?.protokollantCodeAktiv && (
+                    <button type="button" className="button-loeschen" onClick={() => codeSetzen("protokollantCode", null)}>
+                      Löschen
+                    </button>
+                  )}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

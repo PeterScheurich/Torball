@@ -611,13 +611,34 @@ export function TurnierVerwaltenPage() {
                     }
                   >
                     <option value="manuell">Manuell (Papierprotokoll, nur Endergebnisse erfasst)</option>
-                    <option value="digital">Digital (Live-Ereignisprotokollierung - noch nicht umgesetzt)</option>
+                    <option value="digital">Digital (Live-Ereignisprotokollierung je Wurf/Foul/Tor)</option>
                   </select>
                   {turnier.protokollierungsart === "digital" && (
-                    <p>
-                      Die digitale Live-Protokollierung ist noch nicht umgesetzt - für Ergebniserfassung aktuell
-                      auf „Manuell" umstellen.
-                    </p>
+                    <>
+                      <p>
+                        Ergebnisse entstehen aus dem Live-Protokoll je Spiel (Reiter „Ergebnisse" →
+                        Spalte „Aktionen" → „Protokoll").
+                      </p>
+                      <label>
+                        <input
+                          type="checkbox"
+                          disabled={eingabeGesperrt}
+                          checked={Boolean(turnier.protokollBestaetigungErforderlich)}
+                          onChange={async (e) => {
+                            try {
+                              setTurnier(
+                                await updateTurnier(turnierId, { protokollBestaetigungErforderlich: e.target.checked }),
+                              );
+                              setFehler(undefined);
+                            } catch (err) {
+                              setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern");
+                            }
+                          }}
+                        />{" "}
+                        Protokoll-Abschluss muss zusätzlich von der Turnierleitung bestätigt werden (Vier-Augen,
+                        z.&nbsp;B. Bundesliga)
+                      </label>
+                    </>
                   )}
                   {spielplanGesperrt && !eingabeGesperrt && (
                     <p className="feld-hinweis">

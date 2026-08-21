@@ -2,7 +2,11 @@ import type {
   Benutzer,
   Breite,
   Dichte,
+  Event as ProtokollEvent,
+  EventTyp,
   GlobaleRolle,
+  Halbzeit,
+  Mannschaftsseite,
   KanbanKarte,
   KanbanKategorie,
   KanbanPrioritaet,
@@ -23,6 +27,7 @@ import type {
   Spieler,
   SpielerStatus,
   Spielmodus,
+  Spielprotokoll,
   SystemeinstellungenOeffentlich,
   Systemkonfiguration,
   Team,
@@ -30,6 +35,7 @@ import type {
   Turnier,
   TurnierBerechtigung,
   Turnierregeln,
+  TurnierCodeRolle,
   TurnierRolle,
   Verein,
   VerbundeneInstanz,
@@ -156,6 +162,7 @@ export function updateTurnier(
       Turnier,
       | "spielplanModus"
       | "protokollierungsart"
+      | "protokollBestaetigungErforderlich"
       | "name"
       | "felder"
       | "oeffentlichTurnierinfos"
@@ -728,7 +735,7 @@ export function turnierBerechtigungEntziehen(id: string): Promise<void> {
 
 // --- Turnier-Codes (Lokales Netzwerk, Abschnitt 21.3) ---
 
-export type TurnierCodeRolle = Extract<TurnierRolle, "turnierleitung" | "spielleitung">;
+export type { TurnierCodeRolle, ProtokollEvent };
 
 export interface TurnierCodeSitzung {
   turnierId: string;
@@ -752,6 +759,7 @@ export function turnierCodeAnmeldung(
 export interface TurnierCodesStatus {
   turnierleitungCodeAktiv: boolean;
   spielleitungCodeAktiv: boolean;
+  protokollantCodeAktiv: boolean;
 }
 
 export function getTurnierCodes(turnierId: string): Promise<TurnierCodesStatus> {
@@ -761,9 +769,71 @@ export function getTurnierCodes(turnierId: string): Promise<TurnierCodesStatus> 
 /** null loescht den jeweiligen Code (gleiche Konvention wie ueberall sonst, siehe updateTurnier). */
 export function turnierCodesSetzen(
   turnierId: string,
-  daten: { turnierleitungCode?: string | null; spielleitungCode?: string | null },
+  daten: { turnierleitungCode?: string | null; spielleitungCode?: string | null; protokollantCode?: string | null },
 ): Promise<TurnierCodesStatus> {
   return anfrage(`/turniere/${turnierId}/codes`, { method: "PUT", body: JSON.stringify(daten) });
+}
+
+// --- Digitale Protokollierung (Abschnitt 22, docs/digitales-protokoll-konzept.md) ---
+
+export interface ProtokollMitEvents {
+  protokoll: Spielprotokoll;
+  events: ProtokollEvent[];
+}
+
+/** Nutzdaten eines neuen Events - Sequenz/Zeitstempel/Zuschreibung vergibt der Server. */
+export interface NeuesProtokollEvent {
+  eventTyp: EventTyp;
+  mannschaft?: Mannschaftsseite;
+  spielerId?: string;
+  spielerRausId?: string;
+  istEigentor?: boolean;
+  istKorrektur?: boolean;
+  korrigiertEventId?: string;
+  /** Spielzeit in Sekunden im aktuellen Abschnitt (Client-Uhr). */
+  spielzeit?: number;
+  halbzeit?: Halbzeit;
+  zusatz?: Record<string, unknown>;
+  erstelltVonName?: string;
+}
+
+export interface ProtokollEventAntwort {
+  event: ProtokollEvent;
+  protokoll: Spielprotokoll;
+  spiel: Spiel;
+}
+
+export function getSpielProtokoll(spielId: string): Promise<ProtokollMitEvents> {
+  return anfrage(`/spiele/${segment(spielId)}/protokoll`);
+}
+
+export function protokollAnlegen(spielId: string, ersterProtokollantName: string): Promise<Spielprotokoll> {
+  return anfrage(`/spiele/${segment(spielId)}/protokoll`, {
+    method: "POST",
+    body: JSON.stringify({ ersterProtokollantName }),
+  });
+}
+
+export function protokollEventSenden(protokollId: string, event: NeuesProtokollEvent): Promise<ProtokollEventAntwort> {
+  return anfrage(`/protokolle/${segment(protokollId)}/events`, { method: "POST", body: JSON.stringify(event) });
+}
+
+export function protokollUnterschreiben(protokollId: string, name: string): Promise<Spielprotokoll> {
+  return anfrage(`/protokolle/${segment(protokollId)}/unterschreiben`, {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function protokollBestaetigen(protokollId: string): Promise<{ protokoll: Spielprotokoll; spiel: Spiel }> {
+  return anfrage(`/protokolle/${segment(protokollId)}/bestaetigen`, { method: "POST" });
+}
+
+export function protokollAnzeigeSetzen(protokollId: string, seiteAVertauscht: boolean): Promise<Spielprotokoll> {
+  return anfrage(`/protokolle/${segment(protokollId)}/anzeige`, {
+    method: "PUT",
+    body: JSON.stringify({ seiteAVertauscht }),
+  });
 }
 
 // --- Ergebniserfassung (Abschnitt 9/14) ---

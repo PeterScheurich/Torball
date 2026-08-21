@@ -18,6 +18,8 @@ import { PasswortResetPage } from "./pages/PasswortResetPage";
 import { ErgebnisErfassungPage } from "./pages/ErgebnisErfassungPage";
 import { TurnierCodeAnmeldenPage } from "./pages/TurnierCodeAnmeldenPage";
 import { SpielleitungCodePage } from "./pages/SpielleitungCodePage";
+import { ProtokollantCodePage } from "./pages/ProtokollantCodePage";
+import { ProtokollPage } from "./pages/ProtokollPage";
 import { OeffentlicheTurnierseitePage } from "./pages/OeffentlicheTurnierseitePage";
 import { OeffentlicheStartseitePage } from "./pages/OeffentlicheStartseitePage";
 import { ProfilPage } from "./pages/ProfilPage";
@@ -353,6 +355,11 @@ function App() {
                 useAuth(), nur diese Route-Einbettung entscheidet ueber die Anmeldepflicht. */}
             <Route path="/turniere/:id/code/turnierleitung" element={<TurnierVerwaltenPage />} />
             <Route path="/turniere/:id/code/spielleitung" element={<SpielleitungCodePage />} />
+            <Route path="/turniere/:id/code/protokollant" element={<ProtokollantCodePage />} />
+            {/* Live-Protokollierung ebenfalls ausserhalb von GeschuetzteRoute: erreichbar fuer
+                Benutzer- UND Turnier-Code-Sessions (insbesondere den Protokollant-Code) - die
+                Zugriffskontrolle liegt rein serverseitig (darfProtokollieren). */}
+            <Route path="/turniere/:turnierId/spiele/:spielId/protokoll" element={<ProtokollPage />} />
             <Route path="/turniere/:id/oeffentlich" element={<OeffentlicheTurnierseitePage />} />
             <Route path="/turniere/:id/oeffentlich/druck" element={<OeffentlicheDruckansichtPage />} />
             <Route path="/einstellungen" element={<EinstellungenPage />} />
