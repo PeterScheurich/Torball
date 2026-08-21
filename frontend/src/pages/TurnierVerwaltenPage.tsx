@@ -4,6 +4,7 @@ import type { Protokollierungsart, Spiel, Spielmodus, Turnier, TurnierStatus, Tu
 import {
   getSpiele,
   getSystemkonfiguration,
+  getTurnierProtokolle,
   getTurnier,
   getTurnierCheckoutStatus,
   turnierAbschliessen,
@@ -145,7 +146,12 @@ export function TurnierVerwaltenPage() {
   // Bedingung wie spielplanGesperrt dort: irgendein Spiel ist nicht mehr "geplant" oder hat ein
   // abgeschlossenes Ergebnis.
   const [spiele, setSpiele] = useState<Spiel[]>([]);
-  const spielplanGesperrt = spiele.some((s) => s.status !== "geplant" || s.ergebnisAbgeschlossen);
+  // Digitale Protokollierung: SOBALD irgendein Spielprotokoll existiert, gilt das Turnier als
+  // begonnen - wie beim ersten manuell erfassten Ergebnis (Nutzer-Vorgabe 21.08.2026), auch wenn
+  // die Spieluhr noch nie lief (Spiel-Status dann noch "geplant").
+  const [hatProtokolle, setHatProtokolle] = useState(false);
+  const spielplanGesperrt =
+    spiele.some((s) => s.status !== "geplant" || s.ergebnisAbgeschlossen) || hatProtokolle;
   const logoInputRef = useRef<HTMLInputElement>(null);
   // Aktiver Reiter steckt in der URL (?tab=...), nicht nur im lokalen State - sonst
   // springt ein Reload (F5) immer zurueck auf "Uebersicht", egal auf welchem Reiter
@@ -169,6 +175,9 @@ export function TurnierVerwaltenPage() {
     getSpiele(turnierId)
       .then(setSpiele)
       .catch(() => setSpiele([]));
+    getTurnierProtokolle(turnierId)
+      .then((protokolle) => setHatProtokolle(protokolle.length > 0))
+      .catch(() => setHatProtokolle(false));
     ladeCheckoutStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [turnierId]);

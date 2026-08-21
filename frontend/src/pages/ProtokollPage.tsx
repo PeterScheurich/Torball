@@ -308,7 +308,10 @@ export function ProtokollPage() {
     switch (aktion) {
       case "tor":
         // Tor = W+G-Doppel-Event (Konzept 3.3): erst der Wurf (3-Wurf-Zaehler), dann das Tor.
-        if (await sende({ eventTyp: "W", mannschaft: team, spielerId: spielerIds[0] })) {
+        // Der torPaar-Marker unterscheidet dieses zusammen erzeugte Paar von einem separat
+        // gebuchten Wurf mit nachgeschobenem G (dort darf ein Streichen des Tors den echten
+        // Wurf NICHT mitnehmen).
+        if (await sende({ eventTyp: "W", mannschaft: team, spielerId: spielerIds[0], zusatz: { torPaar: true } })) {
           await sende({ eventTyp: "G", mannschaft: team, spielerId: spielerIds[0] });
         }
         return;
@@ -372,12 +375,69 @@ export function ProtokollPage() {
         !ziel.istEigentor &&
         davor?.eventTyp === "W" &&
         davor.sequenz === ziel.sequenz - 1 &&
-        davor.spielerId === ziel.spielerId
+        davor.spielerId === ziel.spielerId &&
+        davor.zusatz?.torPaar === true
       ) {
         await sende({ eventTyp: "ANNULLIERT", istKorrektur: true, korrigiertEventId: davor._id });
       }
       zeigeKurzHinweis(`Gestrichen: ${EVENT_BESCHRIFTUNG[ziel.eventTyp]}.`);
     }
+  }
+
+  /**
+   * Ersatz-Korrektur "falsche Spielernummer" (Nutzer-Frage 21.08.2026): erzeugt ein neues Event
+   * gleichen Typs mit korrigiertEventId auf das falsche - das alte gilt damit als annulliert,
+   * das neue zaehlt an seiner Stelle (Konzept Abschnitt 3.1, "Ersatz"). Ein zusammenhaengendes
+   * W/G-Paar desselben Werfers wird immer MIT korrigiert (der Torschuetze ist der Werfer).
+   */
+  async function korrigiereNummer(ziel: ProtokollEvent) {
+    if (!ziel.mannschaft) return;
+    const eingabeWert = window.prompt(
+      `Neue Spielernummer für "${EVENT_BESCHRIFTUNG[ziel.eventTyp]}" (bisher ${spielerName(ziel.spielerId) ?? "?"}, ${teamName(ziel.mannschaft)}):`,
+    );
+    if (!eingabeWert?.trim()) return;
+    const spieler = spielerVon(ziel.mannschaft, eingabeWert.trim());
+    if (!spieler) {
+      zeigeKurzHinweis(`Nummer ${eingabeWert.trim()} ist nicht im Kader von ${teamName(ziel.mannschaft)} - nicht korrigiert.`);
+      return;
+    }
+    const wirksam = wirksameSortiert();
+    const index = wirksam.findIndex((x) => x._id === ziel._id);
+    const davor = index > 0 ? wirksam[index - 1] : undefined;
+    const danach = index >= 0 ? wirksam[index + 1] : undefined;
+    const paar: ProtokollEvent[] = [ziel];
+    if (
+      ziel.eventTyp === "G" &&
+      !ziel.istEigentor &&
+      davor?.eventTyp === "W" &&
+      davor.sequenz === ziel.sequenz - 1 &&
+      davor.spielerId === ziel.spielerId
+    ) {
+      paar.unshift(davor);
+    }
+    if (
+      ziel.eventTyp === "W" &&
+      danach?.eventTyp === "G" &&
+      !danach.istEigentor &&
+      danach.sequenz === ziel.sequenz + 1 &&
+      danach.spielerId === ziel.spielerId
+    ) {
+      paar.push(danach);
+    }
+    for (const e of paar) {
+      await sende({
+        eventTyp: e.eventTyp,
+        mannschaft: e.mannschaft,
+        spielerId: spieler._id,
+        istEigentor: e.istEigentor || undefined,
+        istKorrektur: true,
+        korrigiertEventId: e._id,
+        spielzeit: e.spielzeit,
+        halbzeit: e.halbzeit,
+        zusatz: e.zusatz,
+      });
+    }
+    zeigeKurzHinweis(`Korrigiert: jetzt ${spielerName(spieler._id)}.`);
   }
 
   /** Undo: streicht das letzte wirksame Event. */
@@ -393,6 +453,33 @@ export function ProtokollPage() {
 
   function taste(t: Taste) {
     if (!protokoll || stand?.abgeschlossen || sendetGerade) return;
+    // Die Team-Tasten folgen der SEITENANSICHT (Nutzer-Vorgabe 21.08.2026): Taste A = linke
+    // Mannschaft, Taste B = rechte - bei getauschter Anzeige (seiteAVertauscht) wird die Taste
+    // deshalb auf die jeweils andere Datenseite abgebildet. Intern bleiben A/B stabil.
+    if (t.art === "team" && protokoll.seiteAVertauscht) {
+      t = { art: "team", team: t.team === "A" ? "B" : "A" };
+    }
+    // "G" unmittelbar nach einem gebuchten Wurf = Tor zu GENAU diesem Wurf (Nutzer-Vorgabe
+    // 21.08.2026): der Werfer ist bekannt, es braucht weder Nummer noch Enter - und es entsteht
+    // nur das G-Event (der Wurf existiert ja schon, kein torPaar-Doppel).
+    if (t.art === "aktion" && t.aktion === "tor" && !eingabeRef.current.aktion) {
+      const wirksam = wirksameSortiert();
+      const letztes = wirksam[wirksam.length - 1];
+      if (
+        letztes?.eventTyp === "W" &&
+        letztes.mannschaft &&
+        letztes.spielerId &&
+        (!eingabeRef.current.team || eingabeRef.current.team === letztes.mannschaft)
+      ) {
+        setEingabe({ ...LEERER_ZUSTAND, team: letztes.mannschaft });
+        void (async () => {
+          if (await sende({ eventTyp: "G", mannschaft: letztes.mannschaft, spielerId: letztes.spielerId })) {
+            zeigeKurzHinweis(`Tor zum letzten Wurf (${spielerName(letztes.spielerId) ?? "?"}).`);
+          }
+        })();
+        return;
+      }
+    }
     const vorher = eingabeRef.current;
     const ergebnis = verarbeiteTaste(vorher, t, { einstelligeNummern: turnier?.einstelligeTrikotnummern ?? true });
     setEingabe(ergebnis.zustand);
@@ -412,8 +499,11 @@ export function ProtokollPage() {
     }
     window.addEventListener("keydown", beiTaste);
     return () => window.removeEventListener("keydown", beiTaste);
+    // seiteAVertauscht gehoert in die Dependencies, weil taste() die Team-Tasten darueber auf
+    // die Seitenansicht abbildet - sonst arbeitet der Listener nach "Seiten tauschen" mit dem
+    // alten Wert weiter (live erwischt: Taste A waehlte weiterhin die alte Seite).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [protokoll?._id, stand?.abgeschlossen, stand?.uhrLaeuft, sendetGerade, events]);
+  }, [protokoll?._id, protokoll?.seiteAVertauscht, stand?.abgeschlossen, stand?.uhrLaeuft, sendetGerade, events]);
 
   async function starteProtokoll(event: React.FormEvent) {
     event.preventDefault();
@@ -676,7 +766,7 @@ export function ProtokollPage() {
       {!stand.abgeschlossen && (
         <section aria-label="Ereignis erfassen" className="protokoll-eingabe">
           <div
-            className={`protokoll-kontext ${eingabe.team ? `protokoll-kontext-${eingabe.team.toLowerCase()}` : ""}`}
+            className={`protokoll-kontext ${eingabe.team ? `protokoll-kontext-${eingabe.team === linkeSeite ? "a" : "b"}` : ""}`}
             aria-live="polite"
           >
             {eingabe.team ? (
@@ -697,12 +787,14 @@ export function ProtokollPage() {
           </div>
 
           <div className="protokoll-tastenfeld">
-            <div className="protokoll-tastengruppe" role="group" aria-label="Team wählen">
-              <button type="button" aria-pressed={eingabe.team === "A"} onClick={() => taste({ art: "team", team: "A" })}>
-                Team A – {teamName("A")}
+            <div className="protokoll-tastengruppe" role="group" aria-label="Team wählen (A = links, B = rechts)">
+              {/* Taste A gehoert IMMER zur links angezeigten Mannschaft (taste() mappt bei
+                  getauschter Seitenansicht auf die andere Datenseite). */}
+              <button type="button" aria-pressed={eingabe.team === linkeSeite} onClick={() => taste({ art: "team", team: "A" })}>
+                A (links) – {teamName(linkeSeite)}
               </button>
-              <button type="button" aria-pressed={eingabe.team === "B"} onClick={() => taste({ art: "team", team: "B" })}>
-                Team B – {teamName("B")}
+              <button type="button" aria-pressed={eingabe.team === rechteSeite} onClick={() => taste({ art: "team", team: "B" })}>
+                B (rechts) – {teamName(rechteSeite)}
               </button>
             </div>
             <div className="protokoll-tastengruppe" role="group" aria-label="Aktionen">
@@ -962,6 +1054,21 @@ export function ProtokollPage() {
                         {e.spielerRausId && ` (für ${spielerName(e.spielerRausId) ?? "?"})`}
                       </td>
                       <td>
+                        {!gestrichen &&
+                          !stand.abgeschlossen &&
+                          ["W", "G", "F", "FW"].includes(e.eventTyp) &&
+                          e.spielerId &&
+                          !e.istEigentor && (
+                            <button
+                              type="button"
+                              className="symbol-button"
+                              aria-label={`Spielernummer von ${EVENT_BESCHRIFTUNG[e.eventTyp]} (Nr. ${e.sequenz}) korrigieren`}
+                              title="Spielernummer korrigieren"
+                              onClick={() => void korrigiereNummer(e)}
+                            >
+                              ✎
+                            </button>
+                          )}{" "}
                         {!gestrichen && e.eventTyp !== "ANNULLIERT" && !stand.abgeschlossen && (
                           <button
                             type="button"

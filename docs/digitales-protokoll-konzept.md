@@ -267,7 +267,19 @@ Aktions-Taste bucht direkt einen Wurf des Spielers – der mit Abstand häufigst
 (`A` `3` → `B` `5` → `A` `2` …; rollt der Ball zurück, erneut eine Ziffer desselben Teams,
 auch derselbe Spieler mehrfach). Bei einstelligen Trikotnummern (Turnierregel, Standard)
 sofort ohne OK, sonst sammelt die Ziffer und OK schließt ab. Entspricht der ursprünglichen
-Spez.-24.4-Idee „0–9 = Wurf".
+Spez.-24.4-Idee „0–9 = Wurf". **Erweiterungen (Nutzer-Feedback, 2. Runde 21.08.2026):**
+(1) Bei einstelligen Nummern buchen ALLE Aktionen mit der letzten Ziffer sofort (Tor `G`+Ziffer,
+Wechsel `E`+Ziffer+Ziffer) – Enter nur noch bei mehrstelligen Nummern. (2) `G` unmittelbar nach
+einem gebuchten Wurf bucht das Tor zu GENAU diesem Wurf (nur das G-Event, der Wurf existiert
+schon; der Werfer ist der Torschütze) – das per Tor-Aktion erzeugte W trägt dafür einen
+`zusatz.torPaar`-Marker, damit Undo/Streichen nur das zusammen erzeugte Paar gemeinsam
+streicht, nie einen echten separaten Wurf. (3) Die Team-Tasten folgen der Seitenansicht
+(A = links, B = rechts; bei `seiteAVertauscht` wird die Taste auf die andere Datenseite
+abgebildet – intern bleiben A/B stabil). (4) Ersatz-Korrektur „falsche Spielernummer" per
+✎-Knopf je Ereignis (neues Event gleichen Typs mit `korrigiertEventId`, W/G-Paar desselben
+Werfers wird mitkorrigiert). (5) Sobald irgendein Spielprotokoll existiert, gilt das Turnier
+als begonnen – dieselbe Sperre wie beim ersten manuell erfassten Ergebnis
+(`GET /turniere/:id/spielprotokolle`, `spielplanGesperrt` in `TurnierVerwaltenPage`).
 
 **Entscheidung: Das Panel-Bedienmodell (Team-Kontext-Toggle) ist DAS Eingabemodell** – auch
 für die normale Tastatur. Die Belegung aus Spez. 24.4 (gleiche Taste + STRG für Team B) wird

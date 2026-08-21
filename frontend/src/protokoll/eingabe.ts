@@ -133,6 +133,19 @@ export function verarbeiteTaste(
         return { zustand: { ...zustand, aktion: "fehlwurf", aktuelleNummer: taste.ziffer } };
       }
       if (NUMMERN_JE_AKTION[zustand.aktion] === 0) return { zustand };
+      // Einstellige Nummern: jede Ziffer schliesst eine Nummer ab; sind alle Nummern der Aktion
+      // beisammen, wird SOFORT gebucht (Nutzer-Vorgabe 21.08.2026: kein Enter noetig - Tor also
+      // "G" + Ziffer, Wechsel "E" + Ziffer + Ziffer).
+      if (optionen.einstelligeNummern) {
+        const nummern = [...zustand.nummern, taste.ziffer];
+        if (nummern.length >= NUMMERN_JE_AKTION[zustand.aktion] && zustand.team) {
+          return {
+            zustand: { ...LEERER_ZUSTAND, team: zustand.team },
+            befehl: { typ: "buchen", team: zustand.team, aktion: zustand.aktion, nummern },
+          };
+        }
+        return { zustand: { ...zustand, nummern, aktuelleNummer: "" } };
+      }
       return { zustand: { ...zustand, aktuelleNummer: zustand.aktuelleNummer + taste.ziffer } };
     }
     case "ok": {

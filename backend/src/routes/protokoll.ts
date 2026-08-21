@@ -176,6 +176,25 @@ export async function protokollRoutes(app: FastifyInstance): Promise<void> {
     return { protokoll, events: await ladeProtokollEvents(protokoll._id) };
   });
 
+  /**
+   * Alle Spielprotokolle eines Turniers (schlanke Liste) - u.a. fuer die "Turnier hat
+   * begonnen"-Sperre der Verwaltungsseite: sobald irgendein Protokoll existiert, gilt das wie
+   * ein erstes manuell erfasstes Ergebnis (Spielzeit/Spielmodus/Protokollierungsart gesperrt).
+   */
+  app.get<{ Params: { id: string } }>("/turniere/:id/spielprotokolle", async (req, reply) => {
+    if (!requireZugriff(req, reply)) return;
+    const turnier = await findById<Turnier>(req.params.id);
+    if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
+    if (!(await hatMindestens(turnier, req, "lesen"))) {
+      return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
+    }
+    const protokolle = await findAllBySelector<Spielprotokoll>({
+      docType: "spielprotokoll",
+      turnierId: turnier._id,
+    });
+    return protokolle.map((p) => ({ protokollId: p._id, spielId: p.spielId, status: p.status }));
+  });
+
   /** Protokoll fuer ein Spiel anlegen (genau eines je Spiel) - fragt den Protokollant-Namen ab. */
   app.post<{ Params: { spielId: string }; Body: ProtokollAnlegenBody }>(
     "/spiele/:spielId/protokoll",

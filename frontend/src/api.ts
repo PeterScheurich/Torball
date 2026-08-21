@@ -803,6 +803,17 @@ export interface ProtokollEventAntwort {
   spiel: Spiel;
 }
 
+export interface ProtokollUebersichtEintrag {
+  protokollId: string;
+  spielId: string;
+  status: Spielprotokoll["status"];
+}
+
+/** Schlanke Protokoll-Liste eines Turniers - "hat das Turnier protokollarisch begonnen?". */
+export function getTurnierProtokolle(turnierId: string): Promise<ProtokollUebersichtEintrag[]> {
+  return anfrage(`/turniere/${segment(turnierId)}/spielprotokolle`);
+}
+
 export function getSpielProtokoll(spielId: string): Promise<ProtokollMitEvents> {
   return anfrage(`/spiele/${segment(spielId)}/protokoll`);
 }
