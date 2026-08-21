@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { MannschaftImTurnier, Spiel, SpielplanBasis, Turnier } from "@torball/shared";
+import type { MannschaftImTurnier, Spiel, SpielplanBasis, Spielprotokoll, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { erzeugePaarungen } from "../spielplan/paarungen";
 import { erstelleSpielplanVorschlag, type SpielplanEintrag } from "../spielplan/planung";
@@ -81,6 +81,22 @@ function pruefeSpielplanEintraege(eintraege: SpielplanEintrag[], mannschaftIds: 
   return null;
 }
 
+/**
+ * Digitale Protokollierung: SOBALD irgendein Spielprotokoll existiert, gilt das Turnier als
+ * begonnen - ein Spielprotokoll wird bereits beim Eingeben des Protokollant-Namens angelegt
+ * (routes/protokoll.ts), das Spiel bleibt bis zum ersten GO aber auf "geplant". Der reine
+ * Spiel-Status-Check unten wuerde in diesem Fenster ein "Spielplan erzeugen" durchlassen, das
+ * alle bestehenden Spiele loescht - Protokoll + Events referenzierten dann eine geloeschte
+ * spielId (verwaist).
+ */
+async function hatSpielprotokolle(turnierId: string): Promise<boolean> {
+  const protokolle = await findAllBySelector<Spielprotokoll>({ docType: "spielprotokoll", turnierId });
+  return protokolle.length > 0;
+}
+
+const SPIELPROTOKOLLE_FEHLER =
+  "Spielplan kann nicht neu erzeugt werden: es gibt bereits begonnene Spielprotokolle";
+
 interface VorschlagErgebnis {
   turnier: Turnier;
   vorschlag: SpielplanEintrag[];
@@ -120,6 +136,10 @@ async function ladeUndBerechneVorschlag(
     reply.code(409).send({
       error: "Spielplan kann nicht neu erzeugt werden: es gibt bereits laufende oder abgeschlossene Spiele",
     });
+    return undefined;
+  }
+  if (await hatSpielprotokolle(turnier._id)) {
+    reply.code(409).send({ error: SPIELPROTOKOLLE_FEHLER });
     return undefined;
   }
 
@@ -200,6 +220,9 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(409).send({
           error: "Spielplan kann nicht neu erzeugt werden: es gibt bereits laufende oder abgeschlossene Spiele",
         });
+      }
+      if (await hatSpielprotokolle(turnier._id)) {
+        return reply.code(409).send({ error: SPIELPROTOKOLLE_FEHLER });
       }
 
       // Eintragsliste gegen die harten Regeln pruefen, bevor sie gespeichert wird - der
