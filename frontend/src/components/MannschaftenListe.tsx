@@ -52,6 +52,12 @@ interface Props {
   spielplanVersion?: number;
   /** Turnier-Regel „max. sehende Spieler je Mannschaft" - fuer den Kader-Hinweis (durchgereicht). */
   maxSehendeSpieler?: number;
+  /** Turnier-Regel: maximale Kadergroesse (Standard 6) - durchgereicht an SpielerKader (Hinweis +
+   *  Auto-Anlage). */
+  maxSpielerJeMannschaft?: number;
+  /** Digitale Protokollierung aktiv: dann braucht jede Mannschaft einen Kader mit Trikotnummern -
+   *  ein Hinweis oberhalb der Liste macht das schon bei der Anlage klar (Nutzer-Vorgabe 21.08.2026). */
+  digitaleProtokollierung?: boolean;
   /** Turnier abgeschlossen: Bearbeitung sperren (Name/Bundesland/Betreuer/Kader/Reihenfolge/Anlegen/
    *  Loeschen). Das Auf-/Zuklappen des Kaders bleibt moeglich, damit die Daten ansehbar sind. */
   gesperrt?: boolean;
@@ -62,6 +68,8 @@ export function MannschaftenListe({
   onGeaendert,
   spielplanVersion = 0,
   maxSehendeSpieler,
+  maxSpielerJeMannschaft,
+  digitaleProtokollierung,
   gesperrt = false,
 }: Props) {
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
@@ -303,6 +311,15 @@ export function MannschaftenListe({
     <div>
       {fehler && <p role="alert">{fehler}</p>}
 
+      {digitaleProtokollierung && (
+        <p>
+          Dieses Turnier nutzt die <strong>digitale Protokollierung</strong>: Für jede Mannschaft muss ein
+          Kader mit Trikotnummern angelegt werden (aufklappbar über „Kader" je Mannschaft), sonst lassen
+          sich Würfe/Tore im Spiel keinem Spieler zuordnen. Über „Kader automatisch anlegen" entstehen bei
+          Bedarf Platzhalter-Spieler, deren Namen sich später nachpflegen lassen.
+        </p>
+      )}
+
       {mannschaften.length === 0 ? (
         <p>Noch keine Mannschaften angelegt.</p>
       ) : (
@@ -488,6 +505,8 @@ export function MannschaftenListe({
                       mannschaftId={m._id}
                       onAnzahlGeaendert={(anzahl) => setSpielerAnzahl((b) => ({ ...b, [m._id]: anzahl }))}
                       maxSehendeSpieler={maxSehendeSpieler}
+                      maxSpielerJeMannschaft={maxSpielerJeMannschaft}
+                      digitaleProtokollierung={digitaleProtokollierung}
                     />
                     </fieldset>
                   </td>

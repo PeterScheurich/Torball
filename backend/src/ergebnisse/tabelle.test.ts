@@ -27,6 +27,7 @@ function turnier(tabellenKriterien: TabellenKriterium[]): Turnier {
     verlaengerungAktiv: true,
     silbernesTor: true,
     maxSehendeSpieler: 1,
+    maxSpielerJeMannschaft: 6,
     einstelligeTrikotnummern: true,
     punkteSieg: 2,
     punkteUnentschieden: 1,

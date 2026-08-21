@@ -60,6 +60,7 @@ const REGEL_FELDER: ReadonlyArray<keyof Turnierregeln> = [
   "verlaengerungAktiv",
   "silbernesTor",
   "maxSehendeSpieler",
+  "maxSpielerJeMannschaft",
   "einstelligeTrikotnummern",
   "punkteSieg",
   "punkteUnentschieden",

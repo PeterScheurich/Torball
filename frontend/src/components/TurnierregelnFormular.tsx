@@ -246,6 +246,15 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
               <td></td>
             </tr>
             <tr>
+              <th scope="row"><label htmlFor="maxSpielerJeMannschaft">Max. Spieler je Mannschaft (Kader)</label></th>
+              <td className="regeln-eingabe-spalte">
+                {/* ?? 6: Turniere aus der Zeit vor Einfuehrung des Feldes (Testphase). */}
+                <input id="maxSpielerJeMannschaft" type="number" min={1} required value={r.maxSpielerJeMannschaft ?? 6}
+                  onChange={(e) => zahl("maxSpielerJeMannschaft", e.target.value)} />
+              </td>
+              <td></td>
+            </tr>
+            <tr>
               <th scope="row"><label htmlFor="einstelligeTrikotnummern">Nur einstellige Trikotnummern</label></th>
               <td className="regeln-eingabe-spalte">
                 <input id="einstelligeTrikotnummern" type="checkbox" checked={r.einstelligeTrikotnummern}

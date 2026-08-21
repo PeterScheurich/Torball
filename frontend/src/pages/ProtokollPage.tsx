@@ -134,7 +134,10 @@ export function ProtokollPage() {
           getSpieler(dasSpiel.mannschaftAId),
           getSpieler(dasSpiel.mannschaftBId),
         ]);
-        setKader({ A: kaderA, B: kaderB });
+        // Immer nach Trikotnummer sortiert (Nutzer-Vorgabe 21.08.2026), nicht nach Anlage-Reihenfolge.
+        const nachNummer = (a: Spieler, b: Spieler) =>
+          a.trikotnummer.localeCompare(b.trikotnummer, undefined, { numeric: true });
+        setKader({ A: [...kaderA].sort(nachNummer), B: [...kaderB].sort(nachNummer) });
       }
       try {
         const daten = await getSpielProtokoll(spielId);
@@ -345,31 +348,47 @@ export function ProtokollPage() {
     }
   }
 
-  /** Undo: streicht das letzte wirksame Event; ein Tor (W+G-Paar) wird als Ganzes gestrichen. */
-  async function undoLetztes() {
-    if (!stand) return;
-    const wirksam = events
+  function wirksameSortiert(): ProtokollEvent[] {
+    if (!stand) return [];
+    return events
       .filter((e) => !stand.annullierteIds.has(e._id) && e.eventTyp !== "ANNULLIERT")
       .sort((a, b) => a.sequenz - b.sequenz);
+  }
+
+  /**
+   * Streicht ein beliebiges wirksames Event (ersatzlose ANNULLIERT-Korrektur) - ein Tor
+   * (W+G-Paar) wird als Ganzes gestrichen. Genutzt vom Undo (letztes Event) UND vom
+   * Streichen-Knopf in der Ereignisliste (aeltere Events, zwischen denen schon weitere
+   * Aktionen liegen - z.B. ein falsches Foul nach zwischenzeitlichem Uhr-Stopp).
+   */
+  async function streiche(ziel: ProtokollEvent) {
+    const wirksam = wirksameSortiert();
+    if (await sende({ eventTyp: "ANNULLIERT", istKorrektur: true, korrigiertEventId: ziel._id })) {
+      // Tor-Doppel-Event: das direkt vorausgehende W desselben Spielers gehoert zum Tor dazu.
+      const index = wirksam.findIndex((e) => e._id === ziel._id);
+      const davor = index > 0 ? wirksam[index - 1] : undefined;
+      if (
+        ziel.eventTyp === "G" &&
+        !ziel.istEigentor &&
+        davor?.eventTyp === "W" &&
+        davor.sequenz === ziel.sequenz - 1 &&
+        davor.spielerId === ziel.spielerId
+      ) {
+        await sende({ eventTyp: "ANNULLIERT", istKorrektur: true, korrigiertEventId: davor._id });
+      }
+      zeigeKurzHinweis(`Gestrichen: ${EVENT_BESCHRIFTUNG[ziel.eventTyp]}.`);
+    }
+  }
+
+  /** Undo: streicht das letzte wirksame Event. */
+  async function undoLetztes() {
+    const wirksam = wirksameSortiert();
     const letztes = wirksam[wirksam.length - 1];
     if (!letztes) {
       zeigeKurzHinweis("Nichts zum Rückgängigmachen.");
       return;
     }
-    if (await sende({ eventTyp: "ANNULLIERT", istKorrektur: true, korrigiertEventId: letztes._id })) {
-      // Tor-Doppel-Event: das direkt vorausgehende W desselben Spielers gehoert zum Tor dazu.
-      const davor = wirksam[wirksam.length - 2];
-      if (
-        letztes.eventTyp === "G" &&
-        !letztes.istEigentor &&
-        davor?.eventTyp === "W" &&
-        davor.sequenz === letztes.sequenz - 1 &&
-        davor.spielerId === letztes.spielerId
-      ) {
-        await sende({ eventTyp: "ANNULLIERT", istKorrektur: true, korrigiertEventId: davor._id });
-      }
-      zeigeKurzHinweis(`Rückgängig: ${EVENT_BESCHRIFTUNG[letztes.eventTyp]}.`);
-    }
+    await streiche(letztes);
   }
 
   function taste(t: Taste) {
@@ -429,8 +448,16 @@ export function ProtokollPage() {
   const linkeSeite: Mannschaftsseite = protokoll?.seiteAVertauscht ? "B" : "A";
   const rechteSeite: Mannschaftsseite = protokoll?.seiteAVertauscht ? "A" : "B";
   const spielzeitSekunden = aktuelleSpielzeit();
-  const sollSekunden = turnier.spielzeitMinuten * 60;
-  const ueberhang = spielzeitSekunden > sollSekunden;
+  // Abschnittsdauer: Halbzeiten laut Regel, Verlaengerung 2 Minuten (Spez. 6.7), Freiwurfschiessen
+  // ohne Uhr. Die Uhr laeuft als COUNTDOWN (Restzeit, Nutzer-Vorgabe 21.08.2026) und zaehlt im
+  // Ueberhang negativ weiter (Spez. 6.1: Signal, aber Spiel laeuft bis zum Abpfiff).
+  const sollSekunden =
+    stand.abschnitt === "FW"
+      ? undefined
+      : stand.abschnitt === "V1" || stand.abschnitt === "V2"
+        ? 120
+        : turnier.spielzeitMinuten * 60;
+  const ueberhang = sollSekunden !== undefined && spielzeitSekunden > sollSekunden;
   const timerRest = (seit?: { zeitstempel: string }) =>
     seit ? Math.ceil((ACHT_SEKUNDEN_MS - (Date.now() - new Date(seit.zeitstempel).getTime())) / 1000) : undefined;
   const timerA = stand.uhrLaeuft ? timerRest(stand.letzterWurf) : undefined;
@@ -513,13 +540,20 @@ export function ProtokollPage() {
           <span>{teamName(rechteSeite)}</span>
         </div>
         <p>
-          {ABSCHNITT_BESCHRIFTUNG[stand.abschnitt]} · Spielzeit{" "}
-          <strong className={ueberhang ? "protokoll-ueberhang" : undefined}>
-            {formatiereSpielzeit(spielzeitSekunden)}
-          </strong>{" "}
-          / {formatiereSpielzeit(sollSekunden)}
-          {ueberhang && " (Überhang – Spiel läuft bis zum Abpfiff weiter)"} ·{" "}
-          {stand.uhrLaeuft ? "Uhr läuft" : "Uhr steht"}
+          {ABSCHNITT_BESCHRIFTUNG[stand.abschnitt]}
+          {sollSekunden !== undefined && (
+            <>
+              {" "}· Restzeit{" "}
+              <strong className={ueberhang ? "protokoll-ueberhang" : undefined}>
+                {ueberhang
+                  ? `-${formatiereSpielzeit(spielzeitSekunden - sollSekunden)}`
+                  : formatiereSpielzeit(sollSekunden - spielzeitSekunden)}
+              </strong>{" "}
+              von {formatiereSpielzeit(sollSekunden)}
+              {ueberhang && " (Überhang – Spiel läuft bis zum Abpfiff weiter)"}
+            </>
+          )}{" "}
+          · {stand.uhrLaeuft ? "Uhr läuft" : "Uhr steht"}
         </p>
         {(timerA !== undefined || timerB !== undefined) && (
           <p>
@@ -890,6 +924,7 @@ export function ProtokollPage() {
                   <th scope="col">Ereignis</th>
                   <th scope="col">Mannschaft</th>
                   <th scope="col">Spieler</th>
+                  <th scope="col">Aktion</th>
                 </tr>
               </thead>
               <tbody>
@@ -925,6 +960,27 @@ export function ProtokollPage() {
                       <td>
                         {spielerName(e.spielerId) ?? "–"}
                         {e.spielerRausId && ` (für ${spielerName(e.spielerRausId) ?? "?"})`}
+                      </td>
+                      <td>
+                        {!gestrichen && e.eventTyp !== "ANNULLIERT" && !stand.abgeschlossen && (
+                          <button
+                            type="button"
+                            className="symbol-button button-loeschen"
+                            aria-label={`${EVENT_BESCHRIFTUNG[e.eventTyp] ?? e.eventTyp} (Nr. ${e.sequenz}) streichen`}
+                            title="Streichen"
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Ereignis Nr. ${e.sequenz} (${EVENT_BESCHRIFTUNG[e.eventTyp] ?? e.eventTyp}) streichen?`,
+                                )
+                              ) {
+                                void streiche(e);
+                              }
+                            }}
+                          >
+                            ✕
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

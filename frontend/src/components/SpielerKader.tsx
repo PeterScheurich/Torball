@@ -40,6 +40,12 @@ interface Props {
   /** Turnier-Regel: erlaubte Anzahl sehender Spieler je Mannschaft. Bei Ueberschreitung erscheint
    *  ein Hinweis (nicht blockierend) - siehe Kommentar am Hinweis. */
   maxSehendeSpieler?: number;
+  /** Turnier-Regel: maximale Kadergroesse (Standard 6, Bundesliga). Steuert den Hinweis bei
+   *  Ueberschreitung UND die Anzahl der automatisch angelegten Spieler. */
+  maxSpielerJeMannschaft?: number;
+  /** Digitale Protokollierung aktiv: dann ist ein Kader mit Trikotnummern Voraussetzung fuers
+   *  Protokollieren - der Auto-Anlage-Knopf wird prominenter beworben. */
+  digitaleProtokollierung?: boolean;
 }
 
 /**
@@ -48,7 +54,13 @@ interface Props {
  * Anlege-Formular. Meldet die Spielerzahl ueber onAnzahlGeaendert nach oben; bei zu vielen sehenden
  * Spielern (maxSehendeSpieler) erscheint ein nicht blockierender Hinweis.
  */
-export function SpielerKader({ mannschaftId, onAnzahlGeaendert, maxSehendeSpieler }: Props) {
+export function SpielerKader({
+  mannschaftId,
+  onAnzahlGeaendert,
+  maxSehendeSpieler,
+  maxSpielerJeMannschaft,
+  digitaleProtokollierung,
+}: Props) {
   const [spieler, setSpieler] = useState<Spieler[]>([]);
   const [bearbeitung, setBearbeitung] = useState<Record<string, Bearbeitung>>({});
   const [fehler, setFehler] = useState<string | undefined>();
@@ -176,10 +188,39 @@ export function SpielerKader({ mannschaftId, onAnzahlGeaendert, maxSehendeSpiele
   // nicht immer bekannt, und am Spieltag kann ein anwesender Arzt neu klassifizieren - dann wird
   // nur der Spieler-Status/die Klassifizierung geaendert, ohne den Kader neu aufsetzen zu muessen.
   const zuVieleSehende = maxSehendeSpieler != null && sehendeAnzahl > maxSehendeSpieler;
+  const kaderLimit = maxSpielerJeMannschaft ?? 6;
+  const zuVieleSpieler = spieler.length > kaderLimit;
+
+  /** Legt einen kompletten Platzhalter-Kader an ("Spieler 1".."Spieler N", Nummern 1..N) -
+   *  gedacht v.a. fuer die digitale Protokollierung, wenn die echten Namen (noch) keine Rolle
+   *  spielen; die Eintraege bleiben danach ganz normal editierbar. */
+  async function kaderAutomatischAnlegen() {
+    try {
+      for (let i = 1; i <= kaderLimit; i++) {
+        await createSpieler({
+          mannschaftId,
+          name: `Spieler ${i}`,
+          trikotnummer: String(i),
+          klassifizierung: "B1",
+        });
+      }
+      await laden();
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Anlegen des Kaders");
+    }
+  }
 
   return (
     <div className="kader">
       {fehler && <p role="alert">{fehler}</p>}
+
+      {zuVieleSpieler && (
+        <p className="kader-warnung">
+          ⚠ {spieler.length} Spieler im Kader – erlaubt sind laut Turnierregeln maximal {kaderLimit}.
+          Das lässt sich speichern; bitte den Kader prüfen.
+        </p>
+      )}
 
       {zuVieleSehende && (
         <p className="kader-warnung">
@@ -190,7 +231,17 @@ export function SpielerKader({ mannschaftId, onAnzahlGeaendert, maxSehendeSpiele
       )}
 
       {spielerSortiert.length === 0 ? (
-        <p>Noch keine Spieler im Kader.</p>
+        <>
+          <p>Noch keine Spieler im Kader.</p>
+          <p>
+            <button type="button" onClick={kaderAutomatischAnlegen}>
+              Kader automatisch anlegen ({kaderLimit} Spieler)
+            </button>{" "}
+            {digitaleProtokollierung
+              ? "Legt Platzhalter („Spieler 1“ …) mit den Trikotnummern 1–" + kaderLimit + " an - Namen lassen sich jederzeit nachpflegen."
+              : "Legt Platzhalter mit den Trikotnummern 1–" + kaderLimit + " an."}
+          </p>
+        </>
       ) : (
         <div className="tabellen-wrapper">
           <table>

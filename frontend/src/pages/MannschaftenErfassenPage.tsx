@@ -19,12 +19,16 @@ export function MannschaftenErfassenPage() {
   const [anzahl, setAnzahl] = useState(0);
   const [schiedsrichterPlanung, setSchiedsrichterPlanung] = useState(false);
   const [maxSehendeSpieler, setMaxSehendeSpieler] = useState<number | undefined>();
+  const [maxSpielerJeMannschaft, setMaxSpielerJeMannschaft] = useState<number | undefined>();
+  const [digital, setDigital] = useState(false);
 
   useEffect(() => {
     getTurnier(turnierId)
       .then((t) => {
         setSchiedsrichterPlanung(!!t.schiedsrichterPlanung);
         setMaxSehendeSpieler(t.maxSehendeSpieler);
+        setMaxSpielerJeMannschaft(t.maxSpielerJeMannschaft);
+        setDigital(t.protokollierungsart === "digital");
       })
       .catch(() => {});
   }, [turnierId]);
@@ -48,6 +52,8 @@ export function MannschaftenErfassenPage() {
         turnierId={turnierId}
         onGeaendert={(mannschaften: MannschaftImTurnier[]) => setAnzahl(mannschaften.length)}
         maxSehendeSpieler={maxSehendeSpieler}
+        maxSpielerJeMannschaft={maxSpielerJeMannschaft}
+        digitaleProtokollierung={digital}
       />
 
       <button type="button" onClick={() => navigate(naechsterPfad)} disabled={anzahl < 2}>

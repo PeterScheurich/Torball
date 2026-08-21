@@ -859,6 +859,8 @@ export function TurnierVerwaltenPage() {
           turnierId={turnierId}
           spielplanVersion={turnier.spielplanVersion}
           maxSehendeSpieler={turnier.maxSehendeSpieler}
+          maxSpielerJeMannschaft={turnier.maxSpielerJeMannschaft}
+          digitaleProtokollierung={turnier.protokollierungsart === "digital"}
           gesperrt={eingabeGesperrt}
         />
       </div>

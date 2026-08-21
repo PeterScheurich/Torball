@@ -78,6 +78,10 @@ export interface Turnierregeln {
   verlaengerungAktiv: boolean;
   silbernesTor: boolean;
   maxSehendeSpieler: number;
+  /** Maximale Kadergroesse je Mannschaft (Nutzer-Vorgabe 21.08.2026: Bundesliga erlaubt maximal
+   *  6 Feldspieler je Team, deshalb Standardwert 6). Wie ueberall: die Software warnt bei
+   *  Ueberschreitung, blockiert aber nicht. */
+  maxSpielerJeMannschaft: number;
   einstelligeTrikotnummern: boolean;
   punkteSieg: number;
   punkteUnentschieden: number;
