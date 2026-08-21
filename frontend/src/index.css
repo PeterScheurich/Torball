@@ -2364,8 +2364,16 @@ button:hover:not(:disabled) {
   margin-top: auto;
 }
 
-.protokoll-vb-ereignis {
+/* Scrollfenster: Hoehe von fuenf Zeilen (em folgt der Schriftgroesse, auch in den
+   Kompaktstufen), darin ALLE wirksamen Ereignisse - neueste oben, ein neues Ereignis
+   springt automatisch wieder nach oben (siehe ereignisListeRef in ProtokollPage). */
+.protokoll-vb-ereignisliste {
   font-size: clamp(0.8rem, 1.7vh, 0.95rem);
+  max-height: 7.6em;
+  overflow-y: auto;
+}
+
+.protokoll-vb-ereignis {
   font-variant-numeric: tabular-nums;
 }
 
@@ -2419,6 +2427,12 @@ body.protokoll-vollbild-aktiv .wartungs-banner {
 body.protokoll-vollbild-aktiv #root {
   max-width: none;
   padding: 8px 16px;
+}
+
+/* Auf breiten Schirmen stand der Kontext-Text sonst verloren ganz links (Nutzer-Feedback). */
+body.protokoll-vollbild-aktiv .protokoll-kontext {
+  justify-content: center;
+  text-align: center;
 }
 
 .protokoll-erfassung {
@@ -2578,7 +2592,7 @@ body.protokoll-vollbild-aktiv .protokoll-vb-fuss {
   body.protokoll-vollbild-aktiv .protokoll-vb-spieler {
     min-height: 44px;
   }
-  body.protokoll-vollbild-aktiv .protokoll-vb-ereignis {
+  body.protokoll-vollbild-aktiv .protokoll-vb-ereignisliste {
     font-size: 0.78rem;
   }
 }

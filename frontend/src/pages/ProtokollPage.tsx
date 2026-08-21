@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import type { MannschaftImTurnier, Mannschaftsseite, Spiel, Spieler, Spielprotokoll, Turnier } from "@torball/shared";
 import {
   getMannschaften,
@@ -80,6 +80,7 @@ const EVENT_BESCHRIFTUNG: Record<string, string> = {
  */
 export function ProtokollPage() {
   const { turnierId, spielId } = useParams<{ turnierId: string; spielId: string }>();
+  const navigate = useNavigate();
   const [turnier, setTurnier] = useState<Turnier | undefined>();
   const [spiel, setSpiel] = useState<Spiel | undefined>();
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
@@ -123,6 +124,9 @@ export function ProtokollPage() {
   const [wechselRaus, setWechselRaus] = useState<string | null>(null);
   const [wechselRein, setWechselRein] = useState<string | null>(null);
   const wechselDialogRef = useRef<HTMLDialogElement>(null);
+  // Ereignisliste der Erfassungs-Ansicht: zeigt ALLE wirksamen Ereignisse in einem Fenster von
+  // fuenf Zeilen Hoehe (scrollbar); ein neues Ereignis springt automatisch wieder nach oben.
+  const ereignisListeRef = useRef<HTMLDivElement>(null);
   // Nur fuer die tickenden Anzeigen (Uhr, 8-Sekunden-Timer) - erzwingt regelmaessiges Rendern.
   const [, setTick] = useState(0);
 
@@ -200,6 +204,10 @@ export function ProtokollPage() {
     document.body.classList.toggle("protokoll-vollbild-aktiv", erfassungAktiv);
     return () => document.body.classList.remove("protokoll-vollbild-aktiv");
   }, [erfassungAktiv]);
+
+  useEffect(() => {
+    if (ereignisListeRef.current) ereignisListeRef.current.scrollTop = 0;
+  }, [events.length]);
 
   // Tickende Anzeigen (Spieluhr, Timer A/B).
   useEffect(() => {
@@ -1026,9 +1034,9 @@ export function ProtokollPage() {
         <div className="protokoll-vb-fuss">
           <div>
             <div className="protokoll-vb-gruppe-label">Letzte Ereignisse</div>
+            <div className="protokoll-vb-ereignisliste" ref={ereignisListeRef} tabIndex={-1}>
             {eventsAbsteigend
               .filter((e) => !stand.annullierteIds.has(e._id) && e.eventTyp !== "ANNULLIERT")
-              .slice(0, 5)
               .map((e) => (
                 <div key={e._id} className="protokoll-vb-ereignis">
                   {e.spielzeit !== undefined ? formatiereSpielzeit(e.spielzeit) : "–"} ·{" "}
@@ -1038,10 +1046,14 @@ export function ProtokollPage() {
                   {e.spielerId && <> · {spielerName(e.spielerId)}</>}
                 </div>
               ))}
+            </div>
           </div>
           <div className="protokoll-vb-fussrechts">
             <button type="button" className="button-sekundaer" onClick={() => setAnsicht("verlauf")}>
               Spielende / Abschluss …
+            </button>
+            <button type="button" className="button-sekundaer" onClick={() => navigate(-1)}>
+              Zurück zur Spielübersicht
             </button>
           </div>
         </div>
@@ -1135,13 +1147,18 @@ export function ProtokollPage() {
         Spielprotokoll{spiel.runde ? ` – Spiel ${spiel.runde}` : ""}
       </h1>
       {fehler && <p role="alert">{fehler}</p>}
-      {!stand.abgeschlossen && (
-        <p>
-          <button type="button" onClick={() => setAnsicht("erfassung")}>
-            Zur Erfassungsansicht (Esc, dann Enter)
-          </button>
-        </p>
-      )}
+      <p>
+        {!stand.abgeschlossen && (
+          <>
+            <button type="button" onClick={() => setAnsicht("erfassung")}>
+              Zur Erfassungsansicht (Esc, dann Enter)
+            </button>{" "}
+          </>
+        )}
+        <button type="button" className="button-sekundaer" onClick={() => navigate(-1)}>
+          Zurück zur Spielübersicht
+        </button>
+      </p>
 
       {/* Scoreboard */}
       <section aria-label="Spielstand" className="protokoll-scoreboard">

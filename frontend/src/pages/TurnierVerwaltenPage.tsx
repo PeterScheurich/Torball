@@ -175,10 +175,24 @@ export function TurnierVerwaltenPage() {
     getSpiele(turnierId)
       .then(setSpiele)
       .catch(() => setSpiele([]));
-    getTurnierProtokolle(turnierId)
-      .then((protokolle) => setHatProtokolle(protokolle.length > 0))
-      .catch(() => setHatProtokolle(false));
+    const ladeProtokollStatus = () =>
+      getTurnierProtokolle(turnierId)
+        .then((protokolle) => setHatProtokolle(protokolle.length > 0))
+        .catch(() => setHatProtokolle(false));
+    ladeProtokollStatus();
+    // Auch beim Zurueckkehren in den Tab nachladen (Nutzer-Fund: die Seite war schon offen,
+    // als das erste Protokoll in einem anderen Tab gestartet wurde - die Sperre griff dadurch
+    // erst nach einem Reload).
+    const beiFokus = () => {
+      if (document.visibilityState === "visible") ladeProtokollStatus();
+    };
+    window.addEventListener("focus", beiFokus);
+    document.addEventListener("visibilitychange", beiFokus);
     ladeCheckoutStatus();
+    return () => {
+      window.removeEventListener("focus", beiFokus);
+      document.removeEventListener("visibilitychange", beiFokus);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [turnierId]);
 
