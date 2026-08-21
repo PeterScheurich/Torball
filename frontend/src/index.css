@@ -2284,7 +2284,10 @@ button:hover:not(:disabled) {
 
 .protokoll-vb-badge {
   position: absolute;
-  top: -9px;
+  /* Fast komplett oberhalb des Knopfs (nur 2px Ueberlappung als "angeheftet"-Optik) - bei -9px
+     verdeckte das Badge die grosse Spieler-Nr (Nutzer-Feedback 21.08.2026). Den noetigen Platz
+     nach oben schafft der margin-top der Knopfreihe unten. */
+  top: -18px;
   right: -6px;
   font-size: 0.68rem;
   font-weight: 700;
@@ -2292,6 +2295,20 @@ button:hover:not(:disabled) {
   color: var(--accent-contrast);
   border-radius: 999px;
   padding: 2px 8px;
+}
+
+/* Ab dem 4. Wurf in Folge (mehr als die erlaubten drei, Spez. 6.3) warnt das Badge in Rot.
+   --accent-contrast passt auch auf --danger: beide Paletten kippen hell/dunkel gleichsinnig. */
+.protokoll-vb-badge-warnung {
+  background: var(--danger);
+  color: var(--accent-contrast);
+}
+
+/* Platz fuer die hochgestellten Wurf-Badges (top: -18px, s.o.), damit sie nicht ins
+   Gruppen-Label darueber ragen - nur in den Feldspieler-Spalten der Erfassung, nicht in den
+   uebrigen Tastengruppen (Verlauf-Ansicht). */
+.protokoll-vb-seite .protokoll-tastengruppe {
+  margin-top: 12px;
 }
 
 .protokoll-vb-aktionen {
@@ -2639,6 +2656,10 @@ body.protokoll-vollbild-aktiv .protokoll-vb-hinweise {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  /* Zentriert wie die Kontext-Zeile darueber - ganz links fielen die Warnungen kaum auf
+     (Nutzer-Feedback 21.08.2026). */
+  justify-content: center;
+  text-align: center;
   gap: 2px 16px;
 }
 

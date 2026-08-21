@@ -41,6 +41,10 @@ export interface ProtokollStand {
   letzterWurf?: { mannschaft: Mannschaftsseite; zeitstempel: string };
   /** Letzte Kontrolle - Grundlage fuer die Timer-B-Anzeige. */
   letzteKontrolle?: { mannschaft: Mannschaftsseite; zeitstempel: string };
+  /** Wurde das Spiel schon angepfiffen (mindestens ein wirksames GO)? Nur fuer die Statusanzeige. */
+  spielGestartet: boolean;
+  /** Uhr steht wegen Halbzeit/Pause (B/VB) und lief seither nicht wieder - Statusanzeige "Pause". */
+  inPause: boolean;
   spielBeendet: boolean;
   abgeschlossen: boolean;
   /** IDs der annullierten Events (fuer die durchgestrichene Darstellung in der Ereignisliste). */
@@ -110,6 +114,8 @@ export function berechneProtokollStand(events: Event[], kontext: StandKontext): 
     wechsel: { A: 0, B: 0 },
     wurf: { A: { anzahl: 0 }, B: { anzahl: 0 } },
     feld: { A: [], B: [] },
+    spielGestartet: false,
+    inPause: false,
     spielBeendet: false,
     abgeschlossen: false,
     annullierteIds: annulliert,
@@ -142,18 +148,22 @@ export function berechneProtokollStand(events: Event[], kontext: StandKontext): 
       case "GO":
         stand.uhrLaeuft = true;
         stand.laufendSeit = e.zeitstempel;
+        stand.spielGestartet = true;
+        stand.inPause = false;
         break;
       case "STOP":
         uhrAnhalten(e.zeitstempel);
         break;
       case "B":
         uhrAnhalten(e.zeitstempel);
+        stand.inPause = true;
         // Aus Halbzeit 1 -> 2; aus einer Verlaengerungshaelfte heraus dient B als Pause vor der
         // naechsten (V1 -> V2 erfolgt aber ueber das zweite VB-Event, nicht ueber B).
         if (stand.abschnitt === "1") naechsterAbschnitt("2");
         break;
       case "VB":
         uhrAnhalten(e.zeitstempel);
+        stand.inPause = true;
         naechsterAbschnitt(stand.abschnitt === "V1" ? "V2" : "V1");
         break;
       case "W":

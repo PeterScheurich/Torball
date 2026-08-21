@@ -854,7 +854,11 @@ export function ProtokollPage() {
                 onClick={() => spielerKlick(seite, sp)}
               >
                 {stand.wurf[seite].spielerId === sp._id && (
-                  <span className="protokoll-vb-badge">{stand.wurf[seite].anzahl}. Wurf</span>
+                  <span
+                    className={`protokoll-vb-badge ${stand.wurf[seite].anzahl > 3 ? "protokoll-vb-badge-warnung" : ""}`}
+                  >
+                    {stand.wurf[seite].anzahl}. Wurf
+                  </span>
                 )}
                 <span className="protokoll-vb-spieler-nr">{sp.trikotnummer}</span>
                 <span className="protokoll-vb-spieler-name">
@@ -931,7 +935,15 @@ export function ProtokollPage() {
             </div>
             <div className={`protokoll-vb-laeuft ${stand.uhrLaeuft ? "" : "protokoll-vb-steht"}`}>
               <span className="protokoll-vb-punkt"></span>
-              {stand.uhrLaeuft ? "SPIEL LÄUFT" : "UNTERBROCHEN"}
+              {stand.uhrLaeuft
+                ? "SPIEL LÄUFT"
+                : !stand.spielGestartet
+                  ? "NOCH NICHT GESTARTET"
+                  : stand.spielBeendet
+                    ? "SPIEL BEENDET"
+                    : stand.inPause
+                      ? "PAUSE"
+                      : "UNTERBROCHEN"}
             </div>
             {ueberhang && (
               <div className="protokoll-ueberhang">Überhang – Spiel läuft bis zum Abpfiff</div>
