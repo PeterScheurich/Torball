@@ -1798,6 +1798,13 @@ sind hier mehrfach dieselben Stolperfallen aufgetreten:
   selben Skript hintereinander - sonst hat React keine Zeit, den durch
   `.focus()`/ein vorheriges `input`-Event ausgelösten State-Update zu
   committen, bevor der (dann veraltete) `onBlur`-Handler feuert.
+- **Der Vite-Watcher verpasst per Skript (z. B. Python `io.open(...).write`) geschriebene
+  Frontend-Dateien gelegentlich** – der Dev-Server liefert dann trotz Browser-Reload den alten
+  Transformations-Cache (am 2026-08-21 zweimal live erlebt: eine Änderung war im Working Tree und
+  im Build, aber der Nutzer sah im Dev-Server weiter den alten Stand). Vor dem Verifizieren/Melden
+  einer skriptgeschriebenen Frontend-Änderung deshalb den tatsächlich servierten Quelltext
+  gegenprüfen (`fetch("/src/…/Datei.tsx")` im Browser und auf ein neues Codefragment testen);
+  fehlt es, die Datei einmal `touch`-en – das stößt den Watcher zuverlässig an.
 - `read_console_messages` liefert die komplette Historie seit Sitzungsbeginn
   zurück, nicht nur aktuelle/neue Meldungen - ein alt aussehender Fehler
   kann von einer laengst behobenen HMR-Zwischenpanne stammen, nicht vom
