@@ -416,7 +416,17 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
 
   async function neuerVorschlag() {
     try {
-      const ergebnis = await getSpielplanVorschlag(turnierId, wiederholungen);
+      // Das Turnier bewusst frisch mitladen: der lokale turnier-State wird sonst nur beim Mounten
+      // der Komponente geholt (laden() haengt nur an turnierId). Nach einer zwischenzeitlichen
+      // Regelaenderung auf einem anderen Reiter - etwa "Pause zwischen Spielen" - liefe er sonst
+      // veraltet in die LOKALE Zeitberechnung beim anschliessenden manuellen Umsortieren des
+      // Vorschlags (berechneStartzeit/spieldauerMinuten weiter unten). Die Vorschlagszeiten selbst
+      // kommen frisch vom Backend und waren nie betroffen; es geht allein um die Folge-Umsortierung.
+      const [ergebnis, frischesTurnier] = await Promise.all([
+        getSpielplanVorschlag(turnierId, wiederholungen),
+        getTurnier(turnierId),
+      ]);
+      setTurnier(frischesTurnier);
       setVorschlag(ergebnis.spiele);
       setFehler(undefined);
     } catch (err) {
