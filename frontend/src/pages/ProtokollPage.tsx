@@ -1013,10 +1013,10 @@ export function ProtokollPage() {
               <button
                 type="button"
                 className="protokoll-vb-aktion"
-                style={{ gridColumn: "span 2" }}
+                title={turnier.seitenwechsel ? "Tauscht zur Halbzeit automatisch" : undefined}
                 onClick={seitenTauschen}
               >
-                Anzeige-Seiten tauschen{turnier.seitenwechsel ? " (zur Halbzeit automatisch)" : ""}
+                Anzeige tauschen
               </button>
             </div>
           </div>

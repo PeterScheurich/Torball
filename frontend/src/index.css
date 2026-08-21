@@ -2098,7 +2098,7 @@ button:hover:not(:disabled) {
 }
 
 .protokoll-vb-acht-wert {
-  font-size: 4rem;
+  font-size: clamp(2rem, 7vh, 4rem);
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -2155,7 +2155,7 @@ button:hover:not(:disabled) {
 }
 
 .protokoll-vb-chips span {
-  font-size: 0.85rem;
+  font-size: clamp(0.72rem, 1.55vh, 0.85rem);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 3px 10px;
@@ -2178,14 +2178,14 @@ button:hover:not(:disabled) {
 }
 
 .protokoll-vb-ergebnis {
-  font-size: 4rem;
+  font-size: clamp(2.2rem, 7.5vh, 4rem);
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .protokoll-vb-restzeit {
-  font-size: 2.2rem;
+  font-size: clamp(1.4rem, 4.2vh, 2.2rem);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2194,15 +2194,15 @@ button:hover:not(:disabled) {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 2.2rem;
+  font-size: clamp(1.3rem, 4.2vh, 2.2rem);
   font-weight: 800;
   letter-spacing: 0.02em;
   color: var(--accent);
 }
 
 .protokoll-vb-laeuft .protokoll-vb-punkt {
-  width: 18px;
-  height: 18px;
+  width: 0.5em;
+  height: 0.5em;
   border-radius: 50%;
   background: var(--accent);
 }
@@ -2249,7 +2249,7 @@ button:hover:not(:disabled) {
   cursor: pointer;
   position: relative;
   width: 92px;
-  min-height: 72px;
+  min-height: clamp(54px, 9vh, 72px);
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--bg-subtle);
@@ -2268,7 +2268,7 @@ button:hover:not(:disabled) {
 }
 
 .protokoll-vb-spieler-nr {
-  font-size: 1.8rem;
+  font-size: clamp(1.3rem, 3.2vh, 1.8rem);
   font-weight: 700;
   line-height: 1;
 }
@@ -2298,17 +2298,17 @@ button:hover:not(:disabled) {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 300px;
+  min-width: 360px;
 }
 
 .protokoll-vb-aktion-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
 
 .protokoll-vb-aktion {
-  min-height: 44px;
+  min-height: clamp(38px, 5.2vh, 44px);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2338,7 +2338,7 @@ button:hover:not(:disabled) {
 }
 
 .protokoll-vb-uhr {
-  min-height: 52px;
+  min-height: clamp(42px, 6vh, 52px);
   width: 100%;
   display: flex;
   align-items: center;
@@ -2359,13 +2359,13 @@ button:hover:not(:disabled) {
   gap: 20px;
   border-top: 1px solid var(--border);
   background: var(--bg-subtle);
-  padding: 10px 14px;
+  padding: clamp(4px, 1vh, 10px) 14px;
   border-radius: 6px;
   margin-top: auto;
 }
 
 .protokoll-vb-ereignis {
-  font-size: 0.95rem;
+  font-size: clamp(0.8rem, 1.7vh, 0.95rem);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2427,9 +2427,14 @@ body.protokoll-vollbild-aktiv #root {
   gap: 6px;
 }
 
+/* Die Groessen unten skalieren per clamp() mit der Viewport-Hoehe (vh) - die Ansicht passt
+   sich damit an Aufloesung und Betriebssystem-Skalierung an (CSS-Pixel beruecksichtigen die
+   OS-Skalierung automatisch). overflow-y: auto ist nur ein Sicherheitsnetz fuer extreme
+   Fenster - bei ueblichen Hoehen entsteht kein Scrollbalken (Nutzer-Fund 21.08.2026: mit
+   festen Groessen + overflow hidden wurden Protokollzeilen unerreichbar abgeschnitten). */
 body.protokoll-vollbild-aktiv .protokoll-erfassung {
   height: calc(100dvh - 16px);
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .protokoll-vb-kopf-aktionen {
@@ -2442,8 +2447,9 @@ body.protokoll-vollbild-aktiv .protokoll-erfassung {
    liegen - ein langer Name drueckt sonst Chips/Werfer-Zeile nur auf einer Seite nach unten.
    Mehr als zwei Zeilen werden abgeschnitten (dann lieber kleinere Schrift als mehr Platz). */
 .protokoll-vb-teamname {
-  font-size: 1.35rem;
-  height: 3.9rem;
+  font-size: clamp(1rem, 2.5vh, 1.35rem);
+  /* em statt rem: die feste 2-Zeilen-Hoehe schrumpft mit der Schrift mit. */
+  height: calc(2 * 1.25em + 0.6rem);
   display: flex;
   align-items: center;
   max-width: 100%;
@@ -2470,4 +2476,109 @@ body.protokoll-vollbild-aktiv .protokoll-erfassung {
 
 body.protokoll-vollbild-aktiv .protokoll-vb-fuss {
   margin-top: auto;
+}
+
+
+/* Kompaktstufe fuer niedrige Fenster (kleine Aufloesung/hohe OS-Skalierung): alles rueckt
+   enger zusammen, damit weiterhin die GANZE Erfassung inkl. der fuenf Ereigniszeilen ohne
+   Scrollen auf eine Bildschirmhoehe passt. Die Tastatur bleibt der primaere Eingabeweg -
+   die etwas kleineren Klickflaechen sind hier der bewusste Kompromiss. */
+@media (max-height: 760px) {
+  body.protokoll-vollbild-aktiv .protokoll-erfassung {
+    gap: 4px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-kopf {
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-kontext {
+    padding: 5px 12px;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-eingabe {
+    margin: 4px 0;
+    gap: 14px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-aktion {
+    min-height: 34px;
+    font-size: 0.85rem;
+    padding: 0 8px;
+    gap: 6px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-uhr {
+    min-height: 38px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-spieler {
+    min-height: 48px;
+    width: 84px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-spieler-nr {
+    font-size: 1.25rem;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-gruppe-label,
+  body.protokoll-vollbild-aktiv .protokoll-vb-werfer {
+    font-size: 0.68rem;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-fuss {
+    gap: 12px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-fussrechts .button-sekundaer,
+  body.protokoll-vollbild-aktiv .protokoll-vb-kopf .button-sekundaer {
+    font-size: 0.8rem;
+    padding: 3px 8px;
+  }
+}
+
+/* Zweite, haertere Kompaktstufe fuer sehr niedrige Fenster (unter ~640px Viewport-Hoehe). */
+@media (max-height: 640px) {
+  body.protokoll-vollbild-aktiv .protokoll-erfassung {
+    gap: 3px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-fuss {
+    padding: 3px 12px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-score {
+    gap: 10px;
+    margin-bottom: 2px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-mitte {
+    gap: 2px;
+    min-width: 260px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-ergebnis {
+    font-size: 2rem;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-acht-wert {
+    font-size: 2.2rem;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-restzeit {
+    font-size: 1.3rem;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-laeuft {
+    font-size: 1.2rem;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-teamname {
+    font-size: 1rem;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-chips span {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-aktion {
+    min-height: 32px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-uhr {
+    min-height: 34px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-aktion-grid {
+    gap: 4px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-spieler {
+    min-height: 44px;
+  }
+  body.protokoll-vollbild-aktiv .protokoll-vb-ereignis {
+    font-size: 0.78rem;
+  }
 }
