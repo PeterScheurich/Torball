@@ -634,13 +634,16 @@ export function TurnierVerwaltenPage() {
                     }
                   >
                     <option value="manuell">Manuell (Papierprotokoll, nur Endergebnisse erfasst)</option>
-                    <option value="digital">Digital (Live-Ereignisprotokollierung je Wurf/Foul/Tor)</option>
+                    <option value="digital">Digital (Live-Ereignisprotokollierung je Wurf/Foul/Tor) – Beta</option>
                   </select>
                   {turnier.protokollierungsart === "digital" && (
                     <>
                       <p>
                         Ergebnisse entstehen aus dem Live-Protokoll je Spiel (Reiter „Ergebnisse" →
-                        Spalte „Aktionen" → „Protokoll").
+                        Spalte „Aktionen" → „Protokoll").{" "}
+                        <strong>
+                          Beta: noch nicht ausgiebig getestet und für den produktiven Einsatz nicht freigegeben.
+                        </strong>
                       </p>
                       <label>
                         <input

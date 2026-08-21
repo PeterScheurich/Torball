@@ -153,8 +153,14 @@ export function TurnierAnlegenPage() {
                 onChange={(e) => setProtokollierungsart(e.target.value === "digital" ? "digital" : "manuell")}
               >
                 <option value="manuell">Manuell (Papierprotokoll, nur Endergebnisse erfasst)</option>
-                <option value="digital">Digital (Live-Ereignisprotokollierung je Wurf/Foul/Tor)</option>
+                <option value="digital">Digital (Live-Ereignisprotokollierung je Wurf/Foul/Tor) – Beta</option>
               </select>
+              {protokollierungsart === "digital" && (
+                <p className="feld-hinweis" role="note">
+                  Die digitale Protokollierung ist neu und noch nicht ausgiebig getestet – für den produktiven
+                  Einsatz ist sie noch nicht freigegeben. Details im Hilfe-Thema „Digitale Protokollierung (Beta)“.
+                </p>
+              )}
             </div>
             <div className="feld">
               <label htmlFor="schiedsrichterPlanung">Schiedsrichter</label>

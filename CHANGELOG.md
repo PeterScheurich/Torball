@@ -7,6 +7,19 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Digitale Protokollierung (Beta):** Ein Turnier kann jetzt auf „Digital" gestellt werden – dann
+  wird jedes Spielereignis live erfasst (Würfe, Tore, Fouls, Strafwürfe, Auszeiten, Wechsel), und
+  Spielstand, Restzeit sowie alle Zähler entstehen automatisch aus dem Protokoll. Dazu gehören eine
+  Vollbild-Erfassungsansicht mit Tastatursteuerung (auch komplett per Maus/Touch bedienbar),
+  Aufstellungen, ein Wechsel-Fenster, nachvollziehbare Korrekturen (nichts wird gelöscht, nur
+  gestrichen), der Abschluss mit digitaler Unterschrift (optional mit zusätzlicher Bestätigung durch
+  die Turnierleitung) sowie ein eigener Protokollant-Code für Helfer ohne Konto. **Achtung: noch
+  nicht ausgiebig getestet und für den produktiven Einsatz nicht freigegeben** – für echte Turniere
+  weiterhin „Manuell" verwenden. Details im neuen Hilfe-Thema „Digitale Protokollierung (Beta)".
+- **Neue Turnierregel „Max. Spieler je Mannschaft"** (Standard 6, z. B. Bundesliga): der Kader warnt
+  bei Überschreitung. Außerdem lässt sich ein leerer Kader jetzt per Knopf automatisch mit
+  Platzhalter-Spielern anlegen.
+
 - **Sicherheitskorrektur Turnier-Sync:** Beim Zurückspielen eines Turnierstands von einer lokalen
   Installation prüft der Server jetzt streng, dass jedes übertragene Dokument tatsächlich zu genau
   diesem einen Turnier gehört. Zuvor hätte ein manipuliertes Übertragungspaket fremde oder

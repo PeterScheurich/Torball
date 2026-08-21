@@ -151,10 +151,10 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Was ist die Protokollierung?",
         text: [
-          "Sie legt fest, wie Ergebnisse erfasst werden. Verfügbar ist „Manuell“: Es werden nur die Endergebnisse pro Spiel eingetragen – direkt in der Anwendung oder über einen Erfassungslink.",
+          "Sie legt fest, wie Ergebnisse erfasst werden. „Manuell“: Es werden nur die Endergebnisse pro Spiel eingetragen – direkt in der Anwendung oder über einen Erfassungslink. „Digital“: Jedes Ereignis (Wurf, Tor, Foul, Auszeit, …) wird während des Spiels live protokolliert; das Ergebnis entsteht automatisch aus dem Protokoll. Mehr dazu im Hilfe-Thema „Digitale Protokollierung (Beta)“.",
           {
             hinweis:
-              "Die Option „Digital“ (Live-Protokollierung jedes Wurfs) ist bereits vorgesehen, aber noch nicht umgesetzt. Wähle vorerst „Manuell“.",
+              "Die digitale Protokollierung ist neu und noch nicht ausgiebig in echten Spielen erprobt – für den produktiven Einsatz ist sie noch nicht freigegeben. Für ein echtes Turnier wähle vorerst „Manuell“; „Digital“ gerne zum Ausprobieren und Testen.",
           },
         ],
       },
@@ -311,7 +311,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie pflege ich den Kader einer Mannschaft?",
         text: [
-          "Jede Mannschaft lässt sich aufklappen; darunter erfasst du die Spieler (Nummer, Name, ggf. Klassifizierung). Die kleine Zahl am Umschalter zeigt schon zugeklappt, wie viele Spieler bereits erfasst sind. Das ist die Grundlage für eine digitale Protokollierung, die noch in Planung ist.",
+          "Jede Mannschaft lässt sich aufklappen; darunter erfasst du die Spieler (Nummer, Name, ggf. Klassifizierung). Die kleine Zahl am Umschalter zeigt schon zugeklappt, wie viele Spieler bereits erfasst sind. Bei digitaler Protokollierung ist der Kader Pflicht: Ohne Spieler mit Trikotnummern lassen sich Würfe und Tore niemandem zuordnen.",
         ],
       },
       {
@@ -420,6 +420,63 @@ export const HILFE_THEMEN: HilfeThema[] = [
         frage: "Was passiert, wenn zwei Personen gleichzeitig dasselbe Spiel erfassen?",
         text: [
           "Solange du ein Feld gerade bearbeitest, wird deine Eingabe nicht überschrieben. Ändert in der Zwischenzeit jemand anderes denselben Wert, markiert die Anwendung das als Konflikt, damit nichts unbemerkt verlorengeht.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "digitales-protokoll",
+    titel: "Digitale Protokollierung (Beta)",
+    kurz: "Jedes Spielereignis live am Computer erfassen – das Ergebnis entsteht automatisch aus dem Protokoll. Diese Funktion ist neu und noch nicht für den produktiven Einsatz freigegeben.",
+    abschnitte: [
+      {
+        frage: "Was ist die digitale Protokollierung und wie schalte ich sie ein?",
+        text: [
+          "Statt nur Endergebnisse einzutragen, wird jedes Ereignis während des Spiels erfasst: Würfe, Tore, Fouls, Strafwürfe, Auszeiten, Wechsel. Aus diesem Protokoll berechnet die Anwendung Spielstand, Restzeit, Foul- und Wurfzähler automatisch – und am Ende das Ergebnis für die Tabelle.",
+          "Eingeschaltet wird sie je Turnier: beim Anlegen oder im Übersicht-Reiter unter „Protokollierung“ die Option „Digital“ wählen. Voraussetzung: Jede Mannschaft braucht einen Kader mit Trikotnummern (Reiter „Mannschaften“ – dort hilft „Kader automatisch anlegen“).",
+          {
+            hinweis:
+              "Beta: Die digitale Protokollierung ist noch nicht ausgiebig in echten Spielen erprobt und für den produktiven Einsatz nicht freigegeben. Für echte Turniere vorerst „Manuell“ verwenden.",
+          },
+        ],
+      },
+      {
+        frage: "Wie starte ich das Protokoll zu einem Spiel?",
+        text: [
+          "Im Reiter „Ergebnisse“ steht bei digitalen Turnieren je Spiel der Link „Protokoll“. Beim ersten Öffnen wird der Name der protokollierenden Person abgefragt – er erscheint als „Protokollführung“ auf dem Spielbericht.",
+          "Danach zuerst die Aufstellung festlegen: je Mannschaft die drei Feldspieler antippen und buchen. Anschließend startet die Leertaste die Spieluhr – los geht's.",
+          {
+            liste: [
+              "Die Erfassungs-Ansicht füllt den ganzen Bildschirm (App-Menüs sind ausgeblendet); „Vollbild an/aus“ blendet zusätzlich die Browserleisten aus.",
+              "Sobald irgendein Protokoll begonnen wurde, gilt das Turnier als gestartet: Spielzeit, Spielmodus und Protokollierungsart sind dann gesperrt – wie beim ersten manuell erfassten Ergebnis.",
+              "Auch ohne Konto möglich: Über „Teilen“ lässt sich ein eigener Protokollant-Code vergeben (Link/QR-Code) – die Person sieht dann nur den Spielplan und kann protokollieren, sonst nichts.",
+            ],
+          },
+        ],
+      },
+      {
+        frage: "Wie funktioniert die Tastatursteuerung?",
+        text: [
+          "Grundprinzip: Zuerst mit A (links) oder B (rechts) die Mannschaft wählen – die Tasten folgen immer der angezeigten Seite. Der gewählte Kontext bleibt aktiv, bis die andere Team-Taste gedrückt wird.",
+          {
+            liste: [
+              "Ziffer = Wurf: Nach der Team-Taste bucht die Spielernummer direkt einen Wurf (häufigster Fall). Beispiel: A 3 → B 5 → A 2.",
+              "G nach einem Wurf = Tor zu genau diesem Wurf (kein weiterer Tastendruck nötig). G + Ziffer bucht ein Tor samt Wurf in einem Schritt.",
+              "K = Kontrolle (steuert die 8-Sekunden-Anzeige). Rollt der Ball zur werfenden Mannschaft zurück, genügt K – der Kontext steht nach dem Wurf noch auf ihr.",
+              "F + Ziffer = Foul, P = Strafwurf, T = Auszeit, M = Technische Auszeit, R + Ziffer = Freiwurf, X + Ziffer = Wurf über die Aktionstaste.",
+              "E + Ziffer + Ziffer = Wechsel (raus, rein) – oder über den „Wechsel“-Knopf mit Auswahl von Feld und Bank.",
+              "Leertaste = Spieluhr starten/anhalten, H = Halbzeit (tauscht bei aktivierter Regel automatisch die Anzeigeseiten), Rücktaste = letztes Ereignis rückgängig, Esc = offene Eingabe verwerfen.",
+            ],
+          },
+          "Alles geht auch per Maus oder Touch: Feldspieler-Tasten, Aktions-Knöpfe und das Wechsel-Fenster. Eine Bluetooth- oder USB-Tastatur (später auch ein eigenes Tastenfeld) funktioniert genauso.",
+        ],
+      },
+      {
+        frage: "Wie korrigiere ich Fehleingaben und wie endet das Spiel?",
+        text: [
+          "Die Rücktaste streicht das letzte Ereignis. Ältere Einträge korrigierst du direkt in der Ereignisliste: ✎ ändert die Spielernummer, ✕ streicht den Eintrag – gestrichene Einträge bleiben im Bericht sichtbar, zählen aber nicht mehr. Nichts wird jemals gelöscht, jede Korrektur ist nachvollziehbar.",
+          "„Esc, dann Enter“ wechselt zur vollständigen Protokoll-Ansicht mit allen Einträgen (und zurück) – dort finden sich auch Protokollantenwechsel und Protest.",
+          "Zum Abschluss: „Spielende erfassen“, dann unterschreibt die protokollierende Person mit ihrem Namen, danach „Protokoll abschließen“. Das Ergebnis steht ab dem ersten Tor automatisch in Tabelle und öffentlicher Seite – der Abschluss macht es endgültig. Optional kann je Turnier eine zusätzliche Bestätigung durch die Turnierleitung verlangt werden (Übersicht-Reiter, z. B. für die Bundesliga).",
         ],
       },
     ],
@@ -710,8 +767,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
           {
             liste: [
               "Eine Möglichkeit, die Anwendung komplett eigenständig auf einem einzelnen Computer zu nutzen, ganz ohne Internetzugang und ohne zentralen Server im Hintergrund – ergänzend zur bereits vorhandenen lokalen Installation (siehe oben).",
-              "Ein ausführlicheres, digitales Live-Protokoll: Statt nur das Endergebnis einzutragen, sollen sich künftig auch einzelne Ereignisse während des Spiels erfassen lassen, zum Beispiel jedes Tor einzeln – inklusive einer Liste der Torschützinnen und Torschützen.",
-              "Passend dazu ein eigener, eingeschränkter Zugang für die Person, die während des Spiels protokolliert, ohne dass diese die komplette Turnierverwaltung sehen oder bedienen können muss.",
+              "Ausbau der neuen digitalen Live-Protokollierung (aktuell im Beta-Test, siehe eigenes Hilfe-Thema): unter anderem eine Torschützen-Liste über das Turnier, ein druckbarer Spielbericht und frei belegbare Tasten.",
               "Die Anwendung zusätzlich auf Italienisch, Französisch und Englisch nutzen können, nicht nur auf Deutsch.",
               "Dateien direkt am Turnier hinterlegen können, zum Beispiel eine Ausschreibung, einen Hallenplan oder eine Anfahrtsskizze, sichtbar für alle Beteiligten.",
               "Zusätzliche Regeln speziell für Wettbewerbe mit mehreren Spieltagen (zum Beispiel eine Bundesliga-Saison): etwa, dass eine Person innerhalb einer Saison nicht für zwei verschiedene Vereine spielen darf, oder dass sich der Kader einer Mannschaft nach ihrem ersten Spiel nur noch eingeschränkt ändern lässt.",
