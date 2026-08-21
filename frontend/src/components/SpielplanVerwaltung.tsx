@@ -7,6 +7,7 @@ import {
   getSpiele,
   getSpielplanVorschlag,
   getTurnier,
+  getTurnierProtokolle,
   reihenfolgeAendern,
   schiedsrichterZuordnen,
   spielAnpassen,
@@ -176,6 +177,11 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
   const [ziehZielIndex, setZiehZielIndex] = useState<number | null>(null);
   const [aktuellesFeld, setAktuellesFeld] = useState<string | undefined>();
   const [verlauf, setVerlauf] = useState<SpielSnapshot[][]>([]);
+  // Digitale Protokollierung: SOBALD irgendein Spielprotokoll existiert, gilt das Turnier als
+  // begonnen (wie in TurnierVerwaltenPage) - ein Protokoll wird schon beim Eingeben des
+  // Protokollant-Namens angelegt, das Spiel bleibt bis zum ersten GO aber "geplant". Ohne
+  // diesen Zusatz-Check blieben "Neuer Vorschlag"/"Spielplan erzeugen" in dem Fenster bedienbar.
+  const [hatProtokolle, setHatProtokolle] = useState(false);
   // Zwei getrennte Sichten auf den gespeicherten Spielplan, damit keine ueberladen wirkt:
   // "plan" = reiner Spielplan (Reihenfolge/Zeiten/Status), "einteilung" = abgespeckte
   // Schiedsrichter-Einteilung (ohne Status/Hinweis/Reihenfolge).
@@ -183,16 +189,20 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
 
   const laden = useCallback(async () => {
     try {
-      const [t, m, s, sr] = await Promise.all([
+      const [t, m, s, sr, protokolle] = await Promise.all([
         getTurnier(turnierId),
         getMannschaften(turnierId),
         getSpiele(turnierId),
         getSchiedsrichter(turnierId),
+        // Best effort: ein Fehler hier darf die Spielplan-Ansicht nicht blockieren -
+        // die Sperre greift dann serverseitig (409 beim Erzeugen).
+        getTurnierProtokolle(turnierId).catch(() => []),
       ]);
       setTurnier(t);
       setMannschaften(m);
       setSpiele(s);
       setSchiedsrichter(sr);
+      setHatProtokolle(protokolle.length > 0);
       onGeaendert?.(s);
       onTurnierGeaendert?.(t);
       setFehler(undefined);
@@ -239,10 +249,15 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
 
   const spieleSortiert = [...spiele].sort((a, b) => Number(a.runde) - Number(b.runde));
   const spielWarnungen = slotWarnungen(spieleSortiert.map((s) => ({ ...s, slot: Number(s.runde) })));
-  // Sobald irgendein Spiel bereits laeuft/ein Ergebnis hat, darf kein neuer Spielplan
-  // (auch kein Vorschlag) mehr erzeugt werden - sonst wuerden bereits erfasste Ergebnisse
-  // beim Uebernehmen verworfen. Muss zum Backend-Check in spielplan.ts passen.
-  const spielplanGesperrt = spiele.some((s) => s.status !== "geplant" || s.ergebnisAbgeschlossen);
+  // Sobald irgendein Spiel bereits laeuft/ein Ergebnis hat ODER irgendein Spielprotokoll
+  // existiert, darf kein neuer Spielplan (auch kein Vorschlag) mehr erzeugt werden - sonst
+  // wuerden bereits erfasste Ergebnisse bzw. Protokolle beim Uebernehmen verworfen/verwaist.
+  // Muss zu den Backend-Checks in spielplan.ts passen.
+  const ergebnisseVorhanden = spiele.some((s) => s.status !== "geplant" || s.ergebnisAbgeschlossen);
+  const spielplanGesperrt = ergebnisseVorhanden || hatProtokolle;
+  const sperrGrund = ergebnisseVorhanden
+    ? "Es sind bereits Ergebnisse erfasst"
+    : "Es gibt bereits begonnene Spielprotokolle";
 
   const vorschlagSortiert = vorschlag ? [...vorschlag].sort((a, b) => a.slot - b.slot) : undefined;
 
@@ -477,14 +492,14 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
 
       {spielplanGesperrt && (
         <p>
-          Es sind bereits Ergebnisse erfasst - der Spielplan kann daher nicht neu erzeugt werden.
+          {sperrGrund} - der Spielplan kann daher nicht neu erzeugt werden.
         </p>
       )}
       <button
         type="button"
         onClick={neuerVorschlag}
         disabled={mannschaften.length < 2 || spielplanGesperrt || gesperrt}
-        title={spielplanGesperrt ? "Es sind bereits Ergebnisse erfasst - kein neuer Vorschlag möglich." : undefined}
+        title={spielplanGesperrt ? `${sperrGrund} - kein neuer Vorschlag möglich.` : undefined}
       >
         Neuer Vorschlag
       </button>
@@ -635,9 +650,11 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
               </tbody>
             </table>
           </div>
-          {/* gesperrt kann auch bei offenem Vorschlag noch true WERDEN (z.B. "Für lokale Nutzung
-              herunterladen" in TurnierSync setzt ausgecheckt sofort) - deshalb auch hier sperren. */}
-          <button type="button" onClick={spielplanErzeugen} disabled={gesperrt}>
+          {/* gesperrt/spielplanGesperrt koennen auch bei offenem Vorschlag noch true WERDEN (z.B.
+              "Für lokale Nutzung herunterladen" in TurnierSync setzt ausgecheckt sofort; ein
+              zwischenzeitlich gestartetes Spielprotokoll faellt beim naechsten laden() auf) -
+              deshalb auch hier sperren. */}
+          <button type="button" onClick={spielplanErzeugen} disabled={gesperrt || spielplanGesperrt}>
             {spiele.length > 0 ? "Spielplan neu erzeugen" : "Spielplan erzeugen"}
           </button>{" "}
           <button type="button" onClick={() => setVorschlag(undefined)}>

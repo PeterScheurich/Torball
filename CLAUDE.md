@@ -29,6 +29,17 @@ Workspace-Reihenfolge (`frontend`, `backend`,
 `shared/src` zuerst `npm run build --workspace=shared` separat ausführen,
 sonst prüfen Backend/Frontend gegen einen veralteten Stand.
 
+**TypeScript-Versionen sind je Workspace unterschiedlich gepinnt:** `frontend` nutzt
+TypeScript `~6.0` (eigene Kopie in `frontend/node_modules`), `backend`/`shared` `^5.7`
+(gehoistet in der Wurzel-`node_modules`). Der Frontend-Code setzt teils TS-6-Verhalten
+voraus (z. B. iterierbares `NodeListOf`, obwohl `lib` in `tsconfig.app.json` kein
+`DOM.Iterable` enthält) – mit einem 5.x-Compiler schlägt der Frontend-Build in
+**unverändertem** Code fehl (TS2488 in `KopfzeilenMenue.tsx`). Praktisch relevant in
+Git-Worktrees (`.claude/worktrees/…`): ohne eigenes `npm install` im Worktree löst Node
+`node_modules` über die Verzeichnis-Hierarchie zum Haupt-Checkout hin auf und findet dort
+nur das Wurzel-TypeScript 5.x. **In jedem frischen Worktree deshalb zuerst `npm install`
+ausführen** (live erlebt 2026-08-21).
+
 **Lint:**
 ```bash
 npm run lint --workspace=frontend   # oxlint
@@ -460,11 +471,32 @@ aktivierter Regel `seitenwechsel` automatisch die Anzeigeseiten; 8-Sekunden-Anze
 einem Wurf neutral auf BEIDEN Seiten, erst `K` legt die Seite fest. **Lehre aus einem Live-Bug:
 Befehle/Seiteneffekte NIE im setState-Updater ausführen** (React-StrictMode ruft Updater doppelt
 auf → doppelt gebuchte Events samt Sequenz-Kollisionen) – `eingabeRef`-Muster in ProtokollPage.
+**Automatischer Uhr-Stopp (Nutzer-Vorgabe 2026-08-21):** Tor/Eigentor (auch über den „`G` nach
+Wurf"-Schnellpfad), Foul, Strafwurf, Auszeit und technische Auszeit buchen bei laufender Uhr ein
+`STOP` hinterher (`uhrAutoStopp()`) – auf all das pfeift der Schiedsrichter neu an, im Torball
+zählt Netto-Spielzeit. Der Neustart bleibt bewusst manuell (Leertaste), das `STOP` ist ein
+normales, korrigierbares Ereignis. Kontrolle/Fehlwurf/Freiwurf/Wechsel stoppen NICHT.
+**Rückmeldung bei Regelverstößen:** die Statusanzeige unterscheidet „NOCH NICHT GESTARTET"/
+„PAUSE"/„SPIEL BEENDET"/„UNTERBROCHEN" (`spielGestartet`/`inPause` in `stand.ts`, `B`/`VB` setzen
+die Pause, `GO` löscht sie); das Wurf-Badge am Spieler wird ab dem 4. Wurf rot; und eine NEU
+auftauchende Warnung lässt den Bildschirm 0,5 s rot aufblitzen (`protokoll-fehler-blitz`, Remount
+per Zähler-`key` startet die CSS-Animation neu – kein Timeout-State). Der Blitz vergleicht dafür
+`stand.hinweise` auf Neuheit, **deshalb muss ein wiederholbarer Verstoß seine Zahl im Text
+tragen** (der Hinweis ab dem 4. Wurf zählt mit: „5. Wurf in Folge", „6. …" – jeder weitere Wurf
+ohne Unterbrechung ist strafbewehrt und soll erneut blitzen); Aufstellungs-Hinweise sind bewusst
+ausgenommen (ändern sich beim Einrichten mit jedem Klick).
 Zugang: dritter Turnier-Code „Protokollant" (`TurnierCodeRolle`, Stufe `lesen` + eigenes Prädikat
 `darfProtokollieren()` in `turnierZugriff.ts` – bewusst KEINE vierte Zugriffsstufe), eigene Seite
 `ProtokollantCodePage`. Sobald irgendein Spielprotokoll existiert, gilt das Turnier als begonnen:
-`GET /turniere/:id/spielprotokolle` speist dieselbe Sperre wie beim ersten manuellen Ergebnis - bei digital sperrt sie zusaetzlich das GANZE Regel-Formular samt Vier-Augen-Checkbox (die Regeln wirken dort direkt in die Live-Erfassung)
-(`spielplanGesperrt` in TurnierVerwaltenPage, lädt bei Fenster-Fokus nach). **Bewusst
+`GET /turniere/:id/spielprotokolle` speist dieselbe Sperre wie beim ersten manuellen Ergebnis
+(`spielplanGesperrt` in TurnierVerwaltenPage, lädt bei Fenster-Fokus nach) – bei digital sperrt
+sie zusätzlich das GANZE Regel-Formular samt Vier-Augen-Checkbox (die Regeln wirken dort direkt
+in die Live-Erfassung). Seit 2026-08-21 greift sie außerdem an der Spielplan-Erzeugung selbst:
+`spielplan.ts` lehnt Vorschlag (GET) und Persistieren (POST, beide Pfade) mit 409 ab, wenn
+Spielprotokolle existieren, und `SpielplanVerwaltung.tsx` sperrt „Neuer Vorschlag"/„Spielplan
+erzeugen" mit – ein Protokoll entsteht schon bei der Protokollant-Eingabe, während das Spiel noch
+„geplant" ist; der reine Spiel-Status-Check hätte in diesem Fenster das Löschen aller Spiele
+durchgelassen und Protokoll+Events verwaist zurückgelassen. **Bewusst
 zurückgestellt** (Konzept Abschnitt 11): konfigurierbare Tastenbelegung (erst wenn das Protokoll
 rund läuft – Nutzer-Vorgabe), PDF-Spielbericht, Beamer-Sicht, Torschützen-Statistik,
 Freiwurf-Führung, „kurzzeitig ausgesetzt"-Status, Tablet-Layout/Wake-Lock, Panel-Firmware.
