@@ -15,9 +15,18 @@ Checkout dieses Repos hat sie nicht.
 - [Besonderheiten der Entwicklungs-Umgebung](entwicklungs-umgebung.md)
 - [Besonderheiten der Demo-Umgebung](demo-umgebung.md)
 - [Entwicklungs-Kanban-Board](kanban-board.md)
+- [Aufbau der Anwendung (Architektur-Bauplan)](architektur-bauplan.html) – HTML statt Markdown
 - [Digitale Protokollierung – Konzept](digitales-protokoll-konzept.md)
 - [Torball-Protokoll-Panel – Konzept](torball-protokoll-panel-konzept.md)
 - [Torball – Gesamtspezifikation (fachlich & technisch)](torball_gesamtspezifikation.md)
+
+Der **Architektur-Bauplan** (`architektur-bauplan.html`) ist die einzige Datei hier, die
+kein Markdown ist: Sie enthält handgezeichnete SVG-Diagramme, die sich in Markdown nicht
+sinnvoll abbilden lassen. Sie ist eigenständig (nur Google Fonts von außen), lässt sich
+direkt im Browser öffnen und wird von der Anwendung zusätzlich unter
+`/api/doku/architektur-bauplan` ausgeliefert – nur für angemeldete Personen, verlinkt auf
+der Hilfeseite. Vom BookStack-Abgleich wird sie **nicht** erfasst (`bookstack-push.mjs`
+überträgt ausschließlich `.md`-Dateien).
 
 ## Weitere Ordner
 

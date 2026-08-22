@@ -82,6 +82,11 @@ export function HilfePage() {
               <a href={`#${thema.id}`}>{thema.titel}</a>
             </li>
           ))}
+          {benutzer && (
+            <li>
+              <a href="#bauplan">Aufbau der Anwendung (angemeldet)</a>
+            </li>
+          )}
           {darfSpezSehen && (
             <li>
               <a href="#spezifikation">Gesamtspezifikation (Admin/Manager)</a>
@@ -113,6 +118,32 @@ export function HilfePage() {
           ))}
         </section>
       ))}
+
+      {/* Architektur-Bauplan: eine eigenstaendige Seite mit Diagrammen zu Modulen, Schichten,
+          Berechtigungen, Datenmodell und Betriebsmodi (docs/architektur-bauplan.html).
+          Ausgeliefert wird sie vom Backend hinter einer Anmeldepruefung - der Link erscheint
+          deshalb nur angemeldet, und ein direkter Aufruf ohne Anmeldung endet mit 401. */}
+      {benutzer && (
+        <section id="bauplan" className="hilfe-thema" aria-labelledby="bauplan-titel">
+          <h2 id="bauplan-titel">Aufbau der Anwendung (nur für angemeldete Personen)</h2>
+          <p className="hilfe-kurz">
+            Ein bebilderter Überblick, wie die Anwendung aufgebaut ist: aus welchen Bausteinen sie besteht, wie eine
+            Anfrage vom Browser bis zur Datenbank läuft, wie die Zugriffsrechte greifen, wie die gespeicherten Daten
+            zusammenhängen und wie der Betrieb ohne Internet in der Halle funktioniert.
+          </p>
+          <p>
+            Gedacht für alle, die genauer wissen möchten, was hinter der Oberfläche passiert – etwa vor einem
+            Turnier mit eigener Installation. Die sechs Zeichnungen lassen sich anklicken und vergrößern, und die
+            Schriftgröße der Seite ist einstellbar.
+          </p>
+          <p>
+            <a className="button-link" href="/api/doku/architektur-bauplan" target="_blank" rel="noopener noreferrer">
+              Aufbau der Anwendung öffnen
+            </a>
+          </p>
+          <p className="feld-hinweis">Öffnet sich in einem neuen Browser-Tab.</p>
+        </section>
+      )}
 
       {/* Gesamtspezifikation - bewusst nur fuer Administratoren und Manager. Die verbindliche
           fachliche/technische Referenz gehoert nicht in die allgemeine Endnutzer-Hilfe, ist fuer

@@ -782,6 +782,24 @@ Auto-Speichern und bietet zwei Knöpfe „Vorhandenes übernehmen"
 der internen Verwaltung** (`ErgebnisVerwaltung`), nicht auf der externen
 Token-Seite (`ErgebnisErfassungPage`).
 
+**Architektur-Bauplan (`docs/architektur-bauplan.html`, 2026-08-22):** eine eigenstaendige
+HTML-Seite mit sechs handgezeichneten SVG-Diagrammen (Schichten/Auslieferungsformen,
+Modul-Landkarte inkl. der bewussten Duplikate, Request-Pipeline + Berechtigungsmodell,
+Datenmodell, die zwei Ergebnis-Wege, Betriebsmodi + Instanz-Kopplung) plus dem Inventar aller
+docTypes und den tragenden Regeln. **Einzige Nicht-Markdown-Datei in `docs/`** – SVG laesst sich
+dort nicht sinnvoll abbilden; vom BookStack-Push (nur `.md`) daher nicht erfasst. Nutzt dieselben
+Farbtokens wie die App (heller Akzent bewusst leicht abgedunkelt: `#2e7d32` auf Panel-Grund ergab
+nur 4,45:1). Diagramme sind per Klick vergroesserbar (natives `<dialog>` + Zoom bis 500 %),
+Schriftgroesse der Seite ueber `--skala` einstellbar – **die Beschriftungen IN den SVGs skalieren
+bewusst nicht mit** (feste Koordinaten, sie wuerden aus ihren Kaesten laufen; dafuer ist die Lupe
+da). Beim Klonen eines Diagramms in die Lupe werden die Marker-IDs umbenannt, sonst zeigen die
+Pfeilspitzen der Kopie auf die Definitionen des Originals (gleiche ID, erstes Vorkommen gewinnt).
+**Ausgeliefert wird die Datei vom Backend** (`backend/src/routes/doku.ts`, `GET /doku/:name` mit
+fester Allowlist statt Pfad-Parameter) hinter `requireAuth` – bewusst nicht aus
+`frontend/public/`, wo sie fuer jeden abrufbar waere. `requireAuth` statt `requireZugriff`: ein
+Turnier-Code genuegt nicht, es braucht ein Konto (wie bei `/ueber` und der Gesamtspezifikation).
+Verlinkt auf `/hilfe` in einem Abschnitt, der nur bei bestehender Anmeldung gerendert wird.
+
 **In-App-Hilfe, datengetrennt:** `/hilfe` (`HilfePage`) rendert Inhalte aus
 `frontend/src/hilfe/inhalte.ts` (Texte getrennt vom Layout, dreistufig: Kurz →
 `<details>`-Abschnitt → verschachteltes „Mehr Infos"). Screenshots gehören nach

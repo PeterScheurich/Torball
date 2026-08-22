@@ -1,0 +1,1301 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Architektur-Uebersicht der Anwendung Torball-Turniere: Module, Schichten, Berechtigungen, Datenmodell und Betriebsmodi.">
+<!--
+  Architektur-Bauplan von Torball-Turniere - fuehrende Fassung.
+
+  Diese Datei ist eigenstaendig: keine Build-Schritte, keine externen Abhaengigkeiten
+  ausser Google Fonts. Sie laesst sich direkt im Browser oeffnen und wird zusaetzlich
+  von der Anwendung ausgeliefert (GET /doku/architektur-bauplan, nur fuer angemeldete
+  Personen; verlinkt auf der Hilfeseite).
+
+  Die Diagramme sind handgeschriebenes SVG und nutzen dieselben Farbtokens wie die
+  Anwendung selbst - Hell- und Dunkelmodus folgen der Systemeinstellung.
+-->
+<title>Torball-Turniere Bauplan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&family=Zilla+Slab:wght@500;600;700&display=swap">
+<style>
+  :root {
+    /* Textgroesse: alle Schriftgroessen ausser denen IN den Diagrammen haengen daran.
+       Diagramm-Beschriftungen bleiben fest - sie sitzen auf festen Koordinaten und
+       wuerden sonst aus ihren Kaesten laufen; die Diagramme skaliert stattdessen die Lupe. */
+    --skala: 1;
+    --ink: #1f2028;
+    --ink-soft: #5c5866;
+    --paper: #faf9f4;
+    --panel: #f1efe6;
+    --panel-2: #e9e6da;
+    --rule: #ddd9cc;
+    --accent: #256a29;
+    --accent-soft: rgba(37, 106, 41, 0.10);
+    --signal: #a1233b;
+    --signal-soft: rgba(161, 35, 59, 0.10);
+    --net: #0b5fff;
+    --net-soft: rgba(11, 95, 255, 0.10);
+
+    --slab: 'Zilla Slab', Georgia, 'Times New Roman', serif;
+    --sans: 'Atkinson Hyperlegible', system-ui, 'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', 'Cascadia Mono', Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #e5e4e7;
+      --ink-soft: #a8a5b0;
+      --paper: #16171d;
+      --panel: #1f2028;
+      --panel-2: #262832;
+      --rule: #34363f;
+      --accent: #66bb6a;
+      --accent-soft: rgba(102, 187, 106, 0.14);
+      --signal: #f28b9d;
+      --signal-soft: rgba(242, 139, 157, 0.14);
+      --net: #7fb2ff;
+      --net-soft: rgba(127, 178, 255, 0.14);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #e5e4e7;
+    --ink-soft: #a8a5b0;
+    --paper: #16171d;
+    --panel: #1f2028;
+    --panel-2: #262832;
+    --rule: #34363f;
+    --accent: #66bb6a;
+    --accent-soft: rgba(102, 187, 106, 0.14);
+    --signal: #f28b9d;
+    --signal-soft: rgba(242, 139, 157, 0.14);
+    --net: #7fb2ff;
+    --net-soft: rgba(127, 178, 255, 0.14);
+  }
+
+  html { font-size: calc(16px * var(--skala)); }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 1.0625rem;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px 96px; }
+  .col { max-width: 66ch; }
+
+  /* ---------- Kopf ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--paper) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .topbar-inner {
+    max-width: 1180px; margin: 0 auto; padding: 10px 24px;
+    display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: baseline;
+  }
+  .wordmark { font-family: var(--slab); font-weight: 700; font-size: 0.94rem; letter-spacing: .01em; }
+  .topnav { display: flex; flex-wrap: wrap; gap: 4px 16px; font-family: var(--mono); font-size: 0.72rem; }
+  .topnav a { color: var(--ink-soft); text-decoration: none; border-bottom: 1px solid transparent; padding: 2px 0; }
+  .topnav a:hover, .topnav a:focus-visible { color: var(--accent); border-bottom-color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--net); outline-offset: 2px; border-radius: 2px; }
+
+  .schrift { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .schrift .titel, .schrift .stufe {
+    font-family: var(--mono); font-size: 0.68rem; color: var(--ink-soft);
+  }
+  .schrift .stufe { min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
+  .schrift button {
+    font-family: var(--mono); font-size: 0.72rem; line-height: 1;
+    color: var(--ink); background: var(--panel);
+    border: 1px solid var(--rule); border-radius: 4px;
+    padding: 5px 9px; cursor: pointer; box-sizing: border-box;
+  }
+  .schrift button:hover:not(:disabled), .schrift button:focus-visible { border-color: var(--accent); color: var(--accent); }
+  .schrift button:disabled { opacity: .4; cursor: default; }
+
+  header.hero { padding: 64px 0 40px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 500;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--slab); font-weight: 700;
+    font-size: clamp(2.3rem, 5.4vw, 3.5rem); line-height: 1.08;
+    letter-spacing: -.015em; text-wrap: balance; margin: 0 0 20px;
+  }
+  .lede { font-size: 1.16rem; color: var(--ink); margin: 0 0 8px; max-width: 60ch; }
+  .hero-note { font-size: .95rem; color: var(--ink-soft); max-width: 62ch; }
+
+  .facts {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px; background: var(--rule);
+    border: 1px solid var(--rule); border-radius: 6px; overflow: hidden;
+    margin: 40px 0 8px;
+  }
+  .fact { background: var(--panel); padding: 16px 18px; }
+  .fact dt {
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px;
+  }
+  .fact dd {
+    margin: 0; font-family: var(--slab); font-weight: 600; font-size: 1.5rem;
+    line-height: 1.1; font-variant-numeric: tabular-nums;
+  }
+  .fact dd span { display: block; font-family: var(--sans); font-weight: 400; font-size: .82rem; color: var(--ink-soft); margin-top: 4px; line-height: 1.35; }
+
+  /* ---------- Abschnitte ---------- */
+  section { padding-top: 56px; scroll-margin-top: calc(var(--kopfhoehe, 64px) + 12px); }
+  h2 {
+    font-family: var(--slab); font-weight: 700; font-size: clamp(1.6rem, 3vw, 2.1rem);
+    line-height: 1.15; letter-spacing: -.01em; text-wrap: balance;
+    margin: 0 0 16px; padding-top: 14px; border-top: 2px solid var(--ink);
+  }
+  h3 {
+    font-family: var(--slab); font-weight: 600; font-size: 1.22rem;
+    margin: 40px 0 10px; text-wrap: balance;
+  }
+  p { margin: 0 0 16px; }
+  code {
+    font-family: var(--mono); font-size: .86em;
+    background: var(--panel-2); padding: 1px 5px; border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  strong { font-weight: 700; }
+  a { color: var(--accent); }
+
+  /* ---------- Abbildungen ---------- */
+  .fig { margin: 32px 0 12px; }
+  .fig-frame {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 8px;
+    padding: 22px; overflow-x: auto;
+  }
+  .fig svg { display: block; width: 100%; min-width: 620px; height: auto; color: var(--ink); }
+  figcaption {
+    margin-top: 12px; font-size: .92rem; color: var(--ink-soft);
+    max-width: 78ch; display: flex; gap: 10px;
+  }
+  figcaption b {
+    font-family: var(--mono); font-size: 0.69rem; font-weight: 600; letter-spacing: .06em;
+    color: var(--ink); white-space: nowrap; padding-top: 3px; text-transform: uppercase;
+  }
+
+  /* SVG-Klassen: Farben ueber Tokens, damit beide Themes tragen */
+  .dia text { font-family: var(--mono); font-size: 11px; fill: currentColor; }
+  .dia .t-title { font-family: var(--sans); font-size: 12.5px; font-weight: 700; }
+  .dia .t-sub { font-size: 10px; fill: var(--ink-soft); }
+  .dia .lbl { font-size: 10px; letter-spacing: .1em; fill: var(--ink-soft); }
+  .dia .box { fill: var(--paper); stroke: var(--rule); stroke-width: 1.2; }
+  .dia .box-2 { fill: var(--panel-2); stroke: var(--rule); stroke-width: 1.2; }
+  .dia .box-acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.4; }
+  .dia .box-sig { fill: var(--signal-soft); stroke: var(--signal); stroke-width: 1.4; }
+  .dia .box-net { fill: var(--net-soft); stroke: var(--net); stroke-width: 1.4; }
+  .dia .group { fill: none; stroke: var(--rule); stroke-width: 1.2; stroke-dasharray: 3 4; }
+  .dia .ln { stroke: currentColor; stroke-width: 1.3; fill: none; opacity: .6; }
+  .dia .ln-acc { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  .dia .ln-sig { stroke: var(--signal); stroke-width: 1.5; fill: none; }
+  .dia .ln-net { stroke: var(--net); stroke-width: 1.5; fill: none; }
+  .dia .dash { stroke-dasharray: 5 4; }
+  .dia .head { fill: currentColor; opacity: .6; }
+  .dia .head-acc { fill: var(--accent); }
+  .dia .head-sig { fill: var(--signal); }
+  .dia .head-net { fill: var(--net); }
+  .dia .t-acc { fill: var(--accent); font-weight: 600; }
+  .dia .t-sig { fill: var(--signal); font-weight: 600; }
+  .dia .t-tight { font-family: var(--sans); font-size: 11px; font-weight: 700; }
+  .dia .t-net { fill: var(--net); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="wordmark">Torball-Turniere · Bauplan</span>
+    <nav class="topnav" aria-label="Abschnitte">
+      <a href="#schichten">Schichten</a>
+      <a href="#module">Module</a>
+      <a href="#zugriff">Zugriff</a>
+      <a href="#daten">Daten</a>
+      <a href="#ergebnis">Ergebniswege</a>
+      <a href="#betrieb">Betrieb</a>
+      <a href="#regeln">Tragende Regeln</a>
+    </nav>
+    <div class="schrift" role="group" aria-label="Schriftgröße der Seite">
+      <span class="titel" aria-hidden="true">Schrift</span>
+      <button type="button" id="schrift-kleiner" aria-label="Schrift verkleinern">A&minus;</button>
+      <span class="stufe" id="schrift-stufe" aria-live="polite" aria-atomic="true">100 %</span>
+      <button type="button" id="schrift-groesser" aria-label="Schrift vergrößern">A+</button>
+      <button type="button" id="schrift-zurueck" aria-label="Schriftgröße zurücksetzen">Zurück</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header class="hero">
+  <p class="eyebrow">Architektur-Übersicht · Stand 22.08.2026</p>
+  <h1>Wie Torball-Turniere gebaut ist</h1>
+  <div class="col">
+    <p class="lede">Eine Anwendung, um Torball-Turniere zu planen und während des Turniers am Rechner zu protokollieren — für eine Sportart, die von blinden und sehbehinderten Menschen gespielt wird.</p>
+    <p class="hero-note">Dieser Bauplan zeigt, aus welchen Modulen das System besteht, wie eine Anfrage durch die Schichten läuft und wie die Daten zusammenhängen. Alle Zahlen sind aus dem Quelltext des aktuellen <code>main</code>-Standes gezählt, nicht geschätzt. Jede Abbildung lässt sich anklicken und stufenlos vergrößern.</p>
+  </div>
+
+  <dl class="facts">
+    <div class="fact"><dt>Quelltext</dt><dd>29.734<span>Zeilen ohne Tests</span></dd></div>
+    <div class="fact"><dt>Workspaces</dt><dd>3<span>shared · backend · frontend</span></dd></div>
+    <div class="fact"><dt>Datenbank</dt><dd>1<span>CouchDB, alle Typen darin</span></dd></div>
+    <div class="fact"><dt>Dokumenttypen</dt><dd>29<span>über <code>docType</code> getrennt</span></dd></div>
+    <div class="fact"><dt>API-Routendateien</dt><dd>25<span>als Fastify-Plugins</span></dd></div>
+    <div class="fact"><dt>Betriebsmodi</dt><dd>3<span>zwei davon gebaut</span></dd></div>
+  </dl>
+</header>
+
+<section id="schichten">
+  <h2>Schichten: von der Browserzeile bis zur Datenbank</h2>
+  <div class="col">
+    <p>Dieselbe gebaute Anwendung läuft in drei Umgebungen — und der Unterschied liegt nicht im Code, sondern darin, <strong>wer das Frontend ausliefert und wie <code>/api</code> die Routen erreicht</strong>. Genau an dieser Stelle steckte einer der teuersten Fehler des Projekts: Instanz-zu-Instanz-Aufrufe ohne <code>/api</code>-Präfix landeten bei der SPA-Auslieferung und bekamen HTML statt JSON zurück.</p>
+  </div>
+
+  <figure class="fig">
+    <div class="fig-frame">
+      <svg class="dia" viewBox="0 0 1120 430" role="img" aria-label="Vergleich der drei Auslieferungsformen: In der Entwicklung liefert der Vite-Server die Oberfläche und reicht die API-Anfragen an Fastify auf Port 3000 weiter. Auf dem Server übernimmt nginx diese Rolle für ein reines API-Backend. In der lokalen Windows-Installation macht ein einziger Fastify-Prozess beides und registriert die Routen unter einem echten API-Präfix.">
+        <defs>
+          <marker id="f1a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker>
+          <marker id="f1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head-acc"/></marker>
+        </defs>
+
+        <text x="190" y="16" class="lbl" text-anchor="middle">ENTWICKLUNG</text>
+        <text x="560" y="16" class="lbl" text-anchor="middle">SERVER (DEBIAN + NGINX)</text>
+        <text x="930" y="16" class="lbl" text-anchor="middle">LOKALE INSTALLATION (WINDOWS)</text>
+
+        <rect x="30" y="32" width="320" height="48" rx="5" class="box"/>
+        <text x="190" y="54" class="t-title" text-anchor="middle">Browser · React-SPA</text>
+        <text x="190" y="70" class="t-sub" text-anchor="middle">localhost:5173</text>
+        <rect x="400" y="32" width="320" height="48" rx="5" class="box"/>
+        <text x="560" y="54" class="t-title" text-anchor="middle">Browser · React-SPA</text>
+        <text x="560" y="70" class="t-sub" text-anchor="middle">turniere.blindentorball.de</text>
+        <rect x="770" y="32" width="320" height="48" rx="5" class="box"/>
+        <text x="930" y="54" class="t-title" text-anchor="middle">Browser · React-SPA</text>
+        <text x="930" y="70" class="t-sub" text-anchor="middle">im WLAN der Halle</text>
+
+        <line x1="190" y1="80" x2="190" y2="112" class="ln" marker-end="url(#f1a)"/>
+        <line x1="560" y1="80" x2="560" y2="112" class="ln" marker-end="url(#f1a)"/>
+        <line x1="930" y1="80" x2="930" y2="112" class="ln" marker-end="url(#f1a)"/>
+
+        <rect x="30" y="114" width="320" height="106" rx="5" class="box-2"/>
+        <text x="190" y="137" class="t-title" text-anchor="middle">Vite Dev-Server</text>
+        <text x="46" y="161" class="t-sub">liefert die Oberfläche aus den Quellen</text>
+        <text x="46" y="181" class="t-sub">Hot-Reload beim Speichern</text>
+        <text x="46" y="203" class="t-sub">Proxy: /api zu localhost:3000</text>
+        <rect x="400" y="114" width="320" height="106" rx="5" class="box-2"/>
+        <text x="560" y="137" class="t-title" text-anchor="middle">nginx</text>
+        <text x="416" y="161" class="t-sub">location / zu frontend/dist</text>
+        <text x="416" y="181" class="t-sub">location /api/ zu 127.0.0.1:3001</text>
+        <text x="416" y="203" class="t-sub">TLS davor: Nginx Proxy Manager</text>
+        <rect x="770" y="114" width="320" height="106" rx="5" class="box-acc"/>
+        <text x="930" y="137" class="t-title" text-anchor="middle">Ein einziger Fastify-Prozess</text>
+        <text x="786" y="161" class="t-sub">@fastify/static liefert frontend/dist</text>
+        <text x="786" y="181" class="t-sub">notFoundHandler = SPA-Rückfall</text>
+        <text x="786" y="203" class="t-sub">SERVE_FRONTEND=true</text>
+
+        <line x1="190" y1="220" x2="190" y2="252" class="ln" marker-end="url(#f1a)"/>
+        <line x1="560" y1="220" x2="560" y2="252" class="ln" marker-end="url(#f1a)"/>
+        <line x1="930" y1="220" x2="930" y2="252" class="ln-acc" marker-end="url(#f1b)"/>
+        <text x="200" y="244" class="t-sub">Präfix wird abgestreift</text>
+        <text x="570" y="244" class="t-sub">Präfix wird abgestreift</text>
+        <text x="940" y="244" class="t-acc">echtes /api-Präfix</text>
+
+        <rect x="30" y="254" width="320" height="80" rx="5" class="box"/>
+        <text x="190" y="277" class="t-title" text-anchor="middle">Fastify :3000</text>
+        <text x="190" y="297" class="t-sub" text-anchor="middle">Routen liegen an der Wurzel</text>
+        <text x="190" y="316" class="t-sub" text-anchor="middle">npm run dev:backend</text>
+        <rect x="400" y="254" width="320" height="80" rx="5" class="box"/>
+        <text x="560" y="277" class="t-title" text-anchor="middle">Fastify :3001 · nur API</text>
+        <text x="560" y="297" class="t-sub" text-anchor="middle">Routen liegen an der Wurzel</text>
+        <text x="560" y="316" class="t-sub" text-anchor="middle">systemd-Dienst je Instanz</text>
+        <rect x="770" y="254" width="320" height="80" rx="5" class="box-acc"/>
+        <text x="930" y="277" class="t-title" text-anchor="middle">…derselbe Prozess</text>
+        <text x="930" y="297" class="t-sub" text-anchor="middle">registerApiRoutes mit prefix /api</text>
+        <text x="930" y="316" class="t-sub" text-anchor="middle">Start-Torball.cmd</text>
+
+        <line x1="190" y1="334" x2="190" y2="366" class="ln" marker-end="url(#f1a)"/>
+        <line x1="560" y1="334" x2="560" y2="366" class="ln" marker-end="url(#f1a)"/>
+        <line x1="930" y1="334" x2="930" y2="366" class="ln" marker-end="url(#f1a)"/>
+
+        <rect x="30" y="368" width="320" height="48" rx="5" class="box"/>
+        <text x="190" y="390" class="t-title" text-anchor="middle">CouchDB im Dev-Netz</text>
+        <text x="190" y="406" class="t-sub" text-anchor="middle">gemeinsame Entwicklungs-DB</text>
+        <rect x="400" y="368" width="320" height="48" rx="5" class="box"/>
+        <text x="560" y="390" class="t-title" text-anchor="middle">CouchDB auf 127.0.0.1</text>
+        <text x="560" y="406" class="t-sub" text-anchor="middle">eigene DB + Benutzer je Instanz</text>
+        <rect x="770" y="368" width="320" height="48" rx="5" class="box"/>
+        <text x="930" y="390" class="t-title" text-anchor="middle">CouchDB als Windows-Dienst</text>
+        <text x="930" y="406" class="t-sub" text-anchor="middle">alles auf einem Rechner</text>
+      </svg>
+    </div>
+    <figcaption><b>Abb. 1</b><span>Drei Auslieferungsformen desselben Codes. Nur rechts registriert das Backend seine Routen unter einem echten <code>/api</code>-Präfix — links und in der Mitte streift der jeweilige Vermittler das Präfix ab, bevor die Anfrage ankommt.</span></figcaption>
+  </figure>
+</section>
+
+<section id="module">
+  <h2>Module: drei Workspaces und eine folgenreiche Grenze</h2>
+  <div class="col">
+    <p>Das Repository ist ein Monorepo mit drei npm-Workspaces. <code>shared</code> hält die Typen, die Backend und Frontend gemeinsam benutzen — aber es wird als CommonJS kompiliert. Das Backend darf daraus echte Funktionen importieren, das Frontend <strong>nur Typen</strong>, die beim Kompilieren verschwinden.</p>
+    <p>Diese eine Grenze erklärt eine Eigenheit, über die sonst jeder stolpert: Drei Stück Geschäftslogik existieren <strong>absichtlich doppelt</strong> — als kleine, identische Kopie auf beiden Seiten. Wer eine davon ändert, muss die andere mitziehen.</p>
+  </div>
+
+  <figure class="fig">
+    <div class="fig-frame">
+      <svg class="dia" viewBox="0 0 1120 520" role="img" aria-label="Modul-Landkarte: Der shared-Workspace liefert dem Backend Typen und Laufzeit-Code, dem Frontend dagegen nur Typen. Backend und Frontend gliedern sich in je zwölf Modulgruppen. Weil das Frontend keine Laufzeit-Logik aus shared beziehen kann, existieren drei Logikbausteine bewusst als identische Kopie auf beiden Seiten.">
+        <defs>
+          <marker id="f2a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker>
+          <marker id="f2s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head-sig"/></marker>
+        </defs>
+
+        <rect x="395" y="16" width="330" height="74" rx="5" class="box-2"/>
+        <text x="560" y="42" class="t-title" text-anchor="middle">shared/ · 24 Typdateien</text>
+        <text x="560" y="60" class="t-sub" text-anchor="middle">TorballDokument · Turnierregeln · IDs</text>
+        <text x="560" y="78" class="t-sub" text-anchor="middle">kompiliert nach CommonJS</text>
+
+        <line x1="470" y1="90" x2="300" y2="146" class="ln" marker-end="url(#f2a)"/>
+        <text x="300" y="112" class="t-sub" text-anchor="middle">Typen + Laufzeit-Code</text>
+        <line x1="650" y1="90" x2="820" y2="146" class="ln-sig" marker-end="url(#f2s)"/>
+        <text x="828" y="112" class="t-sig" text-anchor="middle">nur Typen</text>
+
+        <rect x="30" y="150" width="490" height="232" rx="6" class="group"/>
+        <text x="46" y="172" class="lbl">BACKEND · FASTIFY + COUCHDB</text>
+        <rect x="46" y="186" width="142" height="40" rx="4" class="box-acc"/>
+        <text x="117" y="203" class="t-title" text-anchor="middle">routes/</text>
+        <text x="117" y="218" class="t-sub" text-anchor="middle">25 Dateien · 5.815 Z.</text>
+        <rect x="200" y="186" width="142" height="40" rx="4" class="box"/>
+        <text x="271" y="203" class="t-title" text-anchor="middle">auth/</text>
+        <text x="271" y="218" class="t-sub" text-anchor="middle">Sitzung · Zugriff</text>
+        <rect x="354" y="186" width="142" height="40" rx="4" class="box"/>
+        <text x="425" y="203" class="t-title" text-anchor="middle">spielplan/</text>
+        <text x="425" y="218" class="t-sub" text-anchor="middle">Paarungen · Zeiten</text>
+        <rect x="46" y="234" width="142" height="40" rx="4" class="box"/>
+        <text x="117" y="251" class="t-title" text-anchor="middle">protokoll/</text>
+        <text x="117" y="266" class="t-sub" text-anchor="middle">Event-Semantik</text>
+        <rect x="200" y="234" width="142" height="40" rx="4" class="box"/>
+        <text x="271" y="251" class="t-title" text-anchor="middle">sync/</text>
+        <text x="271" y="266" class="t-sub" text-anchor="middle">Export · Import</text>
+        <rect x="354" y="234" width="142" height="40" rx="4" class="box"/>
+        <text x="425" y="251" class="t-title" text-anchor="middle">ergebnisse/</text>
+        <text x="425" y="266" class="t-sub" text-anchor="middle">Tabellenberechnung</text>
+        <rect x="46" y="282" width="142" height="40" rx="4" class="box"/>
+        <text x="117" y="299" class="t-title" text-anchor="middle">mail/</text>
+        <text x="117" y="314" class="t-sub" text-anchor="middle">Postfach · KI · Bericht</text>
+        <rect x="200" y="282" width="142" height="40" rx="4" class="box"/>
+        <text x="271" y="299" class="t-title" text-anchor="middle">demo/</text>
+        <text x="271" y="314" class="t-sub" text-anchor="middle">Snapshot · Beispiele</text>
+        <rect x="354" y="282" width="142" height="40" rx="4" class="box"/>
+        <text x="425" y="299" class="t-title" text-anchor="middle">cli/torball.ts</text>
+        <text x="425" y="314" class="t-sub" text-anchor="middle">Konsolen-Werkzeug</text>
+        <rect x="46" y="330" width="142" height="40" rx="4" class="box-acc"/>
+        <text x="117" y="347" class="t-title" text-anchor="middle">repository.ts</text>
+        <text x="117" y="362" class="t-sub" text-anchor="middle">einziger DB-Zugang</text>
+        <rect x="200" y="330" width="142" height="40" rx="4" class="box"/>
+        <text x="271" y="347" class="t-title" text-anchor="middle">index.ts</text>
+        <text x="271" y="362" class="t-sub" text-anchor="middle">Pipeline · Start</text>
+        <rect x="354" y="330" width="142" height="40" rx="4" class="box"/>
+        <text x="425" y="347" class="t-title" text-anchor="middle">konfiguration.ts</text>
+        <text x="425" y="362" class="t-sub" text-anchor="middle">Standardregeln</text>
+
+        <rect x="600" y="150" width="490" height="232" rx="6" class="group"/>
+        <text x="616" y="172" class="lbl">FRONTEND · REACT + VITE</text>
+        <rect x="616" y="186" width="142" height="40" rx="4" class="box-acc"/>
+        <text x="687" y="203" class="t-title" text-anchor="middle">pages/</text>
+        <text x="687" y="218" class="t-sub" text-anchor="middle">36 Dateien · 8.676 Z.</text>
+        <rect x="770" y="186" width="142" height="40" rx="4" class="box-acc"/>
+        <text x="841" y="203" class="t-title" text-anchor="middle">components/</text>
+        <text x="841" y="218" class="t-sub" text-anchor="middle">25 Dateien · 5.632 Z.</text>
+        <rect x="924" y="186" width="142" height="40" rx="4" class="box"/>
+        <text x="995" y="203" class="t-title" text-anchor="middle">protokoll/</text>
+        <text x="995" y="218" class="t-sub" text-anchor="middle">Eingabe · Live-Stand</text>
+        <rect x="616" y="234" width="142" height="40" rx="4" class="box"/>
+        <text x="687" y="251" class="t-title" text-anchor="middle">pdf/</text>
+        <text x="687" y="266" class="t-sub" text-anchor="middle">Dokumentmodell</text>
+        <rect x="770" y="234" width="142" height="40" rx="4" class="box"/>
+        <text x="841" y="251" class="t-title" text-anchor="middle">hilfe/</text>
+        <text x="841" y="266" class="t-sub" text-anchor="middle">Texte ohne Layout</text>
+        <rect x="924" y="234" width="142" height="40" rx="4" class="box"/>
+        <text x="995" y="251" class="t-title" text-anchor="middle">api.ts</text>
+        <text x="995" y="266" class="t-sub" text-anchor="middle">einziger API-Zugang</text>
+        <rect x="616" y="282" width="142" height="40" rx="4" class="box"/>
+        <text x="687" y="299" class="t-title" text-anchor="middle">auth.tsx</text>
+        <text x="687" y="314" class="t-sub" text-anchor="middle">Sitzungs-Kontext</text>
+        <rect x="770" y="282" width="142" height="40" rx="4" class="box"/>
+        <text x="841" y="299" class="t-title" text-anchor="middle">App.tsx</text>
+        <text x="841" y="314" class="t-sub" text-anchor="middle">Routen · Kopfzeile</text>
+        <rect x="924" y="282" width="142" height="40" rx="4" class="box"/>
+        <text x="995" y="299" class="t-title" text-anchor="middle">theme · dichte · breite</text>
+        <text x="995" y="314" class="t-sub" text-anchor="middle">Darstellungs-Ebenen</text>
+        <rect x="616" y="330" width="142" height="40" rx="4" class="box-sig"/>
+        <text x="687" y="347" class="t-title" text-anchor="middle">zeitplanung.ts</text>
+        <text x="687" y="362" class="t-sub" text-anchor="middle">Kopie</text>
+        <rect x="770" y="330" width="142" height="40" rx="4" class="box-sig"/>
+        <text x="841" y="347" class="t-tight" text-anchor="middle">schiedsrichterKonflikt</text>
+        <text x="841" y="362" class="t-sub" text-anchor="middle">Kopie</text>
+        <rect x="924" y="330" width="142" height="40" rx="4" class="box-sig"/>
+        <text x="995" y="347" class="t-tight" text-anchor="middle">passwortAnforderungen</text>
+        <text x="995" y="362" class="t-sub" text-anchor="middle">Kopie</text>
+
+        <text x="20" y="416" class="lbl">BEWUSSTE DUPLIKATE — BEI EINER ÄNDERUNG IMMER BEIDE SEITEN ANFASSEN</text>
+        <rect x="20" y="436" width="140" height="46" rx="4" class="box-sig"/>
+        <text x="90" y="455" class="t-sub" text-anchor="middle">frontend/src/</text>
+        <text x="90" y="471" class="t-title" text-anchor="middle">zeitplanung</text>
+        <line x1="162" y1="459" x2="198" y2="459" class="ln-sig dash"/>
+        <rect x="200" y="436" width="140" height="46" rx="4" class="box-sig"/>
+        <text x="270" y="455" class="t-sub" text-anchor="middle">backend/spielplan/</text>
+        <text x="270" y="471" class="t-title" text-anchor="middle">zeitplanung</text>
+
+        <rect x="395" y="436" width="140" height="46" rx="4" class="box-sig"/>
+        <text x="465" y="455" class="t-sub" text-anchor="middle">frontend/src/</text>
+        <text x="465" y="471" class="t-tight" text-anchor="middle">schiedsrichterKonflikt</text>
+        <line x1="537" y1="459" x2="573" y2="459" class="ln-sig dash"/>
+        <rect x="575" y="436" width="140" height="46" rx="4" class="box-sig"/>
+        <text x="645" y="455" class="t-sub" text-anchor="middle">backend/spielplan/</text>
+        <text x="645" y="471" class="t-tight" text-anchor="middle">schiedsrichterZuordnung</text>
+
+        <rect x="770" y="436" width="140" height="46" rx="4" class="box-sig"/>
+        <text x="840" y="455" class="t-sub" text-anchor="middle">frontend/src/</text>
+        <text x="840" y="471" class="t-tight" text-anchor="middle">passwortAnforderungen</text>
+        <line x1="912" y1="459" x2="948" y2="459" class="ln-sig dash"/>
+        <rect x="950" y="436" width="140" height="46" rx="4" class="box-sig"/>
+        <text x="1020" y="455" class="t-sub" text-anchor="middle">backend/auth/</text>
+        <text x="1020" y="471" class="t-title" text-anchor="middle">passwort</text>
+
+        <text x="560" y="504" class="t-sub" text-anchor="middle">Ein viertes Paar liegt in der digitalen Protokollierung: der Annullierungs-Filter in frontend/protokoll/stand.ts und backend/protokoll/ereignisse.ts</text>
+      </svg>
+    </div>
+    <figcaption><b>Abb. 2</b><span>Modul-Landkarte. Grün markiert sind die Stellen mit dem größten Codeanteil und die beiden Engpässe, durch die aller Datenverkehr läuft (<code>repository.ts</code>, <code>api.ts</code>). Rot markiert sind die vier absichtlichen Duplikate.</span></figcaption>
+  </figure>
+</section>
+
+<section id="zugriff">
+  <h2>Zugriff: eine Anfrage und die Frage, wer sie stellen darf</h2>
+  <div class="col">
+    <p>Es gibt keine Tokens im Browserspeicher: Beim Anmelden entsteht ein Zufallswert, gespeichert wird nur dessen Prüfsumme als Dokument-ID. Ein Gerät ist entweder <strong>als Person</strong> angemeldet oder <strong>per Turnier-Code</strong> — nie beides. Aus dieser einen Unterscheidung leitet das System pro Turnier eine von drei Stufen ab.</p>
+    <p>Zwei Sperren gelten <strong>zusätzlich und unabhängig von der Stufe</strong>: ein abgeschlossenes Turnier ist schreibgeschützt, und ein an eine lokale Installation verliehenes Turnier ebenfalls — sonst würde die nächste Synchronisierung die Serveränderung ohnehin überschreiben.</p>
+  </div>
+
+  <figure class="fig">
+    <div class="fig-frame">
+      <svg class="dia" viewBox="0 0 1120 540" role="img" aria-label="Ablauf einer Anfrage: Sie durchläuft nacheinander die Sitzungsauflösung, die Ratenbegrenzung, die Wartungsprüfung und erreicht dann den Routen-Handler. Dort wird der Akteur entweder als angemeldete Person oder als Turnier-Code erkannt, daraus eine von drei Zugriffsstufen berechnet und über drei Prüffunktionen durchgesetzt. Zwei zusätzliche Sperren wirken unabhängig von der Stufe.">
+        <defs>
+          <marker id="f3a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker>
+          <marker id="f3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head-acc"/></marker>
+        </defs>
+
+        <text x="30" y="30" class="lbl">PIPELINE · index.ts</text>
+
+        <rect x="30" y="52" width="300" height="52" rx="5" class="box"/>
+        <text x="180" y="74" class="t-title" text-anchor="middle">HTTP-Anfrage mit Cookie</text>
+        <text x="180" y="91" class="t-sub" text-anchor="middle">torball_session</text>
+        <line x1="180" y1="104" x2="180" y2="128" class="ln" marker-end="url(#f3a)"/>
+
+        <rect x="30" y="130" width="300" height="52" rx="5" class="box-acc"/>
+        <text x="180" y="152" class="t-title" text-anchor="middle">authPreHandler</text>
+        <text x="180" y="169" class="t-sub" text-anchor="middle">auf der Wurzel-Instanz, vor allen Routen</text>
+        <line x1="180" y1="182" x2="180" y2="206" class="ln" marker-end="url(#f3a)"/>
+
+        <rect x="30" y="208" width="300" height="52" rx="5" class="box"/>
+        <text x="180" y="230" class="t-title" text-anchor="middle">Ratenbegrenzung</text>
+        <text x="180" y="247" class="t-sub" text-anchor="middle">1.000/min je IP · strenger an Login-nahen Routen</text>
+        <line x1="180" y1="260" x2="180" y2="284" class="ln" marker-end="url(#f3a)"/>
+
+        <rect x="30" y="286" width="300" height="52" rx="5" class="box"/>
+        <text x="180" y="308" class="t-title" text-anchor="middle">wartungPreHandler</text>
+        <text x="180" y="325" class="t-sub" text-anchor="middle">bei Wartung 403 — außer für Admins</text>
+        <line x1="180" y1="338" x2="180" y2="362" class="ln" marker-end="url(#f3a)"/>
+
+        <rect x="30" y="364" width="300" height="52" rx="5" class="box"/>
+        <text x="180" y="386" class="t-title" text-anchor="middle">Routen-Handler</text>
+        <text x="180" y="403" class="t-sub" text-anchor="middle">eine von 25 Routendateien</text>
+
+        <line x1="330" y1="390" x2="392" y2="390" class="ln-acc" marker-end="url(#f3b)"/>
+
+        <rect x="400" y="40" width="690" height="470" rx="6" class="group"/>
+        <text x="418" y="62" class="lbl">BERECHTIGUNG · auth/turnierZugriff.ts</text>
+
+        <rect x="420" y="76" width="300" height="52" rx="5" class="box"/>
+        <text x="570" y="98" class="t-title" text-anchor="middle">req.benutzer</text>
+        <text x="570" y="115" class="t-sub" text-anchor="middle">angemeldetes Konto</text>
+        <text x="745" y="106" class="lbl" text-anchor="middle">ODER</text>
+        <rect x="770" y="76" width="300" height="52" rx="5" class="box"/>
+        <text x="920" y="98" class="t-title" text-anchor="middle">req.turnierCode</text>
+        <text x="920" y="115" class="t-sub" text-anchor="middle">geteilter Code, ohne Konto</text>
+
+        <path d="M570 128 L570 146 L660 146 L660 160" class="ln" fill="none" marker-end="url(#f3a)"/>
+        <path d="M920 128 L920 146 L830 146 L830 160" class="ln" fill="none" marker-end="url(#f3a)"/>
+
+        <rect x="545" y="162" width="400" height="48" rx="5" class="box-acc"/>
+        <text x="745" y="184" class="t-title" text-anchor="middle">turnierZugriffsstufe(turnier, akteur)</text>
+        <text x="745" y="200" class="t-sub" text-anchor="middle">Code wird vor den Konto-Pfaden geprüft</text>
+        <line x1="745" y1="210" x2="745" y2="236" class="ln" marker-end="url(#f3a)"/>
+
+        <rect x="420" y="238" width="200" height="56" rx="5" class="box"/>
+        <text x="520" y="260" class="t-title" text-anchor="middle">lesen</text>
+        <text x="520" y="277" class="t-sub" text-anchor="middle">ansehen</text>
+        <text x="632" y="270" class="t-sub" text-anchor="middle">&lt;</text>
+        <rect x="645" y="238" width="200" height="56" rx="5" class="box"/>
+        <text x="745" y="260" class="t-title" text-anchor="middle">schreiben_spielbetrieb</text>
+        <text x="745" y="277" class="t-sub" text-anchor="middle">Spielplan · Ergebnisse</text>
+        <text x="857" y="270" class="t-sub" text-anchor="middle">&lt;</text>
+        <rect x="870" y="238" width="200" height="56" rx="5" class="box"/>
+        <text x="970" y="260" class="t-title" text-anchor="middle">schreiben_voll</text>
+        <text x="970" y="277" class="t-sub" text-anchor="middle">auch Regeln · Codes · Teilen</text>
+
+        <line x1="520" y1="294" x2="520" y2="318" class="ln" marker-end="url(#f3a)"/>
+        <line x1="745" y1="294" x2="745" y2="318" class="ln" marker-end="url(#f3a)"/>
+        <line x1="970" y1="294" x2="970" y2="318" class="ln" marker-end="url(#f3a)"/>
+
+        <rect x="420" y="320" width="200" height="52" rx="5" class="box-2"/>
+        <text x="520" y="342" class="t-title" text-anchor="middle">hatMindestens()</text>
+        <text x="520" y="359" class="t-sub" text-anchor="middle">jede Turnier-Route</text>
+        <rect x="645" y="320" width="200" height="52" rx="5" class="box-2"/>
+        <text x="745" y="342" class="t-title" text-anchor="middle">darfProtokollieren()</text>
+        <text x="745" y="359" class="t-sub" text-anchor="middle">eigenes Prädikat, keine 4. Stufe</text>
+        <rect x="870" y="320" width="200" height="52" rx="5" class="box-2"/>
+        <text x="970" y="342" class="t-title" text-anchor="middle">requireRolle()</text>
+        <text x="970" y="359" class="t-sub" text-anchor="middle">globale Stammdaten</text>
+
+        <text x="420" y="398" class="lbl">ZUSÄTZLICHE SPERREN — GELTEN UNABHÄNGIG VON DER STUFE</text>
+        <rect x="420" y="410" width="310" height="64" rx="5" class="box-sig"/>
+        <text x="575" y="434" class="t-title" text-anchor="middle">turnierGesperrt() · 409</text>
+        <text x="575" y="452" class="t-sub" text-anchor="middle">Turnier ist abgeschlossen</text>
+        <text x="575" y="468" class="t-sub" text-anchor="middle">Ausnahme: Freigabe &amp; Teilen bleiben offen</text>
+        <rect x="760" y="410" width="310" height="64" rx="5" class="box-sig"/>
+        <text x="915" y="434" class="t-title" text-anchor="middle">turnierAusgecheckt() · 409</text>
+        <text x="915" y="452" class="t-sub" text-anchor="middle">an eine lokale Installation verliehen</text>
+        <text x="915" y="468" class="t-sub" text-anchor="middle">ohne Ausnahme</text>
+
+        <text x="745" y="496" class="t-sub" text-anchor="middle">Das Frontend spiegelt beide Sperren, entscheidet sie aber nie — maßgeblich ist immer der Server.</text>
+      </svg>
+    </div>
+    <figcaption><b>Abb. 3</b><span>Von der Anfrage zur Entscheidung. Die drei Stufen sind aufsteigend: Wer <code>schreiben_voll</code> hat, darf alles darunter. Die beiden roten Sperren greifen zusätzlich — eine Turnierleitung mit voller Stufe wird von ihnen genauso abgewiesen.</span></figcaption>
+  </figure>
+</section>
+
+<section id="daten">
+  <h2>Daten: eine Datenbank, 29 Dokumenttypen</h2>
+  <div class="col">
+    <p>Es gibt keine Tabellen und keine Fremdschlüssel, die eine Datenbank erzwingt. Alle Dokumente liegen in <strong>einer einzigen CouchDB</strong> und werden über ein Feld <code>docType</code> unterschieden — in TypeScript zusammengefasst als ein großer Vereinigungstyp <code>TorballDokument</code>. Beziehungen sind schlicht Felder, die eine fremde Dokument-ID enthalten.</p>
+    <p>Das hat eine Konsequenz, die im Diagramm nicht sichtbar ist, aber überall im Code steckt: <strong>Löschen muss von Hand kaskadieren.</strong> Wer ein Turnier löscht, muss dessen Mannschaften, deren Spieler, die Schiedsrichter, Spiele, Protokolle und Ereignisse einzeln mitnehmen — die Datenbank tut es nicht.</p>
+  </div>
+
+  <figure class="fig">
+    <div class="fig-frame">
+      <svg class="dia" viewBox="0 0 1180 620" role="img" aria-label="Datenmodell: Ein Turnier hängt optional an einem Wettbewerb und ist der Angelpunkt. An ihm hängen Mannschaften, turnierbezogene Schiedsrichter und Spiele. Unter der Mannschaft liegen die Spieler, unter dem Spiel das Spielprotokoll und darunter der Ereignisstrom. Vereine, Teams und Schiedsrichter-Stammdaten liegen turnierübergreifend daneben und werden optional referenziert.">
+        <defs>
+          <marker id="f4a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker>
+          <marker id="f4b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head-acc"/></marker>
+        </defs>
+
+        <rect x="20" y="205" width="200" height="255" rx="6" class="group"/>
+        <text x="34" y="228" class="lbl">STAMMDATEN</text>
+        <text x="34" y="243" class="t-sub">turnierübergreifend</text>
+        <rect x="35" y="252" width="175" height="48" rx="4" class="box"/>
+        <text x="122" y="272" class="t-title" text-anchor="middle">Verein</text>
+        <text x="122" y="288" class="t-sub" text-anchor="middle">auch für Spielgemeinschaften</text>
+        <rect x="35" y="322" width="175" height="48" rx="4" class="box"/>
+        <text x="122" y="342" class="t-title" text-anchor="middle">Team</text>
+        <text x="122" y="358" class="t-sub" text-anchor="middle">vereinId · Pflicht</text>
+        <rect x="35" y="392" width="175" height="48" rx="4" class="box"/>
+        <text x="122" y="412" class="t-title" text-anchor="middle">Schiedsrichter</text>
+        <text x="122" y="428" class="t-sub" text-anchor="middle">vereinId · optional</text>
+        <path d="M122 322 L122 300" class="ln" marker-end="url(#f4a)"/>
+        <path d="M85 392 L85 300" class="ln" marker-end="url(#f4a)"/>
+
+        <rect x="480" y="34" width="200" height="48" rx="4" class="box"/>
+        <text x="580" y="54" class="t-title" text-anchor="middle">Wettbewerb</text>
+        <text x="580" y="70" class="t-sub" text-anchor="middle">klammert mehrere Spieltage</text>
+
+        <rect x="760" y="34" width="190" height="48" rx="4" class="box"/>
+        <text x="855" y="54" class="t-title" text-anchor="middle">TurnierBerechtigung</text>
+        <text x="855" y="70" class="t-sub" text-anchor="middle">turnierId + benutzerId</text>
+        <rect x="990" y="34" width="170" height="48" rx="4" class="box"/>
+        <text x="1075" y="54" class="t-title" text-anchor="middle">Benutzer</text>
+        <text x="1075" y="70" class="t-sub" text-anchor="middle">globaleRolle</text>
+        <rect x="990" y="120" width="170" height="48" rx="4" class="box"/>
+        <text x="1075" y="140" class="t-title" text-anchor="middle">Session</text>
+        <text x="1075" y="156" class="t-sub" text-anchor="middle">Konto oder Turnier-Code</text>
+        <line x1="950" y1="58" x2="986" y2="58" class="ln" marker-end="url(#f4a)"/>
+        <line x1="1075" y1="120" x2="1075" y2="86" class="ln" marker-end="url(#f4a)"/>
+        <text x="1084" y="106" class="t-sub">benutzerId</text>
+
+        <line x1="580" y1="120" x2="580" y2="86" class="ln" marker-end="url(#f4a)"/>
+        <text x="589" y="106" class="t-sub">wettbewerbId · optional</text>
+        <path d="M760 58 L720 58 L720 130 L706 130" class="ln" fill="none" marker-end="url(#f4a)"/>
+
+        <rect x="460" y="122" width="246" height="58" rx="5" class="box-acc"/>
+        <text x="583" y="146" class="t-title" text-anchor="middle">Turnier</text>
+        <text x="583" y="163" class="t-sub" text-anchor="middle">Regeln · Codes · Freigaben · Logo</text>
+
+        <path d="M583 180 L583 206 L330 206 L330 228" class="ln-acc" fill="none" marker-end="url(#f4b)"/>
+        <path d="M583 206 L583 228" class="ln-acc" fill="none" marker-end="url(#f4b)"/>
+        <path d="M583 206 L870 206 L870 228" class="ln-acc" fill="none" marker-end="url(#f4b)"/>
+        <text x="600" y="200" class="t-acc">turnierId</text>
+
+        <rect x="230" y="230" width="200" height="50" rx="4" class="box"/>
+        <text x="330" y="251" class="t-title" text-anchor="middle">MannschaftImTurnier</text>
+        <text x="330" y="267" class="t-sub" text-anchor="middle">teamId · vereinId optional</text>
+        <rect x="470" y="230" width="226" height="50" rx="4" class="box"/>
+        <text x="583" y="251" class="t-title" text-anchor="middle">SchiedsrichterImTurnier</text>
+        <text x="583" y="267" class="t-sub" text-anchor="middle">genau eine Turnierleitung</text>
+        <rect x="770" y="230" width="200" height="50" rx="4" class="box-acc"/>
+        <text x="870" y="251" class="t-title" text-anchor="middle">Spiel</text>
+        <text x="870" y="267" class="t-sub" text-anchor="middle">mannschaftA/B · schiedsrichterId</text>
+
+        <line x1="230" y1="255" x2="224" y2="255" class="ln dash" marker-end="url(#f4a)"/>
+        <text x="216" y="243" class="t-sub" text-anchor="end">teamId · vereinId</text>
+        <path d="M540 280 L540 300 L224 300" class="ln dash" fill="none" marker-end="url(#f4a)"/>
+        <text x="360" y="294" class="t-sub" text-anchor="middle">vereinId</text>
+
+        <path d="M770 262 L740 262 L740 296 L400 296 L400 282" class="ln dash" fill="none" marker-end="url(#f4a)"/>
+        <text x="600" y="315" class="t-sub" text-anchor="middle">Spiel verweist auf zwei Mannschaften und einen Schiedsrichter desselben Turniers</text>
+
+        <rect x="230" y="345" width="200" height="50" rx="4" class="box"/>
+        <text x="330" y="366" class="t-title" text-anchor="middle">Spieler</text>
+        <text x="330" y="382" class="t-sub" text-anchor="middle">hängt an der Mannschaft</text>
+        <line x1="330" y1="345" x2="330" y2="284" class="ln" marker-end="url(#f4a)"/>
+        <text x="339" y="330" class="t-sub">mannschaftId</text>
+
+        <rect x="770" y="345" width="200" height="50" rx="4" class="box"/>
+        <text x="870" y="366" class="t-title" text-anchor="middle">Spielprotokoll</text>
+        <text x="870" y="382" class="t-sub" text-anchor="middle">genau eines je Spiel</text>
+        <line x1="870" y1="345" x2="870" y2="284" class="ln" marker-end="url(#f4a)"/>
+        <text x="879" y="330" class="t-sub">spielId</text>
+
+        <rect x="770" y="460" width="200" height="50" rx="4" class="box"/>
+        <text x="870" y="481" class="t-title" text-anchor="middle">Event</text>
+        <text x="870" y="497" class="t-sub" text-anchor="middle">append-only, nie geändert</text>
+        <line x1="870" y1="460" x2="870" y2="399" class="ln" marker-end="url(#f4a)"/>
+        <text x="879" y="440" class="t-sub">protokollId</text>
+
+        <rect x="990" y="345" width="170" height="50" rx="4" class="box"/>
+        <text x="1075" y="366" class="t-title" text-anchor="middle">ErgebnisAenderung</text>
+        <text x="1075" y="382" class="t-sub" text-anchor="middle">Änderungsspur</text>
+        <line x1="990" y1="370" x2="974" y2="370" class="ln" marker-end="url(#f4a)"/>
+        <text x="982" y="360" class="t-sub" text-anchor="middle">spielId</text>
+
+        <rect x="990" y="230" width="170" height="50" rx="4" class="box"/>
+        <text x="1075" y="251" class="t-title" text-anchor="middle">ErgebnisToken</text>
+        <text x="1075" y="267" class="t-sub" text-anchor="middle">Erfassungslink ohne Login</text>
+        <path d="M990 255 L965 255 L965 206 L706 206" class="ln" fill="none" marker-end="url(#f4a)"/>
+
+        <text x="620" y="545" class="lbl">ABKÜRZUNG IM MODELL</text>
+        <text x="620" y="566" class="t-sub">Spielprotokoll und Event tragen zusätzlich turnierId — obwohl über spielId erreichbar.</text>
+        <text x="620" y="584" class="t-sub">Dadurch finden Kaskaden-Löschung und Sync-Prüfung sie ohne die Kette aufzulösen.</text>
+
+        <text x="35" y="545" class="lbl">LESEHILFE</text>
+        <text x="35" y="566" class="t-sub">Durchgezogen = Pflichtbezug · gestrichelt = optional</text>
+        <text x="35" y="584" class="t-sub">Der Pfeil zeigt auf das Dokument, dessen ID gespeichert wird.</text>
+      </svg>
+    </div>
+    <figcaption><b>Abb. 4</b><span>Das Turnier ist der Angelpunkt: Fast jedes turnierbezogene Dokument trägt dessen <code>turnierId</code>. Die Stammdaten links leben unabhängig davon weiter — eine Mannschaft <em>kopiert</em> beim Anlegen aus ihnen, statt dauerhaft an ihnen zu hängen.</span></figcaption>
+  </figure>
+</section>
+
+<style>
+  .inv { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; margin: 28px 0 10px; }
+  .inv-g { border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); padding: 14px 16px 16px; }
+  .inv-g h4 {
+    margin: 0 0 4px; font-family: var(--mono); font-size: 0.66rem; font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--ink);
+  }
+  .inv-g p { margin: 0 0 10px; font-size: .82rem; color: var(--ink-soft); line-height: 1.4; }
+  .inv-g ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 5px; }
+  .inv-g li {
+    font-family: var(--mono); font-size: 0.69rem; background: var(--paper);
+    border: 1px solid var(--rule); border-radius: 3px; padding: 2px 7px;
+  }
+  .inv-g.is-core { border-color: var(--accent); }
+  .inv-g.is-core h4 { color: var(--accent); }
+  .inv-g.is-hold li { color: var(--ink-soft); border-style: dashed; }
+  .callout {
+    border-left: 3px solid var(--accent); background: var(--panel);
+    padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 26px 0;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout .k {
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-soft); display: block; margin-bottom: 6px;
+  }
+  .rules { display: grid; gap: 14px; margin: 26px 0 0; padding: 0; list-style: none; }
+  .rules li {
+    display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start;
+    border-bottom: 1px solid var(--rule); padding-bottom: 14px;
+  }
+  .rules li:last-child { border-bottom: 0; }
+  .rules .sig {
+    font-family: var(--mono); font-size: 0.66rem; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--signal); white-space: nowrap; padding-top: 3px;
+  }
+  .rules h4 { font-family: var(--slab); font-weight: 600; font-size: 1.05rem; margin: 0 0 4px; }
+  .rules p { margin: 0; font-size: .95rem; color: var(--ink-soft); }
+  .rules code { font-size: .84em; }
+  footer.end {
+    margin-top: 72px; padding-top: 20px; border-top: 2px solid var(--ink);
+    font-size: .88rem; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 6px 28px;
+  }
+  footer.end span { font-family: var(--mono); font-size: 0.72rem; }
+</style>
+
+<div class="inv">
+  <div class="inv-g is-core">
+    <h4>Turnier &amp; Spielbetrieb</h4>
+    <p>Der Kern. Alles hier trägt eine <code>turnierId</code> und wird beim Löschen des Turniers mitgenommen.</p>
+    <ul><li>Turnier</li><li>Wettbewerb</li><li>MannschaftImTurnier</li><li>Spieler</li><li>SchiedsrichterImTurnier</li><li>Spiel</li><li>ErgebnisToken</li><li>ErgebnisAenderung</li></ul>
+  </div>
+  <div class="inv-g is-core">
+    <h4>Digitales Protokoll</h4>
+    <p>Ereignisstrom je Spiel. Wird nur angelegt, wenn das Turnier auf digitale Protokollierung steht.</p>
+    <ul><li>Spielprotokoll</li><li>Event</li></ul>
+  </div>
+  <div class="inv-g">
+    <h4>Stammdaten</h4>
+    <p>Turnierübergreifend, überleben jedes Turnier. Werden beim Übernehmen kopiert, nicht verknüpft.</p>
+    <ul><li>Verein</li><li>Team</li><li>Schiedsrichter</li></ul>
+  </div>
+  <div class="inv-g">
+    <h4>Konten &amp; Zugriff</h4>
+    <p>Sitzungen liegen als Dokument in derselben Datenbank — eine Sitzung ist entweder Konto oder Turnier-Code.</p>
+    <ul><li>Benutzer</li><li>Session</li><li>TurnierBerechtigung</li></ul>
+  </div>
+  <div class="inv-g">
+    <h4>Instanz-Kopplung</h4>
+    <p>Verbindet den Server mit einer lokalen Installation und leiht Turniere für den Spieltag aus.</p>
+    <ul><li>VerbundeneInstanz</li><li>TurnierCheckout</li><li>LokaleSyncKonfiguration</li></ul>
+  </div>
+  <div class="inv-g">
+    <h4>Betrieb</h4>
+    <p>Instanz-Einstellungen. Beim nächtlichen Zurücksetzen der Demo bewusst ausgenommen.</p>
+    <ul><li>Systemkonfiguration</li><li>Systemeinstellungen</li><li>Wartung</li></ul>
+  </div>
+  <div class="inv-g">
+    <h4>Entwicklungs-Werkzeuge</h4>
+    <p>Nur auf der Entwicklungsinstanz freigeschaltet, je über ein eigenes Umgebungs-Flag.</p>
+    <ul><li>KanbanKarte</li><li>MailNachricht</li><li>MailBericht</li><li>MailPostfachEinstellungen</li></ul>
+  </div>
+  <div class="inv-g is-hold">
+    <h4>Reserviert</h4>
+    <p>Typisiert und spezifiziert, aber noch nirgends im Backend benutzt — bewusst offen gelassen.</p>
+    <ul><li>Turnierpause</li><li>DokumentAnhang</li><li>AuditLogEintrag</li></ul>
+  </div>
+</div>
+
+<div class="col">
+  <div class="callout">
+    <p><span class="k">Fallstrick, der im Modell nicht sichtbar ist</span>Die Abfragesprache von CouchDB liefert ohne ausdrückliche Obergrenze <strong>nur die ersten 25 Treffer</strong> — stillschweigend. Deshalb greift kein Modul direkt auf die Datenbank zu, sondern ausschließlich über die Helfer in <code>repository.ts</code>, die intern korrekt weiterblättern.</p>
+  </div>
+</div>
+
+<section id="ergebnis">
+  <h2>Zwei Wege zum selben Ergebnis</h2>
+  <div class="col">
+    <p>Ein Turnier entscheidet sich für einen von zwei Wegen, wie Spielergebnisse entstehen. Der <strong>manuelle</strong> Weg erfasst nur Endergebnisse — im Formular oder über einen Link, den Helfer ohne Konto öffnen. Der <strong>digitale</strong> Weg protokolliert jeden Wurf, jedes Foul und jedes Tor als Ereignis und leitet das Ergebnis daraus ab.</p>
+    <p>Entscheidend für das Verständnis des Systems: Beide Wege münden in <strong>dieselben vier Felder am Spiel</strong>. Alles, was danach kommt — Tabelle, öffentliche Seite, Ausdrucke — musste für die digitale Protokollierung nicht angefasst werden.</p>
+  </div>
+
+  <figure class="fig">
+    <div class="fig-frame">
+      <svg class="dia" viewBox="0 0 1120 500" role="img" aria-label="Zwei Wege zum Ergebnis: Links erfassen das interne Formular oder ein Erfassungslink das Endergebnis direkt. Rechts erzeugt die Protokoll-Erfassung einen Ereignisstrom, aus dem ein Live-Reducer den Spielstand berechnet. Beide Wege schreiben dieselben vier Felder am Spiel, aus denen Tabelle, öffentliche Seite und Ausdrucke entstehen.">
+        <defs>
+          <marker id="f5a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker>
+          <marker id="f5b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head-acc"/></marker>
+        </defs>
+
+        <text x="270" y="22" class="lbl" text-anchor="middle">WEG A · MANUELL</text>
+        <text x="850" y="22" class="lbl" text-anchor="middle">WEG B · DIGITAL (BETA)</text>
+
+        <rect x="40" y="36" width="222" height="64" rx="5" class="box"/>
+        <text x="151" y="60" class="t-title" text-anchor="middle">ErgebnisVerwaltung</text>
+        <text x="151" y="77" class="t-sub" text-anchor="middle">Reiter „Ergebnisse“, mit Login</text>
+        <text x="151" y="92" class="t-sub" text-anchor="middle">speichert beim Verlassen des Feldes</text>
+        <rect x="278" y="36" width="222" height="64" rx="5" class="box"/>
+        <text x="389" y="60" class="t-title" text-anchor="middle">Erfassungslink · QR</text>
+        <text x="389" y="77" class="t-sub" text-anchor="middle">ohne Konto, per ErgebnisToken</text>
+        <text x="389" y="92" class="t-sub" text-anchor="middle">für Helfer am Spielfeldrand</text>
+
+        <rect x="620" y="36" width="222" height="64" rx="5" class="box"/>
+        <text x="731" y="60" class="t-title" text-anchor="middle">Erfassungs-Ansicht</text>
+        <text x="731" y="77" class="t-sub" text-anchor="middle">Tastatur, Touch, später HID-Panel</text>
+        <text x="731" y="92" class="t-sub" text-anchor="middle">alle über eine Zustandsmaschine</text>
+        <rect x="858" y="36" width="222" height="64" rx="5" class="box"/>
+        <text x="969" y="60" class="t-title" text-anchor="middle">Live-Reducer</text>
+        <text x="969" y="77" class="t-sub" text-anchor="middle">Stand wird berechnet, nie abgelegt</text>
+        <text x="969" y="92" class="t-sub" text-anchor="middle">Prüfungen warnen, blockieren nie</text>
+
+        <path d="M151 100 L151 122 L200 122 L200 138" class="ln" fill="none" marker-end="url(#f5a)"/>
+        <path d="M389 100 L389 122 L340 122 L340 138" class="ln" fill="none" marker-end="url(#f5a)"/>
+        <path d="M731 100 L731 122 L780 122 L780 138" class="ln" fill="none" marker-end="url(#f5a)"/>
+        <path d="M969 100 L969 122 L920 122 L920 138" class="ln" fill="none" marker-end="url(#f5a)"/>
+
+        <rect x="40" y="140" width="460" height="52" rx="5" class="box-2"/>
+        <text x="270" y="162" class="t-title" text-anchor="middle">PUT · Endergebnis eines Spiels</text>
+        <text x="270" y="179" class="t-sub" text-anchor="middle">ein Wert je Mannschaft, plus „n. a.“ bei Nichtantreten</text>
+        <rect x="620" y="140" width="460" height="52" rx="5" class="box-2"/>
+        <text x="850" y="162" class="t-title" text-anchor="middle">POST · ein Ereignis anhängen</text>
+        <text x="850" y="179" class="t-sub" text-anchor="middle">append-only · Korrektur ist ein neues Ereignis, nie eine Änderung</text>
+
+        <line x1="270" y1="192" x2="270" y2="218" class="ln" marker-end="url(#f5a)"/>
+        <line x1="850" y1="192" x2="850" y2="218" class="ln" marker-end="url(#f5a)"/>
+
+        <rect x="40" y="220" width="460" height="58" rx="5" class="box"/>
+        <text x="270" y="243" class="t-title" text-anchor="middle">routes/ergebnis.ts</text>
+        <text x="270" y="261" class="t-sub" text-anchor="middle">schreibt die vier Felder unmittelbar</text>
+        <rect x="620" y="220" width="460" height="58" rx="5" class="box"/>
+        <text x="850" y="243" class="t-title" text-anchor="middle">routes/protokoll.ts</text>
+        <text x="850" y="261" class="t-sub" text-anchor="middle">pflegt dieselben vier Felder bei jedem Ereignis nach</text>
+
+        <path d="M270 278 L270 306 L420 306 L420 328" class="ln-acc" fill="none" marker-end="url(#f5b)"/>
+        <path d="M850 278 L850 306 L700 306 L700 328" class="ln-acc" fill="none" marker-end="url(#f5b)"/>
+
+        <rect x="330" y="330" width="460" height="64" rx="5" class="box-acc"/>
+        <text x="560" y="354" class="t-title" text-anchor="middle">Spiel</text>
+        <text x="560" y="372" class="t-sub" text-anchor="middle">ergebnisA · ergebnisB · status · ergebnisAbgeschlossen</text>
+        <text x="560" y="388" class="t-sub" text-anchor="middle">die einzige Nahtstelle zwischen beiden Wegen</text>
+
+        <path d="M450 394 L450 414 L260 414 L260 430" class="ln" fill="none" marker-end="url(#f5a)"/>
+        <line x1="560" y1="394" x2="560" y2="430" class="ln" marker-end="url(#f5a)"/>
+        <path d="M670 394 L670 414 L860 414 L860 430" class="ln" fill="none" marker-end="url(#f5a)"/>
+
+        <rect x="140" y="432" width="240" height="50" rx="5" class="box"/>
+        <text x="260" y="453" class="t-title" text-anchor="middle">Tabellenberechnung</text>
+        <text x="260" y="469" class="t-sub" text-anchor="middle">auch über mehrere Spieltage</text>
+        <rect x="440" y="432" width="240" height="50" rx="5" class="box"/>
+        <text x="560" y="453" class="t-title" text-anchor="middle">Öffentliche Turnierseite</text>
+        <text x="560" y="469" class="t-sub" text-anchor="middle">ohne Login, je Bereich freigebbar</text>
+        <rect x="740" y="432" width="240" height="50" rx="5" class="box"/>
+        <text x="860" y="453" class="t-title" text-anchor="middle">Ausdrucke &amp; PDF</text>
+        <text x="860" y="469" class="t-sub" text-anchor="middle">im Browser erzeugt</text>
+      </svg>
+    </div>
+    <figcaption><b>Abb. 5</b><span>Beide Wege treffen sich am <code>Spiel</code>. Weil die digitale Protokollierung dort dieselben Felder pflegt, brauchte nichts unterhalb dieser Linie geändert zu werden — das war die Bedingung, unter der der zweite Weg überhaupt gebaut wurde.</span></figcaption>
+  </figure>
+</section>
+
+<section id="betrieb">
+  <h2>Betrieb: drei Modi, weil die Halle kein Internet hat</h2>
+  <div class="col">
+    <p>Ein Turnier findet in einer Sporthalle statt, und Hallen haben selten verlässliches Netz. Deshalb ist der Offline-Betrieb kein Zusatz, sondern eine tragende Anforderung. Zwei der drei vorgesehenen Modi sind gebaut.</p>
+    <p>Der aufwendigste Fall ist die <strong>Instanz-Kopplung</strong>: Ein Turnier wird am Rechner zu Hause geplant und für den Spieltag an eine lokale Installation <em>ausgeliehen</em>. Bewusst kein allgemeiner Abgleich mit Konfliktauflösung, sondern eine strikte Eins-zu-eins-Ausleihe — zu jedem Zeitpunkt ist ein Turnier entweder frei oder bei genau einer Installation.</p>
+  </div>
+
+  <figure class="fig">
+    <div class="fig-frame">
+      <svg class="dia" viewBox="0 0 1120 470" role="img" aria-label="Betriebsmodi und Instanz-Kopplung: Von drei vorgesehenen Betriebsmodi sind das lokale Netzwerk und die zentrale Plattform mit Kopplung gebaut, der reine Einzelplatzbetrieb noch nicht. Bei der Kopplung meldet sich die lokale Installation alle 45 Sekunden beim Server, weil der Server sie wegen NAT und Firewall nicht erreichen kann. Ein Turnier durchläuft dabei die Zustände frei, angefordert, aktiv und freigegeben.">
+        <defs>
+          <marker id="f6a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker>
+          <marker id="f6n" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head-net"/></marker>
+          <marker id="f6b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head-acc"/></marker>
+        </defs>
+
+        <text x="40" y="20" class="lbl">BETRIEBSMODI</text>
+
+        <rect x="40" y="32" width="330" height="118" rx="5" class="box"/>
+        <text x="205" y="58" class="t-title" text-anchor="middle">Einzelplatz</text>
+        <text x="56" y="82" class="t-sub">ein Rechner, kein Server, kein Netz</text>
+        <text x="56" y="102" class="t-sub">Daten im Browser, Abgleich später</text>
+        <text x="56" y="122" class="t-sub">Datenmodell und Modi stehen bereits</text>
+        <text x="56" y="142" class="t-sig">noch nicht gebaut · fest eingeplant</text>
+
+        <rect x="395" y="32" width="330" height="118" rx="5" class="box-acc"/>
+        <text x="560" y="58" class="t-title" text-anchor="middle">Lokales Netzwerk</text>
+        <text x="411" y="82" class="t-sub">ein Rechner hostet, Geräte greifen zu</text>
+        <text x="411" y="102" class="t-sub">Zugang über geteilte Turnier-Codes</text>
+        <text x="411" y="122" class="t-sub">kein Abgleich nötig — eine Datenbank</text>
+        <text x="411" y="142" class="t-acc">gebaut</text>
+
+        <rect x="750" y="32" width="330" height="118" rx="5" class="box-acc"/>
+        <text x="915" y="58" class="t-title" text-anchor="middle">Zentrale Plattform + Kopplung</text>
+        <text x="766" y="82" class="t-sub">Planung am Server, Spieltag lokal</text>
+        <text x="766" y="102" class="t-sub">zwei getrennte Datenbanken</text>
+        <text x="766" y="122" class="t-sub">Turnier wird ausgeliehen, nicht kopiert</text>
+        <text x="766" y="142" class="t-acc">gebaut</text>
+
+        <text x="40" y="186" class="lbl">INSTANZ-KOPPLUNG · WER RUFT WEN</text>
+
+        <rect x="60" y="204" width="300" height="76" rx="5" class="box-2"/>
+        <text x="210" y="230" class="t-title" text-anchor="middle">Zentrale Plattform</text>
+        <text x="210" y="249" class="t-sub" text-anchor="middle">öffentlich erreichbar</text>
+        <text x="210" y="266" class="t-sub" text-anchor="middle">hinter nginx und TLS</text>
+
+        <rect x="760" y="204" width="300" height="76" rx="5" class="box-2"/>
+        <text x="910" y="230" class="t-title" text-anchor="middle">Lokale Installation</text>
+        <text x="910" y="249" class="t-sub" text-anchor="middle">im Hallen-WLAN oder daheim</text>
+        <text x="910" y="266" class="t-sub" text-anchor="middle">von außen nicht erreichbar</text>
+
+        <line x1="756" y1="226" x2="366" y2="226" class="ln-net" marker-end="url(#f6n)"/>
+        <text x="561" y="216" class="t-net" text-anchor="middle">Check-in alle 45 s · überträgt den vollständigen Turnierstand</text>
+        <line x1="366" y1="262" x2="756" y2="262" class="ln-net dash" marker-end="url(#f6n)"/>
+        <text x="561" y="280" class="t-sub" text-anchor="middle">Antwort trägt einen wartenden Auftrag mit — kein zweiter Aufruf</text>
+        <text x="561" y="300" class="t-sub" text-anchor="middle">Verbindung wird immer von der lokalen Seite aufgebaut, weil der Server sie nicht erreichen kann</text>
+
+        <text x="60" y="336" class="lbl">LEBENSLAUF EINER AUSLEIHE</text>
+
+        <rect x="60" y="350" width="220" height="52" rx="5" class="box"/>
+        <text x="170" y="372" class="t-title" text-anchor="middle">frei</text>
+        <text x="170" y="389" class="t-sub" text-anchor="middle">nur auf dem Server</text>
+        <line x1="280" y1="376" x2="316" y2="376" class="ln" marker-end="url(#f6a)"/>
+        <rect x="320" y="350" width="220" height="52" rx="5" class="box-sig"/>
+        <text x="430" y="372" class="t-title" text-anchor="middle">angefordert</text>
+        <text x="430" y="389" class="t-sub" text-anchor="middle">Auftrag liegt bereit</text>
+        <line x1="540" y1="376" x2="576" y2="376" class="ln" marker-end="url(#f6a)"/>
+        <rect x="580" y="350" width="220" height="52" rx="5" class="box-sig"/>
+        <text x="690" y="372" class="t-title" text-anchor="middle">aktiv</text>
+        <text x="690" y="389" class="t-sub" text-anchor="middle">lokal in Betrieb</text>
+        <line x1="800" y1="376" x2="836" y2="376" class="ln" marker-end="url(#f6a)"/>
+        <rect x="840" y="350" width="220" height="52" rx="5" class="box"/>
+        <text x="950" y="372" class="t-title" text-anchor="middle">freigegeben</text>
+        <text x="950" y="389" class="t-sub" text-anchor="middle">wieder frei</text>
+
+        <text x="560" y="432" class="t-sig" text-anchor="middle">Solange „angefordert“ oder „aktiv“: der Server weist jede Änderung am Turnier mit 409 ab</text>
+        <text x="560" y="452" class="t-sub" text-anchor="middle">Einzige Ausnahme, die immer bedienbar bleibt: „Freigabe aufheben“ — der Notausstieg, wenn der lokale Rechner ausfällt</text>
+      </svg>
+    </div>
+    <figcaption><b>Abb. 6</b><span>Die Richtung der Pfeile ist der Kern: Die lokale Installation ruft an, nie umgekehrt. Ein Auftrag des Servers wartet deshalb, bis der nächste Check-in ihn abholt.</span></figcaption>
+  </figure>
+</section>
+
+<section id="regeln">
+  <h2>Tragende Regeln</h2>
+  <div class="col">
+    <p>Sieben Entscheidungen, die man kennen muss, bevor man etwas an diesem System ändert. Jede ist mindestens einmal durch einen echten Fehler bezahlt worden.</p>
+  </div>
+
+  <ul class="rules">
+    <li>
+      <span class="sig">Immer beide</span>
+      <div>
+        <h4>Vier Logikbausteine existieren doppelt</h4>
+        <p>Weil das Frontend aus <code>shared</code> keine Laufzeit-Funktionen beziehen kann, sind Spieldauer, Schiedsrichter-Konflikte, Passwortregeln und der Annullierungs-Filter des Protokolls als identische Kopien auf beiden Seiten abgelegt. Wer eine ändert, muss die andere mitziehen.</p>
+      </div>
+    </li>
+    <li>
+      <span class="sig">Nie direkt</span>
+      <div>
+        <h4>Datenbankzugriff nur über <code>repository.ts</code></h4>
+        <p>Eine Mango-Abfrage ohne ausdrückliche Obergrenze liefert stillschweigend nur 25 Treffer. Die Helfer im Repository blättern korrekt durch — ein direkter Aufruf sieht auf dem Testdatenbestand richtig aus und verliert im Turnierbetrieb Daten.</p>
+      </div>
+    </li>
+    <li>
+      <span class="sig">Vor dem Merge</span>
+      <div>
+        <h4>Fremde Felder aus dem Anfragekörper entfernen</h4>
+        <p>Unbekannte Felder werden vom Server durchgereicht. Jede Route, die den Anfragekörper mit einem bestehenden Dokument verschmilzt, muss <code>_id</code>, <code>_rev</code> und <code>docType</code> vorher abstreifen — sonst lässt sich darüber ein fremdes Dokument anlegen oder ein Passwort-Hash einschleusen.</p>
+      </div>
+    </li>
+    <li>
+      <span class="sig">Nur Server</span>
+      <div>
+        <h4>Zuschreibungen setzt niemals der Client</h4>
+        <p>Wer etwas angelegt, zuletzt bearbeitet oder abgeschlossen hat, entscheidet ausschließlich der Server. Diese Felder werden aus eingehenden Daten entfernt, bevor sie übernommen werden.</p>
+      </div>
+    </li>
+    <li>
+      <span class="sig">Vier Prüfungen</span>
+      <div>
+        <h4>Jede neue turnierbezogene Schreibroute braucht dasselbe Gerüst</h4>
+        <p>Zugriffsstufe prüfen, auf abgeschlossenes Turnier prüfen, auf ausgeliehenes Turnier prüfen — und die Bearbeitungsspur des Turniers nachziehen. Fehlt Letzteres, vergisst die Turnierliste die Änderung; fehlt eine der ersten drei, ist es eine Sicherheitslücke.</p>
+      </div>
+    </li>
+    <li>
+      <span class="sig">Mitziehen</span>
+      <div>
+        <h4>Wer das Sync-Paket erweitert, erweitert die Prüfung</h4>
+        <p>Ein importiertes Dokument wird unter seiner mitgelieferten ID geschrieben. Die Validierung prüft deshalb ID-Präfix, <code>docType</code> und Turnier-Zugehörigkeit einzeln. Ein neuer Dokumenttyp im Paket ohne passende Prüfregel wird entweder fälschlich abgelehnt oder ungeprüft durchgelassen.</p>
+      </div>
+    </li>
+    <li>
+      <span class="sig">Unveränderlich</span>
+      <div>
+        <h4>Ereignisse werden nie geändert und nie gelöscht</h4>
+        <p>Eine Korrektur im digitalen Protokoll ist immer ein <em>neues</em> Ereignis, das ein früheres für unwirksam erklärt. Gestrichene Einträge bleiben im Spielbericht sichtbar — das ist der Sinn eines Protokolls und keine technische Bequemlichkeit.</p>
+      </div>
+    </li>
+  </ul>
+
+  <div class="col">
+    <div class="callout">
+      <p><span class="k">Grundhaltung des ganzen Systems</span>Die Software warnt bei Regelverstößen, aber sie entscheidet nicht. Kein Spielplan-Vorschlag, keine Schiedsrichter-Einteilung und keine Protokoll-Prüfung blockiert je eine Eingabe — die Turnierleitung darf jede Automatik überschreiben. Das ist keine Nachlässigkeit, sondern die bewusste Rollenverteilung zwischen Werkzeug und Mensch.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="end">
+  <span>Torball-Turniere · Version 0.9.0 Beta</span>
+  <span>Quelle: main · 22.08.2026</span>
+  <span>29.734 Zeilen · 29 Dokumenttypen · 25 Routendateien</span>
+</footer>
+
+</div>
+
+<style>
+  /* ---------- Abbildung vergrößern ---------- */
+  .fig { position: relative; }
+  .fig-frame { cursor: zoom-in; }
+  .fig-lupe {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 0.69rem; font-weight: 500;
+    color: var(--ink); background: var(--paper);
+    border: 1px solid var(--rule); border-radius: 4px;
+    padding: 5px 10px; cursor: zoom-in; box-sizing: border-box;
+  }
+  .fig-lupe:hover, .fig-lupe:focus-visible { border-color: var(--accent); color: var(--accent); }
+  .fig-lupe svg { width: 13px; height: 13px; flex: none; }
+
+  dialog.lupe {
+    width: 96vw; max-width: 96vw; height: 92vh; max-height: 92vh;
+    padding: 0; border: 1px solid var(--rule); border-radius: 8px;
+    background: var(--paper); color: var(--ink);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, .38);
+  }
+  dialog.lupe::backdrop { background: rgba(10, 10, 14, .72); }
+  .lupe-innen { display: flex; flex-direction: column; height: 100%; }
+  .lupe-kopf {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 12px 16px; border-bottom: 1px solid var(--rule); flex: none;
+  }
+  .lupe-titel { font-family: var(--mono); font-size: 0.69rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+  .lupe-steuerung { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .lupe-steuerung button, .lupe-zu {
+    font-family: var(--mono); font-size: 0.81rem; line-height: 1;
+    color: var(--ink); background: var(--panel);
+    border: 1px solid var(--rule); border-radius: 4px;
+    padding: 7px 11px; cursor: pointer; box-sizing: border-box;
+  }
+  .lupe-steuerung button:hover:not(:disabled), .lupe-zu:hover { border-color: var(--accent); color: var(--accent); }
+  .lupe-steuerung button:disabled { opacity: .4; cursor: default; }
+  .lupe-stufe {
+    font-family: var(--mono); font-size: 0.72rem; min-width: 52px; text-align: center;
+    font-variant-numeric: tabular-nums; color: var(--ink-soft);
+  }
+  .lupe-buehne { flex: 1; overflow: auto; padding: 18px; background: var(--panel); }
+  .lupe-buehne svg { display: block; height: auto; max-width: none; color: var(--ink); }
+  .lupe-fuss {
+    padding: 10px 16px; border-top: 1px solid var(--rule); flex: none;
+    font-size: .88rem; color: var(--ink-soft);
+  }
+  .lupe-fuss kbd {
+    font-family: var(--mono); font-size: 0.66rem; border: 1px solid var(--rule);
+    border-radius: 3px; padding: 1px 5px; background: var(--panel);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    dialog.lupe[open] { animation: lupe-auf .16s ease-out; }
+    @keyframes lupe-auf { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+
+<dialog class="lupe" id="lupe" aria-labelledby="lupe-titel">
+  <div class="lupe-innen">
+    <div class="lupe-kopf">
+      <span class="lupe-titel" id="lupe-titel">Abbildung</span>
+      <div class="lupe-steuerung">
+        <button type="button" id="lupe-kleiner" aria-label="Verkleinern">&minus;</button>
+        <span class="lupe-stufe" id="lupe-stufe" aria-live="polite" aria-atomic="true">100 %</span>
+        <button type="button" id="lupe-groesser" aria-label="Vergrößern">+</button>
+        <button type="button" id="lupe-passend" aria-label="Auf Fenstergröße zurücksetzen">Passend</button>
+        <button type="button" class="lupe-zu" id="lupe-zu" aria-label="Schließen">&times;</button>
+      </div>
+    </div>
+    <div class="lupe-buehne" id="lupe-buehne" tabindex="0"></div>
+    <p class="lupe-fuss" id="lupe-fuss"></p>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  var dialog = document.getElementById("lupe");
+  if (!dialog || typeof dialog.showModal !== "function") return;
+
+  var buehne = document.getElementById("lupe-buehne");
+  var titel = document.getElementById("lupe-titel");
+  var fuss = document.getElementById("lupe-fuss");
+  var stufe = document.getElementById("lupe-stufe");
+  var kleiner = document.getElementById("lupe-kleiner");
+  var groesser = document.getElementById("lupe-groesser");
+  var passend = document.getElementById("lupe-passend");
+  var zu = document.getElementById("lupe-zu");
+
+  var MIN = 1, MAX = 5, SCHRITT = 0.25;
+  var zoom = 1, basis = 0;
+
+  function aktuellesSvg() { return buehne.querySelector("svg"); }
+
+  function setzeZoom(wert) {
+    zoom = Math.min(MAX, Math.max(MIN, Math.round(wert * 100) / 100));
+    var svg = aktuellesSvg();
+    if (svg && basis) svg.style.width = (basis * zoom) + "px";
+    stufe.textContent = Math.round(zoom * 100) + " %";
+    kleiner.disabled = zoom <= MIN;
+    groesser.disabled = zoom >= MAX;
+  }
+
+  function passendMachen() {
+    basis = buehne.clientWidth - 36;
+    if (basis < 280) basis = 280;
+    setzeZoom(1);
+  }
+
+  /* Beim Klonen muessen die IDs eindeutig bleiben: sonst zeigen die Pfeilspitzen
+     der Kopie auf die Definitionen des Originals (gleiche ID, erstes Vorkommen gewinnt). */
+  function klonMitEigenenIds(svg) {
+    var kopie = svg.cloneNode(true);
+    var umbenannt = [];
+    Array.prototype.forEach.call(kopie.querySelectorAll("[id]"), function (el) {
+      var alt = el.id;
+      el.id = alt + "-lupe";
+      umbenannt.push(alt);
+    });
+    var attribute = ["marker-start", "marker-mid", "marker-end", "fill", "stroke", "clip-path", "filter", "href"];
+    Array.prototype.forEach.call(kopie.querySelectorAll("*"), function (el) {
+      attribute.forEach(function (name) {
+        var wert = el.getAttribute(name);
+        if (!wert) return;
+        umbenannt.forEach(function (alt) {
+          if (wert.indexOf("#" + alt) !== -1) {
+            wert = wert.split("#" + alt + ")").join("#" + alt + "-lupe)");
+            if (name === "href") wert = wert === "#" + alt ? "#" + alt + "-lupe" : wert;
+          }
+        });
+        el.setAttribute(name, wert);
+      });
+    });
+    return kopie;
+  }
+
+  function oeffne(figur) {
+    var svg = figur.querySelector("svg");
+    if (!svg) return;
+    var beschriftung = figur.querySelector("figcaption");
+    var nummer = beschriftung ? beschriftung.querySelector("b") : null;
+    var text = beschriftung ? beschriftung.querySelector("span") : null;
+
+    titel.textContent = nummer ? nummer.textContent : "Abbildung";
+    fuss.innerHTML = "";
+    if (text) fuss.appendChild(document.createTextNode(text.textContent));
+
+    buehne.innerHTML = "";
+    var kopie = klonMitEigenenIds(svg);
+    kopie.removeAttribute("style");
+    buehne.appendChild(kopie);
+
+    dialog.showModal();
+    passendMachen();
+    buehne.scrollLeft = 0;
+    buehne.scrollTop = 0;
+  }
+
+  /* Auslöser an jeder Abbildung: sichtbarer Knopf (auch für Tastatur und Screenreader)
+     plus Klick auf die Zeichenfläche selbst. */
+  Array.prototype.forEach.call(document.querySelectorAll("figure.fig"), function (figur) {
+    var rahmen = figur.querySelector(".fig-frame");
+    var beschriftung = figur.querySelector("figcaption b");
+    var name = beschriftung ? beschriftung.textContent.trim() : "Abbildung";
+
+    var knopf = document.createElement("button");
+    knopf.type = "button";
+    knopf.className = "fig-lupe";
+    knopf.setAttribute("aria-label", name + " vergrößern");
+    knopf.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
+      + '<circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/>'
+      + '<line x1="10.6" y1="10.6" x2="14.5" y2="14.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'
+      + '<line x1="4.6" y1="7" x2="9.4" y2="7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'
+      + '<line x1="7" y1="4.6" x2="7" y2="9.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+      + '<span>Vergrößern</span>';
+    knopf.addEventListener("click", function (e) { e.stopPropagation(); oeffne(figur); });
+    figur.appendChild(knopf);
+
+    if (rahmen) rahmen.addEventListener("click", function () { oeffne(figur); });
+  });
+
+  kleiner.addEventListener("click", function () { setzeZoom(zoom - SCHRITT); });
+  groesser.addEventListener("click", function () { setzeZoom(zoom + SCHRITT); });
+  passend.addEventListener("click", function () { passendMachen(); });
+  function aufraeumen() { buehne.innerHTML = ""; zoom = 1; }
+  function schliesse() { dialog.close(); aufraeumen(); }
+
+  zu.addEventListener("click", schliesse);
+
+  /* Klick auf die Fläche neben dem Dialogfenster schließt ihn. */
+  dialog.addEventListener("click", function (e) {
+    if (e.target === dialog) schliesse();
+  });
+
+  dialog.addEventListener("keydown", function (e) {
+    if (e.key === "+" || e.key === "=") { e.preventDefault(); setzeZoom(zoom + SCHRITT); }
+    else if (e.key === "-" || e.key === "_") { e.preventDefault(); setzeZoom(zoom - SCHRITT); }
+    else if (e.key === "0") { e.preventDefault(); passendMachen(); }
+  });
+
+  /* Esc schliesst nativ - "cancel" feuert dabei zuverlaessiger als "close". */
+  dialog.addEventListener("cancel", aufraeumen);
+  dialog.addEventListener("close", aufraeumen);
+
+  window.addEventListener("resize", function () {
+    if (dialog.open) {
+      var alt = zoom;
+      basis = buehne.clientWidth - 36;
+      if (basis < 280) basis = 280;
+      setzeZoom(alt);
+    }
+  });
+})();
+</script>
+
+<script>
+(function () {
+  var MIN = 0.85, MAX = 1.8, SCHRITT = 0.1, SPEICHER = "torball-bauplan-schrift";
+  var kleiner = document.getElementById("schrift-kleiner");
+  var groesser = document.getElementById("schrift-groesser");
+  var zurueck = document.getElementById("schrift-zurueck");
+  var anzeige = document.getElementById("schrift-stufe");
+  if (!kleiner || !groesser || !zurueck || !anzeige) return;
+
+  var skala = 1;
+
+  /* Artefakte laufen in einer Sandbox - localStorage kann werfen. */
+  function lies() {
+    try { var w = parseFloat(window.localStorage.getItem(SPEICHER)); return isNaN(w) ? null : w; }
+    catch (e) { return null; }
+  }
+  function merke(wert) {
+    try { window.localStorage.setItem(SPEICHER, String(wert)); } catch (e) { /* egal */ }
+  }
+
+  /* Die Kopfleiste bricht bei grosser Schrift um; ihre Hoehe steuert den Absprung-Abstand,
+     damit eine angesprungene Ueberschrift nicht hinter ihr verschwindet. */
+  function messeKopfhoehe() {
+    var leiste = document.querySelector(".topbar");
+    if (leiste) document.documentElement.style.setProperty("--kopfhoehe", leiste.getBoundingClientRect().height + "px");
+  }
+
+  function setze(wert, speichern) {
+    skala = Math.min(MAX, Math.max(MIN, Math.round(wert * 100) / 100));
+    document.documentElement.style.setProperty("--skala", String(skala));
+    anzeige.textContent = Math.round(skala * 100) + " %";
+    kleiner.disabled = skala <= MIN;
+    groesser.disabled = skala >= MAX;
+    if (speichern !== false) merke(skala);
+    messeKopfhoehe();
+  }
+
+  kleiner.addEventListener("click", function () { setze(skala - SCHRITT); });
+  groesser.addEventListener("click", function () { setze(skala + SCHRITT); });
+  zurueck.addEventListener("click", function () { setze(1); });
+
+  var gespeichert = lies();
+  setze(gespeichert === null ? 1 : gespeichert, gespeichert !== null);
+  window.addEventListener("resize", messeKopfhoehe);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(messeKopfhoehe);
+})();
+</script>
+</body>
+</html>
