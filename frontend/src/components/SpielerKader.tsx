@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Klassifizierung, Spieler, SpielerStatus } from "@torball/shared";
 import { createSpieler, deleteSpieler, getSpieler, updateSpieler, type SpielerAktualisierung } from "../api";
+import { SpeicherHinweis, useSpeicherHinweis } from "./SpeicherHinweis";
 
 const KLASSIFIZIERUNG_OPTIONEN: { wert: Klassifizierung; label: string }[] = [
   { wert: "B1", label: "B1" },
@@ -64,6 +65,7 @@ export function SpielerKader({
   const [spieler, setSpieler] = useState<Spieler[]>([]);
   const [bearbeitung, setBearbeitung] = useState<Record<string, Bearbeitung>>({});
   const [fehler, setFehler] = useState<string | undefined>();
+  const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
 
   const [neuName, setNeuName] = useState("");
   const [neuVorname, setNeuVorname] = useState("");
@@ -139,6 +141,7 @@ export function SpielerKader({
       await updateSpieler(s._id, payload);
       await laden();
       setFehler(undefined);
+      meldeGespeichert("Spieler gespeichert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern des Spielers");
     }
@@ -214,6 +217,7 @@ export function SpielerKader({
   return (
     <div className="kader">
       {fehler && <p role="alert">{fehler}</p>}
+      <SpeicherHinweis hinweis={speicherHinweis} />
 
       {zuVieleSpieler && (
         <p className="kader-warnung">

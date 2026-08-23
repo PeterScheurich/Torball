@@ -10,6 +10,7 @@ import {
   type SchiedsrichterAktualisierung,
 } from "../api";
 import { useAuth } from "../auth";
+import { SpeicherHinweis, useSpeicherHinweis } from "./SpeicherHinweis";
 
 interface TextBearbeitung {
   name: string;
@@ -41,6 +42,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
   const [stammdaten, setStammdaten] = useState<Schiedsrichter[]>([]);
   const [bearbeitung, setBearbeitung] = useState<Record<string, TextBearbeitung>>({});
   const [fehler, setFehler] = useState<string | undefined>();
+  const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
 
   const [neuName, setNeuName] = useState("");
   const [neuVorname, setNeuVorname] = useState("");
@@ -123,6 +125,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
       await updateSchiedsrichter(s._id, payload);
       await laden();
       setFehler(undefined);
+      meldeGespeichert("Schiedsrichter gespeichert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern des Schiedsrichters");
     }
@@ -235,6 +238,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
         Software warnt später bei der Spielplan-Generierung). Genau eine Person ist Turnierleitung.
       </p>
       {fehler && <p role="alert">{fehler}</p>}
+      <SpeicherHinweis hinweis={speicherHinweis} />
 
       {/* Bei abgeschlossenem Turnier sind alle Eingaben ueber das disabled-<fieldset> gesperrt
           (Tabelle + Anlege-Formular) - zum Bearbeiten erst wieder oeffnen. */}

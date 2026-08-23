@@ -501,6 +501,41 @@ zurückgestellt** (Konzept Abschnitt 11): konfigurierbare Tastenbelegung (erst w
 rund läuft – Nutzer-Vorgabe), PDF-Spielbericht, Beamer-Sicht, Torschützen-Statistik,
 Freiwurf-Führung, „kurzzeitig ausgesetzt"-Status, Tablet-Layout/Wake-Lock, Panel-Firmware.
 
+**Automatisch gespeicherte Felder brauchen eine ANGESAGTE Rueckmeldung
+(`components/SpeicherHinweis.tsx`, 2026-08-22):** Der Grossteil der Anwendung speichert beim
+Verlassen eines Feldes (onBlur) ohne Speichern-Knopf – gemeldet wurde das bisher aber nur in der
+Ergebniserfassung, und dort ohne `role="status"`. Vereine/Teams/Mannschaften/Kader/
+Schiedsrichter/Spielplan/Turnier-Uebersicht speicherten voellig stillschweigend. Ohne Knopf fehlt
+sonst jedes wahrnehmbare Ereignis – fuer die Zielgruppe dieser Anwendung der entscheidende Punkt.
+`useSpeicherHinweis()` + `<SpeicherHinweis>` liefern eine Live-Region; **jede neue Stelle mit
+onBlur-Speicherung zieht sie mit** (Aufruf `meldeGespeichert("… gespeichert.")` direkt nach dem
+erfolgreichen `await`, Region einmal je Liste direkt unter der `role="alert"`-Fehlerzeile).
+Zwei Fallstricke, die dabei geloest sind: (1) Die Live-Region muss schon VOR der Meldung im DOM
+stehen – ein Element, das erst mit seinem Text erscheint, sagen viele Screenreader nicht an
+(deshalb rendert sie immer, leer, mit reservierter Hoehe per `.speicher-status`). (2) Zweimal
+derselbe Text hintereinander aendert nichts am DOM und wird nicht erneut angesagt – `melde` leert
+deshalb erst und setzt gleich darauf neu. Bewusst per `setTimeout(…, 0)` und **nicht**
+`requestAnimationFrame`: dessen Rueckruf laeuft nur, solange die Seite gezeichnet wird – in einem
+Hintergrund-Tab bliebe die Meldung sonst dauerhaft aus (live in der Vorschau erwischt).
+
+**Profil-Stammdaten speichern seit 2026-08-22 feldweise** (Nutzer-Vorgabe): „Mein Profil" war die
+letzte Stelle, an der dieselben Felder, die die Schiedsrichter-Verwaltung laengst per onBlur
+pflegt, noch einen „Stammdaten speichern"-Knopf hatten – und das direkt unter den
+Voreinstellungen (Theme/Dichte/Breite), die schon immer sofort speicherten. `PUT /benutzer/mich`
+konnte partielle Aenderungen bereits (`!== undefined`-Pruefung je Feld, leerer String leert das
+Feld) – **keine Backend-Aenderung noetig**. Der Lizenz-Schalter speichert beim Umschalten, der
+Pflicht-Name wird bei leerer Eingabe zurueckgesetzt statt gespeichert.
+
+**Bewusst NICHT umgestellt** (Stand 2026-08-22, Begruendung je Fall): Standardregeln
+(`/systemkonfiguration`) – jede Speicherung legt eine neue Version an, feldweises Speichern
+erzeugte pro Tastendruck eine Version; Systemeinstellungen + Mail-Postfach – Passwort-/Key-Felder
+mit „leer = unveraendert"-Semantik, zusammengehoerige Verbindungsdaten und „Verbindung testen"
+prueft den Formularstand; E-Mail/Passwort/2FA – brauchen Passwort-Bestaetigung bzw. Wiederholung;
+Wartungsmodus – die Sperre trifft sofort alle Nutzer, das soll ein bewusster zweiter Schritt
+bleiben; Turnierregeln am Turnier – „Auf Standardwerte zuruecksetzen" fuellt das ganze Formular
+und lebt davon, dass man vor dem Speichern prueft; Turnier-Codes und Kanban-Kartendialog –
+bewusste Einzelaktion bzw. Dialog-Semantik (Schliessen verwirft).
+
 **Optionale Textfelder leeren: `null` senden, nicht `undefined`.**
 `JSON.stringify` entfernt Felder mit Wert `undefined` komplett aus dem
 Request-Body; die Backend-Routen mergen PUT-Bodies typischerweise per

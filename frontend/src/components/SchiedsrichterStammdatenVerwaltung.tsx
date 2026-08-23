@@ -8,6 +8,7 @@ import {
   type SchiedsrichterStammdatenAktualisierung,
 } from "../api";
 import { useAuth } from "../auth";
+import { SpeicherHinweis, useSpeicherHinweis } from "./SpeicherHinweis";
 
 const LEERES_FORMULAR: SchiedsrichterStammdatenAktualisierung = {
   name: "",
@@ -34,6 +35,7 @@ export function SchiedsrichterStammdatenVerwaltung({ vereine, darfBearbeiten }: 
   const { benutzer } = useAuth();
   const [liste, setListe] = useState<Schiedsrichter[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
+  const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
   const [neu, setNeu] = useState<SchiedsrichterStammdatenAktualisierung>(LEERES_FORMULAR);
   const [bearbeitung, setBearbeitung] = useState<Record<string, SchiedsrichterStammdatenAktualisierung>>({});
   // Default zu (analog VereineVerwaltung): der haeufigere Fall (Seite erneut aufgerufen, Eintraege
@@ -161,6 +163,7 @@ export function SchiedsrichterStammdatenVerwaltung({ vereine, darfBearbeiten }: 
     try {
       await updateSchiedsrichterStammdaten(s._id, neueWerte);
       await laden();
+      meldeGespeichert("Schiedsrichter gespeichert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern des Schiedsrichters");
     }
@@ -173,6 +176,7 @@ export function SchiedsrichterStammdatenVerwaltung({ vereine, darfBearbeiten }: 
     try {
       await updateSchiedsrichterStammdaten(s._id, bereinigt(werte));
       await laden();
+      meldeGespeichert("Schiedsrichter gespeichert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern des Schiedsrichters");
     }
@@ -186,6 +190,7 @@ export function SchiedsrichterStammdatenVerwaltung({ vereine, darfBearbeiten }: 
         sich diese Daten übernehmen, statt sie erneut einzutippen.
       </p>
       {fehler && <p role="alert">{fehler}</p>}
+      <SpeicherHinweis hinweis={speicherHinweis} />
 
       <fieldset className="blank-fieldset" disabled={!darfBearbeiten}>
         {liste.length === 0 ? (

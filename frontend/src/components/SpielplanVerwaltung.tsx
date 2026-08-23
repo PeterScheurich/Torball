@@ -19,6 +19,7 @@ import { TabListe } from "./TabListe";
 import { schiedsrichterKonflikt } from "../schiedsrichterKonflikt";
 import { spielplanBasisAenderungen } from "../spielplanBasisDiff";
 import { berechneStartzeit, spieldauerMinuten } from "../zeitplanung";
+import { SpeicherHinweis, useSpeicherHinweis } from "./SpeicherHinweis";
 
 const BACK_TO_BACK_HINWEIS = "Direktes Folgespiel (Back-to-Back) konnte nicht vermieden werden";
 const DOPPELBELEGUNG_HINWEIS = "Eine Mannschaft dieses Spiels ist in derselben Runde mehrfach eingeplant";
@@ -173,6 +174,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
   const [schiedsrichter, setSchiedsrichter] = useState<SchiedsrichterImTurnier[]>([]);
   const [vorschlag, setVorschlag] = useState<SpielplanVorschlagEintrag[] | undefined>();
   const [fehler, setFehler] = useState<string | undefined>();
+  const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
   const [ziehIndex, setZiehIndex] = useState<number | null>(null);
   const [ziehZielIndex, setZiehZielIndex] = useState<number | null>(null);
   const [aktuellesFeld, setAktuellesFeld] = useState<string | undefined>();
@@ -239,6 +241,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
       await spielAnpassen(spielId, { schiedsrichterId });
       await laden();
       setFehler(undefined);
+      meldeGespeichert("Schiedsrichter-Einteilung gespeichert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern des Schiedsrichters");
     }
@@ -357,6 +360,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
     try {
       await spielStartzeitAendern(spiel._id, mitNeuerUhrzeit(spiel.startzeitGeplant, hhmm));
       await laden();
+      meldeGespeichert("Startzeit gespeichert.");
     } catch (err) {
       verlaufVerwerfen();
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Startzeit");
@@ -476,6 +480,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
   return (
     <div>
       {fehler && <p role="alert">{fehler}</p>}
+      <SpeicherHinweis hinweis={speicherHinweis} />
 
       {basisAenderungen.length > 0 && (
         <div className="konfig-aenderung-hinweis" role="alert">

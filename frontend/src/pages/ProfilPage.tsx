@@ -20,6 +20,7 @@ import { SymbolVerweis } from "../components/SymbolVerweis";
 import { themeAnwenden } from "../theme";
 import { dichteAnwenden } from "../dichte";
 import { breiteAnwenden } from "../breite";
+import { SpeicherHinweis, useSpeicherHinweis } from "../components/SpeicherHinweis";
 
 const ROLLEN_LABEL: Record<GlobaleRolle, string> = {
   admin: "Admin",
@@ -69,6 +70,7 @@ export function ProfilPage() {
   const [code, setCode] = useState("");
   const [deaktivierenPasswort, setDeaktivierenPasswort] = useState("");
   const [fehler, setFehler] = useState<string | undefined>();
+  const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
   const [hinweis, setHinweis] = useState<string | undefined>();
   // Vereine aus den Stammdaten als Auswahlvorschlaege fuers Verein/Verband-Feld (freie Eingabe
   // bleibt moeglich - datalist). Fehler beim Laden bewusst still: das Feld funktioniert auch ohne.
@@ -146,22 +148,49 @@ export function ProfilPage() {
   // Speichert die Kontakt-/Stammdaten (Name, Vorname, Telefon, Lizenz, Verein/Verband, Adresse).
   // Nicht sicherheitsrelevant -> kein Passwort noetig. Diese Daten lassen sich beim Turnier in die
   // Schiedsrichter-/Turnierleitungs-Erfassung uebernehmen.
-  async function stammdatenSpeichern(event: React.FormEvent) {
-    event.preventDefault();
-    setFehler(undefined);
-    setHinweis(undefined);
+  /**
+   * Kontakt-/Stammdaten speichern beim Verlassen des Feldes - ohne Speichern-Knopf, wie in der
+   * Schiedsrichter-Verwaltung, den Stammdaten-Listen und der Turnier-Uebersicht (Nutzer-Vorgabe
+   * 22.08.2026). Vorher war es das einzige Formular auf DIESER Seite mit Knopf, waehrend die
+   * Voreinstellungen direkt darueber schon sofort speicherten - dieselben Felder werden zudem in
+   * der Schiedsrichter-Verwaltung bereits feldweise gepflegt.
+   */
+  async function stammdatenFeldSpeichern(feld: "name" | "vorname" | "telefon" | "vereinVerband" | "adresse") {
+    if (!benutzer) return;
+    const wert = stammdaten[feld].trim();
+    const aktuell = (benutzer[feld] ?? "").trim();
+
+    // Der Name ist Pflicht: leer wird nicht gespeichert, sondern zurueckgesetzt (der Server
+    // ignoriert einen leeren Namen ohnehin - ohne Ruecksetzen stuende im Feld weiter nichts).
+    if (feld === "name" && wert === "") {
+      setFehler("Name darf nicht leer sein");
+      setStammdaten((d) => ({ ...d, name: benutzer.name }));
+      return;
+    }
+    if (wert === aktuell) return;
+
     try {
-      const aktualisiert = await eigenesProfilAktualisieren({
-        name: stammdaten.name,
-        vorname: stammdaten.vorname,
-        telefon: stammdaten.telefon,
-        lizenzVorhanden: stammdaten.lizenzVorhanden,
-        vereinVerband: stammdaten.vereinVerband,
-        adresse: stammdaten.adresse,
-      });
+      const aktualisiert = await eigenesProfilAktualisieren({ [feld]: wert });
       aktualisiereBenutzer(aktualisiert);
-      setHinweis("Stammdaten gespeichert.");
+      setStammdaten((d) => ({ ...d, [feld]: wert }));
+      setFehler(undefined);
+      meldeGespeichert("Stammdaten gespeichert.");
     } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern der Stammdaten");
+    }
+  }
+
+  /** Die Lizenz-Angabe ist ein Schalter - sie speichert sofort beim Umschalten, nicht erst
+   *  beim Verlassen (gleiches Vorgehen wie bei den Schiedsrichter-Stammdaten). */
+  async function lizenzAendern(wert: boolean) {
+    setStammdaten((d) => ({ ...d, lizenzVorhanden: wert }));
+    try {
+      const aktualisiert = await eigenesProfilAktualisieren({ lizenzVorhanden: wert });
+      aktualisiereBenutzer(aktualisiert);
+      setFehler(undefined);
+      meldeGespeichert("Stammdaten gespeichert.");
+    } catch (err) {
+      setStammdaten((d) => ({ ...d, lizenzVorhanden: !wert }));
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern der Stammdaten");
     }
   }
@@ -247,6 +276,7 @@ export function ProfilPage() {
       <h1>Mein Profil</h1>
 
       {fehler && <p role="alert">{fehler}</p>}
+      <SpeicherHinweis hinweis={speicherHinweis} />
       {hinweis && <p>{hinweis}</p>}
 
       <div className="tabellen-wrapper">
@@ -407,7 +437,7 @@ export function ProfilPage() {
         Diese Angaben lassen sich beim Anlegen bzw. in der Schiedsrichter-Verwaltung eines Turniers als
         Turnierleitung/Schiedsrichter übernehmen – einmal pflegen, mehrfach nutzen.
       </p>
-      <form onSubmit={stammdatenSpeichern} className="stammdaten-formular">
+      <form onSubmit={(e) => e.preventDefault()} className="stammdaten-formular">
         <div className="tabellen-wrapper">
           <table className="uebersicht-tabelle">
             <caption className="sr-only">Kontakt- und Stammdaten</caption>
@@ -422,6 +452,10 @@ export function ProfilPage() {
                     required
                     value={stammdaten.name}
                     onChange={(e) => setStammdaten((s) => ({ ...s, name: e.target.value }))}
+                    onBlur={() => stammdatenFeldSpeichern("name")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
                   />
                 </td>
               </tr>
@@ -434,6 +468,10 @@ export function ProfilPage() {
                     id="stammVorname"
                     value={stammdaten.vorname}
                     onChange={(e) => setStammdaten((s) => ({ ...s, vorname: e.target.value }))}
+                    onBlur={() => stammdatenFeldSpeichern("vorname")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
                   />
                 </td>
               </tr>
@@ -447,6 +485,10 @@ export function ProfilPage() {
                     type="tel"
                     value={stammdaten.telefon}
                     onChange={(e) => setStammdaten((s) => ({ ...s, telefon: e.target.value }))}
+                    onBlur={() => stammdatenFeldSpeichern("telefon")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
                   />
                 </td>
               </tr>
@@ -459,7 +501,7 @@ export function ProfilPage() {
                     id="stammLizenzVorhanden"
                     type="checkbox"
                     checked={stammdaten.lizenzVorhanden}
-                    onChange={(e) => setStammdaten((s) => ({ ...s, lizenzVorhanden: e.target.checked }))}
+                    onChange={(e) => lizenzAendern(e.target.checked)}
                   />
                 </td>
               </tr>
@@ -473,6 +515,10 @@ export function ProfilPage() {
                     list="profil-vereine-liste"
                     value={stammdaten.vereinVerband}
                     onChange={(e) => setStammdaten((s) => ({ ...s, vereinVerband: e.target.value }))}
+                    onBlur={() => stammdatenFeldSpeichern("vereinVerband")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
                   />
                   <datalist id="profil-vereine-liste">
                     {[...new Set(vereine.map((v) => v.name))].sort((a, b) => a.localeCompare(b)).map((name) => (
@@ -492,13 +538,13 @@ export function ProfilPage() {
                     rows={2}
                     value={stammdaten.adresse}
                     onChange={(e) => setStammdaten((s) => ({ ...s, adresse: e.target.value }))}
+                    onBlur={() => stammdatenFeldSpeichern("adresse")}
                   />
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <button type="submit">Stammdaten speichern</button>
       </form>
 
       <h2>Zwei-Faktor-Authentifizierung (2FA)</h2>

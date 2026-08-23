@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Verein } from "@torball/shared";
 import { createVerein, deleteVerein, getVereine, updateVerein, type VereinAktualisierung } from "../api";
 import { BUNDESLAENDER } from "../bundeslaender";
+import { SpeicherHinweis, useSpeicherHinweis } from "./SpeicherHinweis";
 
 const LEERES_FORMULAR: VereinAktualisierung = {
   name: "",
@@ -28,6 +29,7 @@ interface Props {
 export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
   const [vereine, setVereine] = useState<Verein[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
+  const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
   const [neu, setNeu] = useState<VereinAktualisierung>(LEERES_FORMULAR);
   const [bearbeitung, setBearbeitung] = useState<Record<string, VereinAktualisierung>>({});
   // Default zu: der haeufigere Fall (Seite erneut aufgerufen, Vereine existieren schon) zeigt das
@@ -149,6 +151,7 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
     try {
       await updateVerein(v._id, neueWerte);
       await laden();
+      meldeGespeichert("Verein gespeichert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern des Vereins");
     }
@@ -158,6 +161,7 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
     <div>
       <h2>Vereine</h2>
       {fehler && <p role="alert">{fehler}</p>}
+      <SpeicherHinweis hinweis={speicherHinweis} />
 
       {/* Ohne Bearbeitungsrecht werden alle Eingaben nativ ueber das disabled-<fieldset>
           deaktiviert (Tabelle + Anlege-Formular) - das Backend erzwingt es ohnehin serverseitig. */}

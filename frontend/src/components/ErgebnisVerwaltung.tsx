@@ -365,7 +365,11 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
                             </div>
                           </>
                         )}
-                        {geradeGespeichert === spiel._id && <div className="gespeichert-hinweis">✓ gespeichert</div>}
+                        {geradeGespeichert === spiel._id && (
+                          <div className="gespeichert-hinweis" role="status">
+                            ✓ gespeichert
+                          </div>
+                        )}
                           </>
                         )}
                       </td>

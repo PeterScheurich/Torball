@@ -25,6 +25,7 @@ import { TurnierLogo } from "../components/TurnierLogo";
 import { bildAlsLogoDataUrl, MAX_LOGO_BYTES } from "../logoBild";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 import { useAuth } from "../auth";
+import { SpeicherHinweis, useSpeicherHinweis } from "../components/SpeicherHinweis";
 
 type Tab = "uebersicht" | "regeln" | "mannschaften" | "schiedsrichter" | "spielplan" | "ergebnisse";
 
@@ -130,6 +131,7 @@ export function TurnierVerwaltenPage() {
   // Feldnamen-Entwuerfe je feldId, analog zu "allgemein" nur beim ersten Laden uebernommen.
   const [feldNamen, setFeldNamen] = useState<Record<string, string> | undefined>();
   const [fehler, setFehler] = useState<string | undefined>();
+  const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
   const [linkHinweis, setLinkHinweis] = useState<string | undefined>();
   // Ist das Turnier per Turnier-Sync an eine lokale Installation ausgecheckt, ist es auch hier auf
   // dem Server schreibgeschuetzt (siehe turnierAusgecheckt() im Backend) - fuer die Kennzeichnung
@@ -227,6 +229,7 @@ export function TurnierVerwaltenPage() {
       setTurnier(aktualisiert);
       setAllgemein((a) => (a ? { ...a, [feld]: wert } : a));
       setFehler(undefined);
+      meldeGespeichert("Turnierdaten gespeichert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern");
     }
@@ -250,6 +253,7 @@ export function TurnierVerwaltenPage() {
       setTurnier(aktualisiert);
       setFeldNamen((f) => (f ? { ...f, [feldId]: wert } : f));
       setFehler(undefined);
+      meldeGespeichert("Feldname gespeichert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern des Feldnamens");
     }
@@ -469,6 +473,7 @@ export function TurnierVerwaltenPage() {
         )}
       </h1>
       {fehler && <p role="alert">{fehler}</p>}
+      <SpeicherHinweis hinweis={speicherHinweis} />
 
       {/* Hinweis auf den gesperrten Zustand. Inhalte sind bei abgeschlossenem Turnier
           schreibgeschuetzt; nur die Oeffentlich-Freigabe und das Teilen bleiben moeglich (sie

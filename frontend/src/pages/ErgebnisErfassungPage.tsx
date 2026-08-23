@@ -239,7 +239,11 @@ export function ErgebnisErfassungPage() {
                         </div>
                       </>
                     )}
-                    {geradeGespeichert === spiel._id && <div className="gespeichert-hinweis">✓ gespeichert</div>}
+                    {geradeGespeichert === spiel._id && (
+                      <div className="gespeichert-hinweis" role="status">
+                        ✓ gespeichert
+                      </div>
+                    )}
                   </td>
                   <td>{nameVon(spiel.mannschaftBId)}</td>
                   <td>

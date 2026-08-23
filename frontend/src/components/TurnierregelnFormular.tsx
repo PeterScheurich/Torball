@@ -343,7 +343,12 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
             Auf Standardwerte zurücksetzen
           </button>
         )}
-        {gespeichert && <span className="gespeichert-hinweis"> ✓ gespeichert</span>}
+        {gespeichert && (
+          <span className="gespeichert-hinweis" role="status">
+            {" "}
+            ✓ gespeichert
+          </span>
+        )}
       </p>
       {standardWerte && (
         <p className="feld-hinweis">

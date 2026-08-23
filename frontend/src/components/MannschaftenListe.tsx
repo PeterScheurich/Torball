@@ -12,6 +12,7 @@ import {
 } from "../api";
 import { BUNDESLAENDER } from "../bundeslaender";
 import { SpielerKader } from "./SpielerKader";
+import { SpeicherHinweis, useSpeicherHinweis } from "./SpeicherHinweis";
 
 interface MannschaftBearbeitung {
   name: string;
@@ -74,6 +75,7 @@ export function MannschaftenListe({
 }: Props) {
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
+  const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
   const [neueMannschaft, setNeueMannschaft] = useState("");
   const [neuesBundesland, setNeuesBundesland] = useState("");
   const [teams, setTeams] = useState<Team[]>([]);
@@ -291,6 +293,7 @@ export function MannschaftenListe({
         betreuer3IstSchiedsrichter: betreuer3SchiriNeu,
       });
       await laden();
+      meldeGespeichert("Mannschaft gespeichert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern der Mannschaft");
     }
@@ -310,6 +313,7 @@ export function MannschaftenListe({
   return (
     <div>
       {fehler && <p role="alert">{fehler}</p>}
+      <SpeicherHinweis hinweis={speicherHinweis} />
 
       {digitaleProtokollierung && (
         <p>

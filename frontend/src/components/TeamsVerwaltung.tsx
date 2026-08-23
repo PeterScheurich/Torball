@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Team, Verein } from "@torball/shared";
 import { createTeam, deleteTeam, getTeams, updateTeam } from "../api";
+import { SpeicherHinweis, useSpeicherHinweis } from "./SpeicherHinweis";
 
 interface Bearbeitung {
   name: string;
@@ -22,6 +23,7 @@ interface Props {
 export function TeamsVerwaltung({ vereine, darfBearbeiten }: Props) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
+  const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
   const [neuerName, setNeuerName] = useState("");
   const [neuerVereinId, setNeuerVereinId] = useState("");
   const [bearbeitung, setBearbeitung] = useState<Record<string, Bearbeitung>>({});
@@ -101,6 +103,7 @@ export function TeamsVerwaltung({ vereine, darfBearbeiten }: Props) {
     try {
       await updateTeam(t._id, { name: werte.name.trim(), vereinId: werte.vereinId });
       await laden();
+      meldeGespeichert("Team gespeichert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern des Teams");
     }
@@ -124,6 +127,7 @@ export function TeamsVerwaltung({ vereine, darfBearbeiten }: Props) {
     <div>
       <h2>Teams</h2>
       {fehler && <p role="alert">{fehler}</p>}
+      <SpeicherHinweis hinweis={speicherHinweis} />
 
       <fieldset className="blank-fieldset" disabled={!darfBearbeiten}>
       {vereine.length === 0 ? (

@@ -775,6 +775,18 @@ form {
 }
 
 /* Kurze Bestaetigung nach dem automatischen Speichern (onBlur). */
+/* Live-Region fuer automatisch gespeicherte Felder (SpeicherHinweis.tsx). Die Zeile ist
+   IMMER vorhanden - auch leer -, weil Screenreader eine erst mit ihrem Text erscheinende
+   Region oft nicht ansagen. Die reservierte Hoehe verhindert zugleich ein Springen des
+   Layouts, sobald die Meldung erscheint. */
+.speicher-status {
+  min-height: 1.25em;
+  margin: 4px 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
 .gespeichert-hinweis {
   margin-top: 4px;
   font-size: 0.8rem;
