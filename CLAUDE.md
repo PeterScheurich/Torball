@@ -1770,6 +1770,24 @@ wird – node muss den `.env`-Wert dann gar nicht mehr gegen einen bestehenden �
 schon korrekt vorliegt. Robuster als die Ursache (die konkrete Herkunft der Fremd-Variable) zu
 jagen, und deckt jeden ähnlichen Fall auf einem anderen Rechner mit ab.
 
+**Browser oeffnet erst, wenn die Dienste wirklich antworten (2026-08-22, Nutzer-Fund):**
+`Start-Torball.cmd` wartete frueher pauschal `timeout /t 3` und rief dann den Browser auf. Dauerte
+der Start laenger (kalter Rechner, frisch hochgefahrenes Windows), landete man auf der
+Fehlerseite des Browsers – **und die aktualisiert sich nicht von selbst**, sobald der Server da
+ist; der Eindruck bleibt „funktioniert nicht". Jetzt prueft `deploy/warte-auf-dienste.mjs` in
+**zwei Phasen** echte Erreichbarkeit (`datenbank`, dann `anwendung`) und der Browser oeffnet erst
+danach. Die Reihenfolge ist zwingend: `db.ts` baut die Verbindung beim Start auf und `index.ts`
+ruft `ensureIndexes()` **vor** `server.listen()` – ist CouchDB noch nicht erreichbar, beendet sich
+der Server-Prozess sofort wieder (bewusstes hartes Scheitern, kein Retry). Umgekehrt gilt
+dadurch: **antwortet der Server auf `/`, ist auch die Datenbank bereit** – ein Grund, warum eine
+einzige Bereitschaftsabfrage genuegt. Bei Zeitueberschreitung zeigt das Fenster einen
+alltagssprachlichen Hinweis (CouchDB-Dienst starten bzw. Server-Fenster in der Taskleiste
+ansehen) und bleibt per `pause` offen, statt den Browser ins Leere laufen zu lassen. Die Sonde
+zielt bewusst auf `127.0.0.1` statt `localhost` (Windows probiert sonst ggf. zuerst IPv6, waehrend
+der Server nur auf IPv4 lauscht). **Wichtig:** `Start-Torball.cmd` wird nur vom Installer
+erzeugt – eine bestehende Installation bekommt die Aenderung erst durch einen erneuten
+`Setup.cmd`-Lauf, nicht durch `Aktualisieren-Torball.cmd`.
+
 **Server-Fenster startet minimiert mit warnendem Titel (2026-08-19, Nutzer-Vorgabe):** `Start-
 Torball.cmd` öffnet das Server-Konsolenfenster über `start "Torball-Turniere-Server - NICHT
 SCHLIESSEN!" /min cmd /k ...` statt eines normal sichtbaren Fensters – landet damit nur noch in der

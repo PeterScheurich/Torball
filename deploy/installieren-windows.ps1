@@ -598,13 +598,54 @@ rem allererste Zeile durch das Byte-Order-Mark von PowerShells Set-Content mit u
 rem Extra-Zeichen beginnt, weil nur nach dem GLEICHHEITSZEICHEN gesplittet wird.
 set "PORT=$EffectivePort"
 for /f "tokens=2 delims==" %%P in ('findstr "PORT=" .env') do set "PORT=%%P"
+echo.
+echo Torball-Turniere wird gestartet. Bitte einen Moment Geduld -
+echo der Browser oeffnet sich automatisch, sobald alles bereit ist.
+echo.
+
+rem Erst auf die Datenbank warten, dann den Server starten: backend/src/db.ts baut die Verbindung
+rem beim Start auf und index.ts ruft ensureIndexes() VOR server.listen() - ist CouchDB noch nicht
+rem erreichbar (z.B. kurz nach dem Hochfahren von Windows), beendet sich der Server sofort wieder.
+node --env-file=.env "..\deploy\warte-auf-dienste.mjs" datenbank
+if errorlevel 1 goto :datenbank_fehlt
+
 rem /min startet das Server-Fenster minimiert (nur in der Taskleiste) - bleibt so nicht im Weg fuer
 rem ein versehentliches Wegklicken, ist aber bei Bedarf weiterhin ueber die Taskleiste erreichbar
 rem (z.B. um im Fehlerfall die Ausgabe zu sehen). Titel weist zusaetzlich deutlich darauf hin, dass
 rem dieses Fenster den Server darstellt und nicht geschlossen werden soll.
 start "Torball-Turniere-Server - NICHT SCHLIESSEN!" /min cmd /k node --env-file=.env dist\index.js
-timeout /t 3 /nobreak >nul
+
+rem Den Browser erst oeffnen, wenn der Server WIRKLICH antwortet. Frueher wurde hier pauschal drei
+rem Sekunden gewartet - dauerte der Start laenger, landete man auf der Fehlerseite des Browsers,
+rem und die aktualisiert sich nicht von selbst (Nutzer-Fund 2026-08-22).
+node --env-file=.env "..\deploy\warte-auf-dienste.mjs" anwendung
+if errorlevel 1 goto :server_antwortet_nicht
+
 start "" http://localhost:%PORT%
+exit /b 0
+
+:datenbank_fehlt
+echo.
+echo Die Datenbank (CouchDB) antwortet nicht.
+echo.
+echo Das ist meist einer dieser Faelle:
+echo  - Der Dienst "Apache CouchDB" laeuft nicht. In der Windows-Suche "Dienste" oeffnen,
+echo    den Eintrag suchen und starten - danach dieses Fenster erneut starten.
+echo  - Der Rechner wurde gerade erst hochgefahren und braucht noch etwas laenger.
+echo    Dann einfach in einer Minute noch einmal versuchen.
+echo.
+pause
+exit /b 1
+
+:server_antwortet_nicht
+echo.
+echo Der Server ist nicht bereit geworden.
+echo.
+echo In der Taskleiste gibt es ein Fenster "Torball-Turniere-Server" - dort steht die
+echo Fehlermeldung. Bitte oeffnen und den Text nachsehen bzw. weitergeben.
+echo.
+pause
+exit /b 1
 "@ | Set-Content -Path $StartCmd -Encoding ascii
 
 $WshShell = New-Object -ComObject WScript.Shell

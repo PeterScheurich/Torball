@@ -280,7 +280,11 @@ Administratorrechten – nötig für die Node-/CouchDB-Installation). Das Skript
   eingerichtet (siehe oben) – optional und nur mit Internetzugang sinnvoll; ohne SMTP zeigt die
   App Einladungs-/Reset-Links direkt an.
 - **`Start-Torball.cmd`** + **`Aktualisieren-Torball.cmd`** im Projektordner sowie eine Verknüpfung
-  „Torball-Turniere" auf dem Desktop (startet `Start-Torball.cmd`).
+  „Torball-Turniere" auf dem Desktop (startet `Start-Torball.cmd`). Beim Start wartet das Skript,
+  bis Datenbank und Server tatsächlich antworten (`deploy/warte-auf-dienste.mjs`), und öffnet den
+  Browser erst dann – sonst landete man bei einem langsameren Start auf der Fehlerseite des
+  Browsers, die sich nicht von selbst aktualisiert. Antwortet ein Dienst nicht, bleibt das Fenster
+  mit einem Hinweis offen.
 
 Erneutes Ausführen ist unschädlich (Idempotenz wie bei den Linux-Skripten): vorhandene `.env` bleibt
 unangetastet (keine erneute Port-Abfrage; steht darin noch `HOST=127.0.0.1`, wird das Aktivieren
