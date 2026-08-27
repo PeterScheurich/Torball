@@ -1806,6 +1806,20 @@ wird – node muss den `.env`-Wert dann gar nicht mehr gegen einen bestehenden �
 schon korrekt vorliegt. Robuster als die Ursache (die konkrete Herkunft der Fremd-Variable) zu
 jagen, und deckt jeden ähnlichen Fall auf einem anderen Rechner mit ab.
 
+**Server-Protokoll in eine Datei + Diagnose-Bericht (2026-08-26, Nutzer-Vorgabe):** Der Server
+schrieb nur auf den Bildschirm - und dieses Fenster laeuft bei der lokalen Installation
+absichtlich minimiert. Nach einem Neustart war jede Spur weg; bei einer Rueckmeldung aus dem
+Betrieb ("es funktioniert nicht") gab es nichts zum Nachsehen. Jetzt schreibt
+`backend/src/logDatei.ts` bei gesetztem `LOG_DATEI` **zusaetzlich** in eine Datei (Konsole bleibt
+unveraendert). **Standardmaessig AUS und nur vom Windows-Installer gesetzt** - auf dem
+Debian-Server faengt systemd die Ausgabe ohnehin im Journal auf. Rotation bewusst nur beim Start
+(eine Vorgaenger-Generation `.1`): Die lokale Installation wird je Sitzung neu gestartet, und
+eine Rotation im laufenden Betrieb muesste den offenen Schreibstrom umhaengen. Dazu der Befehl
+`torball diagnose` - schreibt Version, Konfiguration (Geheimnisse nur als "gesetzt/nicht
+gesetzt"), Datenbank-Status samt Dokumentzahlen je docType und die letzten 200 Log-Zeilen als
+**Textdatei** (bewusst kein ZIP: laesst sich ohne Zusatzprogramm oeffnen, vorher durchlesen und
+notfalls in eine Mail kopieren). Verifiziert, dass kein Passwort im Bericht landet.
+
 **Browser oeffnet erst, wenn die Dienste wirklich antworten (2026-08-22, Nutzer-Fund):**
 `Start-Torball.cmd` wartete frueher pauschal `timeout /t 3` und rief dann den Browser auf. Dauerte
 der Start laenger (kalter Rechner, frisch hochgefahrenes Windows), landete man auf der

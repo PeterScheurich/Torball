@@ -33,6 +33,7 @@ import { syncRoutes } from "./routes/sync";
 import { mailPostfachRoutes } from "./routes/mailPostfach";
 import { dokuRoutes } from "./routes/doku";
 import { sicherungRoutes } from "./routes/sicherung";
+import { logZiel } from "./logDatei";
 import { wartungRoutes } from "./routes/wartung";
 import { wartungPreHandler } from "./wartung";
 import { starteCheckinTimer } from "./sync/checkin";
@@ -63,7 +64,13 @@ const serveFrontend = process.env.SERVE_FRONTEND === "true";
 // davorliegenden Reverse-Proxys (nginx / Nginx Proxy Manager). Konfigurierbar ueber TRUST_PROXY,
 // Default = Loopback + private Netzbereiche (deckt beide Betriebsarten robust ab, nicht faelschbar
 // von aussen - siehe rateLimit.ts::ermittleTrustProxy).
-const server = Fastify({ logger: true, trustProxy: ermittleTrustProxy() });
+// Protokollierung zusaetzlich in eine Datei, wenn LOG_DATEI gesetzt ist (Windows-Installation) -
+// sonst wie bisher nur auf die Konsole (Debian: systemd faengt das im Journal auf).
+const logAusgabe = logZiel();
+const server = Fastify({
+  logger: logAusgabe ? { stream: logAusgabe } : true,
+  trustProxy: ermittleTrustProxy(),
+});
 
 // Uebersetzt einen unbehandelten CouchDB-Versionskonflikt (409 - tritt auf, wenn zwei Anfragen
 // nahezu gleichzeitig dasselbe Dokument aendern, z.B. eine Ergebniserfassung intern UND parallel

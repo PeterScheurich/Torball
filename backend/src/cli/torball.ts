@@ -18,6 +18,8 @@ import { erzeugeBeispieldaten } from "../demo/beispieldaten";
 import { erstelleSnapshot, stelleSnapshotWiederher } from "../demo/snapshot";
 import { erstelleMailBericht } from "../mail/bericht";
 import { erstelleSicherung, spieleSicherungEin, vorgeschlagenerDateiname } from "../sicherung/datei";
+import { letzteLogZeilen } from "../logDatei";
+import { db } from "../db";
 
 type Optionen = Record<string, string>;
 type Befehl = (optionen: Optionen) => Promise<void>;
@@ -35,6 +37,9 @@ const ERLAUBTE_KONFIGURATIONS_SCHLUESSEL = [
   "SERVE_FRONTEND",
   "DEMO_SNAPSHOT_ERLAUBT",
   "TZ",
+  // Pfad einer zusaetzlichen Logdatei (siehe logDatei.ts) - der Windows-Installer setzt ihn,
+  // auf dem Server bleibt er leer (dort faengt systemd die Ausgabe im Journal auf).
+  "LOG_DATEI",
 ];
 
 const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
@@ -97,6 +102,12 @@ const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
       'Liest eine Sicherungsdatei zurueck. Optionen: --datei="<Pfad>" (Pflicht), ' +
       "--ueberschreiben (ersetzt auch bereits vorhandene Dokumente; ohne diese Option bleiben sie unangetastet).",
     ausfuehren: sicherungEinspielen,
+  },
+  diagnose: {
+    beschreibung:
+      'Schreibt einen Diagnose-Bericht (Version, Konfiguration ohne Passwoerter, Datenbank-Status, ' +
+      'letzte Log-Zeilen) als Textdatei zum Weitergeben. Optionen: --datei="<Pfad>"',
+    ausfuehren: diagnose,
   },
   "mail:bericht:erstellen": {
     beschreibung:
@@ -166,6 +177,82 @@ async function sicherungEinspielen(optionen: Optionen): Promise<void> {
         "Mit --ueberschreiben werden auch diese ersetzt.",
     );
   }
+}
+
+/**
+ * Diagnose-Bericht als Textdatei.
+ *
+ * Zweck (Nutzer-Vorgabe 26.08.2026): Rueckmeldungen aus dem Betrieb lauten erfahrungsgemaess
+ * "es funktioniert nicht". Dieser Befehl macht daraus etwas Auswertbares - eine Datei, die man
+ * anhaengen kann, ohne selbst wissen zu muessen, was darin relevant ist.
+ *
+ * Bewusst reiner Text und kein ZIP: laesst sich ohne Zusatzprogramm oeffnen, vor dem Verschicken
+ * durchlesen und notfalls in eine Mail kopieren. Passwoerter und Schluessel stehen NICHT darin -
+ * nur, ob sie gesetzt sind.
+ */
+async function diagnose(optionen: Optionen): Promise<void> {
+  const zeilen: string[] = [];
+  const abschnitt = (titel: string) => {
+    zeilen.push("", `--- ${titel} ---`);
+  };
+
+  zeilen.push("Torball-Turniere - Diagnose-Bericht");
+  zeilen.push(`Erstellt: ${new Date().toISOString()}`);
+
+  abschnitt("Umgebung");
+  zeilen.push(`Node:            ${process.version}`);
+  zeilen.push(`Betriebssystem:  ${process.platform} ${process.arch}`);
+  zeilen.push(`Arbeitsordner:   ${process.cwd()}`);
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, "../../package.json"), "utf8"));
+    zeilen.push(`App-Version:     ${pkg.version ?? "?"}`);
+  } catch {
+    zeilen.push("App-Version:     nicht lesbar");
+  }
+
+  abschnitt("Konfiguration (Geheimnisse nur als 'gesetzt/nicht gesetzt')");
+  for (const schluessel of ERLAUBTE_KONFIGURATIONS_SCHLUESSEL) {
+    zeilen.push(`${schluessel.padEnd(22)} ${process.env[schluessel] ?? "(nicht gesetzt)"}`);
+  }
+  zeilen.push(`${"COUCHDB_URL".padEnd(22)} ${process.env.COUCHDB_URL ?? "(nicht gesetzt)"}`);
+  zeilen.push(`${"COUCHDB_DB".padEnd(22)} ${process.env.COUCHDB_DB ?? "(nicht gesetzt)"}`);
+  for (const geheim of ["COUCHDB_PASSWORD", "ANTHROPIC_API_KEY"]) {
+    zeilen.push(`${geheim.padEnd(22)} ${process.env[geheim] ? "gesetzt" : "nicht gesetzt"}`);
+  }
+
+  abschnitt("Datenbank");
+  try {
+    const liste = await db.list({ include_docs: true });
+    const proTyp: Record<string, number> = {};
+    for (const zeile of liste.rows) {
+      if (zeile.id.startsWith("_design/")) continue;
+      const typ = (zeile.doc as { docType?: string } | undefined)?.docType ?? "(ohne docType)";
+      proTyp[typ] = (proTyp[typ] ?? 0) + 1;
+    }
+    zeilen.push("Verbindung:      erreichbar");
+    zeilen.push(`Dokumente:       ${Object.values(proTyp).reduce((a, b) => a + b, 0)}`);
+    for (const [typ, anzahl] of Object.entries(proTyp).sort((a, b) => b[1] - a[1])) {
+      zeilen.push(`  ${typ.padEnd(28)} ${anzahl}`);
+    }
+  } catch (fehler) {
+    zeilen.push("Verbindung:      NICHT erreichbar");
+    zeilen.push(`Fehler:          ${fehler instanceof Error ? fehler.message : String(fehler)}`);
+  }
+
+  abschnitt("Letzte Log-Zeilen");
+  const log = letzteLogZeilen(200);
+  if (log.length === 0) {
+    zeilen.push("(keine Logdatei konfiguriert oder noch nichts protokolliert - siehe LOG_DATEI)");
+  } else {
+    zeilen.push(...log);
+  }
+
+  const ziel =
+    optionen.datei?.trim() ||
+    path.join(process.cwd(), `torball-diagnose-${new Date().toISOString().slice(0, 10)}.txt`);
+  fs.writeFileSync(ziel, zeilen.join("\n"), "utf8");
+  console.log(`Diagnose-Bericht geschrieben: ${ziel}`);
+  console.log("Die Datei enthaelt keine Passwoerter und kann so weitergegeben werden.");
 }
 
 async function mailBerichtErstellen(): Promise<void> {

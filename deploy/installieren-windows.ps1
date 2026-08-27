@@ -556,6 +556,11 @@ SERVE_FRONTEND=true
 # (Turnier-Startzeiten sollen unabhaengig von der lokalen Windows-Zeitzoneneinstellung als
 # deutsche Zeit interpretiert werden, inkl. korrekter Sommer-/Winterzeit-Umstellung).
 TZ=Europe/Berlin
+# Zusaetzliche Logdatei: Das Server-Fenster laeuft minimiert und ist nach einem Neustart weg -
+# ohne Datei gibt es bei einer Rueckmeldung aus dem Betrieb nichts zum Nachsehen. Wird beim
+# Start automatisch umbenannt, sobald sie zu gross wird. Fuer einen Bericht zum Weitergeben:
+# in backend/ "npm run torball -- diagnose" ausfuehren.
+LOG_DATEI=$TorballOrdner\logs\torball-server.log
 "@ | Set-Content -Path $EnvFile -Encoding utf8
     Write-Host "backend/.env angelegt."
 }
@@ -675,6 +680,9 @@ Write-Host "Beim allerersten Start fuehrt die Anmeldeseite durch die einmalige E
 Write-Host ""
 Write-Host "Spaeter aktualisieren: 'Aktualisieren-Torball.cmd' im Projektordner doppelklicken (siehe auch AKTUALISIEREN.md)."
 Write-Host "Spaeter Konfiguration anpassen (z.B. Port): in backend/ 'npm run torball -- konfiguration:anzeigen' bzw. 'konfiguration:setzen' (siehe --hilfe)."
+Write-Host "Wenn einmal etwas nicht funktioniert: in backend/ 'npm run torball -- diagnose' ausfuehren - das"
+Write-Host "schreibt einen Bericht (ohne Passwoerter) zum Weitergeben. Das Server-Protokoll liegt unter"
+Write-Host "$TorballOrdner\logs\."
 Write-Host "E-Mail-Versand (SMTP) ist optional und nur sinnvoll, wenn dieser Rechner Internetzugang hat:"
 Write-Host "ohne ihn zeigt die App Einladungs- und Passwort-Reset-Links einfach direkt an (zum Weitergeben"
 Write-Host "von Hand). Bei Bedarf spaeter im Admin-Menue unter Systemeinstellungen einrichten."

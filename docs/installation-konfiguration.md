@@ -279,6 +279,10 @@ Administratorrechten – nötig für die Node-/CouchDB-Installation). Das Skript
   (siehe unten). SMTP-Mailversand wird nicht hier abgefragt, sondern später über die Oberfläche
   eingerichtet (siehe oben) – optional und nur mit Internetzugang sinnvoll; ohne SMTP zeigt die
   App Einladungs-/Reset-Links direkt an.
+- **Server-Protokoll** unter `C:\Torball-Turniere\logs\` (`LOG_DATEI` in `backend/.env`). Geht bei
+  einem Neustart nicht verloren – anders als die Ausgabe im minimierten Server-Fenster. Für eine
+  Rückmeldung an die Entwicklung: in `backend/` `npm run torball -- diagnose` ausführen, das
+  schreibt einen Bericht ohne Passwörter zum Weitergeben.
 - **`Start-Torball.cmd`** + **`Aktualisieren-Torball.cmd`** im Projektordner sowie eine Verknüpfung
   „Torball-Turniere" auf dem Desktop (startet `Start-Torball.cmd`). Beim Start wartet das Skript,
   bis Datenbank und Server tatsächlich antworten (`deploy/warte-auf-dienste.mjs`), und öffnet den
