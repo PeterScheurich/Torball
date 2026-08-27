@@ -17,6 +17,7 @@ import { findAllByType, insertDoc } from "../repository";
 import { erzeugeBeispieldaten } from "../demo/beispieldaten";
 import { erstelleSnapshot, stelleSnapshotWiederher } from "../demo/snapshot";
 import { erstelleMailBericht } from "../mail/bericht";
+import { erstelleSicherung, spieleSicherungEin, vorgeschlagenerDateiname } from "../sicherung/datei";
 
 type Optionen = Record<string, string>;
 type Befehl = (optionen: Optionen) => Promise<void>;
@@ -84,6 +85,19 @@ const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
       "automatisch über einen systemd-Timer, nicht von Hand.",
     ausfuehren: demoSnapshotWiederherstellen,
   },
+  "sicherung:erstellen": {
+    beschreibung:
+      'Schreibt den GESAMTEN Datenbestand in eine Datei. Optionen: --datei="<Pfad>" ' +
+      "(Standard: torball-sicherung-<Datum>.json im aktuellen Ordner). Die Datei enthaelt auch " +
+      "Zugangsdaten - sicher aufbewahren.",
+    ausfuehren: sicherungErstellen,
+  },
+  "sicherung:einspielen": {
+    beschreibung:
+      'Liest eine Sicherungsdatei zurueck. Optionen: --datei="<Pfad>" (Pflicht), ' +
+      "--ueberschreiben (ersetzt auch bereits vorhandene Dokumente; ohne diese Option bleiben sie unangetastet).",
+    ausfuehren: sicherungEinspielen,
+  },
   "mail:bericht:erstellen": {
     beschreibung:
       "Ruft neue Mails aus dem Feedback-Postfach per IMAP ab, laesst sie per KI klassifizieren, " +
@@ -106,6 +120,52 @@ async function demoSnapshotErstellen(): Promise<void> {
 async function demoSnapshotWiederherstellen(): Promise<void> {
   const { anzahlDokumente } = await stelleSnapshotWiederher();
   console.log(`Snapshot wiederhergestellt: ${anzahlDokumente} Dokumente aus der "_golden"-Datenbank übernommen.`);
+}
+
+/**
+ * Sicherung schreiben. Bewusst ohne Rueckfrage: der Befehl legt nur eine Datei an, das ist
+ * ungefaehrlich - im Gegensatz zum Einspielen.
+ */
+async function sicherungErstellen(optionen: Optionen): Promise<void> {
+  const ziel = optionen.datei?.trim() || path.join(process.cwd(), vorgeschlagenerDateiname());
+  const paket = await erstelleSicherung();
+  fs.writeFileSync(ziel, JSON.stringify(paket, null, 2), "utf8");
+  const groesseMb = (fs.statSync(ziel).size / (1024 * 1024)).toFixed(1);
+  console.log(`Sicherung geschrieben: ${ziel}`);
+  console.log(`${paket.anzahlDokumente} Dokumente, ${groesseMb} MB.`);
+  console.log("Hinweis: Die Datei enthaelt auch Passwort-Hashes und Zugangsdaten - sicher aufbewahren.");
+}
+
+/**
+ * Sicherung einspielen. Vorhandene Dokumente bleiben ohne --ueberschreiben unangetastet
+ * (siehe sicherung/datei.ts) - das schuetzt davor, einen laufenden Turnierbestand versehentlich
+ * mit einem aelteren Stand zu ueberschreiben.
+ */
+async function sicherungEinspielen(optionen: Optionen): Promise<void> {
+  const quelle = optionen.datei?.trim();
+  if (!quelle) {
+    console.error('Bitte --datei="<Pfad zur Sicherungsdatei>" angeben.');
+    process.exitCode = 1;
+    return;
+  }
+  if (!fs.existsSync(quelle)) {
+    console.error(`Datei nicht gefunden: ${quelle}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const paket = JSON.parse(fs.readFileSync(quelle, "utf8"));
+  const ueberschreiben = "ueberschreiben" in optionen;
+  console.log(`Sicherung vom ${paket.erstelltAm ?? "?"} (App-Version ${paket.appVersion ?? "?"}).`);
+
+  const ergebnis = await spieleSicherungEin(paket, { ueberschreiben });
+  console.log(`${ergebnis.geschrieben} Dokumente geschrieben.`);
+  if (ergebnis.uebersprungen > 0) {
+    console.log(
+      `${ergebnis.uebersprungen} bereits vorhandene Dokumente unveraendert gelassen. ` +
+        "Mit --ueberschreiben werden auch diese ersetzt.",
+    );
+  }
 }
 
 async function mailBerichtErstellen(): Promise<void> {

@@ -1406,6 +1406,16 @@ button:hover:not(:disabled) {
 
 /* Hinweis auf dem Spielplan, dass sich die Basiskonfiguration seit der Erzeugung geaendert hat
    (mit Aufzaehlung, was genau). Auffaellig, aber nicht als harter Fehler gestaltet. */
+/* Hervorgehobener Warnhinweis in Fliesstext-Groesse. Bewusst volle Textfarbe (kein
+   --text-muted): der Inhalt soll gelesen werden, der Rahmen macht die Dringlichkeit. */
+.warnkasten {
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  background: var(--bg-subtle);
+}
+
 .konfig-aenderung-hinweis {
   border: 1px solid var(--danger);
   border-radius: 6px;

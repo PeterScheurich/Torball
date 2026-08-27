@@ -32,6 +32,7 @@ import { turnierSyncRoutes } from "./routes/turnierSync";
 import { syncRoutes } from "./routes/sync";
 import { mailPostfachRoutes } from "./routes/mailPostfach";
 import { dokuRoutes } from "./routes/doku";
+import { sicherungRoutes } from "./routes/sicherung";
 import { wartungRoutes } from "./routes/wartung";
 import { wartungPreHandler } from "./wartung";
 import { starteCheckinTimer } from "./sync/checkin";
@@ -139,6 +140,7 @@ const registerApiRoutes = async (instance: FastifyInstance): Promise<void> => {
   instance.register(syncRoutes);
   instance.register(mailPostfachRoutes);
   instance.register(dokuRoutes);
+  instance.register(sicherungRoutes);
 };
 
 // Registriert alles in der richtigen Reihenfolge und startet den Listener.

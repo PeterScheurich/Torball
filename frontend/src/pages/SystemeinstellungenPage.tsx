@@ -350,6 +350,31 @@ export function SystemeinstellungenPage() {
           </button>
         </form>
       )}
+
+      {/* Sicherung: bewusst AUSSERHALB des Formulars oben - sie hat mit den Einstellungen
+          nichts zu tun und soll nicht versehentlich mit "Speichern" verknuepft wirken.
+          Bewusst ein normaler Link statt eines Knopfes mit fetch(): der Browser laedt die
+          Datei damit selbst herunter, ohne sie vorher komplett in den Speicher zu holen. */}
+      <h2>Sicherung</h2>
+      <p>
+        Lädt den <strong>gesamten</strong> Datenbestand als eine Datei herunter: alle Turniere, Mannschaften,
+        Spiele, Protokolle, Stammdaten, Benutzerkonten und Einstellungen. Gedacht als Sicherheitsnetz vor einem
+        Turnier – bewahre die Datei außerhalb dieses Rechners auf, zum Beispiel auf einem USB-Stick.
+      </p>
+      <p className="warnkasten">
+        Die Datei enthält auch Zugangsdaten (Passwort-Hashes, Zwei-Faktor-Geheimnisse, E-Mail-Zugang). Sie gehört
+        an einen sicheren Ort und nicht in eine Cloud-Freigabe oder einen E-Mail-Anhang.
+      </p>
+      <p>
+        <a className="button-link" href="/api/sicherung">
+          Sicherung herunterladen
+        </a>
+      </p>
+      <p className="feld-hinweis">
+        Zurückspielen lässt sich eine Sicherung bewusst nur über die Konsole – sie überschreibt im Zweifel einen
+        laufenden Turnierbestand und soll deshalb ein bewusster Schritt bleiben:{" "}
+        <code>npm run torball -- sicherung:einspielen --datei="…"</code>
+      </p>
     </>
   );
 }

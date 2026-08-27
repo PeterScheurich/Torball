@@ -953,6 +953,23 @@ verlinkt deshalb explizit auf `/login`. Frontend pollt `GET /wartung/status` (ö
 Login nötig) alle 30 s bei sichtbarem Tab plus sofort bei `visibilitychange` – analog dem übrigen
 Live-Aktualisierung-per-Polling-Muster im Projekt (siehe unten).
 
+**Sicherung des gesamten Datenbestands (`backend/src/sicherung/datei.ts`, 2026-08-26):** Eine
+einzelne JSON-Datei mit ALLEN Dokumenten - gedacht fuer den Fall "der Turnier-Rechner faellt aus".
+Vorher gab es dafuer keinen Weg: `demo:snapshot:*` ist hinter `DEMO_SNAPSHOT_ERLAUBT` gesperrt und
+gleicht zwei Datenbanken ab statt eine Datei zu erzeugen, der Sync-Export deckt nur EIN Turnier
+im Rahmen der Instanz-Kopplung ab. **Zwei Wege, bewusst asymmetrisch:** Erstellen geht ohne
+Konsole (`GET /sicherung`, admin-only, `backend/src/routes/sicherung.ts`, Knopf unter
+Systemeinstellungen) - Einspielen NUR ueber die Konsole (`torball sicherung:einspielen
+--datei="…" [--ueberschreiben]`), weil es im Zweifel einen laufenden Turnierbestand ueberschreibt.
+Standardverhalten beim Einspielen ist vorsichtig: vorhandene Dokumente bleiben unangetastet und
+werden nur gezaehlt, erst `--ueberschreiben` ersetzt sie. `_rev` wird beim Erstellen entfernt (das
+Ziel entscheidet ueber Neuanlage/Ersetzen, sonst Konflikte), `_design`-Dokumente und `session`
+bleiben aussen vor (Indizes legt `ensureIndexes()` neu an; Sitzungen sollen nicht wieder
+aufleben). **Die Datei enthaelt Passwort-Hashes, TOTP-Secrets, SMTP-Zugangsdaten und
+Instanz-Tokens** - deshalb admin-only, `Cache-Control: no-store` und ein Warnkasten in der
+Oberflaeche. Rundlauf verifiziert (844 Dokumente Dev -> leere Testdatenbank -> identische IDs und
+Inhalte; Testdatenbank danach wieder geleert).
+
 **Demo-Snapshot/Reset (`backend/src/demo/`, CLI-Befehle `demo:*`):** die Demo-Instanz bekommt einen
 nächtlichen Reset auf CouchDB-Ebene statt eines App-seitigen Löschens. `beispieldaten.ts` erzeugt
 einmalig einen festen Satz Demo-Stammdaten (Vereine/Teams, mehrere Turniere inkl. einer
