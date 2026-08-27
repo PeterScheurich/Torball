@@ -1231,8 +1231,9 @@ Sitzungsprotokolle zu größeren Entscheidungen und dabei gefundenen Bugs.
 
 - Nach jedem `git commit` sofort `git push`, ohne vorher nachzufragen.
 - Neue Commits statt `--amend`, außer explizit anders gewünscht.
-- Vor dem Committen: `npm run build`, `npm run lint --workspace=frontend`,
-  `npm run test --workspace=backend` – alle drei müssen grün sein.
+- Vor dem Committen: `npm run build`, `npm run lint` (enthält oxlint **und** die
+  Barrierefreiheits-Prüfung, siehe dort), `npm run test --workspace=backend` – alle müssen grün
+  sein. `npm run lint --workspace=frontend` allein lässt die Barrierefreiheits-Prüfung aus.
 - Commit-Messages auf Deutsch, beschreiben das *Warum*, nicht nur das Was.
 - **Keine Zugangsdaten/Secrets in getrackte Dateien** (CLAUDE.md, Doku, Code,
   Tests …) – das Repo wird geteilt/synchronisiert. Test-Logins, Passwörter,
@@ -1277,6 +1278,43 @@ dieser Version gilt der folgende Ablauf:
   `.gitignore`), taucht also nicht mehr im Repository auf.
 
 ## Barrierefreiheit & Theming
+
+**Ein Grundsatz allein reicht nicht - die Lehre aus dem stummen Speichern (2026-08-22/26).**
+„Barrierefreiheit bei allem mitdenken" stand hier von Anfang an, und trotzdem meldeten acht
+Listen ueber Monate ihr automatisches Speichern ueberhaupt nicht. Der Grund ist lehrreich: Der
+Grundsatz wurde genau dort befolgt, wo ein Verstoss SICHTBAR ist (Fokusring, ARIA-Rollen,
+Tastatur-Alternativen, Kontrast, Pflichtfeld-Markierung) - und verfehlt, wo er unsichtbar ist.
+Eine fehlende Ansage sieht auf dem Bildschirm voellig normal aus; wer mit Maus und Augen prueft,
+bemerkt sie nie. Dazu kam die Ausbreitung durch Nachahmung: Jede neue Liste uebernahm das
+onBlur-Speichern von der vorigen, aber nicht die Rueckmeldung - niemand hat das entschieden, es
+ist so gewachsen.
+
+**Konsequenz: Bei JEDER Aenderung an der Oberflaeche diese Fragen durchgehen** (die vier mit *
+prueft `scripts/pruefe-barrierefreiheit.mjs` automatisch mit, siehe unten):
+
+1. Passiert hier etwas, das KEIN wahrnehmbares Ereignis erzeugt? (automatisches Speichern*,
+   Hintergrund-Aktualisierung, automatische Weiterleitung, stilles Verwerfen)
+2. Wird jede Fehlermeldung angesagt (`role="alert"`)?*
+3. Wird jede wichtige Zustandsaenderung angesagt (`role="status"`)? Steht die Live-Region schon
+   VOR der Meldung im DOM (sonst sagen viele Screenreader sie nicht an)?
+4. Ist alles ohne Maus erreichbar und bedienbar - und in sinnvoller Reihenfolge? Wohin springt
+   der Fokus nach einer Aktion oder dem Schliessen eines Dialogs?
+5. Wird eine Information ALLEIN ueber Farbe transportiert (rot = Fehler, gruen = ok)?
+6. Hat jedes Bild ein `alt`*, jeder reine Symbol-Knopf ein `aria-label`, jede Tab-Gruppe die
+   `TabListe`-Komponente*?
+7. Ist der Text in voller Textfarbe statt gedaempft (siehe Kontrast-Regel unten)?
+
+**Automatischer Waechter: `scripts/pruefe-barrierefreiheit.mjs`**, eingehaengt in `npm run lint`
+(laeuft also bei jeder Pflichtpruefung vor dem Commit mit). Er prueft nur, was sich mechanisch
+nachhalten laesst, und faengt damit genau die Sorte Rueckfall ab, die oben passiert ist: einmal
+entschiedene Regeln, die beim naechsten neuen Formular vergessen werden. **Wird eine neue Regel
+beschlossen, gehoert sie dort als Eintrag in `REGELN` dazu**; Ausnahmen immer mit Begruendung
+eintragen, damit sie eine bewusste Entscheidung bleiben. Was das Skript NICHT kann: ob eine Ansage
+verstaendlich ist, ob die Fokus-Reihenfolge Sinn ergibt, ob sich damit unter Zeitdruck ein Spiel
+protokollieren laesst. Dafuer braucht es einen echten Durchgang mit einem Screenreader (NVDA ist
+unter Windows kostenlos) - fuer die Protokoll-Erfassung waere ein Test mit jemandem aus der
+Zielgruppe der wertvollste Test, den dieses Projekt machen kann.
+
 
 - Von Anfang an mitdenken, nicht als Nachrüstung: sichtbarer Fokus-Indikator,
   passende ARIA-Rollen (z. B. Tabs), Tastatur-Bedienbarkeit für jede

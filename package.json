@@ -12,7 +12,7 @@
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:backend": "npm run dev --workspace=backend",
     "build": "npm run build --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "npm run lint --workspaces --if-present && node scripts/pruefe-barrierefreiheit.mjs"
   },
   "allowScripts": {
     "esbuild@0.28.1": true
