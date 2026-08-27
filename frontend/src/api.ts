@@ -65,6 +65,16 @@ function segment(wert: string): string {
   return encodeURIComponent(wert);
 }
 
+/**
+ * Fehler, bei dem die Anfrage den Server gar nicht erreicht hat: Netz weg, Backend aus, Gateway
+ * antwortet nicht. Bewusst von einer FACHLICHEN Ablehnung (400/403/409 ...) unterschieden - dort
+ * hilft kein zweiter Versuch, hier schon. Die digitale Protokollierung stellt solche Ereignisse
+ * in eine Warteschlange und sendet sie spaeter nach, statt sie zu verwerfen.
+ *
+ * Erbt von Error, damit alle bestehenden `err instanceof Error`-Abfragen unveraendert greifen.
+ */
+export class VerbindungsFehler extends Error {}
+
 async function anfrage<T>(pfad: string, init?: RequestInit): Promise<T> {
   let antwort: Response;
   try {
@@ -76,12 +86,12 @@ async function anfrage<T>(pfad: string, init?: RequestInit): Promise<T> {
   } catch {
     // fetch() wirft nur, wenn die Verbindung gar nicht erst zustande kommt
     // (Backend nicht gestartet, Netzwerk weg) - klar von einer HTTP-Fehlerantwort unterscheiden.
-    throw new Error("Server nicht erreichbar. Läuft das Backend?");
+    throw new VerbindungsFehler("Server nicht erreichbar. Läuft das Backend?");
   }
 
   if (!antwort.ok) {
     if (antwort.status === 502 || antwort.status === 503 || antwort.status === 504) {
-      throw new Error(`Backend antwortet nicht (Status ${antwort.status}). Läuft der Server?`);
+      throw new VerbindungsFehler(`Backend antwortet nicht (Status ${antwort.status}). Läuft der Server?`);
     }
     const body = await antwort.json().catch(() => ({}) as { error?: string });
     throw new Error(body.error ?? `Anfrage fehlgeschlagen (Status ${antwort.status})`);

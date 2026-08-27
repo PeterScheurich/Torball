@@ -454,6 +454,25 @@ Tabelle). `AUF`-Event (`zusatz.spielerIds`) setzt die Feldbesetzung, `E`-Wechsel
 fort. Vier-Augen-Abschluss je Turnier über `protokollBestaetigungErforderlich` (Checkbox
 Übersicht, `POST /protokolle/:id/bestaetigen`, `schreiben_voll`).
 
+**Protokoll-Ereignisse gehen bei Verbindungsproblemen nicht mehr verloren
+(`frontend/src/protokoll/warteschlange.ts`, 2026-08-26):** `sende()` zeigte frueher bei einem
+Fehler nur eine Meldung - das Ereignis war weg. Genau das faellt beim Protokollieren NICHT auf
+(man schaut aufs Spiel und verlaesst sich auf die Technik), und es trifft das Kernfeature genau
+dort, wo es laeuft: in einer Halle mit WLAN. Jetzt wandert ein Ereignis bei einem
+`VerbindungsFehler` (neue Klasse in `api.ts` - trennt "Server nicht erreicht" von einer
+fachlichen Ablehnung) in eine Warteschlange und wird automatisch nachgesendet (alle 3 s, plus
+sofort bei `online`/`focus`). Vier Punkte, die den Entwurf tragen: (1) **Sobald etwas wartet,
+wandert JEDES weitere Ereignis in die Schlange** - der Server vergibt die Sequenz beim
+Eintreffen, ein Vorbeisenden zerstoerte die Reihenfolge. (2) **Wartende Ereignisse zaehlen im
+angezeigten Stand mit** (`alleEvents` = Server-Events + `zuVorlaeufigemEvent`), sonst zeigte die
+Anzeige waehrend einer Stoerung einen falschen Spielstand - schlimmer als die Stoerung selbst.
+(3) Die Schlange liegt im `localStorage` und ueberlebt Neuladen/Absturz (verifiziert). (4) Eine
+**fachliche** Ablehnung beim Nachsenden wird verworfen und gemeldet, nicht endlos wiederholt -
+sie blockierte sonst die Schlange dauerhaft. Folgeanpassungen: Korrekturen (`streiche`/
+`korrigiereNummer`) lehnen vorlaeufige Eintraege ab (der Server kennt die `lokal:`-Kennung
+nicht - der Weg dahin ist "Rueckgaengig", das nimmt sie aus der Schlange), und der
+Protokoll-Abschluss ist gesperrt, solange etwas wartet.
+
 **Protokoll-UI: EINE Route (`/turniere/:turnierId/spiele/:spielId/protokoll`, außerhalb
 `GeschuetzteRoute`), zwei Ansichten in `ProtokollPage.tsx`:** die **Erfassungs-Ansicht**
 (Standard) ist ein Vollbild-Layout – eine body-Klasse `protokoll-vollbild-aktiv` blendet

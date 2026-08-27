@@ -16,6 +16,15 @@ import {
   type ProtokollEvent,
 } from "../api";
 import { berechneProtokollStand, type ProtokollStand } from "../protokoll/stand";
+import { VerbindungsFehler } from "../api";
+import {
+  istVorlaeufig,
+  ladeWarteschlange,
+  neuesWartendesEreignis,
+  speichereWarteschlange,
+  zuVorlaeufigemEvent,
+  type WartendesEreignis,
+} from "../protokoll/warteschlange";
 import {
   AKTIONS_BESCHRIFTUNG,
   LEERER_ZUSTAND,
@@ -87,6 +96,14 @@ export function ProtokollPage() {
   const [kader, setKader] = useState<Record<Mannschaftsseite, Spieler[]>>({ A: [], B: [] });
   const [protokoll, setProtokoll] = useState<Spielprotokoll | undefined>();
   const [events, setEvents] = useState<ProtokollEvent[]>([]);
+  /**
+   * Ereignisse, die den Server noch nicht erreicht haben (siehe protokoll/warteschlange.ts).
+   * Der Ref-Spiegel ist noetig, weil sende() auch aus dem window-keydown-Handler heraus laeuft -
+   * der saehe sonst einen veralteten Stand (gleiches Muster wie eingabeRef).
+   */
+  const [warteschlange, setWarteschlangeState] = useState<WartendesEreignis[]>([]);
+  const warteschlangeRef = useRef<WartendesEreignis[]>([]);
+  const sendeLaeuftRef = useRef(false);
   const [ohneProtokoll, setOhneProtokoll] = useState(false);
   const [fehler, setFehler] = useState<string | undefined>();
   const [hinweisKurz, setHinweisKurz] = useState<string | undefined>();
@@ -209,21 +226,74 @@ export function ProtokollPage() {
     if (ereignisListeRef.current) ereignisListeRef.current.scrollTop = 0;
   }, [events.length]);
 
+  // Beim Oeffnen eine ggf. aus einer frueheren Sitzung liegen gebliebene Schlange uebernehmen -
+  // z.B. wenn der Reiter waehrend einer Netzstoerung geschlossen oder neu geladen wurde.
+  useEffect(() => {
+    if (!protokoll) return;
+    const liegengeblieben = ladeWarteschlange(protokoll._id);
+    if (liegengeblieben.length > 0) {
+      warteschlangeRef.current = liegengeblieben;
+      setWarteschlangeState(liegengeblieben);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [protokoll?._id]);
+
+  /**
+   * Nachsende-Versuche: regelmaessig, solange etwas wartet, und sofort, sobald das Geraet wieder
+   * online meldet oder der Reiter in den Vordergrund kommt. Bewusst kein exponentielles
+   * Zurueckweichen - waehrend eines Spiels ist "schnell wieder da" wichtiger als Sparsamkeit.
+   */
+  useEffect(() => {
+    if (warteschlange.length === 0) return;
+    void arbeiteWarteschlangeAb();
+    const takt = window.setInterval(() => void arbeiteWarteschlangeAb(), 3000);
+    const sofort = () => void arbeiteWarteschlangeAb();
+    window.addEventListener("online", sofort);
+    window.addEventListener("focus", sofort);
+    return () => {
+      window.clearInterval(takt);
+      window.removeEventListener("online", sofort);
+      window.removeEventListener("focus", sofort);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [warteschlange.length, protokoll?._id]);
+
   // Tickende Anzeigen (Spieluhr, Timer A/B).
   useEffect(() => {
     const intervall = setInterval(() => setTick((t) => t + 1), 500);
     return () => clearInterval(intervall);
   }, []);
 
+  /**
+   * Serverbekannte Ereignisse PLUS die noch wartenden. Alles, was den Spielstand berechnet oder
+   * anzeigt, arbeitet auf dieser Liste - sonst zeigte die Anzeige waehrend einer Netzstoerung
+   * einen falschen Stand, und das waere schlimmer als die Stoerung selbst.
+   */
+  const alleEvents: ProtokollEvent[] = useMemo(() => {
+    if (warteschlange.length === 0 || !protokoll || !spiel) return events;
+    const letzteSequenz = events.reduce((groesste, e) => Math.max(groesste, e.sequenz), 0);
+    return [
+      ...events,
+      ...warteschlange.map((eintrag, i) =>
+        zuVorlaeufigemEvent(eintrag, {
+          protokollId: protokoll._id,
+          turnierId: spiel.turnierId,
+          spielId: spiel._id,
+          sequenz: letzteSequenz + 1 + i,
+        }),
+      ),
+    ];
+  }, [events, warteschlange, protokoll, spiel]);
+
   const stand: ProtokollStand | undefined = useMemo(() => {
     if (!turnier) return undefined;
-    return berechneProtokollStand(events, {
+    return berechneProtokollStand(alleEvents, {
       timeoutsJeHalbzeit: turnier.timeoutsJeHalbzeit,
       auswechslungenJeHalbzeit: turnier.auswechslungenJeHalbzeit,
       tordifferenzAbbruch: turnier.tordifferenzAbbruch,
       tordifferenzLimit: turnier.tordifferenzLimit,
     });
-  }, [events, turnier]);
+  }, [alleEvents, turnier]);
 
   // Rotes Aufblitzen bei NEU auftauchenden Regel-Warnungen (Nutzer-Wunsch 21.08.2026: Warnungen
   // fielen im Eifer nicht immer sofort auf). Der Zaehler remountet das Overlay (key), dadurch
@@ -294,25 +364,91 @@ export function ProtokollPage() {
     return sekunden;
   }
 
+  /** Schlange setzen und im Browserspeicher festhalten (ueberlebt ein Neuladen). */
+  function setzeWarteschlange(eintraege: WartendesEreignis[]) {
+    warteschlangeRef.current = eintraege;
+    setWarteschlangeState(eintraege);
+    if (protokoll) speichereWarteschlange(protokoll._id, eintraege);
+  }
+
+  function stelleAn(daten: NeuesProtokollEvent) {
+    setzeWarteschlange([...warteschlangeRef.current, neuesWartendesEreignis(daten)]);
+  }
+
+  /**
+   * Ein Ereignis erfassen. Erreicht es den Server nicht, geht es NICHT verloren, sondern in die
+   * Warteschlange - der Rueckgabewert bleibt `true`, weil die Eingabe lokal angenommen wurde
+   * (aufrufende Ketten wie "Wurf, dann Tor" laufen dadurch normal weiter).
+   *
+   * Sobald etwas wartet, wandert auch jedes weitere Ereignis in die Schlange: Der Server vergibt
+   * die Sequenznummer beim Eintreffen, ein Vorbeisenden am Stau wuerde die Reihenfolge zerstoeren.
+   */
   async function sende(eventDaten: NeuesProtokollEvent): Promise<boolean> {
     if (!protokoll) return false;
+    const nutzlast: NeuesProtokollEvent = {
+      spielzeit: Math.round(aktuelleSpielzeit()),
+      halbzeit: stand?.abschnitt,
+      ...eventDaten,
+    };
+
+    if (warteschlangeRef.current.length > 0) {
+      stelleAn(nutzlast);
+      return true;
+    }
+
     try {
       setSendetGerade(true);
-      const antwort = await protokollEventSenden(protokoll._id, {
-        spielzeit: Math.round(aktuelleSpielzeit()),
-        halbzeit: stand?.abschnitt,
-        ...eventDaten,
-      });
+      const antwort = await protokollEventSenden(protokoll._id, nutzlast);
       setEvents((alt) => [...alt, antwort.event]);
       setProtokoll(antwort.protokoll);
       setSpiel(antwort.spiel);
       setFehler(undefined);
       return true;
     } catch (err) {
+      if (err instanceof VerbindungsFehler) {
+        stelleAn(nutzlast);
+        return true;
+      }
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern");
       return false;
     } finally {
       setSendetGerade(false);
+    }
+  }
+
+  /**
+   * Arbeitet die Warteschlange der Reihe nach ab - immer nur EIN Ereignis gleichzeitig, damit
+   * die Sequenz stimmt. Bricht bei einem Verbindungsfehler ab (naechster Versuch spaeter).
+   *
+   * Eine FACHLICHE Ablehnung (z.B. "Protokoll ist abgeschlossen") kann dagegen nie durchgehen -
+   * das Ereignis wird verworfen und gemeldet, sonst blockierte es die Schlange dauerhaft und
+   * nichts kaeme mehr durch.
+   */
+  async function arbeiteWarteschlangeAb() {
+    if (sendeLaeuftRef.current || !protokoll || warteschlangeRef.current.length === 0) return;
+    sendeLaeuftRef.current = true;
+    try {
+      while (warteschlangeRef.current.length > 0) {
+        const naechstes = warteschlangeRef.current[0];
+        try {
+          const antwort = await protokollEventSenden(protokoll._id, naechstes.daten);
+          setEvents((alt) => [...alt, antwort.event]);
+          setProtokoll(antwort.protokoll);
+          setSpiel(antwort.spiel);
+          setzeWarteschlange(warteschlangeRef.current.filter((e) => e.lokalId !== naechstes.lokalId));
+        } catch (err) {
+          if (err instanceof VerbindungsFehler) return;
+          setzeWarteschlange(warteschlangeRef.current.filter((e) => e.lokalId !== naechstes.lokalId));
+          setFehler(
+            `Ein nachträglich gesendetes Ereignis wurde abgelehnt und verworfen: ${
+              err instanceof Error ? err.message : "unbekannter Grund"
+            }`,
+          );
+        }
+      }
+      zeigeKurzHinweis("Alle Ereignisse sind gespeichert.");
+    } finally {
+      sendeLaeuftRef.current = false;
     }
   }
 
@@ -432,7 +568,7 @@ export function ProtokollPage() {
 
   function wirksameSortiert(): ProtokollEvent[] {
     if (!stand) return [];
-    return events
+    return alleEvents
       .filter((e) => !stand.annullierteIds.has(e._id) && e.eventTyp !== "ANNULLIERT")
       .sort((a, b) => a.sequenz - b.sequenz);
   }
@@ -444,6 +580,13 @@ export function ProtokollPage() {
    * Aktionen liegen - z.B. ein falsches Foul nach zwischenzeitlichem Uhr-Stopp).
    */
   async function streiche(ziel: ProtokollEvent) {
+    // Ein noch nicht uebertragenes Ereignis laesst sich nicht korrigieren: Der Server kennt
+    // seine (nur lokale) Kennung nicht und wuerde die Korrektur ablehnen. Der Weg dahin ist
+    // "Rueckgaengig" - das nimmt es einfach wieder aus der Warteschlange.
+    if (istVorlaeufig(ziel._id)) {
+      zeigeKurzHinweis("Noch nicht gespeichert - mit Rückgängig entfernen.");
+      return;
+    }
     const wirksam = wirksameSortiert();
     if (await sende({ eventTyp: "ANNULLIERT", istKorrektur: true, korrigiertEventId: ziel._id })) {
       // Tor-Doppel-Event: das direkt vorausgehende W desselben Spielers gehoert zum Tor dazu.
@@ -470,6 +613,13 @@ export function ProtokollPage() {
    * W/G-Paar desselben Werfers wird immer MIT korrigiert (der Torschuetze ist der Werfer).
    */
   async function korrigiereNummer(ziel: ProtokollEvent) {
+    // Ein noch nicht uebertragenes Ereignis laesst sich nicht korrigieren: Der Server kennt
+    // seine (nur lokale) Kennung nicht und wuerde die Korrektur ablehnen. Der Weg dahin ist
+    // "Rueckgaengig" - das nimmt es einfach wieder aus der Warteschlange.
+    if (istVorlaeufig(ziel._id)) {
+      zeigeKurzHinweis("Noch nicht gespeichert - mit Rückgängig entfernen.");
+      return;
+    }
     if (!ziel.mannschaft) return;
     const eingabeWert = window.prompt(
       `Neue Spielernummer für "${EVENT_BESCHRIFTUNG[ziel.eventTyp]}" (bisher ${spielerName(ziel.spielerId) ?? "?"}, ${teamName(ziel.mannschaft)}):`,
@@ -521,6 +671,14 @@ export function ProtokollPage() {
 
   /** Undo: streicht das letzte wirksame Event. */
   async function undoLetztes() {
+    // Wartet noch etwas, wird der letzte Eintrag einfach aus der Schlange genommen: Er hat den
+    // Server nie erreicht, es gibt also nichts zu korrigieren - und eine Korrektur koennte sich
+    // gar nicht auf ihn beziehen (der Server kennt die lokale Kennung nicht).
+    if (warteschlangeRef.current.length > 0) {
+      setzeWarteschlange(warteschlangeRef.current.slice(0, -1));
+      zeigeKurzHinweis("Noch nicht gespeichertes Ereignis verworfen.");
+      return;
+    }
     const wirksam = wirksameSortiert();
     const letztes = wirksam[wirksam.length - 1];
     if (!letztes) {
@@ -682,7 +840,7 @@ export function ProtokollPage() {
     seit ? Math.ceil((ACHT_SEKUNDEN_MS - (Date.now() - new Date(seit.zeitstempel).getTime())) / 1000) : undefined;
   const timerA = stand.uhrLaeuft ? timerRest(stand.letzterWurf) : undefined;
   const timerB = stand.uhrLaeuft ? timerRest(stand.letzteKontrolle) : undefined;
-  const eventsAbsteigend = [...events].sort((a, b) => b.sequenz - a.sequenz);
+  const eventsAbsteigend = [...alleEvents].sort((a, b) => b.sequenz - a.sequenz);
   const aufstellungUnvollstaendig = stand.feld.A.length !== 3 || stand.feld.B.length !== 3;
 
   /** Aufstellungs-Auswahl - in beiden Ansichten eingebunden (Erfassung + Verlauf). */
@@ -1009,6 +1167,12 @@ export function ProtokollPage() {
         </div>
 
         <div aria-live="polite" className="protokoll-vb-hinweise">
+          {warteschlange.length > 0 && (
+            <p className="protokoll-wartet">
+              ⧗ {warteschlange.length} {warteschlange.length === 1 ? "Ereignis" : "Ereignisse"} noch nicht
+              gespeichert – wird automatisch nachgeholt.
+            </p>
+          )}
           {stand.hinweise.map((h) => (
             <p key={h} className="schiri-warnung">
               ⚠ {h}
@@ -1120,6 +1284,7 @@ export function ProtokollPage() {
                   </button>
                   </span>
                   <span className="protokoll-vb-ereignis-text">
+                    {istVorlaeufig(e._id) && <span className="protokoll-wartet">⧗ </span>}
                     {e.spielzeit !== undefined ? formatiereSpielzeit(e.spielzeit) : "–"} ·{" "}
                     {EVENT_BESCHRIFTUNG[e.eventTyp] ?? e.eventTyp}
                     {e.istEigentor && " (Eigentor)"}
@@ -1296,6 +1461,12 @@ export function ProtokollPage() {
 
       {/* Regel-Hinweise - warnen, nie blockieren. */}
       <div aria-live="polite">
+        {warteschlange.length > 0 && (
+          <p className="protokoll-wartet">
+            ⧗ {warteschlange.length} {warteschlange.length === 1 ? "Ereignis" : "Ereignisse"} noch nicht gespeichert –
+            wird automatisch nachgeholt. Bitte dieses Fenster geöffnet lassen.
+          </p>
+        )}
         {stand.hinweise.map((h) => (
           <p key={h} className="schiri-warnung">
             ⚠ {h}
@@ -1431,9 +1602,17 @@ export function ProtokollPage() {
                 </button>
               </form>
             )}
+            {/* Solange etwas in der Warteschlange steht, darf nicht abgeschlossen werden: Der
+                Abschluss wuerde selbst nur hinten anstehen, und der Server nimmt danach keine
+                Ereignisse mehr an - die wartenden gingen also verloren. */}
             <button
               type="button"
-              disabled={!protokoll?.protokollantName}
+              disabled={!protokoll?.protokollantName || warteschlange.length > 0}
+              title={
+                warteschlange.length > 0
+                  ? "Erst wenn alle Ereignisse gespeichert sind - das läuft gerade automatisch."
+                  : undefined
+              }
               onClick={() => {
                 if (window.confirm("Protokoll endgültig abschließen? Danach sind keine Änderungen mehr möglich.")) {
                   void sende({ eventTyp: "Fin" });

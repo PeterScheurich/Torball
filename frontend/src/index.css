@@ -478,6 +478,13 @@ table {
 
 /* Konflikt-Kennzeichnung unter der Auswahl: P1 (eigene Mannschaft) in Warnfarbe,
    P2 (spielt gleichzeitig) gedaempft als nachrangiger Hinweis. */
+/* Noch nicht uebertragene Protokoll-Ereignisse. Bewusst die Warnfarbe und volle Groesse -
+   waehrend eines Spiels muss auf einen Blick erkennbar sein, dass etwas aussteht. */
+.protokoll-wartet {
+  color: var(--danger);
+  font-weight: 600;
+}
+
 .schiri-warnung {
   margin-top: 4px;
   font-size: 0.8rem;
