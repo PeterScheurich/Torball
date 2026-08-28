@@ -41,6 +41,15 @@ export interface ProtokollStand {
   letzterWurf?: { mannschaft: Mannschaftsseite; zeitstempel: string };
   /** Letzte Kontrolle - Grundlage fuer die Timer-B-Anzeige. */
   letzteKontrolle?: { mannschaft: Mannschaftsseite; zeitstempel: string };
+  /**
+   * Laufende 8-Sekunden-Frist eines Strafwurfs/Penaltys (Nutzer-Vorgabe 28.08.2026). Sonderfall
+   * gegenueber letzterWurf/letzteKontrolle in ZWEI Punkten: Die Frist laeuft auch bei STEHENDER
+   * Uhr (waehrend Strafwurf/Penalty ruht die Spielzeit, die 8-Sekunden-Regel gilt trotzdem), und
+   * sie beginnt SOFORT - der Werfer bekommt den Ball direkt, es gibt keine vorherige Phase fuers
+   * "unter Kontrolle bringen". `mannschaft` ist die WERFENDE Seite (Gegenseite der bestraften,
+   * denn S/P tragen wie das Foul die verursachende Mannschaft).
+   */
+  strafwurfFrist?: { mannschaft: Mannschaftsseite; zeitstempel: string; art: "S" | "P" };
   /** Wurde das Spiel schon angepfiffen (mindestens ein wirksames GO)? Nur fuer die Statusanzeige. */
   spielGestartet: boolean;
   /** Uhr steht wegen Halbzeit/Pause (B/VB) und lief seither nicht wieder - Statusanzeige "Pause". */
@@ -114,6 +123,7 @@ export function berechneProtokollStand(events: Event[], kontext: StandKontext): 
     wechsel: { A: 0, B: 0 },
     wurf: { A: { anzahl: 0 }, B: { anzahl: 0 } },
     feld: { A: [], B: [] },
+    strafwurfFrist: undefined,
     spielGestartet: false,
     inPause: false,
     spielBeendet: false,
@@ -141,6 +151,7 @@ export function berechneProtokollStand(events: Event[], kontext: StandKontext): 
     stand.wechsel = { A: 0, B: 0 };
     stand.letzterWurf = undefined;
     stand.letzteKontrolle = undefined;
+    stand.strafwurfFrist = undefined;
   }
 
   for (const e of wirksam) {
@@ -150,6 +161,9 @@ export function berechneProtokollStand(events: Event[], kontext: StandKontext): 
         stand.laufendSeit = e.zeitstempel;
         stand.spielGestartet = true;
         stand.inPause = false;
+        // Neuanpfiff: eine noch offene Strafwurf-/Penalty-Frist ist damit erledigt (waehrend
+        // der Ausfuehrung steht die Uhr - laeuft sie wieder, ist das Spiel zurueck im Fluss).
+        stand.strafwurfFrist = undefined;
         break;
       case "STOP":
         uhrAnhalten(e.zeitstempel);
@@ -177,10 +191,12 @@ export function berechneProtokollStand(events: Event[], kontext: StandKontext): 
         }
         stand.letzterWurf = { mannschaft: e.mannschaft, zeitstempel: e.zeitstempel };
         stand.letzteKontrolle = undefined;
+        stand.strafwurfFrist = undefined;
         break;
       case "K":
         if (e.mannschaft) stand.letzteKontrolle = { mannschaft: e.mannschaft, zeitstempel: e.zeitstempel };
         stand.letzterWurf = undefined;
+        stand.strafwurfFrist = undefined;
         break;
       case "G": {
         if (!e.mannschaft) break;
@@ -189,14 +205,32 @@ export function berechneProtokollStand(events: Event[], kontext: StandKontext): 
         else stand.ergebnisB += 1;
         stand.letzterWurf = undefined;
         stand.letzteKontrolle = undefined;
+        stand.strafwurfFrist = undefined;
         break;
       }
       case "F":
         if (e.mannschaft) stand.fouls[e.mannschaft] += 1;
         break;
+      // Strafwurf (einzelnes Foul) und Penalty (drittes Foul) unterscheiden sich im Zustand nur
+      // im Foulzaehler - die 8-Sekunden-Frist beginnt bei beiden sofort und laeuft auch bei
+      // stehender Uhr weiter (Nutzer-Vorgabe 28.08.2026, siehe strafwurfFrist).
+      case "S":
       case "P":
-        // Foulzaehler-Reset erst, wenn das (dritte-Foul-)Penalty protokolliert ist (Spez. 6.4).
-        if (e.mannschaft && stand.fouls[e.mannschaft] >= 3) stand.fouls[e.mannschaft] = 0;
+        // Foulzaehler-Reset erst, wenn das (dritte-Foul-)Penalty protokolliert ist (Spez. 6.4) -
+        // ein Strafwurf laesst den Zaehler bewusst stehen, er ahndet ja genau eines dieser Fouls.
+        if (e.eventTyp === "P" && e.mannschaft && stand.fouls[e.mannschaft] >= 3) {
+          stand.fouls[e.mannschaft] = 0;
+        }
+        if (e.mannschaft) {
+          // Werfende Seite ist die GEGENSEITE: S/P tragen wie das Foul die verursachende Mannschaft.
+          stand.strafwurfFrist = {
+            mannschaft: gegenseite(e.mannschaft),
+            zeitstempel: e.zeitstempel,
+            art: e.eventTyp,
+          };
+        }
+        stand.letzterWurf = undefined;
+        stand.letzteKontrolle = undefined;
         break;
       case "T":
         if (e.mannschaft) stand.timeouts[e.mannschaft] += 1;
@@ -221,6 +255,7 @@ export function berechneProtokollStand(events: Event[], kontext: StandKontext): 
       case "End":
         uhrAnhalten(e.zeitstempel);
         stand.spielBeendet = true;
+        stand.strafwurfFrist = undefined;
         break;
       case "Fin":
         stand.abgeschlossen = true;

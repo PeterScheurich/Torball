@@ -35,6 +35,7 @@ const EVENT_TYPEN: EventTyp[] = [
   "K",
   "G",
   "F",
+  "S",
   "P",
   "PA",
   "T",

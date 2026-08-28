@@ -68,6 +68,7 @@ const EVENT_BESCHRIFTUNG: Record<string, string> = {
   K: "Kontrolle",
   G: "Tor",
   F: "Foul",
+  S: "Strafwurf",
   P: "Penalty",
   PA: "Penalty-Hinweis (automatisch)",
   T: "Timeout",
@@ -498,10 +499,11 @@ export function ProtokollPage() {
   }
 
   /** Uhr automatisch anhalten nach Aktionen, auf die der Schiedsrichter neu anpfeift (Tor/
-   *  Eigentor, Foul, Strafwurf, Auszeit, technische Auszeit - Nutzer-Vorgabe 21.08.2026):
-   *  waehrend dieser Unterbrechungen laeuft keine Spielzeit (Netto-Zeit; beim Strafwurf steht
-   *  die Uhr laut Regel ohnehin). Neu gestartet wird wie gehabt manuell per Leertaste beim
-   *  Anpfiff. */
+   *  Eigentor, Foul, Strafwurf, Penalty, Auszeit, technische Auszeit - Nutzer-Vorgabe
+   *  21.08.2026): waehrend dieser Unterbrechungen laeuft keine Spielzeit (Netto-Zeit; bei
+   *  Strafwurf/Penalty steht die Uhr laut Regel ohnehin - die 8-Sekunden-Frist des Wurfs laeuft
+   *  trotzdem, siehe stand.strafwurfFrist). Neu gestartet wird wie gehabt manuell per
+   *  Leertaste beim Anpfiff. */
   async function uhrAutoStopp() {
     if (stand?.uhrLaeuft) await sende({ eventTyp: "STOP" });
   }
@@ -593,7 +595,13 @@ export function ProtokollPage() {
         if (gebucht) await uhrAutoStopp();
         return;
       }
+      // Strafwurf (einzelnes Foul) und Penalty (drittes Foul) sind zwei verschiedene Ereignisse
+      // (Nutzer-Vorgabe 28.08.2026) - gebucht wird bei beiden die BESTRAFTE Mannschaft, wie beim
+      // Foul selbst; geworfen wird von der Gegenseite.
       case "strafwurf":
+        if (await sende({ eventTyp: "S", mannschaft: team })) await uhrAutoStopp();
+        return;
+      case "penalty":
         if (await sende({ eventTyp: "P", mannschaft: team })) await uhrAutoStopp();
         return;
       case "auszeit":
@@ -886,6 +894,8 @@ export function ProtokollPage() {
     seit ? Math.ceil((ACHT_SEKUNDEN_MS - (Date.now() - new Date(seit.zeitstempel).getTime())) / 1000) : undefined;
   const timerA = stand.uhrLaeuft ? timerRest(stand.letzterWurf) : undefined;
   const timerB = stand.uhrLaeuft ? timerRest(stand.letzteKontrolle) : undefined;
+  // Ohne uhrLaeuft-Bedingung - siehe achtSekunden() in der Erfassungs-Ansicht.
+  const timerStrafwurf = timerRest(stand.strafwurfFrist);
   const eventsAbsteigend = [...alleEvents].sort((a, b) => b.sequenz - a.sequenz);
   const aufstellungUnvollstaendig = stand.feld.A.length !== 3 || stand.feld.B.length !== 3;
 
@@ -1117,6 +1127,19 @@ export function ProtokollPage() {
     const bankSpieler = (seite: Mannschaftsseite): Spieler[] =>
       kader[seite].filter((sp) => !stand.feld[seite].includes(sp._id));
     const achtSekunden = (seite: Mannschaftsseite): { wert: string; label?: string; abgelaufen: boolean } => {
+      // Strafwurf/Penalty zuerst und BEWUSST ohne die uhrLaeuft-Bedingung der uebrigen Zweige
+      // (Nutzer-Vorgabe 28.08.2026): Waehrend der Ausfuehrung ruht die Spielzeit, die
+      // 8-Sekunden-Regel gilt trotzdem - und sie laeuft ab dem Pfiff, weil der Werfer den Ball
+      // direkt bekommt (kein vorheriges "unter Kontrolle bringen").
+      if (stand.strafwurfFrist) {
+        if (stand.strafwurfFrist.mannschaft !== seite) return { wert: "–", abgelaufen: false };
+        const rest = timerRest(stand.strafwurfFrist)!;
+        return {
+          wert: String(Math.max(0, rest)),
+          label: stand.strafwurfFrist.art === "P" ? "Penalty" : "Strafwurf",
+          abgelaufen: rest <= 0,
+        };
+      }
       if (stand.uhrLaeuft && stand.letzteKontrolle) {
         if (stand.letzteKontrolle.mannschaft !== seite) return { wert: "–", abgelaufen: false };
         const rest = timerRest(stand.letzteKontrolle)!;
@@ -1342,7 +1365,8 @@ export function ProtokollPage() {
               {aktionsKnopf("fehlwurf", "X")}
               {aktionsKnopf("kontrolle", "K")}
               {aktionsKnopf("foul", "F")}
-              {aktionsKnopf("strafwurf", "P")}
+              {aktionsKnopf("strafwurf", "S")}
+              {aktionsKnopf("penalty", "P")}
               {aktionsKnopf("auszeit", "T")}
               {aktionsKnopf("techauszeit", "M")}
               {aktionsKnopf("freiwurf", "R")}
@@ -1583,8 +1607,15 @@ export function ProtokollPage() {
           )}{" "}
           · {stand.uhrLaeuft ? "Uhr läuft" : "Uhr steht"}
         </p>
-        {(timerA !== undefined || timerB !== undefined) && (
+        {(timerA !== undefined || timerB !== undefined || timerStrafwurf !== undefined) && (
           <p>
+            {timerStrafwurf !== undefined && (
+              <span className={timerStrafwurf <= 0 ? "protokoll-ueberhang" : undefined}>
+                8-Sekunden ({teamName(stand.strafwurfFrist!.mannschaft)},{" "}
+                {stand.strafwurfFrist!.art === "P" ? "Penalty" : "Strafwurf"}):{" "}
+                {Math.max(0, timerStrafwurf)} s{" "}
+              </span>
+            )}
             {timerA !== undefined && (
               <span className={timerA <= 0 ? "protokoll-ueberhang" : undefined}>
                 8-Sekunden (nach Wurf): {Math.max(0, timerA)} s{" "}

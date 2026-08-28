@@ -454,20 +454,36 @@ Tabelle). `AUF`-Event (`zusatz.spielerIds`) setzt die Feldbesetzung, `E`-Wechsel
 fort. Vier-Augen-Abschluss je Turnier über `protokollBestaetigungErforderlich` (Checkbox
 Übersicht, `POST /protokolle/:id/bestaetigen`, `schreiben_voll`).
 
-**Naechste Punkte (vereinbart 2026-08-28, noch offen):** (1) **Schiedsrichter-Sicht** auf einem
-zweiten Bildschirm - spiegelverkehrt zur Protokollseite (Seiten der Mannschaften getauscht, NICHT
-die Schrift; ableitbar als Umkehrung von `seiteAVertauscht`). Nutzer-Vorgabe: beide Seiten laufen
+**Strafwurf und Penalty sind zwei Ereignisse (2026-08-28, Nutzer-Vorgabe: deutsche Handhabung -
+Foul zieht einen Strafwurf nach sich, das dritte Foul ein Penalty):** Ausgangspunkt war ein
+Widerspruch auf EINEM Bildschirm - der Aktionsknopf hiess "Strafwurf", dasselbe Ereignis in der
+Liste "Penalty". Dahinter steckte mehr als ein Name: Es gab ueberhaupt nur EIN Ereignis (`P`), und
+das war fachlich das Penalty (es setzt den Foulzaehler zurueck); fuer den Wurf nach einem
+einzelnen Foul gab es gar keine Entsprechung (`FW` ist das Entscheidungsschiessen bei
+Unentschieden, Spez. 6.8, nicht dieser Wurf). Jetzt: neuer EventTyp **`S`** (Strafwurf, Taste
+`S`) neben **`P`** (Penalty, Taste `P` unveraendert - sie bucht weiterhin genau das, was sie
+vorher gebucht hat). **Beide tragen die BESTRAFTE Mannschaft** (wie `F` den Verursacher),
+geworfen wird von der Gegenseite - der Reducer leitet die werfende Seite als
+`gegenseite(e.mannschaft)` ab. Nur `P` setzt den Foulzaehler zurueck. Die Begriffe **spaeter
+pflegbar** zu machen (laenderabhaengig: in Oesterreich heisst der Strafwurf "Penalty" und das
+hiesige Penalty "Team-Penalty") ist vorgemerkt, aber bewusst NICHT umgesetzt.
+
+**8-Sekunden-Regel bei Strafwurf/Penalty - der Sonderfall gegen die uhrLaeuft-Bedingung
+(2026-08-28):** Waehrend Strafwurf und Penalty ruht die Spielzeit, die 8-Sekunden-Regel gilt
+trotzdem - und sie beginnt SOFORT, weil der Werfer den Ball direkt bekommt (kein vorheriges
+"unter Kontrolle bringen"). Umgesetzt war davon nur die Uhr-Seite (`P` stoppt seit 21.08. die
+Uhr). Zu aendern waren deshalb ZWEI Dinge: der Zustand (neu `stand.strafwurfFrist`, gesetzt von
+`S`/`P`, endet bei `W`/`G`/`K`/`GO`/Abschnittswechsel/`End` - **bewusst NICHT bei `STOP`**, denn
+das automatische `STOP` folgt dem `S`/`P` unmittelbar und wuerde die Frist sofort loeschen) UND
+die Anzeigebedingung: Timer A/B haengen an `stand.uhrLaeuft`, die neue Frist prueft bewusst OHNE
+diese Bedingung und hat Vorrang (`achtSekunden()` in der Erfassungs-Ansicht + `timerStrafwurf` in
+der Verlauf-Ansicht). Details: `docs/digitales-protokoll-konzept.md` Abschnitt 10a.
+
+**Naechster Punkt (vereinbart 2026-08-28, noch offen): Schiedsrichter-Sicht** auf einem zweiten
+Bildschirm - spiegelverkehrt zur Protokollseite (Seiten der Mannschaften getauscht, NICHT die
+Schrift; ableitbar als Umkehrung von `seiteAVertauscht`). Nutzer-Vorgabe: beide Seiten laufen
 IMMER auf demselben Rechner, die Fenster koennen also direkt miteinander reden - noetig, weil der
 15-s-Poll fuer die 8-Sekunden-Anzeige zu langsam ist. Gehoert an Turnier+FELD, nicht an ein Spiel.
-(2) **Penalty + 8-Sekunden-Regel: Luecke.** Beim Penalty steht die Uhr (seit 21.08. korrekt), die
-8-Sekunden-Regel gilt aber - und ohne vorheriges "unter Kontrolle bringen", weil der Werfer den
-Ball direkt bekommt. Modelliert ist davon nichts: `case "P"` in `stand.ts` setzt nur den
-Foulzaehler zurueck, und `achtSekunden()` zeigt ueberhaupt nur bei LAUFENDER Uhr etwas an - beide
-Seiten muessen angefasst werden. (3) **Benennung Penalty/Strafwurf/Team-Penalty** - fachlich zu
-durchdenken (Peter: "Penalty" ist richtig; in Oesterreich ist der Strafwurf ein Penalty und das
-bisherige Penalty ein Team-Penalty). Unabhaengig davon besteht schon jetzt ein Widerspruch: Der
-Aktionsknopf heisst "Strafwurf", dasselbe Ereignis in der Liste "Penalty". Details:
-`docs/digitales-protokoll-konzept.md` Abschnitt 10a.
 
 **Schutz vor dem falschen Spielprotokoll (2026-08-28, Nutzer-Vorgabe), zwei Stufen:** Bei zwei
 Feldern ist der wahrscheinliche Fehlgriff das VERSEHENTLICH geoeffnete falsche Spiel - und der

@@ -432,7 +432,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Was ist die digitale Protokollierung und wie schalte ich sie ein?",
         text: [
-          "Statt nur Endergebnisse einzutragen, wird jedes Ereignis während des Spiels erfasst: Würfe, Tore, Fouls, Strafwürfe, Auszeiten, Wechsel. Aus diesem Protokoll berechnet die Anwendung Spielstand, Restzeit, Foul- und Wurfzähler automatisch – und am Ende das Ergebnis für die Tabelle.",
+          "Statt nur Endergebnisse einzutragen, wird jedes Ereignis während des Spiels erfasst: Würfe, Tore, Fouls, Strafwürfe, Penaltys, Auszeiten, Wechsel. Aus diesem Protokoll berechnet die Anwendung Spielstand, Restzeit, Foul- und Wurfzähler automatisch – und am Ende das Ergebnis für die Tabelle.",
           "Eingeschaltet wird sie je Turnier: beim Anlegen oder im Übersicht-Reiter unter „Protokollierung“ die Option „Digital“ wählen. Voraussetzung: Jede Mannschaft braucht einen Kader mit Trikotnummern (Reiter „Mannschaften“ – dort hilft „Kader automatisch anlegen“).",
           {
             hinweis:
@@ -463,10 +463,12 @@ export const HILFE_THEMEN: HilfeThema[] = [
               "Ziffer = Wurf: Nach der Team-Taste bucht die Spielernummer direkt einen Wurf (häufigster Fall). Beispiel: A 3 → B 5 → A 2.",
               "G nach einem Wurf = Tor zu genau diesem Wurf (kein weiterer Tastendruck nötig). G + Ziffer bucht ein Tor samt Wurf in einem Schritt.",
               "K = Kontrolle (steuert die 8-Sekunden-Anzeige). Rollt der Ball zur werfenden Mannschaft zurück, genügt K – der Kontext steht nach dem Wurf noch auf ihr.",
-              "F + Ziffer = Foul, P = Strafwurf, T = Auszeit, M = Technische Auszeit, R + Ziffer = Freiwurf, X + Ziffer = Wurf über die Aktionstaste.",
+              "F + Ziffer = Foul, S = Strafwurf, P = Penalty, T = Auszeit, M = Technische Auszeit, R + Ziffer = Freiwurf, X + Ziffer = Wurf über die Aktionstaste.",
+              "Strafwurf und Penalty sind zwei verschiedene Ereignisse: Der Strafwurf folgt auf ein einzelnes Foul, das Penalty auf das dritte Foul einer Mannschaft. Gebucht wird bei beiden die Mannschaft, die gefoult hat – geworfen wird von der Gegenseite. Erst das Penalty setzt den Foulzähler zurück.",
+              "Bei Strafwurf und Penalty läuft die 8-Sekunden-Anzeige, obwohl die Spieluhr steht: Die Spielzeit ruht, die 8-Sekunden-Regel gilt trotzdem. Sie beginnt sofort, weil der Werfer den Ball direkt bekommt – ein K für „Kontrolle“ ist hier also nicht nötig.",
               "E + Ziffer + Ziffer = Wechsel (raus, rein) – oder über den „Wechsel“-Knopf mit Auswahl von Feld und Bank.",
               "Leertaste = Spieluhr starten/anhalten, H = Halbzeit (tauscht bei aktivierter Regel automatisch die Anzeigeseiten), Rücktaste = letztes Ereignis rückgängig, Esc = offene Eingabe verwerfen.",
-              "Bei Tor, Eigentor, Foul, Strafwurf und Auszeiten hält die Spieluhr automatisch an – der Schiedsrichter pfeift danach neu an, erst dann startet die Leertaste die Uhr wieder.",
+              "Bei Tor, Eigentor, Foul, Strafwurf, Penalty und Auszeiten hält die Spieluhr automatisch an – der Schiedsrichter pfeift danach neu an, erst dann startet die Leertaste die Uhr wieder.",
             ],
           },
           "Alles geht auch per Maus oder Touch: Feldspieler-Tasten, Aktions-Knöpfe und das Wechsel-Fenster. Eine Bluetooth- oder USB-Tastatur (später auch ein eigenes Tastenfeld) funktioniert genauso.",

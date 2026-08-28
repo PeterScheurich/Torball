@@ -104,7 +104,8 @@ Events (W, G, …). Zuordnung:
 | Fehlwurf | `W` | ja (Werfer) |
 | Kontrolle | `K` | nein |
 | Foul | `F` | ja (Verursacher) |
-| Strafwurf (Penalty) | `P` | nein |
+| Strafwurf (einzelnes Foul) | `S` | nein |
+| Penalty (drittes Foul) | `P` | nein |
 | Auszeit | `T` | nein |
 | Techn. Auszeit | `TT` | nein (Mannschaft optional) |
 | Wechsel | `E` (raus + rein) | ja, zwei Nummern |
@@ -270,7 +271,9 @@ Vollbild-tauglich für den Protokollanten-Laptop):
    beendet" / „unterbrochen" – pauschales „unterbrochen" war vor dem Anpfiff und in der
    Halbzeit irreführend (Nutzer-Feedback 21.08.2026).
 3. **Timer A/B** (8-Sekunden-Anzeigen, Spez. 6.2): Timer A startet mit jedem `W`, Timer B mit
-   `K`; reine Anzeige mit Signalfarbe bei Ablauf – kein automatisches Foul.
+   `K`; reine Anzeige mit Signalfarbe bei Ablauf – kein automatisches Foul. **Dritter Fall seit
+   28.08.2026:** `S`/`P` starten eine eigene Frist (`stand.strafwurfFrist`), die – anders als
+   Timer A/B – auch bei **stehender Uhr** läuft und **sofort** beginnt (siehe Abschnitt 10a).
 4. **Eingabebereich:** Team-Kontext-Umschalter (A/B, deutlich sichtbarer farbiger Balken –
    Monitor-Feedback fürs displaylose Panel), Aktions-Buttons (Tabelle 3.3), Ziffernfeld.
    Bildschirm-Buttons und Tastatur (`keydown`) treiben **dieselbe** Zustandsmaschine.
@@ -334,7 +337,7 @@ Turnier – Spez. 24.4 – nur noch UI ist; im ersten Wurf fest):
 |---|---|
 | `A` / `B` | Team-Kontext A / B |
 | `0`–`9` | Ziffer (Spielernummer) |
-| `G` | Tor · `X` Fehlwurf · `K` Kontrolle · `F` Foul · `P` Strafwurf · `T` Auszeit · `M` Techn. Auszeit · `E` Wechsel · `R` Freiwurf |
+| `G` | Tor · `X` Fehlwurf · `K` Kontrolle · `F` Foul · `S` Strafwurf · `P` Penalty · `T` Auszeit · `M` Techn. Auszeit · `E` Wechsel · `R` Freiwurf |
 | `Leertaste` | Uhr Start/Stop |
 | `H` | Halbzeit/Pause · `V` Verlängerung |
 | `Backspace` | Undo |
@@ -398,23 +401,52 @@ Sinne der bestehenden Ausnahme); Fastify-Body-Schemata je Route; kein `db.find` 
 `findAllBySelector`. Sync-Export: `TurnierExportPaket` um `spielprotokolle`/`events` erweitern
 **und** `pruefeTurnierExportPaket` (Präfix + docType + turnierId) mitziehen.
 
-## 10a. Offene fachliche Punkte (Stand 28.08.2026)
+## 10a. Fachliche Punkte
 
-**Penalty und die 8-Sekunden-Regel – Lücke.** Beim Penalty läuft die Spielzeit nicht weiter, die
-**8-Sekunden-Regel gilt aber**. Und weil der werfende Spieler den Ball direkt bekommt, gibt es
-keine vorherigen 8 Sekunden fürs „unter Kontrolle bringen" – die Zählung beginnt unmittelbar.
-Umgesetzt ist davon bisher nur die Uhr-Seite: Ein `P` stoppt seit 21.08. die Spieluhr. Die
-8 Sekunden des Penaltys sind dagegen **gar nicht modelliert** – `case "P"` in `stand.ts` setzt
-nur den Foulzähler zurück und berührt weder `letzterWurf` noch `letzteKontrolle`. Erschwerend:
-`achtSekunden()` zeigt überhaupt nur etwas an, **solange die Uhr läuft** – beim Penalty steht sie
-aber. Zu ändern sind also beide Seiten: der Zustand *und* die Anzeigebedingung.
+### Strafwurf und Penalty sind zwei Ereignisse (umgesetzt 28.08.2026)
 
-**Benennung Penalty / Strafwurf / Team-Penalty.** Fachlich richtig ist „Penalty"; ein Strafwurf
-folgt auf ein normales Foul. In anderen Ländern (z. B. Österreich) heißt der Strafwurf „Penalty"
-und das hier bisher als Penalty Bezeichnete „Team-Penalty". Das ist zu durchdenken, betrifft also
-die Fachlichkeit und nicht nur die Wortwahl. Unabhängig davon besteht schon jetzt ein
-Widerspruch im Bestand: Der Aktionsknopf heißt **„Strafwurf"**, dasselbe Ereignis erscheint in der
-Liste als **„Penalty"** – zwei Namen für dieselbe Sache auf einem Bildschirm.
+Ausgangslage war ein Widerspruch auf einem Bildschirm: Der Aktionsknopf hieß **„Strafwurf"**,
+dasselbe Ereignis erschien in der Liste als **„Penalty"**. Bei näherem Hinsehen fehlte nicht nur
+ein einheitlicher Name, sondern die halbe Regelkette – es gab überhaupt nur *ein* Ereignis (`P`),
+und das war fachlich das Penalty (es setzt den Foulzähler zurück). Der Wurf nach einem einzelnen
+Foul hatte gar keine Entsprechung; `FW` ist das Entscheidungsschießen bei Unentschieden
+(Spez. 6.8), nicht dieser Wurf.
+
+**Nutzer-Vorgabe: Es gilt die deutsche Handhabung** – ein Foul zieht einen **Strafwurf** nach
+sich, das dritte Foul einer Mannschaft ein **Penalty**. Umgesetzt als zwei getrennte Ereignisse:
+
+| Ereignis | Typ | Taste | Foulzähler |
+|---|---|---|---|
+| Strafwurf (einzelnes Foul) | `S` (neu) | `S` | bleibt stehen |
+| Penalty (drittes Foul) | `P` | `P` (unverändert) | wird zurückgesetzt |
+
+Gebucht wird bei beiden die **bestrafte** Mannschaft – wie beim Foul selbst, dessen `mannschaft`
+den Verursacher trägt; geworfen wird von der Gegenseite. Der Reducer leitet die werfende Seite
+deshalb als `gegenseite(e.mannschaft)` ab. Die Taste `P` bucht weiterhin genau das, was sie
+vorher gebucht hat (das Penalty) – nur der Knopf trägt jetzt den passenden Namen; der neue
+Strafwurf liegt auf der bis dahin freien `S`.
+
+**Bewusst nicht umgesetzt:** Die Begriffe als **pflegbarer Wert** (Stammdaten/Turnierregel).
+Hintergrund ist, dass die Benennung länderabhängig ist – in Österreich heißt der Strafwurf
+„Penalty" und das hier als Penalty Bezeichnete „Team-Penalty". Für eine spätere Version
+vorgemerkt (Nutzer-Entscheidung 28.08.2026: erst einmal fest auf die deutsche Handhabung).
+
+### Die 8-Sekunden-Regel bei Strafwurf und Penalty (umgesetzt 28.08.2026)
+
+Während Strafwurf und Penalty ruht die Spielzeit, die **8-Sekunden-Regel gilt trotzdem**. Und
+weil der werfende Spieler den Ball direkt bekommt, gibt es keine vorherigen 8 Sekunden fürs
+„unter Kontrolle bringen" – die Zählung beginnt unmittelbar mit dem Pfiff.
+
+Vorher war davon nur die Uhr-Seite umgesetzt (ein `P` stoppt seit 21.08. die Spieluhr); die
+8 Sekunden waren gar nicht modelliert. Zu ändern waren deshalb **zwei** Dinge, nicht eines:
+
+1. **Der Zustand:** `stand.strafwurfFrist` (`{mannschaft, zeitstempel, art}`) wird von `S`/`P`
+   gesetzt und endet mit dem ausgeführten Wurf (`W`), einem Tor (`G`), einer Kontrolle (`K`),
+   dem Neuanpfiff (`GO`), dem Abschnittswechsel oder `End`. Bewusst **nicht** bei `STOP`: Das
+   automatische `STOP` folgt dem `S`/`P` unmittelbar und würde die Frist sofort wieder löschen.
+2. **Die Anzeigebedingung:** Timer A/B hängen an `stand.uhrLaeuft` – beim Strafwurf/Penalty
+   steht die Uhr aber. Der neue Zweig in `achtSekunden()` (und der Verlauf-Ansicht) prüft
+   deshalb bewusst **ohne** diese Bedingung und hat Vorrang vor Timer A/B.
 
 **Schiedsrichter-Sicht auf einem zweiten Bildschirm (besprochen 28.08.2026, noch nicht gebaut).**
 Zweite Ansicht als Orientierung für den Schiedsrichter, der immer auf der **gegenüberliegenden**

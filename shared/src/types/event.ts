@@ -12,7 +12,13 @@ export type EventTyp =
   | "K" // Kontrolle (Zwei-Timer-Modell)
   | "G" // Tor
   | "F" // Foul
-  | "P" // Penalty
+  // Strafwurf: Folge eines EINZELNEN Fouls (der Verursacher verlaesst das Feld nur fuer diesen
+  // Wurf). Bewusst getrennt vom Penalty, das erst das dritte Foul ausloest - beide sind im
+  // deutschen Sprachgebrauch verschiedene Dinge (Nutzer-Vorgabe 28.08.2026, siehe
+  // docs/digitales-protokoll-konzept.md Abschnitt 10a). Nicht zu verwechseln mit "FW"
+  // (Freiwurf = Entscheidungsschiessen bei Unentschieden, Spez. 6.8).
+  | "S"
+  | "P" // Penalty (Folge des dritten Fouls - setzt den Foulzaehler zurueck)
   | "PA" // Auto-erkannter Penalty (System-Hinweis)
   | "T" // Timeout
   | "TT" // Technischer Timeout

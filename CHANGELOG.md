@@ -7,6 +7,17 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Digitale Protokollierung: Strafwurf und Penalty sind jetzt zwei verschiedene Ereignisse.**
+  Bisher gab es nur eines – auf dem Knopf stand „Strafwurf", in der Ereignisliste „Penalty", und
+  gemeint war beides Mal das Penalty nach dem dritten Foul. Jetzt gilt die deutsche Handhabung:
+  Ein einzelnes Foul zieht einen **Strafwurf** nach sich (neue Taste `S`), das dritte Foul einer
+  Mannschaft ein **Penalty** (Taste `P` wie bisher). Gebucht wird bei beiden die Mannschaft, die
+  gefoult hat – geworfen wird von der Gegenseite. Nur das Penalty setzt den Foulzähler zurück.
+- **Die 8-Sekunden-Anzeige läuft bei Strafwurf und Penalty mit, obwohl die Spieluhr steht.**
+  Während beider ruht die Spielzeit, die 8-Sekunden-Regel gilt aber trotzdem – bisher zeigte die
+  Anzeige dort nur einen Strich. Die Frist beginnt sofort mit dem Pfiff, weil der Werfer den Ball
+  direkt bekommt: ein „K" für Kontrolle ist hier nicht nötig.
+
 - **Sicherung des gesamten Datenbestands:** Unter „Admin → Systemeinstellungen" lässt sich jetzt
   eine Sicherungsdatei herunterladen, die alles enthält – Turniere, Mannschaften, Spiele,
   Protokolle, Stammdaten, Benutzerkonten und Einstellungen. Gedacht als Sicherheitsnetz vor einem

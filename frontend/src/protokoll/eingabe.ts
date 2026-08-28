@@ -18,6 +18,7 @@ export type UiAktion =
   | "kontrolle"
   | "foul"
   | "strafwurf"
+  | "penalty"
   | "auszeit"
   | "techauszeit"
   | "wechsel"
@@ -31,6 +32,7 @@ export const NUMMERN_JE_AKTION: Record<UiAktion, number> = {
   kontrolle: 0,
   foul: 1,
   strafwurf: 0,
+  penalty: 0,
   auszeit: 0,
   techauszeit: 0,
   wechsel: 2,
@@ -178,7 +180,9 @@ export function verarbeiteTaste(
  * Standard-Tastaturbelegung (Konzept Abschnitt 8) - ein flaches Objekt, damit eine spaetere
  * Konfigurierbarkeit je Turnier (Spez. 24.4) nur noch UI ist. Das HID-Panel sendet spaeter
  * genau diese Tasten. "B" ist als Team-Taste vergeben, deshalb Halbzeit auf "H" (bewusste
- * Abweichung von der aelteren Spez.-Tabelle, dort dokumentiert).
+ * Abweichung von der aelteren Spez.-Tabelle, dort dokumentiert). "P" bucht weiterhin das
+ * Penalty (drittes Foul) - unveraendert zu frueher, als es dort noch "Strafwurf" hiess; der
+ * neue, davon getrennte Strafwurf (einzelnes Foul) liegt auf "S" (Nutzer-Vorgabe 28.08.2026).
  */
 export const TASTATUR_BELEGUNG: Record<string, Taste> = {
   a: { art: "team", team: "A" },
@@ -187,7 +191,8 @@ export const TASTATUR_BELEGUNG: Record<string, Taste> = {
   x: { art: "aktion", aktion: "fehlwurf" },
   k: { art: "aktion", aktion: "kontrolle" },
   f: { art: "aktion", aktion: "foul" },
-  p: { art: "aktion", aktion: "strafwurf" },
+  s: { art: "aktion", aktion: "strafwurf" },
+  p: { art: "aktion", aktion: "penalty" },
   t: { art: "aktion", aktion: "auszeit" },
   m: { art: "aktion", aktion: "techauszeit" },
   e: { art: "aktion", aktion: "wechsel" },
@@ -218,6 +223,7 @@ export const AKTIONS_BESCHRIFTUNG: Record<UiAktion, string> = {
   kontrolle: "Kontrolle",
   foul: "Foul",
   strafwurf: "Strafwurf",
+  penalty: "Penalty",
   auszeit: "Auszeit",
   techauszeit: "Techn. Auszeit",
   wechsel: "Wechsel",

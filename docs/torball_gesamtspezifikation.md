@@ -202,9 +202,15 @@ Ein Spieler darf maximal drei Würfe hintereinander ausführen. Der Zähler gilt
 
 ### 6.4 Fouls und Penalties
 
-**Foul:** Wird vom Schiedsrichter signalisiert. Der verursachende Spieler verlässt das Feld **nur für den unmittelbar folgenden Freiwurf der gegnerischen Mannschaft** und kehrt danach sofort zurück – kein Wechsel im Sinne der Regeln, kein Verbrauch des Wechselkontingents (eigener Zustand „kurzzeitig ausgesetzt", ergibt sich aus der Event-Auswertung, siehe Abschnitt 22.3). Foulzähler der Mannschaft +1. Bei jedem dritten Foul: Penalty, Zähler wird zurückgesetzt (erst wenn das Penalty protokolliert ist). Der Foulzähler gilt für das **gesamte Spiel** und wird zur Halbzeit **nicht** zurückgesetzt (analog zur pausenübergreifenden 3-Wurf-Regel, Abschnitt 6.3).
+**Foul:** Wird vom Schiedsrichter signalisiert. Der verursachende Spieler verlässt das Feld **nur für den unmittelbar folgenden Strafwurf der gegnerischen Mannschaft** und kehrt danach sofort zurück – kein Wechsel im Sinne der Regeln, kein Verbrauch des Wechselkontingents (eigener Zustand „kurzzeitig ausgesetzt", ergibt sich aus der Event-Auswertung, siehe Abschnitt 22.3). Foulzähler der Mannschaft +1. Bei jedem dritten Foul: Penalty, Zähler wird zurückgesetzt (erst wenn das Penalty protokolliert ist). Der Foulzähler gilt für das **gesamte Spiel** und wird zur Halbzeit **nicht** zurückgesetzt (analog zur pausenübergreifenden 3-Wurf-Regel, Abschnitt 6.3).
+
+**Strafwurf:** Folge eines einzelnen Fouls. Die gefoulte Mannschaft führt ihn aus, während der verursachende Spieler für genau diesen Wurf das Feld verlässt (siehe „Foul"). Der Foulzähler bleibt dabei stehen – zurückgesetzt wird er erst durch das Penalty.
 
 **Penalty:** Pro Mannschaft bleibt nur ein Spieler auf dem Feld. Kein Wechsel, kein Timeout während eines Penalties. Penalty-Zähler +1 (rein dokumentarisch).
+
+**Spielzeit und 8-Sekunden-Regel bei Strafwurf und Penalty:** Während beider ruht die Spielzeit (Netto-Zeit, Abschnitt 6.1). Die 8-Sekunden-Regel (Abschnitt 6.2) gilt trotzdem und beginnt **sofort mit dem Pfiff** – die vorgelagerte Frist fürs „unter Kontrolle bringen" (Timer A) entfällt, weil der werfende Spieler den Ball direkt erhält.
+
+**Zur Benennung:** Es gilt die deutsche Handhabung – ein einzelnes Foul zieht einen *Strafwurf* nach sich, das dritte Foul ein *Penalty*. Die Begriffe sind länderabhängig (in Österreich heißt der Strafwurf „Penalty" und das hier als Penalty Bezeichnete „Team-Penalty"); sie später je Turnier pflegbar zu machen, ist vorgemerkt, aber bewusst nicht umgesetzt (Stand 28.08.2026).
 
 **Team-Foul:** Führt direkt zu einem Penalty (z. B. Hineinrufen von der Bank), beeinflusst den normalen Foulzähler nicht.
 
@@ -247,7 +253,8 @@ Jedes Ereignis wird als einzelner, unveränderlicher Eintrag protokolliert. Korr
 | Kontrolle | Mannschaft hat den Ball unter Kontrolle (steuert Zwei-Timer-Modell, Abschnitt 6.2) |
 | Tor / Eigentor | Tor erzielt, ggf. Eigentor (Gutschrift an Gegner) |
 | Foul | Schiedsrichter pfeift Foul |
-| Penalty / Team-Penalty | Schiedsrichter signalisiert Penalty |
+| Strafwurf | Wurf infolge eines einzelnen Fouls (Abschnitt 6.4) |
+| Penalty / Team-Penalty | Schiedsrichter signalisiert Penalty (drittes Foul bzw. Team-Foul) |
 | Timeout / Tech. Timeout | Mannschaft bzw. Schiedsrichter nimmt/ordnet Auszeit an |
 | Wechsel | Spieler wird aus- und eingewechselt |
 | Halbzeit/Pause, Verlängerung, Freiwurf | Spielabschnitts-Ereignisse |
@@ -806,7 +813,7 @@ Audit-Log-Eintrag
 
 ### 20.18 Spielerstatus „kurzzeitig ausgesetzt" (kein eigenes Feld)
 
-Kein zusätzliches Datenmodell-Element nötig: Ein Spieler gilt als ausgesetzt zwischen einem `F`-Event (als Verursacher) und dem nachfolgenden Freiwurf-Event derselben Begegnung – rein aus der Event-Abfolge berechenbar.
+Kein zusätzliches Datenmodell-Element nötig: Ein Spieler gilt als ausgesetzt zwischen einem `F`-Event (als Verursacher) und dem Wurf, der den nachfolgenden Strafwurf (`S`) bzw. das Penalty (`P`) ausführt – rein aus der Event-Abfolge berechenbar.
 
 ## 21. Berechtigungskonzept (technisch)
 
@@ -913,7 +920,8 @@ Der aktuelle Spielstand wird nicht gespeichert, sondern aus der Event-Liste bere
 | K | Kontrolle (steuert Zwei-Timer-Modell) | A/B | - |
 | G | Tor | A/B | Ja (Torschütze) |
 | F | Foul | A/B | Ja (Verursacher) |
-| P | Penalty | A/B | - |
+| S | Strafwurf (Folge eines einzelnen Fouls) | A/B (die bestrafte) | - |
+| P | Penalty (Folge des dritten Fouls) | A/B (die bestrafte) | - |
 | PA | Auto-erkannter Penalty (System-Hinweis) | A/B | - |
 | T | Timeout | A/B | - |
 | TT | Technischer Timeout | A/B (opt.) | - |
@@ -937,6 +945,8 @@ des Tors streicht beide gemeinsam.
 **G – Tor:** Vorheriges Wurf-Event vorhanden? Tordifferenz erreicht Limit → Hinweis. Bei Eigentor: Tor der gegnerischen Mannschaft, kein Torschütze.
 
 **F – Foul:** Foulzähler nach diesem Foul = 3 → Penalty-Hinweis. Bei drittem Foul: Foulzähler-Reset erst, wenn das Penalty protokolliert ist.
+
+**S – Strafwurf / P – Penalty:** Beide tragen die **bestrafte** Mannschaft (wie das Foul den Verursacher); geworfen wird von der Gegenseite. Nur `P` setzt den Foulzähler zurück – ein Strafwurf ahndet genau eines der gezählten Fouls und lässt den Zähler stehen. Beide starten die 8-Sekunden-Frist des Wurfs **sofort** (der Werfer bekommt den Ball direkt, keine vorherige Kontrollphase) und diese läuft, obwohl die Spieluhr währenddessen steht (Abschnitt 6.4).
 
 **T – Timeout:** Noch Timeouts verfügbar? Nein → Team-Penalty-Hinweis. Mannschaft in Ballbesitz? Nein → Team-Penalty-Hinweis.
 
@@ -1071,7 +1081,8 @@ ist sie fest:
 | X | Fehlwurf (W) |
 | K | Kontrolle |
 | F | Foul |
-| P | Strafwurf (Penalty) |
+| S | Strafwurf (Folge eines einzelnen Fouls) |
+| P | Penalty (Folge des dritten Fouls) |
 | T | Auszeit |
 | M | Technischer Timeout |
 | E | Wechsel (zwei Nummern: raus, rein) |
