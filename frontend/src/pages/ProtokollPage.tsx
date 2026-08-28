@@ -104,6 +104,39 @@ export function ProtokollPage() {
   const [warteschlange, setWarteschlangeState] = useState<WartendesEreignis[]>([]);
   const warteschlangeRef = useRef<WartendesEreignis[]>([]);
   const sendeLaeuftRef = useRef(false);
+
+  /**
+   * Schutz vor dem versehentlich geoeffneten FALSCHEN Protokoll (Nutzer-Vorgabe 28.08.2026).
+   * Bei zwei Feldern ist genau das der wahrscheinliche Fehlgriff - und er faellt erst auf, wenn
+   * schon Ereignisse im falschen Spiel stehen. Zwei Stufen:
+   *   1. Beim OEFFNEN: Laeuft dieses Protokoll bereits und hat dieses Geraet es nicht selbst
+   *      begonnen, kommt eine Zwischenseite mit der Frage "richtiges Spiel?".
+   *   2. WAEHREND der Erfassung: Taucht ein Ereignis auf, das weder beim Oeffnen da war noch von
+   *      diesem Geraet stammt, schreibt jemand parallel mit - Warnung in der Hinweiszeile.
+   * Stufe 2 braucht keinen zusaetzlichen Server-Aufruf: die Seite ruft den Stand ohnehin alle
+   * 15 s ab.
+   */
+  const [uebernahmeBestaetigt, setUebernahmeBestaetigt] = useState(false);
+  const [fremdeErfassung, setFremdeErfassung] = useState(false);
+  /** Ereignis-Kennungen, die beim Oeffnen schon da waren oder von diesem Geraet stammen. */
+  const eigeneEventIdsRef = useRef<Set<string>>(new Set());
+
+  /** Merker im Browserspeicher: DIESES Geraet erfasst dieses Protokoll. Dadurch fragt ein
+   *  Neuladen oder ein spaeteres Zurueckkommen nicht erneut nach - nur ein fremdes Geraet. */
+  const geraetNutztProtokoll = (protokollId: string): boolean => {
+    try {
+      return window.localStorage.getItem(`torball-protokoll-genutzt:${protokollId}`) === "ja";
+    } catch {
+      return false;
+    }
+  };
+  const merkeGeraetNutztProtokoll = (protokollId: string) => {
+    try {
+      window.localStorage.setItem(`torball-protokoll-genutzt:${protokollId}`, "ja");
+    } catch {
+      /* ohne Speicher wird eben einmal mehr nachgefragt - unkritisch */
+    }
+  };
   const [ohneProtokoll, setOhneProtokoll] = useState(false);
   const [fehler, setFehler] = useState<string | undefined>();
   const [hinweisKurz, setHinweisKurz] = useState<string | undefined>();
@@ -176,6 +209,9 @@ export function ProtokollPage() {
         const daten = await getSpielProtokoll(spielId);
         setProtokoll(daten.protokoll);
         setEvents(daten.events);
+        // Alles, was beim Oeffnen schon da ist, gilt als "bekannt" - nur SPAETER hinzukommende
+        // fremde Ereignisse deuten auf ein zweites erfassendes Geraet hin.
+        daten.events.forEach((e) => eigeneEventIdsRef.current.add(e._id));
         setOhneProtokoll(false);
       } catch {
         setOhneProtokoll(true);
@@ -198,6 +234,13 @@ export function ProtokollPage() {
       if (document.visibilityState !== "visible") return;
       try {
         const daten = await getSpielProtokoll(spielId);
+        // Ereignisse, die weder beim Oeffnen da waren noch von diesem Geraet stammen: Es
+        // erfasst noch jemand mit. Erkennung ohne zusaetzlichen Aufruf und ohne Zeitfenster-
+        // Raterei - allein daran, dass etwas Unbekanntes aufgetaucht ist.
+        if (daten.events.some((e) => !eigeneEventIdsRef.current.has(e._id))) {
+          setFremdeErfassung(true);
+        }
+        daten.events.forEach((e) => eigeneEventIdsRef.current.add(e._id));
         setProtokoll(daten.protokoll);
         setEvents(daten.events);
       } catch {
@@ -399,6 +442,7 @@ export function ProtokollPage() {
     try {
       setSendetGerade(true);
       const antwort = await protokollEventSenden(protokoll._id, nutzlast);
+      eigeneEventIdsRef.current.add(antwort.event._id);
       setEvents((alt) => [...alt, antwort.event]);
       setProtokoll(antwort.protokoll);
       setSpiel(antwort.spiel);
@@ -432,6 +476,7 @@ export function ProtokollPage() {
         const naechstes = warteschlangeRef.current[0];
         try {
           const antwort = await protokollEventSenden(protokoll._id, naechstes.daten);
+          eigeneEventIdsRef.current.add(antwort.event._id);
           setEvents((alt) => [...alt, antwort.event]);
           setProtokoll(antwort.protokoll);
           setSpiel(antwort.spiel);
@@ -760,6 +805,7 @@ export function ProtokollPage() {
     if (!spielId || !nameEingabe.trim()) return;
     try {
       const neu = await protokollAnlegen(spielId, nameEingabe.trim());
+      merkeGeraetNutztProtokoll(neu._id);
       setProtokoll(neu);
       setOhneProtokoll(false);
       setUnterschriftName(nameEingabe.trim());
@@ -954,6 +1000,104 @@ export function ProtokollPage() {
             Protokoll beginnen
           </button>
         </form>
+      </>
+    );
+  }
+
+  /**
+   * Zwischenseite: Dieses Protokoll laeuft bereits, und dieses Geraet hat es nicht begonnen.
+   *
+   * Der wahrscheinliche Fehlgriff bei zwei Feldern ist das VERSEHENTLICH falsche Spiel
+   * (Nutzer-Vorgabe 28.08.2026) - und der faellt sonst erst auf, wenn schon Ereignisse im
+   * falschen Protokoll stehen. Deshalb steht hier das SPIEL gross im Vordergrund, nicht die
+   * Warnung: Die Frage, die beantwortet werden muss, lautet "ist das ueberhaupt mein Spiel?".
+   */
+  if (protokoll && !uebernahmeBestaetigt && !geraetNutztProtokoll(protokoll._id)) {
+    const letztes = [...events].sort((a, b) => a.zeitstempel.localeCompare(b.zeitstempel)).pop();
+    const feldName = turnier.felder.find((f) => f.feldId === spiel.feldId)?.name;
+    const minutenHer = letztes
+      ? Math.max(0, Math.round((Date.now() - new Date(letztes.zeitstempel).getTime()) / 60000))
+      : undefined;
+
+    return (
+      <>
+        <h1>Protokoll wird bereits geführt</h1>
+
+        <div className="warnkasten">
+          <p>
+            Für dieses Spiel läuft bereits ein Protokoll – begonnen von{" "}
+            <strong>{protokoll.ersterProtokollantName}</strong>
+            {minutenHer !== undefined && (
+              <>
+                , letzte Eingabe{" "}
+                {minutenHer === 0 ? "gerade eben" : `vor ${minutenHer} ${minutenHer === 1 ? "Minute" : "Minuten"}`}
+              </>
+            )}
+            .
+          </p>
+          <p>
+            <strong>Bitte zuerst prüfen, ob das wirklich dein Spiel ist.</strong> Wird auf mehreren Feldern
+            gespielt, ist ein versehentlich geöffnetes falsches Spiel der häufigste Fehlgriff.
+          </p>
+        </div>
+
+        <h2>Dieses Spiel</h2>
+        <div className="tabellen-wrapper">
+          <table className="uebersicht-tabelle">
+            <caption className="sr-only">Angaben zum geöffneten Spiel</caption>
+            <tbody>
+              <tr>
+                <th scope="row">Begegnung</th>
+                <td>
+                  {nameVon(spiel.mannschaftAId)} – {nameVon(spiel.mannschaftBId)}
+                </td>
+              </tr>
+              {spiel.runde && (
+                <tr>
+                  <th scope="row">Spiel</th>
+                  <td>Nr. {spiel.runde}</td>
+                </tr>
+              )}
+              {feldName && (
+                <tr>
+                  <th scope="row">Spielfeld</th>
+                  <td>{feldName}</td>
+                </tr>
+              )}
+              {spiel.startzeitGeplant && (
+                <tr>
+                  <th scope="row">Geplanter Beginn</th>
+                  <td>{new Date(spiel.startzeitGeplant).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</td>
+                </tr>
+              )}
+              <tr>
+                <th scope="row">Bisher erfasst</th>
+                <td>
+                  {events.length} {events.length === 1 ? "Ereignis" : "Ereignisse"}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p className="protokoll-uebernahme-aktionen">
+          <button type="button" className="button-sekundaer" onClick={() => navigate(-1)}>
+            Zurück – das ist nicht mein Spiel
+          </button>{" "}
+          <button
+            type="button"
+            onClick={() => {
+              merkeGeraetNutztProtokoll(protokoll._id);
+              setUebernahmeBestaetigt(true);
+            }}
+          >
+            Ja, hier weiter protokollieren
+          </button>
+        </p>
+        <p className="feld-hinweis">
+          Wird auf zwei Geräten gleichzeitig erfasst, entstehen doppelte Einträge. Bitte vorher klären, wer
+          protokolliert.
+        </p>
       </>
     );
   }
@@ -1167,6 +1311,12 @@ export function ProtokollPage() {
         </div>
 
         <div aria-live="polite" className="protokoll-vb-hinweise">
+          {fremdeErfassung && (
+            <p className="protokoll-wartet">
+              ⚠ Dieses Spiel wird gerade auch auf einem anderen Gerät protokolliert. Bitte klären, wer erfasst –
+              sonst entstehen doppelte Einträge.
+            </p>
+          )}
           {warteschlange.length > 0 && (
             <p className="protokoll-wartet">
               ⧗ {warteschlange.length} {warteschlange.length === 1 ? "Ereignis" : "Ereignisse"} noch nicht
@@ -1461,6 +1611,12 @@ export function ProtokollPage() {
 
       {/* Regel-Hinweise - warnen, nie blockieren. */}
       <div aria-live="polite">
+        {fremdeErfassung && (
+          <p className="protokoll-wartet">
+            ⚠ Dieses Spiel wird gerade auch auf einem anderen Gerät protokolliert. Bitte klären, wer erfasst –
+            sonst entstehen doppelte Einträge.
+          </p>
+        )}
         {warteschlange.length > 0 && (
           <p className="protokoll-wartet">
             ⧗ {warteschlange.length} {warteschlange.length === 1 ? "Ereignis" : "Ereignisse"} noch nicht gespeichert –

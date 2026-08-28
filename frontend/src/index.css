@@ -480,6 +480,14 @@ table {
    P2 (spielt gleichzeitig) gedaempft als nachrangiger Hinweis. */
 /* Noch nicht uebertragene Protokoll-Ereignisse. Bewusst die Warnfarbe und volle Groesse -
    waehrend eines Spiels muss auf einen Blick erkennbar sein, dass etwas aussteht. */
+/* Aktionen der Uebernahme-Zwischenseite - nebeneinander, mit Abstand zum Text darueber. */
+.protokoll-uebernahme-aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
 .protokoll-wartet {
   color: var(--danger);
   font-weight: 600;

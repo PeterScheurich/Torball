@@ -454,6 +454,31 @@ Tabelle). `AUF`-Event (`zusatz.spielerIds`) setzt die Feldbesetzung, `E`-Wechsel
 fort. Vier-Augen-Abschluss je Turnier über `protokollBestaetigungErforderlich` (Checkbox
 Übersicht, `POST /protokolle/:id/bestaetigen`, `schreiben_voll`).
 
+**Schutz vor dem falschen Spielprotokoll (2026-08-28, Nutzer-Vorgabe), zwei Stufen:** Bei zwei
+Feldern ist der wahrscheinliche Fehlgriff das VERSEHENTLICH geoeffnete falsche Spiel - und der
+faellt sonst erst auf, wenn schon Ereignisse im falschen Protokoll stehen. (1) **Beim Oeffnen:**
+Laeuft das Protokoll bereits und hat dieses Geraet es nicht selbst begonnen, kommt eine
+Zwischenseite. Dort steht bewusst das SPIEL im Vordergrund (Begegnung, Spiel-Nr., Feld, geplanter
+Beginn, Anzahl bisheriger Ereignisse) und nicht die Warnung - die Frage lautet "ist das ueberhaupt
+mein Spiel?". Zwei Knoepfe: zurueck oder uebernehmen. Ein `localStorage`-Merker je Protokoll sorgt
+dafuer, dass NUR ein fremdes Geraet gefragt wird - Neuladen oder spaeteres Zurueckkommen auf
+demselben Geraet nicht. (2) **Waehrend der Erfassung:** Taucht beim regulaeren 15-s-Abruf ein
+Ereignis auf, das weder beim Oeffnen da war noch von diesem Geraet stammt, erscheint eine Warnung
+in der (angesagten) Hinweiszeile. Erkennung ohne zusaetzlichen Server-Aufruf, ohne Schema-Aenderung
+und ohne Zeitfenster-Raterei - allein daran, dass etwas Unbekanntes aufgetaucht ist
+(`eigeneEventIdsRef`). Bewusst erst beim tatsaechlichen Schreiben des anderen Geraets, nicht schon
+beim Oeffnen: Ein nur mitlesendes Geraet (Beamer, Turnierleitung) soll keinen Fehlalarm ausloesen.
+
+**Sequenz-Kollision ist unkritisch (2026-08-28 geprueft):** Die Sequenz wird als "letzte + 1"
+vergeben, zwei gleichzeitig sendende Geraete koennen dieselbe Nummer bekommen (live beobachtet:
+`1:AUF 1:AUF`). Die Reihenfolge bleibt trotzdem korrekt, weil `sortiertNachSequenz` (in BEIDEN
+Kopien) dreistufig sortiert: `sequenz` -> `zeitstempel` -> `_id`, und den Zeitstempel setzt der
+SERVER beim Eintreffen. Zwei kollidierende Ereignisse werden also nach tatsaechlicher Eintreffzeit
+geordnet, gemessen an einer einzigen Uhr. Einzige Folge ist kosmetisch: doppelte Nummern in der
+Anzeige ("Ereignis Nr. 1 streichen?"). Eine konfliktsichere Vergabe waere moeglich (Zaehler am
+Spielprotokoll-Dokument, CouchDBs Revisionspruefung), ist aber bewusst zurueckgestellt - die
+Warnung oben deckt den realistischen Fall ab.
+
 **Protokoll-Ereignisse gehen bei Verbindungsproblemen nicht mehr verloren
 (`frontend/src/protokoll/warteschlange.ts`, 2026-08-26):** `sende()` zeigte frueher bei einem
 Fehler nur eine Meldung - das Ereignis war weg. Genau das faellt beim Protokollieren NICHT auf
