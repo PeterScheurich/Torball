@@ -694,6 +694,34 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
+        frage: "Wie sichere ich meine Daten vor einem Turnier?",
+        text: [
+          "Alle Daten liegen in einer Datenbank auf genau diesem einen Rechner. Fällt er am Spieltag aus, wäre das laufende Turnier verloren – deshalb vor jedem Turnier eine Sicherung anlegen.",
+          "Unter „Admin → Systemeinstellungen“ ganz unten steht dafür der Knopf „Sicherung herunterladen“. Es entsteht eine einzelne Datei mit allem: Turnieren, Mannschaften, Spielen, Protokollen, Stammdaten, Benutzerkonten und Einstellungen.",
+          {
+            hinweis:
+              "Die Datei enthält auch Zugangsdaten. Sie gehört auf einen USB-Stick oder einen anderen sicheren Ort – nicht in eine Cloud-Freigabe und nicht als E-Mail-Anhang.",
+          },
+          {
+            vertiefung: {
+              titel: "Und wie spiele ich eine Sicherung zurück?",
+              text: [
+                "Das geschieht bewusst nicht per Knopfdruck, sondern über die Konsole: Es überschreibt im Zweifel einen laufenden Turnierbestand und soll ein bewusster Schritt sein.",
+                "Im Ordner „backend“ eine Eingabeaufforderung öffnen und eingeben: npm run torball -- sicherung:einspielen --datei=\"C:\Pfad\zur\datei.json\"",
+                "Standardmäßig werden nur fehlende Daten ergänzt, vorhandene bleiben unangetastet. Erst mit dem zusätzlichen Wort --ueberschreiben werden auch vorhandene ersetzt. Der übliche Fall – frisch installierter Ersatzrechner – braucht das nicht.",
+              ],
+            },
+          },
+        ],
+      },
+      {
+        frage: "Etwas funktioniert nicht – was kann ich weitergeben?",
+        text: [
+          "Bei der lokalen Installation schreibt der Server ein Protokoll in den Ordner C:\Torball-Turniere\logs. Das bleibt auch nach einem Neustart erhalten – anders als die Ausgabe im minimierten Server-Fenster.",
+          "Für eine Rückmeldung an die Entwicklung: im Ordner „backend“ eine Eingabeaufforderung öffnen und npm run torball -- diagnose eingeben. Das schreibt eine Textdatei mit Version, Einstellungen, Datenbank-Zustand und den letzten Protokollzeilen. Passwörter stehen nicht darin – die Datei kann also unbesehen mitgeschickt werden.",
+        ],
+      },
+      {
         frage: "Wie richte ich eine lokale Installation ein?",
         text: [
           "Unter Windows gibt es einen Ein-Klick-Installer: {{download-quellcode}} (direkt von diesem Server) und danach entpacken. Starte darin die Datei „Setup.cmd“ auf der obersten Ebene per Doppelklick – das Skript richtet alles Nötige automatisch ein und bietet dabei an, den Ordner an seinen dauerhaften Platz (C:\\Torball-Turniere\\App) zu verlegen; diese Frage am besten mit „Ja“ beantworten, damit die Installation nicht im Downloads-Ordner hängen bleibt. Eine ausführliche Schritt-für-Schritt-Anleitung liegt als „Installations-Anleitung.html“ direkt im entpackten Ordner.",

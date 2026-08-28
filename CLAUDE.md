@@ -454,6 +454,21 @@ Tabelle). `AUF`-Event (`zusatz.spielerIds`) setzt die Feldbesetzung, `E`-Wechsel
 fort. Vier-Augen-Abschluss je Turnier über `protokollBestaetigungErforderlich` (Checkbox
 Übersicht, `POST /protokolle/:id/bestaetigen`, `schreiben_voll`).
 
+**Naechste Punkte (vereinbart 2026-08-28, noch offen):** (1) **Schiedsrichter-Sicht** auf einem
+zweiten Bildschirm - spiegelverkehrt zur Protokollseite (Seiten der Mannschaften getauscht, NICHT
+die Schrift; ableitbar als Umkehrung von `seiteAVertauscht`). Nutzer-Vorgabe: beide Seiten laufen
+IMMER auf demselben Rechner, die Fenster koennen also direkt miteinander reden - noetig, weil der
+15-s-Poll fuer die 8-Sekunden-Anzeige zu langsam ist. Gehoert an Turnier+FELD, nicht an ein Spiel.
+(2) **Penalty + 8-Sekunden-Regel: Luecke.** Beim Penalty steht die Uhr (seit 21.08. korrekt), die
+8-Sekunden-Regel gilt aber - und ohne vorheriges "unter Kontrolle bringen", weil der Werfer den
+Ball direkt bekommt. Modelliert ist davon nichts: `case "P"` in `stand.ts` setzt nur den
+Foulzaehler zurueck, und `achtSekunden()` zeigt ueberhaupt nur bei LAUFENDER Uhr etwas an - beide
+Seiten muessen angefasst werden. (3) **Benennung Penalty/Strafwurf/Team-Penalty** - fachlich zu
+durchdenken (Peter: "Penalty" ist richtig; in Oesterreich ist der Strafwurf ein Penalty und das
+bisherige Penalty ein Team-Penalty). Unabhaengig davon besteht schon jetzt ein Widerspruch: Der
+Aktionsknopf heisst "Strafwurf", dasselbe Ereignis in der Liste "Penalty". Details:
+`docs/digitales-protokoll-konzept.md` Abschnitt 10a.
+
 **Schutz vor dem falschen Spielprotokoll (2026-08-28, Nutzer-Vorgabe), zwei Stufen:** Bei zwei
 Feldern ist der wahrscheinliche Fehlgriff das VERSEHENTLICH geoeffnete falsche Spiel - und der
 faellt sonst erst auf, wenn schon Ereignisse im falschen Protokoll stehen. (1) **Beim Oeffnen:**

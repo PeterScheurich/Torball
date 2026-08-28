@@ -398,6 +398,36 @@ Sinne der bestehenden Ausnahme); Fastify-Body-Schemata je Route; kein `db.find` 
 `findAllBySelector`. Sync-Export: `TurnierExportPaket` um `spielprotokolle`/`events` erweitern
 **und** `pruefeTurnierExportPaket` (Präfix + docType + turnierId) mitziehen.
 
+## 10a. Offene fachliche Punkte (Stand 28.08.2026)
+
+**Penalty und die 8-Sekunden-Regel – Lücke.** Beim Penalty läuft die Spielzeit nicht weiter, die
+**8-Sekunden-Regel gilt aber**. Und weil der werfende Spieler den Ball direkt bekommt, gibt es
+keine vorherigen 8 Sekunden fürs „unter Kontrolle bringen" – die Zählung beginnt unmittelbar.
+Umgesetzt ist davon bisher nur die Uhr-Seite: Ein `P` stoppt seit 21.08. die Spieluhr. Die
+8 Sekunden des Penaltys sind dagegen **gar nicht modelliert** – `case "P"` in `stand.ts` setzt
+nur den Foulzähler zurück und berührt weder `letzterWurf` noch `letzteKontrolle`. Erschwerend:
+`achtSekunden()` zeigt überhaupt nur etwas an, **solange die Uhr läuft** – beim Penalty steht sie
+aber. Zu ändern sind also beide Seiten: der Zustand *und* die Anzeigebedingung.
+
+**Benennung Penalty / Strafwurf / Team-Penalty.** Fachlich richtig ist „Penalty"; ein Strafwurf
+folgt auf ein normales Foul. In anderen Ländern (z. B. Österreich) heißt der Strafwurf „Penalty"
+und das hier bisher als Penalty Bezeichnete „Team-Penalty". Das ist zu durchdenken, betrifft also
+die Fachlichkeit und nicht nur die Wortwahl. Unabhängig davon besteht schon jetzt ein
+Widerspruch im Bestand: Der Aktionsknopf heißt **„Strafwurf"**, dasselbe Ereignis erscheint in der
+Liste als **„Penalty"** – zwei Namen für dieselbe Sache auf einem Bildschirm.
+
+**Schiedsrichter-Sicht auf einem zweiten Bildschirm (besprochen 28.08.2026, noch nicht gebaut).**
+Zweite Ansicht als Orientierung für den Schiedsrichter, der immer auf der **gegenüberliegenden**
+Seite des Protokollanten steht: Spielstand, Restzeit, 8-Sekunden-Anzeige, offene Timeouts, Fouls
+als Info; wenn nicht protokolliert wird, letztes Ergebnis und nächstes Spiel mit Startzeit.
+Entscheidend ist die **Spiegelung**: Die Seiten der Mannschaften werden getauscht (samt allem, was
+zu ihnen gehört), die Schrift nicht. Ableitbar als Umkehrung von `protokoll.seiteAVertauscht`,
+das den Halbzeit-Seitenwechsel bereits mitmacht. Nutzer-Vorgabe: Beide Ansichten laufen **immer
+auf demselben Rechner** – die Fenster können also direkt miteinander reden, was nötig ist, weil
+der reguläre 15-Sekunden-Abruf für die 8-Sekunden-Anzeige viel zu langsam wäre. Die Anzeige gehört
+an ein **Spielfeld**, nicht an ein Spiel, damit sie am Turniertag nicht umgestellt werden muss.
+Abzugrenzen von der geplanten Beamer-Sicht (Publikum, ohne Spiegelung und ohne 8 Sekunden).
+
 ## 11. Bewusst NICHT im ersten Wurf (MVP-Schnitt)
 
 - **Beamer-/Zuschauer-Livesicht** des laufenden Spiels (Scoreboard-Ansicht für die Halle) –

@@ -7,6 +7,43 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Sicherung des gesamten Datenbestands:** Unter „Admin → Systemeinstellungen" lässt sich jetzt
+  eine Sicherungsdatei herunterladen, die alles enthält – Turniere, Mannschaften, Spiele,
+  Protokolle, Stammdaten, Benutzerkonten und Einstellungen. Gedacht als Sicherheitsnetz vor einem
+  Turnier: Fällt der Rechner am Spieltag aus, war bisher alles verloren. Die Datei gehört auf einen
+  USB-Stick oder einen anderen Rechner – sie enthält auch Zugangsdaten. Zurückspielen geschieht
+  bewusst nur über die Konsole, damit ein laufender Turnierbestand nicht versehentlich
+  überschrieben wird.
+- **Digitale Protokollierung: Nichts geht mehr verloren, wenn kurz das Netz weg ist.** Bricht die
+  Verbindung während der Erfassung ab, werden die Ereignisse jetzt gemerkt und automatisch
+  nachgesendet, sobald sie wieder da ist – vorher waren sie schlicht weg, und beim Protokollieren
+  fällt genau das nicht auf. Der Spielstand bleibt währenddessen korrekt, eine Anzeige nennt die
+  Zahl der noch nicht gespeicherten Ereignisse, und das Protokoll lässt sich erst abschließen, wenn
+  alles gespeichert ist. Auch ein Neuladen der Seite geht dabei nicht verloren.
+- **Schutz vor dem falschen Spielprotokoll:** Wird ein Protokoll geöffnet, das bereits läuft und
+  nicht von diesem Gerät begonnen wurde, erscheint zuerst eine Zwischenseite mit den Angaben zum
+  Spiel (Begegnung, Feld, geplanter Beginn) und der Frage, ob das wirklich das richtige Spiel ist.
+  Gerade bei zwei Feldern ist ein versehentlich geöffnetes falsches Spiel der häufigste Fehlgriff.
+  Zusätzlich warnt die Erfassung, wenn währenddessen ein zweites Gerät mitschreibt.
+- **Automatisch gespeicherte Felder melden das jetzt hörbar.** Der Großteil der Anwendung speichert
+  beim Verlassen eines Feldes, ganz ohne Speichern-Knopf – gemeldet wurde das bisher nur in der
+  Ergebniserfassung, und auch dort nicht für Screenreader. Vereine, Teams, Mannschaften, Kader,
+  Schiedsrichter, Spielplan und die Turnier-Übersicht speicherten stillschweigend. Jetzt erscheint
+  überall ein „✓ gespeichert", das auch vorgelesen wird.
+- **„Mein Profil": Kontakt- und Stammdaten speichern feldweise**, der Speichern-Knopf entfällt –
+  wie in der Schiedsrichter-Verwaltung, wo dieselben Angaben schon immer sofort gespeichert wurden.
+- **Lokale Installation: Der Browser öffnet sich erst, wenn alles bereit ist.** Vorher wurde
+  pauschal drei Sekunden gewartet; dauerte der Start länger, landete man auf einer Fehlerseite, die
+  sich nicht von selbst aktualisiert. Jetzt zeigt das Startfenster einen Fortschritt und öffnet den
+  Browser erst, wenn Datenbank und Server tatsächlich antworten – andernfalls erscheint ein
+  verständlicher Hinweis, was zu tun ist.
+- **Hilfe bei Problemen:** Das Server-Protokoll wird bei der lokalen Installation jetzt zusätzlich
+  in eine Datei geschrieben (bisher nur im minimierten Fenster, nach einem Neustart weg). Mit
+  `npm run torball -- diagnose` entsteht daraus ein Bericht zum Weitergeben – ohne Passwörter.
+- **Neu in der Hilfe: „Aufbau der Anwendung"** – ein bebilderter Überblick mit sechs Zeichnungen zu
+  Bausteinen, Ablauf einer Anfrage, Zugriffsrechten, Datenmodell und Betriebsmodi. Nur für
+  angemeldete Personen sichtbar; die Zeichnungen lassen sich anklicken und vergrößern.
+
 - **Digitale Protokollierung (Beta):** Ein Turnier kann jetzt auf „Digital" gestellt werden – dann
   wird jedes Spielereignis live erfasst (Würfe, Tore, Fouls, Strafwürfe, Auszeiten, Wechsel), und
   Spielstand, Restzeit sowie alle Zähler entstehen automatisch aus dem Protokoll. Dazu gehören eine
