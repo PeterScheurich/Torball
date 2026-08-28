@@ -16,6 +16,8 @@ import {
   type ProtokollEvent,
 } from "../api";
 import { berechneProtokollStand, type ProtokollStand } from "../protokoll/stand";
+import type { KanalNachricht, StandPaket } from "../schiedsrichter/kanal";
+import { HERZSCHLAG_MS, oeffneKanal } from "../schiedsrichter/kanal";
 import { VerbindungsFehler } from "../api";
 import {
   istVorlaeufig,
@@ -391,6 +393,97 @@ export function ProtokollPage() {
   const nameVon = (mannschaftId?: string) => mannschaften.find((m) => m._id === mannschaftId)?.name ?? "?";
   const teamName = (seite: Mannschaftsseite) =>
     nameVon(seite === "A" ? spiel?.mannschaftAId : spiel?.mannschaftBId);
+
+  // ---------------------------------------------------------- Schiedsrichter-Anzeige speisen
+  /**
+   * Speist die Schiedsrichter-Anzeige im zweiten Fenster (schiedsrichter/kanal.ts). Gesendet
+   * wird bei jeder Aenderung UND als Lebenszeichen alle paar Sekunden: Ohne das koennte die
+   * Anzeige eine lange ereignislose Phase nicht von einem geschlossenen Protokoll-Fenster
+   * unterscheiden und wuerde faelschlich auf den langsamen Server-Abruf umschalten. Ein frisch
+   * geoeffnetes Anzeige-Fenster fragt zusaetzlich aktiv nach ("bitte-stand"), damit es nicht
+   * bis zum naechsten Ereignis leer bleibt.
+   *
+   * Der Stand liegt in einer Ref, damit der Kanal EINMAL aufgesetzt wird: Ein Neuaufbau bei
+   * jeder Aenderung wuerde laufende Nachrichten verlieren.
+   */
+  const standPaketRef = useRef<StandPaket | undefined>(undefined);
+  standPaketRef.current =
+    turnier && spiel && protokoll && stand
+      ? {
+          typ: "stand",
+          turnierId: turnier._id,
+          feldId: spiel.feldId,
+          spielId: spiel._id,
+          runde: spiel.runde,
+          teamA: nameVon(spiel.mannschaftAId),
+          teamB: nameVon(spiel.mannschaftBId),
+          seiteAVertauscht: protokoll.seiteAVertauscht ?? false,
+          timeoutsJeHalbzeit: turnier.timeoutsJeHalbzeit,
+          spielzeitMinuten: turnier.spielzeitMinuten,
+          anzahlHalbzeiten: turnier.anzahlHalbzeiten,
+          gesendetAm: Date.now(),
+          stand: {
+            ergebnisA: stand.ergebnisA,
+            ergebnisB: stand.ergebnisB,
+            abschnitt: stand.abschnitt,
+            abschnittNummer: stand.abschnittNummer,
+            uhrLaeuft: stand.uhrLaeuft,
+            gespielteSekunden: stand.gespielteSekunden,
+            laufendSeit: stand.laufendSeit,
+            fouls: stand.fouls,
+            timeouts: stand.timeouts,
+            wurfAnzahl: { A: stand.wurf.A.anzahl, B: stand.wurf.B.anzahl },
+            spielGestartet: stand.spielGestartet,
+            inPause: stand.inPause,
+            spielBeendet: stand.spielBeendet,
+            letzterWurf: stand.letzterWurf,
+            letzteKontrolle: stand.letzteKontrolle,
+            strafwurfFrist: stand.strafwurfFrist,
+          },
+        }
+      : undefined;
+
+  const anzeigeKanalRef = useRef<BroadcastChannel | undefined>(undefined);
+  useEffect(() => {
+    const kanal = oeffneKanal();
+    if (!kanal) return;
+    anzeigeKanalRef.current = kanal;
+    const senden = () => {
+      const paket = standPaketRef.current;
+      if (paket) kanal.postMessage({ ...paket, gesendetAm: Date.now() });
+    };
+    kanal.onmessage = (e: MessageEvent<KanalNachricht>) => {
+      if (e.data?.typ === "bitte-stand") senden();
+    };
+    senden();
+    const takt = window.setInterval(senden, HERZSCHLAG_MS);
+    return () => {
+      window.clearInterval(takt);
+      kanal.close();
+      anzeigeKanalRef.current = undefined;
+    };
+  }, []);
+
+  // Sofort senden, sobald sich am Stand etwas aendert - der Herzschlag oben waere dafuer zu traege.
+  useEffect(() => {
+    const paket = standPaketRef.current;
+    if (paket) anzeigeKanalRef.current?.postMessage({ ...paket, gesendetAm: Date.now() });
+  }, [stand, protokoll, spiel, turnier]);
+
+  /** Oeffnet die Schiedsrichter-Anzeige als eigenes Fenster (fuer den zweiten Bildschirm). */
+  function oeffneSchiedsrichterAnzeige() {
+    if (!turnier || !spiel) return;
+    const feld = spiel.feldId ?? turnier.felder?.[0]?.feldId;
+    if (!feld) {
+      zeigeKurzHinweis("Für dieses Turnier ist kein Spielfeld angelegt.");
+      return;
+    }
+    window.open(
+      `/turniere/${encodeURIComponent(turnier._id)}/felder/${encodeURIComponent(feld)}/schiedsrichter`,
+      "torball-schiedsrichter",
+      "popup=yes,width=1280,height=720",
+    );
+  }
   const spielerVon = (seite: Mannschaftsseite, nummer: string) =>
     kader[seite].find((s) => s.trikotnummer === nummer);
   const spielerName = (spielerId?: string) => {
@@ -1264,6 +1357,9 @@ export function ProtokollPage() {
           <span className="protokoll-vb-kopf-aktionen">
             <button type="button" className="button-sekundaer" onClick={vollbildUmschalten}>
               Vollbild an/aus
+            </button>
+            <button type="button" className="button-sekundaer" onClick={oeffneSchiedsrichterAnzeige}>
+              Schiedsrichter-Anzeige öffnen
             </button>
             <button type="button" className="button-sekundaer" onClick={() => setAnsicht("verlauf")}>
               Vollständiges Protokoll &amp; Korrekturen (Esc, dann Enter)

@@ -448,17 +448,66 @@ Vorher war davon nur die Uhr-Seite umgesetzt (ein `P` stoppt seit 21.08. die Spi
    steht die Uhr aber. Der neue Zweig in `achtSekunden()` (und der Verlauf-Ansicht) prüft
    deshalb bewusst **ohne** diese Bedingung und hat Vorrang vor Timer A/B.
 
-**Schiedsrichter-Sicht auf einem zweiten Bildschirm (besprochen 28.08.2026, noch nicht gebaut).**
+### Schiedsrichter-Anzeige auf dem zweiten Bildschirm (umgesetzt 28.08.2026)
+
 Zweite Ansicht als Orientierung für den Schiedsrichter, der immer auf der **gegenüberliegenden**
-Seite des Protokollanten steht: Spielstand, Restzeit, 8-Sekunden-Anzeige, offene Timeouts, Fouls
-als Info; wenn nicht protokolliert wird, letztes Ergebnis und nächstes Spiel mit Startzeit.
-Entscheidend ist die **Spiegelung**: Die Seiten der Mannschaften werden getauscht (samt allem, was
-zu ihnen gehört), die Schrift nicht. Ableitbar als Umkehrung von `protokoll.seiteAVertauscht`,
-das den Halbzeit-Seitenwechsel bereits mitmacht. Nutzer-Vorgabe: Beide Ansichten laufen **immer
-auf demselben Rechner** – die Fenster können also direkt miteinander reden, was nötig ist, weil
-der reguläre 15-Sekunden-Abruf für die 8-Sekunden-Anzeige viel zu langsam wäre. Die Anzeige gehört
-an ein **Spielfeld**, nicht an ein Spiel, damit sie am Turniertag nicht umgestellt werden muss.
-Abzugrenzen von der geplanten Beamer-Sicht (Publikum, ohne Spiegelung und ohne 8 Sekunden).
+Seite des Protokollanten steht: Spielstand, Restzeit, 8-Sekunden-Frist, Fouls und offene
+Auszeiten. Route `/turniere/:turnierId/felder/:feldId/schiedsrichter`
+(`SchiedsrichterSichtPage.tsx`), geöffnet über einen Knopf auf der Protokollseite. Vier
+Entscheidungen tragen den Entwurf – alle Nutzer-Vorgaben:
+
+**1. Die Spiegelung.** Getauscht werden die *Seiten* der Mannschaften samt allem, was zu ihnen
+gehört (Torstand, Fouls, Auszeiten, das 8-Sekunden-Band) – die Schrift bleibt normal lesbar.
+Umgesetzt als exakte Umkehrung von `seiteAVertauscht`: Wo die Protokollseite
+`seiteAVertauscht ? "B" : "A"` rechnet, steht hier `? "A" : "B"`. Weil dieser **eine** Ausdruck
+die ganze Anzeige steuert, macht sie den automatischen Seitenwechsel zur Halbzeit von selbst mit.
+
+**2. Sie hängt an Turnier + Feld, nicht an einem Spiel.** Sonst müsste jemand sie nach jedem
+Abpfiff umstellen. Sie sucht sich das laufende Spiel auf ihrem Feld selbst und zeigt dazwischen
+letztes Ergebnis und nächste Begegnung mit Anstoßzeit. Laufen versehentlich zwei Spiele auf einem
+Feld, gewinnt das zuletzt begonnene **und** die Kopfzeile weist darauf hin – stillschweigend das
+falsche zu zeigen wäre schlimmer als der Hinweis.
+
+**3. Die Zahlen kommen aus dem Protokoll-Fenster, nicht vom Server**
+(`frontend/src/schiedsrichter/kanal.ts`, BroadcastChannel). Das ist keine Bequemlichkeit: Der
+reguläre 15-Sekunden-Abruf wäre für eine Frist von acht Sekunden nutzlos. Drei Feinheiten, die
+der Entwurf braucht:
+
+- Gesendet wird bei jeder Änderung **und** als Herzschlag alle 3 Sekunden. Ohne den könnte die
+  Anzeige eine lange ereignislose Phase nicht von einem geschlossenen Protokoll-Fenster
+  unterscheiden.
+- Ein frisch geöffnetes Anzeige-Fenster **fragt aktiv nach** (`bitte-stand`) – sonst bliebe es
+  bis zum nächsten Ereignis auf der Wartesicht stehen.
+- Bleibt der Kanal länger als 10 Sekunden still, berechnet die Seite den Stand aus Server-Daten
+  selbst (`berechneProtokollStand`) **und sagt offen an**, dass die Anzeige bis zu 15 Sekunden
+  alt sein kann.
+
+Übertragen wird bewusst ein schlankes eigenes Paket statt des kompletten `ProtokollStand`: Die
+Anzeige braucht weder Annullierungen noch Hinweise noch die Feldbesetzung, und eine ausdrückliche
+Schnittstelle macht sichtbar, wovon die zweite Ansicht wirklich abhängt.
+
+**4. Keine Bedienung außer Vollbild und Hell/Dunkel.** Kein Klick auf dieser Seite ändert je
+Daten. Der Bildschirm wird über die Wake-Lock-Schnittstelle wachgehalten (bei jeder Rückkehr in
+den Vordergrund neu angefordert, denn die Sperre geht im Hintergrund verloren).
+
+**Zur Gestaltung:** Ein durchgehend gleiches Raster – Restzeit am größten in der Mitte, Spielstand
+darunter, Fouls und Auszeiten klein bei ihrer Mannschaft. Die 8-Sekunden-Frist bekommt ein eigenes
+Band über die untere Bildhälfte, gefüllt **nur auf der Hälfte der betroffenen Mannschaft**: Aus
+der Entfernung ist damit die Seite erkennbar, bevor die Zahl gelesen wird. Läuft die Frist neutral
+(nach einem Wurf, bevor eine Seite den Ball kontrolliert), geht das Band über die volle Breite.
+Das Raster bleibt in jedem Zustand gleich – ein springendes Layout wäre am Feld schlimmer als eine
+fehlende Information. Der Wurfzähler erscheint erst ab dem dritten Wurf in Folge und ab dem
+vierten rot: Der vierte Wurf desselben Spielers ist ein Foul, das der Schiedsrichter pfeifen muss;
+vorher wäre die Zahl für ihn nur Ablenkung.
+
+**Hell/Dunkel gilt nur für diese Seite** (`schiedsrichter/anzeigeTheme.ts`) – eine bewusste
+Ausnahme vom sonstigen Zwei-Ebenen-Modell (App-Theme + Konto-Standard), das hier ausdrücklich
+nicht durchgreift. Über die Lesbarkeit aus mehreren Metern entscheidet die Beleuchtung in der
+Halle, nicht die Einstellung der protokollierenden Person. Eigener `localStorage`-Schlüssel,
+eigene Farbtokens, Standard dunkel.
+
+Abzugrenzen von der weiterhin geplanten **Beamer-Sicht** (Publikum: nur Stand und Zeit, ohne
+Spiegelung und ohne 8 Sekunden). Gemeinsame Grundlage, zwei Sichten.
 
 ## 11. Bewusst NICHT im ersten Wurf (MVP-Schnitt)
 

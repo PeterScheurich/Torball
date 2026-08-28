@@ -479,11 +479,34 @@ die Anzeigebedingung: Timer A/B haengen an `stand.uhrLaeuft`, die neue Frist pru
 diese Bedingung und hat Vorrang (`achtSekunden()` in der Erfassungs-Ansicht + `timerStrafwurf` in
 der Verlauf-Ansicht). Details: `docs/digitales-protokoll-konzept.md` Abschnitt 10a.
 
-**Naechster Punkt (vereinbart 2026-08-28, noch offen): Schiedsrichter-Sicht** auf einem zweiten
-Bildschirm - spiegelverkehrt zur Protokollseite (Seiten der Mannschaften getauscht, NICHT die
-Schrift; ableitbar als Umkehrung von `seiteAVertauscht`). Nutzer-Vorgabe: beide Seiten laufen
-IMMER auf demselben Rechner, die Fenster koennen also direkt miteinander reden - noetig, weil der
-15-s-Poll fuer die 8-Sekunden-Anzeige zu langsam ist. Gehoert an Turnier+FELD, nicht an ein Spiel.
+**Schiedsrichter-Anzeige auf dem zweiten Bildschirm (2026-08-28, `SchiedsrichterSichtPage.tsx`,
+Route `/turniere/:turnierId/felder/:feldId/schiedsrichter` ausserhalb `GeschuetzteRoute`):** Vier
+Punkte tragen den Entwurf, alle Nutzer-Vorgaben. (1) **Gespiegelt**: Der Schiedsrichter steht
+GEGENUEBER dem Protokollanten - `linkeSeite` ist hier die exakte Umkehrung der Protokollseite
+(`seiteAVertauscht ? "A" : "B"` statt `? "B" : "A"`). Weil dieser EINE Ausdruck alles steuert
+(Namen, Fouls, Auszeiten, Band), kippt die Anzeige beim Halbzeit-Seitenwechsel automatisch mit;
+die Schrift wird NICHT gespiegelt. (2) **An Turnier+FELD, nicht an ein Spiel** - sie sucht sich
+das laufende Spiel selbst und zeigt zwischen zwei Spielen letztes Ergebnis + naechste Begegnung;
+bei zwei laufenden Spielen auf einem Feld gewinnt das zuletzt begonnene PLUS Hinweis in der
+Kopfzeile (stillschweigend das falsche zu zeigen waere schlimmer). (3) **BroadcastChannel statt
+Server** (`frontend/src/schiedsrichter/kanal.ts`): Beide Fenster laufen laut Vorgabe immer auf
+demselben Rechner - der 15-s-Poll waere fuer eine 8-Sekunden-Frist nutzlos. Gesendet wird bei
+jeder Aenderung UND als Herzschlag alle 3 s; ohne den koennte die Anzeige eine ereignislose Phase
+nicht von einem geschlossenen Protokollfenster unterscheiden. Ein frisch geoeffnetes
+Anzeige-Fenster fragt aktiv nach (`bitte-stand`), sonst bliebe es bis zum naechsten Ereignis leer.
+Faellt der Kanal aus (>10 s Stille), rechnet die Seite den Stand aus Server-Daten selbst
+(`berechneProtokollStand`) und sagt das offen an. **Bewusst ein schlankes eigenes Paket statt des
+ganzen `ProtokollStand`** - macht sichtbar, wovon die zweite Ansicht wirklich abhaengt.
+(4) **Keine Bedienung ausser Vollbild und Hell/Dunkel**, kein Klick aendert je Daten.
+
+**Hell/Dunkel NUR fuer die Schiedsrichter-Anzeige (`schiedsrichter/anzeigeTheme.ts`,
+Nutzer-Vorgabe):** Bewusste **Ausnahme vom Zwei-Ebenen-Modell** (Theme/Dichte/Breite, siehe
+"Barrierefreiheit & Theming"): eigener `localStorage`-Schluessel, eigene CSS-Klassen
+(`.sr-sicht-hell`/`.sr-sicht-dunkel` mit eigenen Farbtokens statt der App-Tokens), unabhaengig von
+`[data-theme]` UND vom Konto-Standard - der greift hier ausdruecklich NICHT durch. Grund: Die
+Anzeige haengt an einem festen Rechner in einer festen Halle, ueber die Lesbarkeit aus mehreren
+Metern entscheidet die Beleuchtung am Spielort, nicht die Person am Protokolltisch. Standard
+dunkel. Im Browser verifiziert (App-Theme auf hell umgestellt -> Anzeige blieb dunkel).
 
 **Schutz vor dem falschen Spielprotokoll (2026-08-28, Nutzer-Vorgabe), zwei Stufen:** Bei zwei
 Feldern ist der wahrscheinliche Fehlgriff das VERSEHENTLICH geoeffnete falsche Spiel - und der

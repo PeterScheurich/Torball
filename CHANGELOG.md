@@ -7,6 +7,21 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Schiedsrichter-Anzeige auf einem zweiten Bildschirm.** Am Feld kann jetzt eine eigene Anzeige
+  laufen, die dem Schiedsrichter Spielstand, Restzeit, die 8-Sekunden-Frist, Fouls und Auszeiten
+  groß und aus Entfernung lesbar zeigt. Entscheidend: Die Seiten der Mannschaften sind vertauscht –
+  der Schiedsrichter steht dem Protokollanten gegenüber, für ihn liegt links, was für den
+  Protokollanten rechts liegt (die Schrift bleibt normal). Beim Seitenwechsel zur Halbzeit tauscht
+  die Anzeige automatisch mit. Geöffnet wird sie über einen Knopf auf der Protokollseite; sie wird
+  nicht bedient und ändert nie Daten.
+- **Die Anzeige gehört zum Feld, nicht zu einem Spiel.** Nach dem Abpfiff bleibt sie offen und zeigt
+  das letzte Ergebnis und die nächste Begegnung mit Anstoßzeit, bis das nächste Spiel beginnt – sie
+  muss also zwischen zwei Spielen nicht umgestellt werden.
+- **Hell und dunkel getrennt einstellbar für diese eine Anzeige.** Über die Lesbarkeit am Spielort
+  entscheidet die Beleuchtung in der Halle, nicht die persönliche Einstellung – deshalb hat die
+  Anzeige einen eigenen Umschalter und folgt nicht dem übrigen Erscheinungsbild. Die Wahl bleibt auf
+  dem Rechner gespeichert; der Bildschirm schaltet sich während des Spiels nicht ab.
+
 - **Digitale Protokollierung: Strafwurf und Penalty sind jetzt zwei verschiedene Ereignisse.**
   Bisher gab es nur eines – auf dem Knopf stand „Strafwurf", in der Ereignisliste „Penalty", und
   gemeint war beides Mal das Penalty nach dem dritten Foul. Jetzt gilt die deutsche Handhabung:

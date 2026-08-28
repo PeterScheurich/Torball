@@ -475,6 +475,21 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
+        frage: "Wie richte ich die Anzeige für den Schiedsrichter ein?",
+        text: [
+          "Auf einem zweiten Bildschirm am Feld kann eine eigene Anzeige laufen, die dem Schiedsrichter Spielstand, Restzeit, die 8-Sekunden-Frist, Fouls und Auszeiten zeigt. Sie wird nicht bedient und ändert nie Daten.",
+          {
+            liste: [
+              "Öffnen über den Knopf „Schiedsrichter-Anzeige öffnen“ auf der Protokollseite. Das neue Fenster auf den zweiten Bildschirm ziehen und dort auf „Vollbild“ schalten.",
+              "Die Seiten der Mannschaften sind vertauscht – der Schiedsrichter steht dem Protokollanten gegenüber, für ihn liegt links, was für den Protokollanten rechts liegt. Die Schrift bleibt normal lesbar. Beim Seitenwechsel zur Halbzeit tauscht auch die Anzeige automatisch mit.",
+              "Die Anzeige gehört zum Feld, nicht zu einem einzelnen Spiel: Nach dem Abpfiff bleibt sie offen und zeigt das letzte Ergebnis und die nächste Begegnung, bis das nächste Spiel beginnt.",
+              "Hell oder dunkel lässt sich nur für diese Anzeige umschalten – unabhängig von der Einstellung der übrigen Anwendung, weil hier die Beleuchtung in der Halle entscheidet. Die Wahl bleibt auf diesem Rechner gespeichert.",
+              "Beide Fenster müssen auf demselben Rechner laufen: Sie tauschen die Zahlen direkt untereinander aus, damit die 8-Sekunden-Anzeige ohne Verzögerung mitläuft. Ist das Protokollfenster geschlossen, meldet die Anzeige das und holt die Daten ersatzweise vom Server – dann kann sie bis zu 15 Sekunden alt sein.",
+            ],
+          },
+        ],
+      },
+      {
         frage: "Wie korrigiere ich Fehleingaben und wie endet das Spiel?",
         text: [
           "Die Rücktaste streicht das letzte Ereignis. Ältere Einträge korrigierst du direkt in der Ereignisliste: ✎ ändert die Spielernummer, ✕ streicht den Eintrag – gestrichene Einträge bleiben im Bericht sichtbar, zählen aber nicht mehr. Nichts wird jemals gelöscht, jede Korrektur ist nachvollziehbar.",

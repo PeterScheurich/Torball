@@ -2751,3 +2751,212 @@ body.protokoll-vollbild-aktiv .protokoll-vb-hinweise p {
   flex-shrink: 0;
   justify-content: flex-end;
 }
+
+/* ============================ Schiedsrichter-Anzeige (zweiter Bildschirm) ============================
+ * Bewusst mit EIGENEN Farben statt der App-Tokens und unabhaengig von [data-theme]
+ * (Nutzer-Vorgabe 28.08.2026): Diese Seite haengt an einem festen Rechner in einer Halle,
+ * ueber die Lesbarkeit entscheidet die Beleuchtung am Spielort - nicht die persoenliche
+ * Einstellung der protokollierenden Person. Umgeschaltet wird nur hier, gemerkt wird die
+ * Wahl geraetelokal (schiedsrichter/anzeigeTheme.ts). Alle Groessen in cqw, damit die Tafel
+ * auf jedem Bildschirm dieselben Verhaeltnisse behaelt.
+ */
+.sr-sicht {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--sr-grund);
+  color: var(--sr-schrift);
+}
+
+.sr-sicht-dunkel {
+  --sr-grund: #0b0d11;
+  --sr-feld: #151920;
+  --sr-schrift: #f4f6f4;
+  --sr-leise: #98a1ae;
+  --sr-aktiv: #79c47d;
+  --sr-aktiv-grund: #16301b;
+  --sr-alarm: #ec5570;
+  --sr-alarm-grund: #3a121c;
+  --sr-offen: #7fb2ff;
+  --sr-rand: #262b34;
+}
+
+.sr-sicht-hell {
+  --sr-grund: #fbfbf7;
+  --sr-feld: #eeeee6;
+  --sr-schrift: #16181d;
+  --sr-leise: #55606e;
+  --sr-aktiv: #1c6b21;
+  --sr-aktiv-grund: #d7ecd8;
+  --sr-alarm: #a1233b;
+  --sr-alarm-grund: #f6dade;
+  --sr-offen: #12459c;
+  --sr-rand: #cfcfc6;
+}
+
+.sr-tafel {
+  container-type: inline-size;
+  flex: 1;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 2cqw;
+  font-variant-numeric: tabular-nums;
+  min-height: 0;
+}
+
+.sr-kopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 2cqw;
+  font-size: 2.4cqw;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sr-leise);
+}
+
+.sr-status { color: var(--sr-aktiv); }
+.sr-status-still { color: var(--sr-leise); }
+
+.sr-mitte {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 3.6cqw;
+}
+
+.sr-team { display: flex; flex-direction: column; gap: 0.9cqw; min-width: 0; }
+.sr-team-rechts { text-align: right; }
+
+.sr-teamname {
+  font-size: 4.6cqw;
+  font-weight: 700;
+  line-height: 1.05;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.sr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.6cqw;
+  font-size: 2.2cqw;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--sr-leise);
+}
+
+.sr-team-rechts .sr-chips { justify-content: flex-end; }
+.sr-chips b { color: var(--sr-schrift); font-weight: 700; }
+.sr-alarm { color: var(--sr-alarm); }
+
+.sr-kern { display: flex; flex-direction: column; align-items: center; gap: 0.4cqw; }
+
+.sr-zeit { font-size: 11.5cqw; font-weight: 700; line-height: 0.9; }
+.sr-kern-label {
+  font-size: 2cqw;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sr-leise);
+}
+.sr-stand { font-size: 7cqw; font-weight: 700; line-height: 1; }
+
+/* Das 8-Sekunden-Band: nur die Haelfte der betroffenen Mannschaft ist gefuellt - aus der
+ * Entfernung ist damit die SEITE erkennbar, bevor die Zahl gelesen wird. */
+.sr-band {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5cqw;
+  min-height: 17cqw;
+}
+
+.sr-band-feld {
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  gap: 2.5cqw;
+  padding: 1.6cqw 2.6cqw;
+  background: var(--sr-feld);
+}
+
+.sr-band-rechts { flex-direction: row-reverse; text-align: right; }
+
+.sr-band-leer { background: transparent; border: 1px dashed var(--sr-rand); }
+.sr-band-aktiv { background: var(--sr-aktiv-grund); }
+.sr-band-alarm { background: var(--sr-alarm-grund); }
+.sr-band-offen { grid-column: 1 / -1; justify-content: center; }
+
+.sr-band-zahl { font-size: 11cqw; font-weight: 700; line-height: 0.85; color: var(--sr-leise); }
+.sr-band-aktiv .sr-band-zahl { color: var(--sr-aktiv); }
+.sr-band-alarm .sr-band-zahl { color: var(--sr-alarm); }
+.sr-band-offen .sr-band-zahl { color: var(--sr-offen); }
+
+.sr-band-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3cqw;
+  font-size: 2.4cqw;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--sr-leise);
+  line-height: 1.25;
+}
+
+.sr-band-aktiv .sr-band-text strong { color: var(--sr-aktiv); }
+.sr-band-alarm .sr-band-text strong { color: var(--sr-alarm); }
+.sr-band-offen .sr-band-text { text-align: center; }
+
+/* Wartesicht zwischen zwei Spielen */
+.sr-warte {
+  grid-row: 2 / 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3cqw;
+}
+
+.sr-warte-zeile { display: flex; flex-direction: column; gap: 0.6cqw; }
+
+.sr-warte-label {
+  font-size: 2.2cqw;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sr-leise);
+}
+
+.sr-warte-wert { font-size: 5cqw; font-weight: 700; line-height: 1.1; }
+.sr-warte-gross { font-size: 6.4cqw; }
+.sr-hervor { color: var(--sr-aktiv); }
+
+.sr-verzoegert {
+  margin: 0;
+  font-size: 2cqw;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sr-alarm);
+}
+
+.sr-fehler { font-size: 1.2rem; color: var(--sr-alarm); }
+
+/* Die einzige Bedienung der Seite - klein und am Rand, damit sie im Betrieb nicht stoert. */
+.sr-bedienung { display: flex; gap: 0.5rem; justify-content: flex-end; flex-shrink: 0; }
+
+.sr-bedienung button {
+  background: transparent;
+  color: var(--sr-leise);
+  border: 1px solid var(--sr-rand);
+  border-radius: 3px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.sr-bedienung button:hover { color: var(--sr-schrift); border-color: var(--sr-leise); }
+.sr-bedienung button:focus-visible { outline: 3px solid var(--sr-offen); outline-offset: 2px; }

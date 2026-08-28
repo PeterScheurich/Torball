@@ -20,6 +20,7 @@ import { TurnierCodeAnmeldenPage } from "./pages/TurnierCodeAnmeldenPage";
 import { SpielleitungCodePage } from "./pages/SpielleitungCodePage";
 import { ProtokollantCodePage } from "./pages/ProtokollantCodePage";
 import { ProtokollPage } from "./pages/ProtokollPage";
+import { SchiedsrichterSichtPage } from "./pages/SchiedsrichterSichtPage";
 import { OeffentlicheTurnierseitePage } from "./pages/OeffentlicheTurnierseitePage";
 import { OeffentlicheStartseitePage } from "./pages/OeffentlicheStartseitePage";
 import { ProfilPage } from "./pages/ProfilPage";
@@ -360,6 +361,13 @@ function App() {
                 Benutzer- UND Turnier-Code-Sessions (insbesondere den Protokollant-Code) - die
                 Zugriffskontrolle liegt rein serverseitig (darfProtokollieren). */}
             <Route path="/turniere/:turnierId/spiele/:spielId/protokoll" element={<ProtokollPage />} />
+            {/* Schiedsrichter-Anzeige: haengt an Turnier + FELD (nicht an einem Spiel) und
+                liegt aus demselben Grund wie die Protokollseite ausserhalb von
+                GeschuetzteRoute - sie laeuft im zweiten Fenster derselben Sitzung. */}
+            <Route
+              path="/turniere/:turnierId/felder/:feldId/schiedsrichter"
+              element={<SchiedsrichterSichtPage />}
+            />
             <Route path="/turniere/:id/oeffentlich" element={<OeffentlicheTurnierseitePage />} />
             <Route path="/turniere/:id/oeffentlich/druck" element={<OeffentlicheDruckansichtPage />} />
             <Route path="/einstellungen" element={<EinstellungenPage />} />
