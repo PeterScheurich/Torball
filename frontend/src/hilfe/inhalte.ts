@@ -709,7 +709,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
               titel: "Und wie spiele ich eine Sicherung zurück?",
               text: [
                 "Das geschieht bewusst nicht per Knopfdruck, sondern über die Konsole: Es überschreibt im Zweifel einen laufenden Turnierbestand und soll ein bewusster Schritt sein.",
-                "Im Ordner „backend“ eine Eingabeaufforderung öffnen und eingeben: npm run torball -- sicherung:einspielen --datei=\"C:\Pfad\zur\datei.json\"",
+                "Im Ordner „backend“ eine Eingabeaufforderung öffnen und eingeben: npm run torball -- sicherung:einspielen --datei=\"C:\\Pfad\\zur\\datei.json\"",
                 "Standardmäßig werden nur fehlende Daten ergänzt, vorhandene bleiben unangetastet. Erst mit dem zusätzlichen Wort --ueberschreiben werden auch vorhandene ersetzt. Der übliche Fall – frisch installierter Ersatzrechner – braucht das nicht.",
               ],
             },
@@ -719,7 +719,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Etwas funktioniert nicht – was kann ich weitergeben?",
         text: [
-          "Bei der lokalen Installation schreibt der Server ein Protokoll in den Ordner C:\Torball-Turniere\logs. Das bleibt auch nach einem Neustart erhalten – anders als die Ausgabe im minimierten Server-Fenster.",
+          "Bei der lokalen Installation schreibt der Server ein Protokoll in den Ordner C:\\Torball-Turniere\\logs. Das bleibt auch nach einem Neustart erhalten – anders als die Ausgabe im minimierten Server-Fenster.",
           "Für eine Rückmeldung an die Entwicklung: im Ordner „backend“ eine Eingabeaufforderung öffnen und npm run torball -- diagnose eingeben. Das schreibt eine Textdatei mit Version, Einstellungen, Datenbank-Zustand und den letzten Protokollzeilen. Passwörter stehen nicht darin – die Datei kann also unbesehen mitgeschickt werden.",
         ],
       },
