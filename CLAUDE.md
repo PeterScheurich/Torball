@@ -411,6 +411,18 @@ Instanz (Dev/Prod/Demo, im normalen Browser), obwohl eine Kopplung "als lokale I
 nie sinnvoll ist (live beim Nutzer aufgefallen, 2026-08-14). Bewusst nur eine UI-Blende, keine
 serverseitige Sperre von `POST /sync/verbinden` – dafür gab es keinen konkreten Anlass.
 
+**Verbindungsfehler ist keine Aussage über eine Funktion (2026-08-30, Nutzer-Fund):** Die
+Verfügbarkeits-Abfragen für Mail-Postfach und Entwicklungs-Board (`/mail-postfach/verfuegbar`,
+`/kanban/verfuegbar`) liefen als einmaliger Effekt beim Mounten und blendeten den Menüpunkt bei
+JEDEM Fehler aus - auch bei einem blossen `VerbindungsFehler`. Folge: Startet das Backend bei
+offener Seite neu (beim Entwickeln ständig, und `anfrage()` wirft bei 502/503/504 genau diesen
+Fehler), verschwanden die Menüpunkte bis zum nächsten Neuladen - was wie ein Datenverlust
+aussieht. Jetzt kapselt der Hook `useVerfuegbarkeit` (App.tsx) beide Abfragen und unterscheidet:
+eine ECHTE Server-Antwort blendet dauerhaft aus, ein `VerbindungsFehler` lässt den Stand stehen
+und fragt bei Fenster-Fokus erneut (kein Dauer-Poll: die Auskunft ändert sich nur beim
+Server-Neustart). **Muster für jede künftige „gibt es diese Funktion hier?"-Abfrage** - `catch`
+ohne Fehlerart-Prüfung macht aus einer Störung eine dauerhafte Falschaussage.
+
 **Eigenes „Admin"-Menü in der Kopfzeile** (`App.tsx`, neben „Stammdaten"):
 bündelt Funktionen, die *ausschließlich* der Rolle Admin vorbehalten sind
 („Systemeinstellungen", „Entwicklungs-Board") – wird für alle anderen Rollen

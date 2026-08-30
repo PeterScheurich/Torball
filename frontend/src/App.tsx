@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { TurnierListePage } from "./pages/TurnierListePage";
 import { TurnierAnlegenPage } from "./pages/TurnierAnlegenPage";
@@ -43,7 +43,7 @@ import { UmgebungsBanner } from "./components/UmgebungsBanner";
 import { LokaleInstallationBanner } from "./components/LokaleInstallationBanner";
 import { Fusszeile } from "./components/Fusszeile";
 import { useAuth } from "./auth";
-import { getWartungStatus, kanbanBoardVerfuegbar, mailPostfachVerfuegbar } from "./api";
+import { VerbindungsFehler, getWartungStatus, kanbanBoardVerfuegbar, mailPostfachVerfuegbar } from "./api";
 import type { WartungStatus } from "@torball/shared";
 import { formatiereZeitstempel } from "./format";
 
@@ -103,6 +103,59 @@ function WartungAnkuendigung({ wartung }: { wartung?: WartungStatus }) {
 // oeffentliche Turnierseite, Einstellungen, Hilfe) liegen ausserhalb von GeschuetzteRoute;
 // alles Uebrige verlangt eine Anmeldung.
 
+/**
+ * Fragt eine Verfuegbarkeits-Auskunft ab (Mail-Postfach, Entwicklungs-Board) und merkt sich das
+ * Ergebnis fuer die Menue-Anzeige.
+ *
+ * Unterscheidet dabei bewusst ZWEI Fehlerarten - das war vorher nicht so und hat einen echten
+ * Fehler verursacht (Nutzer-Fund 2026-08-30): Eine ECHTE Antwort des Servers ("gibt es hier
+ * nicht") blendet den Menuepunkt dauerhaft aus. Ein `VerbindungsFehler` dagegen ist gar keine
+ * Aussage ueber die Funktion, sondern nur darueber, dass der Server gerade nicht erreichbar war
+ * - frueher verschwand der Menuepunkt dadurch bis zum naechsten Neuladen der Seite, was beim
+ * Entwickeln (Backend-Neustart bei offener Seite) staendig passiert.
+ *
+ * Nach einem Verbindungsfehler wird deshalb erneut gefragt, sobald das Fenster wieder den Fokus
+ * bekommt - dasselbe Muster wie beim uebrigen Nachladen im Projekt. Bewusst KEIN Dauer-Poll:
+ * Die Auskunft aendert sich nur beim Neustart des Servers, und genau dahin kehrt man beim
+ * Entwickeln ohnehin ueber den Fenster-Wechsel zurueck.
+ */
+function useVerfuegbarkeit(abfrage: () => Promise<{ verfuegbar: boolean }>): boolean {
+  const [verfuegbar, setVerfuegbar] = useState(false);
+  // Sobald der Server geantwortet hat, steht das Ergebnis - dann nicht weiter nachfragen.
+  const beantwortet = useRef(false);
+
+  useEffect(() => {
+    let abgebrochen = false;
+    const pruefe = () => {
+      if (abgebrochen || beantwortet.current) return;
+      abfrage()
+        .then((r) => {
+          if (abgebrochen) return;
+          beantwortet.current = true;
+          setVerfuegbar(r.verfuegbar);
+        })
+        .catch((err) => {
+          if (abgebrochen || err instanceof VerbindungsFehler) return;
+          beantwortet.current = true;
+          setVerfuegbar(false);
+        });
+    };
+    const beiRueckkehr = () => {
+      if (document.visibilityState === "visible") pruefe();
+    };
+    pruefe();
+    window.addEventListener("focus", beiRueckkehr);
+    document.addEventListener("visibilitychange", beiRueckkehr);
+    return () => {
+      abgebrochen = true;
+      window.removeEventListener("focus", beiRueckkehr);
+      document.removeEventListener("visibilitychange", beiRueckkehr);
+    };
+  }, [abfrage]);
+
+  return verfuegbar;
+}
+
 /** Globale Kopfzeile mit Navigation. Menuepunkte richten sich nach Rolle/Anmeldestatus;
  *  auf oeffentlichen/externen Seiten wird eine minimale Variante ohne Nav gezeigt. */
 function Kopfzeile() {
@@ -111,24 +164,11 @@ function Kopfzeile() {
   const { pathname } = useLocation();
   const darfBenutzerVerwalten = benutzer?.globaleRolle === "admin" || benutzer?.globaleRolle === "manager";
 
-  // Mail-Postfach ist nur auf der Entwicklungsinstanz aktiv (MAIL_POSTFACH_AKTIV, siehe
-  // backend/src/mail/postfach.ts) - der Menuepunkt wird nur gezeigt, wenn die oeffentliche
-  // Verfuegbarkeits-Abfrage das bestaetigt (kein Admin-Login noetig, um das zu pruefen).
-  const [mailPostfachDaAktiv, setMailPostfachDaAktiv] = useState(false);
-  useEffect(() => {
-    mailPostfachVerfuegbar()
-      .then((r) => setMailPostfachDaAktiv(r.verfuegbar))
-      .catch(() => setMailPostfachDaAktiv(false));
-  }, []);
-
-  // Entwicklungs-Kanban-Board: gleiches Muster, nur auf der Entwicklungsinstanz aktiv
-  // (KANBAN_BOARD_AKTIV, siehe backend/src/routes/kanban.ts).
-  const [kanbanBoardDaAktiv, setKanbanBoardDaAktiv] = useState(false);
-  useEffect(() => {
-    kanbanBoardVerfuegbar()
-      .then((r) => setKanbanBoardDaAktiv(r.verfuegbar))
-      .catch(() => setKanbanBoardDaAktiv(false));
-  }, []);
+  // Mail-Postfach und Entwicklungs-Board sind nur auf der Entwicklungsinstanz aktiv
+  // (MAIL_POSTFACH_AKTIV / KANBAN_BOARD_AKTIV) - die Menuepunkte erscheinen nur, wenn die
+  // jeweilige oeffentliche Verfuegbarkeits-Abfrage das bestaetigt.
+  const mailPostfachDaAktiv = useVerfuegbarkeit(mailPostfachVerfuegbar);
+  const kanbanBoardDaAktiv = useVerfuegbarkeit(kanbanBoardVerfuegbar);
 
   async function abmelden() {
     await logout();
