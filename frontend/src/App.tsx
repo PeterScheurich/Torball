@@ -103,6 +103,10 @@ function WartungAnkuendigung({ wartung }: { wartung?: WartungStatus }) {
 // oeffentliche Turnierseite, Einstellungen, Hilfe) liegen ausserhalb von GeschuetzteRoute;
 // alles Uebrige verlangt eine Anmeldung.
 
+/** Abstand der ersten Wiederholung nach einem Verbindungsfehler; verdoppelt sich bis zum Maximum. */
+const ERSTE_WIEDERHOLUNG_MS = 2000;
+const MAX_WIEDERHOLUNG_MS = 30000;
+
 /**
  * Fragt eine Verfuegbarkeits-Auskunft ab (Mail-Postfach, Entwicklungs-Board) und merkt sich das
  * Ergebnis fuer die Menue-Anzeige.
@@ -114,10 +118,15 @@ function WartungAnkuendigung({ wartung }: { wartung?: WartungStatus }) {
  * - frueher verschwand der Menuepunkt dadurch bis zum naechsten Neuladen der Seite, was beim
  * Entwickeln (Backend-Neustart bei offener Seite) staendig passiert.
  *
- * Nach einem Verbindungsfehler wird deshalb erneut gefragt, sobald das Fenster wieder den Fokus
- * bekommt - dasselbe Muster wie beim uebrigen Nachladen im Projekt. Bewusst KEIN Dauer-Poll:
- * Die Auskunft aendert sich nur beim Neustart des Servers, und genau dahin kehrt man beim
- * Entwickeln ohnehin ueber den Fenster-Wechsel zurueck.
+ * Nach einem Verbindungsfehler wird deshalb von selbst weiter nachgefragt, mit wachsendem
+ * Abstand (2s, 4s, ... gedeckelt bei 30s), zusaetzlich sofort bei Fenster-Fokus. Das endet von
+ * allein, sobald der Server EINMAL geantwortet hat - im Normalfall also nach der ersten Abfrage.
+ *
+ * Der Fokus allein reichte NICHT (Nutzer-Fund 2026-08-30, zweite Runde): Wer die
+ * Entwicklungsumgebung startet und dabei im Browser bleibt, erzeugt gar kein Fokus-Ereignis -
+ * die Seite hatte einmal gefragt, einen 502 bekommen (Backend noch nicht bereit) und fragte nie
+ * wieder. Andere Teile der Anwendung erholten sich, weil sie ohnehin regelmaessig nachladen;
+ * nur diese Auskunft blieb auf dem Fehlstand stehen.
  */
 function useVerfuegbarkeit(abfrage: () => Promise<{ verfuegbar: boolean }>): boolean {
   const [verfuegbar, setVerfuegbar] = useState(false);
@@ -126,6 +135,16 @@ function useVerfuegbarkeit(abfrage: () => Promise<{ verfuegbar: boolean }>): boo
 
   useEffect(() => {
     let abgebrochen = false;
+    let timer = 0;
+    let wartezeit = ERSTE_WIEDERHOLUNG_MS;
+
+    const planeWiederholung = () => {
+      if (abgebrochen || beantwortet.current) return;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(pruefe, wartezeit);
+      wartezeit = Math.min(wartezeit * 2, MAX_WIEDERHOLUNG_MS);
+    };
+
     const pruefe = () => {
       if (abgebrochen || beantwortet.current) return;
       abfrage()
@@ -135,19 +154,32 @@ function useVerfuegbarkeit(abfrage: () => Promise<{ verfuegbar: boolean }>): boo
           setVerfuegbar(r.verfuegbar);
         })
         .catch((err) => {
-          if (abgebrochen || err instanceof VerbindungsFehler) return;
+          if (abgebrochen) return;
+          // Server nicht erreicht: keine Aussage ueber die Funktion - spaeter nochmal fragen.
+          if (err instanceof VerbindungsFehler) {
+            planeWiederholung();
+            return;
+          }
           beantwortet.current = true;
           setVerfuegbar(false);
         });
     };
+
+    // Rueckkehr ins Fenster beschleunigt die naechste Abfrage, ersetzt sie aber nicht.
     const beiRueckkehr = () => {
-      if (document.visibilityState === "visible") pruefe();
+      if (abgebrochen || beantwortet.current) return;
+      if (document.visibilityState !== "visible") return;
+      window.clearTimeout(timer);
+      wartezeit = ERSTE_WIEDERHOLUNG_MS;
+      pruefe();
     };
+
     pruefe();
     window.addEventListener("focus", beiRueckkehr);
     document.addEventListener("visibilitychange", beiRueckkehr);
     return () => {
       abgebrochen = true;
+      window.clearTimeout(timer);
       window.removeEventListener("focus", beiRueckkehr);
       document.removeEventListener("visibilitychange", beiRueckkehr);
     };

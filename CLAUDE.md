@@ -419,9 +419,14 @@ offener Seite neu (beim Entwickeln ständig, und `anfrage()` wirft bei 502/503/5
 Fehler), verschwanden die Menüpunkte bis zum nächsten Neuladen - was wie ein Datenverlust
 aussieht. Jetzt kapselt der Hook `useVerfuegbarkeit` (App.tsx) beide Abfragen und unterscheidet:
 eine ECHTE Server-Antwort blendet dauerhaft aus, ein `VerbindungsFehler` lässt den Stand stehen
-und fragt bei Fenster-Fokus erneut (kein Dauer-Poll: die Auskunft ändert sich nur beim
-Server-Neustart). **Muster für jede künftige „gibt es diese Funktion hier?"-Abfrage** - `catch`
-ohne Fehlerart-Prüfung macht aus einer Störung eine dauerhafte Falschaussage.
+und wird wiederholt. **Zweite Runde am selben Tag:** Der erste Fix fragte nur bei Fenster-Fokus
+nach - mit der Begründung, dorthin kehre man beim Entwickeln ohnehin zurück. Das war falsch:
+Wer die Umgebung startet und dabei im Browser BLEIBT, erzeugt gar kein Fokus-Ereignis, und die
+Menüpunkte blieben wieder weg. Jetzt wird nach einem Verbindungsfehler von selbst weiter
+nachgefragt (2s, 4s, ... gedeckelt bei 30s), Fokus beschleunigt nur. Das endet von allein,
+sobald der Server EINMAL geantwortet hat. **Muster für jede künftige „gibt es diese Funktion
+hier?"-Abfrage** - `catch` ohne Fehlerart-Prüfung macht aus einer Störung eine dauerhafte
+Falschaussage, und ein Ereignis, das der Nutzer gar nicht auslöst, ist kein Wiederholungs-Auslöser.
 
 **Eigenes „Admin"-Menü in der Kopfzeile** (`App.tsx`, neben „Stammdaten"):
 bündelt Funktionen, die *ausschließlich* der Rolle Admin vorbehalten sind
