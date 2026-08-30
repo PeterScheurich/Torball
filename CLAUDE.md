@@ -962,6 +962,19 @@ fester Allowlist statt Pfad-Parameter) hinter `requireAuth` – bewusst nicht au
 Turnier-Code genuegt nicht, es braucht ein Konto (wie bei `/ueber` und der Gesamtspezifikation).
 Verlinkt auf `/hilfe` in einem Abschnitt, der nur bei bestehender Anmeldung gerendert wird.
 
+**Verhaltensänderungen ziehen die Hilfe mit (2026-08-30, Nutzer-Nachfrage):** Beim Anpassen der
+Passwortregeln fiel auf, dass die Hilfe an zwei Stellen seit dem 20.08. FALSCH war – beide Male,
+weil eine Verhaltensänderung im Code die Texte nicht mitgezogen hatte: (1) „Nach 10 falschen
+Versuchen wird das Konto gesperrt“ – tatsächlich sind es seit der Umstellung fünf, und die
+Sperre ist eine zeitbasierte Abkühlzeit, die von selbst abläuft; (2) „auch ein Administrator kann
+die Zwei-Faktor-Anmeldung nicht zurücksetzen“ – genau dafür gibt es längst
+`POST /benutzer/:id/2fa/deaktivieren`. Beide Texte schickten Nutzer in die Irre: einmal warten
+statt handeln, einmal aufgeben statt fragen. **Bei jeder Änderung an Schwellen, Sperren, Rollen
+oder Wiederherstellungswegen `frontend/src/hilfe/inhalte.ts` durchsuchen** – die Hilfe nennt
+Zahlen und Zusagen im Klartext, und ein falscher Hilfetext ist schlimmer als gar keiner. Nicht
+vergessen: Wird auf „frag einen Admin“ verwiesen, muss der Admin-seitige Weg ebenfalls in der
+Hilfe stehen.
+
 **In-App-Hilfe, datengetrennt:** `/hilfe` (`HilfePage`) rendert Inhalte aus
 `frontend/src/hilfe/inhalte.ts` (Texte getrennt vom Layout, dreistufig: Kurz →
 `<details>`-Abschnitt → verschachteltes „Mehr Infos"). Screenshots gehören nach

@@ -567,6 +567,20 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
+        frage: "Jemand kommt nicht mehr in sein Konto – was kann ich tun?",
+        text: [
+          "In der Benutzerverwaltung (nur für Administrator und Manager) gibt es je nach Fall drei Wege:",
+          {
+            liste: [
+              "Passwort vergessen: Du kannst für ein Konto einen Zurücksetz-Link auslösen. Die Person kann sich damit selbst ein neues Passwort setzen.",
+              "Einladung nie angekommen: Bei einem Konto, das noch nicht aktiviert wurde, lässt sich die Einladung erneut senden. Der alte Link wird dabei ungültig.",
+              "Authenticator-App verloren: Nur Administratoren können die Zwei-Faktor-Anmeldung eines fremden Kontos deaktivieren – danach genügen wieder E-Mail und Passwort, und die Person kann sie neu einrichten. Für das eigene Konto geht das nicht auf diesem Weg, sondern nur im eigenen Profil mit Passwort-Bestätigung.",
+            ],
+          },
+          "Nach fünf falschen Passwort-Versuchen pausiert die Anmeldung übrigens nur zeitweise und gibt sich danach von selbst wieder frei – hier musst du nichts tun.",
+        ],
+      },
+      {
         frage: "Wer darf was?",
         text: [
           {
@@ -597,11 +611,11 @@ export const HILFE_THEMEN: HilfeThema[] = [
           "Mit E-Mail-Adresse und Passwort auf der Anmeldeseite. Ist für dein Konto die Zwei-Faktor-Anmeldung aktiv, gibst du danach zusätzlich den Code aus deiner Authenticator-App ein.",
           {
             hinweis:
-              "Wichtig: Ein vergessenes Passwort kannst du dir über „Passwort vergessen“ selbst neu setzen. Verlierst du aber den Zugang zu deiner Authenticator-App, ist eine Anmeldung derzeit nicht mehr möglich – auch ein Administrator kann die Zwei-Faktor-Anmeldung aktuell nicht zurücksetzen. Bewahre den Zugang daher sicher auf.",
+              "Wichtig: Ein vergessenes Passwort kannst du dir über „Passwort vergessen“ selbst neu setzen. Verlierst du den Zugang zu deiner Authenticator-App, kommst du selbst nicht mehr hinein – wende dich dann an eine Person mit Administrator-Rechten, die die Zwei-Faktor-Anmeldung für dein Konto deaktivieren kann. Anschließend meldest du dich wie gewohnt mit E-Mail und Passwort an und richtest sie neu ein.",
           },
           {
             hinweis:
-              "Nach 10 falschen Passwort-Versuchen hintereinander wird ein Konto zum Schutz vor Missbrauch automatisch gesperrt. „Passwort vergessen“ hebt eine so entstandene Sperre wieder auf.",
+              "Nach fünf falschen Passwort-Versuchen hintereinander pausiert die Anmeldung für dieses Konto einige Minuten; bei weiteren Fehlversuchen verlängert sich die Wartezeit auf höchstens 30 Minuten. Die Sperre läuft von selbst wieder ab – du musst also nichts weiter tun als warten. Wer nicht warten möchte, setzt sich über „Passwort vergessen“ ein neues Passwort; das hebt die Sperre sofort auf.",
           },
         ],
       },
