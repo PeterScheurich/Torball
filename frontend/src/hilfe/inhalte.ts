@@ -651,7 +651,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Welche Anforderungen hat ein Passwort?",
         text: [
-          "Mindestens 8 Zeichen, darunter ein Großbuchstabe, eine Zahl und ein Sonderzeichen. Beim Eintippen zeigt dir eine Checkliste live an, welche Bedingungen bereits erfüllt sind.",
+          "Mindestens 12 Zeichen – auf Großbuchstaben, Ziffern oder Sonderzeichen kommt es nicht an. Am einfachsten sind mehrere Wörter hintereinander, etwa „halle-muenchen-dienstag“: leicht zu tippen und zu diktieren, und sicherer als ein kurzes Passwort mit Sonderzeichen. Beim Eintippen zeigt dir eine Checkliste live an, was noch fehlt.",
         ],
       },
       {

@@ -187,7 +187,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
           .send({ error: "Es existiert bereits mindestens ein Benutzer - Bootstrap nicht mehr möglich." });
       }
 
-      const verstoss = passwortRegelVerstoss(req.body.passwort);
+      const verstoss = passwortRegelVerstoss(req.body.passwort, {
+        name: req.body.name,
+        email: req.body.email,
+      });
       if (verstoss) return reply.code(400).send({ error: verstoss });
 
       const id = newId("benutzer");
@@ -238,7 +241,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(409).send({ error: "Ein Benutzer mit dieser E-Mail-Adresse existiert bereits." });
       }
 
-      const verstoss = passwortRegelVerstoss(req.body.passwort);
+      const verstoss = passwortRegelVerstoss(req.body.passwort, {
+        name: req.body.name,
+        email: req.body.email,
+      });
       if (verstoss) return reply.code(400).send({ error: verstoss });
 
       const id = newId("benutzer");

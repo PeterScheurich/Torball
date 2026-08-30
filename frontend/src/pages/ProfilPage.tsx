@@ -430,7 +430,7 @@ export function ProfilPage() {
         Farbschema, Zeilenabstand und Breite gelten dann auch beim nächsten Login auf einem anderen Gerät, sofern dort
         noch keine eigene Wahl unter <SymbolVerweis art="einstellungen" /> getroffen wurde.
       </p>
-      <p>Für ein neues Passwort: mindestens 8 Zeichen, davon 1 Großbuchstabe, 1 Zahl, 1 Sonderzeichen.</p>
+      <p>Für ein neues Passwort: mindestens 12 Zeichen. Mehrere Wörter hintereinander sind eine gute Wahl.</p>
 
       <h2>Kontakt- und Stammdaten</h2>
       <p>

@@ -1547,6 +1547,22 @@ Zielgruppe der wertvollste Test, den dieses Projekt machen kann.
   (z. B. weil SMTP zum Einladungszeitpunkt noch nicht eingerichtet war);
   Fallback-Verhalten (Token in der Antwort statt Mail) identisch zur
   Erst-Einladung und zum admin-ausgelösten Passwort-Reset.
+- **Passwortregeln: LAENGE statt Zeichenklassen (2026-08-30, Nutzer-Entscheidung).** Mindestens
+  12 Zeichen, KEINE Pflicht mehr zu Grossbuchstabe/Ziffer/Sonderzeichen. Zwei Gruende, der zweite
+  wiegt fuer dieses Projekt schwerer: (1) Komplexitaetsregeln erzeugen vorhersehbare Passwoerter
+  ("Sommer26!") statt Entropie - so auch BSI und NIST SP 800-63B; (2) **Sonderzeichen sind mit
+  einem Screenreader muehsam** einzugeben und zu kontrollieren, eine Passphrase aus Woertern
+  dagegen leicht zu tippen und zu diktieren - bei einer Anwendung fuer blinde und sehbehinderte
+  Menschen entscheidend. Ausgeloest durch eine Rueckmeldung aus dem Test: Ein Melder konnte sich
+  mit seinem generierten 64-Zeichen-Passwort (nur Buchstaben/Ziffern) nicht registrieren.
+  Ersatz fuer die weggefallenen Regeln: kurze Sperrliste sehr haeufiger Zeichenfolgen +
+  Pruefung auf den eigenen Namen/E-Mail (`passwortRegelVerstoss(passwort, {name, email})` -
+  **den Kontext ueberall mitgeben, wo er bekannt ist**, sonst entfaellt diese Pruefung
+  stillschweigend). **Die Sperrliste bewusst KURZ halten:** Ein erster Entwurf enthielt
+  "sommer"/"winter"/"torball" und haette "Sommer-Fest-Muenchen-2026" abgelehnt - eine Sperre, die
+  gute Passphrasen verhindert, schadet mehr als sie nuetzt (in `passwort.test.ts` festgehalten).
+  Geaendert an: `backend/src/auth/passwort.ts`, `frontend/src/passwortAnforderungen.ts` (Duplikat),
+  `ProfilPage.tsx`, `hilfe/inhalte.ts`, Spez. 21.4.
 - Sensible Felder (Passwort-Hash, 2FA-Secret, Einladungs-/Reset-Token-Hashes)
   dürfen nie über die API zurückgegeben werden - immer über
   `oeffentlichesProfil()` (`backend/src/auth/benutzerProfil.ts`) filtern.

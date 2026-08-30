@@ -7,6 +7,17 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Passwortregeln: Länge statt Sonderzeichen.** Ein Passwort muss jetzt mindestens 12 Zeichen
+  haben – Großbuchstaben, Ziffern und Sonderzeichen sind nicht mehr vorgeschrieben. Mehrere Wörter
+  hintereinander („halle-muenchen-dienstag“) sind damit die einfachste und zugleich sicherste Wahl.
+  Zwei Gründe: Solche Vorgaben führen erfahrungsgemäß zu vorhersehbaren Passwörtern wie
+  „Sommer26!“, ohne die Sicherheit zu erhöhen – und Sonderzeichen sind mit einem Screenreader
+  mühsam einzugeben und zu kontrollieren, was für diese Anwendung besonders zählt. Wer bisher ein
+  langes Passwort ganz ohne Sonderzeichen nutzen wollte, konnte sich schlicht nicht registrieren;
+  das geht jetzt. Statt der alten Vorgaben werden triviale Passwörter abgewiesen: sehr häufige
+  Zeichenfolgen sowie solche, die den eigenen Namen oder die E-Mail-Adresse enthalten. Bestehende
+  Passwörter bleiben gültig.
+
 - **Schiedsrichter-Anzeige auf einem zweiten Bildschirm.** Am Feld kann jetzt eine eigene Anzeige
   laufen, die dem Schiedsrichter Spielstand, Restzeit, die 8-Sekunden-Frist, Fouls und Auszeiten
   groß und aus Entfernung lesbar zeigt. Entscheidend: Die Seiten der Mannschaften sind vertauscht –

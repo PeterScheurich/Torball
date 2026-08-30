@@ -292,7 +292,10 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(401).send({ error: "Aktuelles Passwort ist falsch." });
       }
 
-      const verstoss = passwortRegelVerstoss(req.body.neuesPasswort);
+      const verstoss = passwortRegelVerstoss(req.body.neuesPasswort, {
+        name: req.benutzer!.name,
+        email: req.benutzer!.email,
+      });
       if (verstoss) return reply.code(400).send({ error: verstoss });
 
       const aktualisiert = await insertDoc({
@@ -496,7 +499,10 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(404).send({ error: "Einladung ungültig oder abgelaufen." });
       }
 
-      const verstoss = passwortRegelVerstoss(req.body.passwort);
+      const verstoss = passwortRegelVerstoss(req.body.passwort, {
+        name: benutzer.name,
+        email: benutzer.email,
+      });
       if (verstoss) return reply.code(400).send({ error: verstoss });
 
       const aktualisiert = await insertDoc({
@@ -594,7 +600,10 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(404).send({ error: "Der Link ist ungültig oder abgelaufen." });
       }
 
-      const verstoss = passwortRegelVerstoss(req.body.neuesPasswort);
+      const verstoss = passwortRegelVerstoss(req.body.neuesPasswort, {
+        name: benutzer.name,
+        email: benutzer.email,
+      });
       if (verstoss) return reply.code(400).send({ error: verstoss });
 
       // Ein erfolgreicher Reset hebt eine automatische Fehlversuche-Sperre mit auf (wer den Link

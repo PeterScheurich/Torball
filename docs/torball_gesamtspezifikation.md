@@ -892,7 +892,7 @@ das unterscheidet dieses Szenario bewusst von den beiden noch offenen Ausprägun
 
 ### 21.4 Passwort-Richtlinien und -Reset
 
-Mindestlänge konfigurierbar (Minimum 8 Zeichen), Pflicht: mind. 1 Großbuchstabe, 1 Zahl, 1 Sonderzeichen. Änderungen gelten nur für neue/geänderte Passwörter. Reset-Ablauf: E-Mail-Eingabe → Einmal-Link (24 Stunden gültig) → neues Passwort → alle aktiven Sessions beendet → Benachrichtigung an E-Mail.
+Mindestlänge 12 Zeichen. **Keine Vorgaben zur Zusammensetzung** (Großbuchstaben, Ziffern, Sonderzeichen) – geändert am 30.08.2026 nach einer Rückmeldung aus dem Test. Zwei Gründe: Solche Komplexitätsregeln erzeugen vorhersehbare Passwörter wie „Sommer26!“, ohne die Sicherheit nennenswert zu erhöhen (so auch BSI und NIST SP 800-63B) – und Sonderzeichen sind mit einem Screenreader mühsam einzugeben und zu kontrollieren, während eine Passphrase aus Wörtern für die Zielgruppe dieser Anwendung die deutlich bessere Wahl ist. Stattdessen werden triviale Passwörter abgewiesen: eine kurze Liste sehr häufiger Zeichenfolgen sowie Passwörter, die den eigenen Namen oder die eigene E-Mail-Adresse enthalten. Änderungen gelten nur für neue/geänderte Passwörter. Reset-Ablauf: E-Mail-Eingabe → Einmal-Link (24 Stunden gültig) → neues Passwort → alle aktiven Sessions beendet → Benachrichtigung an E-Mail.
 
 ### 21.5 Zwei-Faktor-Authentifizierung
 
