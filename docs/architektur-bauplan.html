@@ -209,9 +209,42 @@
   .dia .t-sig { fill: var(--signal); font-weight: 600; }
   .dia .t-tight { font-family: var(--sans); font-size: 11px; font-weight: 700; }
   .dia .t-net { fill: var(--net); font-weight: 600; }
+
+  /* Textfassung jedes Diagramms - ausklappbar, damit sie das Bild nicht verdraengt, aber fuer
+     jede Person erreichbar ist. Ein Diagramm ist Information, kein Schmuck: Wer es nicht sehen
+     kann, braucht denselben Inhalt in Worten, nicht nur die Kurzfassung aus dem aria-label. */
+  .dia-text {
+    margin: 14px 0 0;
+    border-top: 1px solid var(--line, #d9d5c8);
+    padding-top: 10px;
+    font-size: 0.95rem;
+  }
+  .dia-text > summary { cursor: pointer; font-weight: 600; padding: 4px 2px; border-radius: 3px; }
+  .dia-text > summary:focus-visible { outline: 3px solid currentColor; outline-offset: 2px; }
+  .dia-text ul { margin: 8px 0 0; padding-left: 1.3em; }
+  .dia-text ul ul { margin: 4px 0 6px; }
+  .dia-text li { margin-bottom: 4px; }
+  .dia-text p { margin: 10px 0 0; }
+  .dia-text h3 { margin: 12px 0 2px; font-size: 0.97rem; font-weight: 700; }
+
+  /* Sprungmarke: sichtbar erst beim Tabben - steht vor der Navigation, damit Tastatur und
+     Vorlesehilfen ohne Umweg in den Text kommen. */
+  .zum-inhalt {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 100;
+    padding: 10px 16px;
+    background: Canvas;
+    color: CanvasText;
+    border: 2px solid currentColor;
+    border-radius: 0 0 4px 0;
+  }
+  .zum-inhalt:focus { left: 0; }
 </style>
 </head>
 <body>
+<a class="zum-inhalt" href="#inhalt">Zum Inhalt springen</a>
 <div class="topbar">
   <div class="topbar-inner">
     <span class="wordmark">Torball-Turniere · Bauplan</span>
@@ -253,6 +286,8 @@
     <div class="fact"><dt>Betriebsmodi</dt><dd>3<span>zwei davon gebaut</span></dd></div>
   </dl>
 </header>
+
+<main id="inhalt">
 
 <section id="schichten">
   <h2>Schichten: von der Browserzeile bis zur Datenbank</h2>
@@ -338,6 +373,44 @@
       </svg>
     </div>
     <figcaption><b>Abb. 1</b><span>Drei Auslieferungsformen desselben Codes. Nur rechts registriert das Backend seine Routen unter einem echten <code>/api</code>-Präfix — links und in der Mitte streift der jeweilige Vermittler das Präfix ab, bevor die Anfrage ankommt.</span></figcaption>
+    <details class="dia-text">
+      <summary>Abbildung 1 als Text</summary>
+      <p>Drei Spalten nebeneinander, je eine Umgebung. In jeder läuft dieselbe gebaute Anwendung;
+        die Kette führt von oben nach unten vom Browser bis zur Datenbank.</p>
+      <h3>Entwicklung</h3>
+      <ul>
+        <li>Browser mit der React-Oberfläche unter <code>localhost:5173</code>.</li>
+        <li>Vite-Entwicklungsserver: liefert die Oberfläche aus den Quellen, lädt beim Speichern
+          neu und reicht <code>/api</code> an <code>localhost:3000</code> weiter. <strong>Das
+          Präfix wird dabei abgestreift.</strong></li>
+        <li>Fastify auf Port 3000, gestartet über <code>npm run dev:backend</code>; die Routen
+          liegen an der Wurzel.</li>
+        <li>CouchDB im Entwicklungsnetz, eine gemeinsame Datenbank.</li>
+      </ul>
+      <h3>Server (Debian mit nginx)</h3>
+      <ul>
+        <li>Browser unter <code>turniere.blindentorball.de</code>.</li>
+        <li>nginx: <code>location /</code> liefert <code>frontend/dist</code>,
+          <code>location /api/</code> reicht an <code>127.0.0.1:3001</code> weiter, TLS davor über
+          den Nginx Proxy Manager. <strong>Auch hier wird das Präfix abgestreift.</strong></li>
+        <li>Fastify auf Port 3001, reines API-Backend, als systemd-Dienst je Instanz; Routen an
+          der Wurzel.</li>
+        <li>CouchDB auf <code>127.0.0.1</code>, eigene Datenbank und eigener Benutzer je Instanz.</li>
+      </ul>
+      <h3>Lokale Installation (Windows)</h3>
+      <ul>
+        <li>Browser im WLAN der Halle.</li>
+        <li>Ein einziger Fastify-Prozess macht beides: <code>@fastify/static</code> liefert
+          <code>frontend/dist</code>, der <code>notFoundHandler</code> dient als Rückfall für die
+          Oberfläche, gesteuert über <code>SERVE_FRONTEND=true</code>, gestartet über
+          <code>Start-Torball.cmd</code>.</li>
+        <li><strong>Der Unterschied zu den anderen beiden:</strong> Hier registriert derselbe
+          Prozess seine Routen unter einem <em>echten</em> <code>/api</code>-Präfix
+          (<code>registerApiRoutes</code> mit <code>prefix: /api</code>) — es wird also nicht
+          abgestreift, sondern existiert wirklich.</li>
+        <li>CouchDB als Windows-Dienst; alles liegt auf einem Rechner.</li>
+      </ul>
+    </details>
   </figure>
 </section>
 
@@ -473,6 +546,48 @@
       </svg>
     </div>
     <figcaption><b>Abb. 2</b><span>Modul-Landkarte. Grün markiert sind die Stellen mit dem größten Codeanteil und die beiden Engpässe, durch die aller Datenverkehr läuft (<code>repository.ts</code>, <code>api.ts</code>). Rot markiert sind die vier absichtlichen Duplikate.</span></figcaption>
+    <details class="dia-text">
+      <summary>Abbildung 2 als Text</summary>
+      <p>Oben der gemeinsame Baustein, darunter nebeneinander Backend und Frontend, ganz unten die
+        bewussten Duplikate.</p>
+      <h3>shared/ — 24 Typdateien</h3>
+      <ul>
+        <li>Enthält <code>TorballDokument</code>, <code>Turnierregeln</code> und die ID-Typen;
+          kompiliert nach CommonJS.</li>
+        <li>Zwei Pfeile führen hinaus, und sie sind unterschiedlich: <strong>zum Backend gehen
+          Typen und Laufzeit-Code, zum Frontend nur Typen.</strong> Das ist die folgenreiche
+          Grenze — daraus entstehen die Duplikate weiter unten.</li>
+      </ul>
+      <h3>Backend — Fastify und CouchDB</h3>
+      <ul>
+        <li><code>routes/</code> — 25 Dateien, 5.815 Zeilen (größter Anteil)</li>
+        <li><code>auth/</code> Sitzung und Zugriff · <code>spielplan/</code> Paarungen und Zeiten ·
+          <code>protokoll/</code> Ereignis-Semantik · <code>sync/</code> Export und Import ·
+          <code>ergebnisse/</code> Tabellenberechnung · <code>mail/</code> Postfach, KI, Bericht ·
+          <code>demo/</code> Snapshot und Beispieldaten</li>
+        <li><code>cli/torball.ts</code> Konsolen-Werkzeug · <code>index.ts</code> Pipeline und
+          Start · <code>konfiguration.ts</code> Standardregeln</li>
+        <li><strong><code>repository.ts</code> — der einzige Datenbank-Zugang</strong>, einer der
+          beiden Engpässe, durch die aller Verkehr läuft.</li>
+      </ul>
+      <h3>Frontend — React und Vite</h3>
+      <ul>
+        <li><code>pages/</code> — 36 Dateien, 8.676 Zeilen (größter Anteil) ·
+          <code>components/</code> — 25 Dateien, 5.632 Zeilen</li>
+        <li><code>protokoll/</code> Eingabe und Live-Stand · <code>pdf/</code> Dokumentmodell ·
+          <code>hilfe/</code> Texte ohne Layout</li>
+        <li><code>auth.tsx</code> Sitzungs-Kontext · <code>App.tsx</code> Routen und Kopfzeile ·
+          <code>theme</code>, <code>dichte</code>, <code>breite</code> als Darstellungs-Ebenen</li>
+        <li><strong><code>api.ts</code> — der einzige API-Zugang</strong>, der zweite Engpass.</li>
+      </ul>
+      <h3>Bewusste Duplikate — bei einer Änderung immer beide Seiten anfassen</h3>
+      <ul>
+        <li><code>zeitplanung</code> — je eine Kopie in <code>frontend/src/</code> und in
+          <code>backend/spielplan/</code></li>
+        <li><code>schiedsrichterKonflikt</code> — je eine Kopie auf beiden Seiten</li>
+        <li><code>passwortAnforderungen</code> — je eine Kopie auf beiden Seiten</li>
+      </ul>
+    </details>
   </figure>
 </section>
 
@@ -578,6 +693,41 @@
       </svg>
     </div>
     <figcaption><b>Abb. 3</b><span>Von der Anfrage zur Entscheidung. Die drei Stufen sind aufsteigend: Wer <code>schreiben_voll</code> hat, darf alles darunter. Die beiden roten Sperren greifen zusätzlich — eine Turnierleitung mit voller Stufe wird von ihnen genauso abgewiesen.</span></figcaption>
+    <details class="dia-text">
+      <summary>Abbildung 3 als Text</summary>
+      <h3>Oben: die Pipeline in <code>index.ts</code></h3>
+      <p>Eine Anfrage durchläuft der Reihe nach:</p>
+      <ul>
+        <li>HTTP-Anfrage mit dem Cookie <code>torball_session</code></li>
+        <li><code>authPreHandler</code> — liegt auf der Wurzel-Instanz, vor allen Routen</li>
+        <li>Ratenbegrenzung — 1.000 Anfragen pro Minute je IP, strenger an Login-nahen Routen</li>
+        <li><code>wartungPreHandler</code> — bei aktiver Wartung 403, außer für Admins</li>
+        <li>Routen-Handler — eine von 25 Routendateien</li>
+      </ul>
+      <h3>Mitte: das Berechtigungsmodell in <code>auth/turnierZugriff.ts</code></h3>
+      <ul>
+        <li>Der Akteur ist entweder <code>req.benutzer</code> (angemeldetes Konto)
+          <strong>oder</strong> <code>req.turnierCode</code> (geteilter Code, ohne Konto).</li>
+        <li><code>turnierZugriffsstufe(turnier, akteur)</code> berechnet daraus die Stufe — der
+          Code wird dabei <em>vor</em> den Konto-Pfaden geprüft.</li>
+        <li>Drei Stufen, aufsteigend: <strong>lesen</strong> (ansehen), darüber
+          <strong>schreiben_spielbetrieb</strong> (Spielplan, Ergebnisse), darüber
+          <strong>schreiben_voll</strong> (auch Regeln, Codes, Teilen). Wer die höhere Stufe hat,
+          darf alles darunter.</li>
+        <li>Durchgesetzt wird sie über drei Funktionen: <code>hatMindestens()</code> in jeder
+          Turnier-Route, <code>darfProtokollieren()</code> als eigenes Prädikat (bewusst keine
+          vierte Stufe) und <code>requireRolle()</code> für globale Stammdaten.</li>
+      </ul>
+      <h3>Unten: zwei zusätzliche Sperren, unabhängig von der Stufe</h3>
+      <ul>
+        <li><code>turnierGesperrt()</code> — 409, wenn das Turnier abgeschlossen ist.
+          <em>Ausnahme:</em> Freigabe und Teilen bleiben offen.</li>
+        <li><code>turnierAusgecheckt()</code> — 409, wenn das Turnier an eine lokale Installation
+          verliehen ist. <em>Ohne Ausnahme.</em></li>
+      </ul>
+      <p>Das Frontend spiegelt beide Sperren, entscheidet sie aber nie — maßgeblich ist immer der
+        Server.</p>
+    </details>
   </figure>
 </section>
 
@@ -698,13 +848,54 @@
       </svg>
     </div>
     <figcaption><b>Abb. 4</b><span>Das Turnier ist der Angelpunkt: Fast jedes turnierbezogene Dokument trägt dessen <code>turnierId</code>. Die Stammdaten links leben unabhängig davon weiter — eine Mannschaft <em>kopiert</em> beim Anlegen aus ihnen, statt dauerhaft an ihnen zu hängen.</span></figcaption>
+    <details class="dia-text">
+      <summary>Abbildung 4 als Text</summary>
+      <p><strong>Lesehilfe:</strong> Eine durchgezogene Verbindung ist ein Pflichtbezug, eine
+        gestrichelte ein optionaler. Der Pfeil zeigt jeweils auf das Dokument, dessen ID
+        gespeichert wird.</p>
+      <h3>Links: Stammdaten, turnierübergreifend</h3>
+      <ul>
+        <li><strong>Verein</strong> — wird auch für Spielgemeinschaften verwendet</li>
+        <li><strong>Team</strong> — <code>vereinId</code> ist Pflicht</li>
+        <li><strong>Schiedsrichter</strong> — <code>vereinId</code> optional</li>
+        <li><strong>Wettbewerb</strong> — klammert mehrere Spieltage</li>
+        <li><strong>TurnierBerechtigung</strong> (<code>turnierId</code> und
+          <code>benutzerId</code>), <strong>Benutzer</strong> (mit <code>globaleRolle</code>) und
+          <strong>Session</strong> (aus Konto oder Turnier-Code)</li>
+      </ul>
+      <h3>Mitte: das Turnier als Angelpunkt</h3>
+      <ul>
+        <li><strong>Turnier</strong> trägt Regeln, Codes, Freigaben und Logo; es hängt optional an
+          einem Wettbewerb.</li>
+        <li>Daran hängen über die <code>turnierId</code>:
+          <ul>
+            <li><strong>MannschaftImTurnier</strong> — verweist optional auf Team und Verein</li>
+            <li><strong>SchiedsrichterImTurnier</strong> — genau eine Person ist Turnierleitung</li>
+            <li><strong>Spiel</strong> — verweist auf zwei Mannschaften und einen Schiedsrichter
+              desselben Turniers</li>
+          </ul>
+        </li>
+      </ul>
+      <h3>Rechts: was unter Mannschaft und Spiel hängt</h3>
+      <ul>
+        <li><strong>Spieler</strong> hängt an der Mannschaft (<code>mannschaftId</code>), nicht am
+          Turnier.</li>
+        <li><strong>Spielprotokoll</strong> — genau eines je Spiel (<code>spielId</code>).</li>
+        <li><strong>Event</strong> — hängt am Protokoll, append-only, wird nie geändert.</li>
+        <li><strong>ErgebnisAenderung</strong> (Änderungsspur) und <strong>ErgebnisToken</strong>
+          (Erfassungslink ohne Login) hängen ebenfalls am Spiel.</li>
+      </ul>
+      <p><strong>Eine Abkürzung im Modell:</strong> Spielprotokoll und Event tragen zusätzlich die
+        <code>turnierId</code> — obwohl sie über die <code>spielId</code> erreichbar wären.
+        Dadurch finden Kaskaden-Löschung und Sync-Prüfung sie, ohne die Kette aufzulösen.</p>
+    </details>
   </figure>
 </section>
 
 <style>
   .inv { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; margin: 28px 0 10px; }
   .inv-g { border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); padding: 14px 16px 16px; }
-  .inv-g h4 {
+  .inv-g h3 {
     margin: 0 0 4px; font-family: var(--mono); font-size: 0.66rem; font-weight: 600;
     letter-spacing: .1em; text-transform: uppercase; color: var(--ink);
   }
@@ -715,7 +906,7 @@
     border: 1px solid var(--rule); border-radius: 3px; padding: 2px 7px;
   }
   .inv-g.is-core { border-color: var(--accent); }
-  .inv-g.is-core h4 { color: var(--accent); }
+  .inv-g.is-core h3 { color: var(--accent); }
   .inv-g.is-hold li { color: var(--ink-soft); border-style: dashed; }
   .callout {
     border-left: 3px solid var(--accent); background: var(--panel);
@@ -736,7 +927,7 @@
     font-family: var(--mono); font-size: 0.66rem; font-weight: 600; letter-spacing: .08em;
     text-transform: uppercase; color: var(--signal); white-space: nowrap; padding-top: 3px;
   }
-  .rules h4 { font-family: var(--slab); font-weight: 600; font-size: 1.05rem; margin: 0 0 4px; }
+  .rules h3 { font-family: var(--slab); font-weight: 600; font-size: 1.05rem; margin: 0 0 4px; }
   .rules p { margin: 0; font-size: .95rem; color: var(--ink-soft); }
   .rules code { font-size: .84em; }
   footer.end {
@@ -748,42 +939,42 @@
 
 <div class="inv">
   <div class="inv-g is-core">
-    <h4>Turnier &amp; Spielbetrieb</h4>
+    <h3>Turnier &amp; Spielbetrieb</h3>
     <p>Der Kern. Alles hier trägt eine <code>turnierId</code> und wird beim Löschen des Turniers mitgenommen.</p>
     <ul><li>Turnier</li><li>Wettbewerb</li><li>MannschaftImTurnier</li><li>Spieler</li><li>SchiedsrichterImTurnier</li><li>Spiel</li><li>ErgebnisToken</li><li>ErgebnisAenderung</li></ul>
   </div>
   <div class="inv-g is-core">
-    <h4>Digitales Protokoll</h4>
+    <h3>Digitales Protokoll</h3>
     <p>Ereignisstrom je Spiel. Wird nur angelegt, wenn das Turnier auf digitale Protokollierung steht.</p>
     <ul><li>Spielprotokoll</li><li>Event</li></ul>
   </div>
   <div class="inv-g">
-    <h4>Stammdaten</h4>
+    <h3>Stammdaten</h3>
     <p>Turnierübergreifend, überleben jedes Turnier. Werden beim Übernehmen kopiert, nicht verknüpft.</p>
     <ul><li>Verein</li><li>Team</li><li>Schiedsrichter</li></ul>
   </div>
   <div class="inv-g">
-    <h4>Konten &amp; Zugriff</h4>
+    <h3>Konten &amp; Zugriff</h3>
     <p>Sitzungen liegen als Dokument in derselben Datenbank — eine Sitzung ist entweder Konto oder Turnier-Code.</p>
     <ul><li>Benutzer</li><li>Session</li><li>TurnierBerechtigung</li></ul>
   </div>
   <div class="inv-g">
-    <h4>Instanz-Kopplung</h4>
+    <h3>Instanz-Kopplung</h3>
     <p>Verbindet den Server mit einer lokalen Installation und leiht Turniere für den Spieltag aus.</p>
     <ul><li>VerbundeneInstanz</li><li>TurnierCheckout</li><li>LokaleSyncKonfiguration</li></ul>
   </div>
   <div class="inv-g">
-    <h4>Betrieb</h4>
+    <h3>Betrieb</h3>
     <p>Instanz-Einstellungen. Beim nächtlichen Zurücksetzen der Demo bewusst ausgenommen.</p>
     <ul><li>Systemkonfiguration</li><li>Systemeinstellungen</li><li>Wartung</li></ul>
   </div>
   <div class="inv-g">
-    <h4>Entwicklungs-Werkzeuge</h4>
+    <h3>Entwicklungs-Werkzeuge</h3>
     <p>Nur auf der Entwicklungsinstanz freigeschaltet, je über ein eigenes Umgebungs-Flag.</p>
     <ul><li>KanbanKarte</li><li>MailNachricht</li><li>MailBericht</li><li>MailPostfachEinstellungen</li></ul>
   </div>
   <div class="inv-g is-hold">
-    <h4>Reserviert</h4>
+    <h3>Reserviert</h3>
     <p>Typisiert und spezifiziert, aber noch nirgends im Backend benutzt — bewusst offen gelassen.</p>
     <ul><li>Turnierpause</li><li>DokumentAnhang</li><li>AuditLogEintrag</li></ul>
   </div>
@@ -877,6 +1068,39 @@
       </svg>
     </div>
     <figcaption><b>Abb. 5</b><span>Beide Wege treffen sich am <code>Spiel</code>. Weil die digitale Protokollierung dort dieselben Felder pflegt, brauchte nichts unterhalb dieser Linie geändert zu werden — das war die Bedingung, unter der der zweite Weg überhaupt gebaut wurde.</span></figcaption>
+    <details class="dia-text">
+      <summary>Abbildung 5 als Text</summary>
+      <p>Zwei Spalten, die sich unten treffen: links der manuelle Weg, rechts der digitale.</p>
+      <h3>Weg A — manuell</h3>
+      <ul>
+        <li><strong>ErgebnisVerwaltung</strong> im Reiter „Ergebnisse“, mit Login; speichert beim
+          Verlassen des Feldes.</li>
+        <li><strong>Erfassungslink mit QR-Code</strong> — ohne Konto, über einen
+          <code>ErgebnisToken</code>, gedacht für Helfer am Spielfeldrand.</li>
+        <li>Beide senden ein <strong>PUT mit dem Endergebnis</strong> eines Spiels: ein Wert je
+          Mannschaft, dazu „n. a.“ bei Nichtantreten.</li>
+        <li><code>routes/ergebnis.ts</code> schreibt die vier Felder unmittelbar.</li>
+      </ul>
+      <h3>Weg B — digital (Beta)</h3>
+      <ul>
+        <li><strong>Erfassungs-Ansicht</strong> — bedienbar per Tastatur, Touch und später über ein
+          eigenes Tastenfeld; alle Wege treiben dieselbe Zustandsmaschine.</li>
+        <li><strong>Live-Reducer</strong> — der Spielstand wird berechnet, nie abgelegt; die
+          Prüfungen warnen, blockieren aber nie.</li>
+        <li>Gesendet wird ein <strong>POST je Ereignis</strong>: append-only, eine Korrektur ist
+          ein neues Ereignis, nie eine Änderung.</li>
+        <li><code>routes/protokoll.ts</code> pflegt dieselben vier Felder bei jedem Ereignis nach.</li>
+      </ul>
+      <h3>Die Nahtstelle</h3>
+      <p>Beide Wege schreiben am <strong>Spiel</strong> dieselben vier Felder:
+        <code>ergebnisA</code>, <code>ergebnisB</code>, <code>status</code> und
+        <code>ergebnisAbgeschlossen</code>. Das ist die einzige Verbindung zwischen ihnen — weil
+        die digitale Protokollierung dort dieselben Felder pflegt, musste unterhalb dieser Linie
+        nichts geändert werden.</p>
+      <p>Darunter hängen: die <strong>Tabellenberechnung</strong> (auch über mehrere Spieltage),
+        die <strong>öffentliche Turnierseite</strong> (ohne Login, je Bereich freigebbar) und die
+        <strong>Ausdrucke und PDFs</strong> (im Browser erzeugt).</p>
+    </details>
   </figure>
 </section>
 
@@ -960,6 +1184,43 @@
       </svg>
     </div>
     <figcaption><b>Abb. 6</b><span>Die Richtung der Pfeile ist der Kern: Die lokale Installation ruft an, nie umgekehrt. Ein Auftrag des Servers wartet deshalb, bis der nächste Check-in ihn abholt.</span></figcaption>
+    <details class="dia-text">
+      <summary>Abbildung 6 als Text</summary>
+      <h3>Oben: die drei Betriebsmodi</h3>
+      <ul>
+        <li><strong>Einzelplatz</strong> — ein Rechner, kein Server, kein Netz; Daten im Browser,
+          Abgleich später. Datenmodell und Modi stehen bereits, <em>gebaut ist er noch nicht</em> —
+          fest eingeplant.</li>
+        <li><strong>Lokales Netzwerk</strong> — ein Rechner hostet, andere Geräte greifen zu;
+          Zugang über geteilte Turnier-Codes. Kein Abgleich nötig, weil alle auf einer Datenbank
+          arbeiten. <em>Gebaut.</em></li>
+        <li><strong>Zentrale Plattform mit Kopplung</strong> — Planung am Server, Spieltag lokal;
+          zwei getrennte Datenbanken. Ein Turnier wird ausgeliehen, nicht kopiert.
+          <em>Gebaut.</em></li>
+      </ul>
+      <h3>Mitte: die Instanz-Kopplung — wer ruft wen</h3>
+      <ul>
+        <li>Die <strong>zentrale Plattform</strong> ist öffentlich erreichbar, hinter nginx und
+          TLS.</li>
+        <li>Die <strong>lokale Installation</strong> steht im Hallen-WLAN oder daheim und ist von
+          außen nicht erreichbar.</li>
+        <li><strong>Der Kern des Bildes ist die Pfeilrichtung:</strong> Die Verbindung wird immer
+          von der lokalen Seite aufgebaut, weil der Server sie wegen NAT und Firewall nicht
+          erreichen kann.</li>
+        <li>Check-in alle 45 Sekunden — überträgt den vollständigen Turnierstand. Die Antwort
+          trägt einen wartenden Auftrag gleich mit, sodass kein zweiter Aufruf nötig ist.</li>
+      </ul>
+      <h3>Unten: der Lebenslauf einer Ausleihe</h3>
+      <ul>
+        <li><strong>frei</strong> — nur auf dem Server</li>
+        <li><strong>angefordert</strong> — ein Auftrag liegt bereit</li>
+        <li><strong>aktiv</strong> — lokal in Betrieb</li>
+        <li><strong>freigegeben</strong> — wieder frei</li>
+      </ul>
+      <p>Solange „angefordert“ oder „aktiv“ gilt, weist der Server jede Änderung am Turnier mit 409
+        ab. Einzige Ausnahme, die immer bedienbar bleibt: „Freigabe aufheben“ — der Notausstieg,
+        wenn der lokale Rechner ausfällt.</p>
+    </details>
   </figure>
 </section>
 
@@ -973,49 +1234,49 @@
     <li>
       <span class="sig">Immer beide</span>
       <div>
-        <h4>Vier Logikbausteine existieren doppelt</h4>
+        <h3>Vier Logikbausteine existieren doppelt</h3>
         <p>Weil das Frontend aus <code>shared</code> keine Laufzeit-Funktionen beziehen kann, sind Spieldauer, Schiedsrichter-Konflikte, Passwortregeln und der Annullierungs-Filter des Protokolls als identische Kopien auf beiden Seiten abgelegt. Wer eine ändert, muss die andere mitziehen.</p>
       </div>
     </li>
     <li>
       <span class="sig">Nie direkt</span>
       <div>
-        <h4>Datenbankzugriff nur über <code>repository.ts</code></h4>
+        <h3>Datenbankzugriff nur über <code>repository.ts</code></h3>
         <p>Eine Mango-Abfrage ohne ausdrückliche Obergrenze liefert stillschweigend nur 25 Treffer. Die Helfer im Repository blättern korrekt durch — ein direkter Aufruf sieht auf dem Testdatenbestand richtig aus und verliert im Turnierbetrieb Daten.</p>
       </div>
     </li>
     <li>
       <span class="sig">Vor dem Merge</span>
       <div>
-        <h4>Fremde Felder aus dem Anfragekörper entfernen</h4>
+        <h3>Fremde Felder aus dem Anfragekörper entfernen</h3>
         <p>Unbekannte Felder werden vom Server durchgereicht. Jede Route, die den Anfragekörper mit einem bestehenden Dokument verschmilzt, muss <code>_id</code>, <code>_rev</code> und <code>docType</code> vorher abstreifen — sonst lässt sich darüber ein fremdes Dokument anlegen oder ein Passwort-Hash einschleusen.</p>
       </div>
     </li>
     <li>
       <span class="sig">Nur Server</span>
       <div>
-        <h4>Zuschreibungen setzt niemals der Client</h4>
+        <h3>Zuschreibungen setzt niemals der Client</h3>
         <p>Wer etwas angelegt, zuletzt bearbeitet oder abgeschlossen hat, entscheidet ausschließlich der Server. Diese Felder werden aus eingehenden Daten entfernt, bevor sie übernommen werden.</p>
       </div>
     </li>
     <li>
       <span class="sig">Vier Prüfungen</span>
       <div>
-        <h4>Jede neue turnierbezogene Schreibroute braucht dasselbe Gerüst</h4>
+        <h3>Jede neue turnierbezogene Schreibroute braucht dasselbe Gerüst</h3>
         <p>Zugriffsstufe prüfen, auf abgeschlossenes Turnier prüfen, auf ausgeliehenes Turnier prüfen — und die Bearbeitungsspur des Turniers nachziehen. Fehlt Letzteres, vergisst die Turnierliste die Änderung; fehlt eine der ersten drei, ist es eine Sicherheitslücke.</p>
       </div>
     </li>
     <li>
       <span class="sig">Mitziehen</span>
       <div>
-        <h4>Wer das Sync-Paket erweitert, erweitert die Prüfung</h4>
+        <h3>Wer das Sync-Paket erweitert, erweitert die Prüfung</h3>
         <p>Ein importiertes Dokument wird unter seiner mitgelieferten ID geschrieben. Die Validierung prüft deshalb ID-Präfix, <code>docType</code> und Turnier-Zugehörigkeit einzeln. Ein neuer Dokumenttyp im Paket ohne passende Prüfregel wird entweder fälschlich abgelehnt oder ungeprüft durchgelassen.</p>
       </div>
     </li>
     <li>
       <span class="sig">Unveränderlich</span>
       <div>
-        <h4>Ereignisse werden nie geändert und nie gelöscht</h4>
+        <h3>Ereignisse werden nie geändert und nie gelöscht</h3>
         <p>Eine Korrektur im digitalen Protokoll ist immer ein <em>neues</em> Ereignis, das ein früheres für unwirksam erklärt. Gestrichene Einträge bleiben im Spielbericht sichtbar — das ist der Sinn eines Protokolls und keine technische Bequemlichkeit.</p>
       </div>
     </li>
@@ -1027,6 +1288,8 @@
     </div>
   </div>
 </section>
+
+</main>
 
 <footer class="end">
   <span>Torball-Turniere · Version 0.9.0 Beta</span>

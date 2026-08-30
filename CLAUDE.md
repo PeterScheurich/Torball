@@ -932,6 +932,18 @@ Auto-Speichern und bietet zwei Knöpfe „Vorhandenes übernehmen"
 der internen Verwaltung** (`ErgebnisVerwaltung`), nicht auf der externen
 Token-Seite (`ErgebnisErfassungPage`).
 
+**Jedes Diagramm braucht eine Textfassung (2026-08-30, Nutzer-Vorgabe):** Der Bauplan sollte an
+eine blinde Person weitergegeben werden. Die sechs SVGs hatten zwar `role="img"` mit einem
+ordentlichen `aria-label` - aber das ist eine ZUSAMMENFASSUNG in drei Saetzen, waehrend ein
+Diagramm 39 bis 69 Beschriftungen traegt. Wer sehen kann, liest die komplette Struktur; wer nicht
+sehen kann, hoerte den Ueberblick. Jede Abbildung hat deshalb jetzt unter der Bildunterschrift ein
+`<details class="dia-text">` mit dem vollstaendigen Inhalt in Text (Ueberschriften, Listen,
+Lesehilfe zu Linienarten) - rund fuenfmal so viel Information wie das `aria-label`, und auch fuer
+Sehende zum Nachschlagen brauchbar. **Bei einem neuen Diagramm die Textfassung mitschreiben**; ein
+`aria-label` allein genuegt nur bei einfachen Bildern. Ausserdem: alle `h4` auf `h3` gezogen (das
+Dokument hatte 34 Ueberschriften der Ebene 4 und keine einzige Ebene 3 - lauter Spruenge in der
+Ueberschriften-Navigation), `<main>` und Sprungmarke ergaenzt.
+
 **Architektur-Bauplan (`docs/architektur-bauplan.html`, 2026-08-22):** eine eigenstaendige
 HTML-Seite mit sechs handgezeichneten SVG-Diagrammen (Schichten/Auslieferungsformen,
 Modul-Landkarte inkl. der bewussten Duplikate, Request-Pipeline + Berechtigungsmodell,
