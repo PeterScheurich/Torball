@@ -7,6 +7,17 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Benachrichtigung bei neuen Konten: klarer, wo sie hingeht.** Die Adresse, die eine Mail
+  bekommt, sobald sich jemand registriert oder eine Einladung annimmt, stand bisher unter der
+  Überschrift „E-Mail-Versand (SMTP)“ – dort gelesen, wirkte sie wie ein Detail des Zugangs, und
+  die naheliegende Annahme war, die Benachrichtigung gehe ohnehin an den dort eingetragenen
+  Absender. Sie hat jetzt einen eigenen Abschnitt, der ausdrücklich sagt, dass sie eigens
+  eingetragen werden muss. Ist das Feld leer, steht das jetzt auch da („Zurzeit wird niemand
+  benachrichtigt.“) statt nur „Optional“. Ebenfalls ergänzt: dass eine bloße Anmeldung keine
+  Benachrichtigung auslöst, auch nicht die erste eines Kontos. Im Server-Protokoll wird jetzt
+  vermerkt, wenn eine Benachrichtigung mangels Adresse oder Mail-Einrichtung unterbleibt – vorher
+  war das nicht nachvollziehbar.
+
 - **Passwortregeln: Länge statt Sonderzeichen.** Ein Passwort muss jetzt mindestens 12 Zeichen
   haben – Großbuchstaben, Ziffern und Sonderzeichen sind nicht mehr vorgeschrieben. Mehrere Wörter
   hintereinander („halle-muenchen-dienstag“) sind damit die einfachste und zugleich sicherste Wahl.

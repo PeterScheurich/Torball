@@ -298,17 +298,26 @@ export function SystemeinstellungenPage() {
             <p role="status">{smtpTestErgebnis.ok ? "✓ Verbindung erfolgreich." : `✗ ${smtpTestErgebnis.fehler}`}</p>
           )}
 
+          {/* Eigene Ueberschrift statt eines Feldes unter "E-Mail-Versand (SMTP)": Dort gelesen,
+              wirkte die Adresse wie ein Detail des SMTP-Zugangs - und die naheliegende Annahme war,
+              die Benachrichtigung gehe ohnehin an den dort eingetragenen Absender (live passiert). */}
+          <h2>Benachrichtigung bei neuen Konten</h2>
           <div className="feld">
-            <label htmlFor="benachrichtigungEmpfaenger">Benachrichtigung bei neuer Registrierung/Einladung-Annahme</label>
+            <label htmlFor="benachrichtigungEmpfaenger">E-Mail-Adresse für die Benachrichtigung</label>
             <input
               id="benachrichtigungEmpfaenger"
               type="email"
               value={benachrichtigungEmpfaenger}
               onChange={(e) => setBenachrichtigungEmpfaenger(e.target.value)}
             />
+            {/* Bewusst volle Textfarbe statt .feld-hinweis: "es wird niemand benachrichtigt" ist keine
+                Randnotiz, sondern die Antwort auf die Frage, warum keine Mail ankommt. */}
+            {benachrichtigungEmpfaenger.trim() === "" && <p>Zurzeit wird niemand benachrichtigt.</p>}
             <p className="feld-hinweis">
-              Optional. Geht an diese Adresse, sobald sich jemand selbst registriert oder eine Einladung annimmt -
-              nur wenn der E-Mail-Versand oben aktiviert und vollständig eingerichtet ist.
+              Diese Adresse bekommt eine kurze Mail, sobald sich jemand selbst registriert oder eine Einladung
+              annimmt. Sie muss hier eigens eingetragen werden – der oben eingetragene SMTP-Absender wird dafür
+              nicht verwendet. Voraussetzung ist außerdem, dass der E-Mail-Versand oben aktiviert und vollständig
+              eingerichtet ist. Für eine bloße Anmeldung gibt es keine Benachrichtigung, auch nicht für die erste.
             </p>
           </div>
 

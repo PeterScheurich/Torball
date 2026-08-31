@@ -56,17 +56,27 @@ export function smtpVerbindungAus(einstellungen: Systemeinstellungen): SmtpVerbi
 
 /** Verschickt (best effort) eine Benachrichtigung an den konfigurierten Empfaenger, wenn sich
  *  jemand selbst registriert oder eine Einladung annimmt (Nutzer-Vorgabe) - ohne konfigurierten
- *  Empfaenger oder aktivierten/vollstaendigen SMTP-Versand passiert nichts. Ein Fehlschlag wird nur
- *  geloggt, nie an den Aufrufer durchgereicht: die Registrierung/Aktivierung selbst darf davon nie
- *  abhaengen. */
+ *  Empfaenger oder aktivierten/vollstaendigen SMTP-Versand passiert nichts (dann aber mit
+ *  Log-Zeile, siehe unten). Ein Fehlschlag wird nur geloggt, nie an den Aufrufer durchgereicht:
+ *  die Registrierung/Aktivierung selbst darf davon nie abhaengen.
+ *
+ *  Ausdruecklich KEIN Anlass ist eine blosse Anmeldung - auch nicht die erste eines Kontos. */
 export async function benachrichtigeNeuenAccount(
   einstellungen: Systemeinstellungen,
   anlass: "registrierung" | "einladung-angenommen",
   neuerBenutzer: { name: string; email: string },
 ): Promise<void> {
-  if (!einstellungen.benachrichtigungEmpfaenger) return;
+  // Beide Aussteige melden sich, statt still zu passieren: Ein stummes "es kam einfach keine Mail"
+  // liess sich sonst nur ueber einen kompletten Journal-Durchgang klaeren (live 2026-08-31).
+  if (!einstellungen.benachrichtigungEmpfaenger) {
+    console.info("Benachrichtigung ueber neuen Account uebersprungen: keine Empfaengeradresse eingetragen.");
+    return;
+  }
   const smtp = smtpVerbindungAus(einstellungen);
-  if (!smtp) return;
+  if (!smtp) {
+    console.info("Benachrichtigung ueber neuen Account uebersprungen: E-Mail-Versand nicht aktiviert oder unvollstaendig.");
+    return;
+  }
   const anlassText = anlass === "registrierung" ? "sich selbst registriert" : "eine Einladung angenommen";
   try {
     await sendeMail(smtp, {
