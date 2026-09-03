@@ -18,17 +18,26 @@ test("ermittleTrustProxy: Default vertraut Loopback + privaten Netzbereichen", (
   }
 });
 
-test("ermittleTrustProxy: 'false'/'true'/Zahl/Kommaliste werden korrekt interpretiert", () => {
+test("ermittleTrustProxy: 'false'/'true'/Kommaliste werden korrekt interpretiert", () => {
   const alt = process.env.TRUST_PROXY;
   try {
     process.env.TRUST_PROXY = "false";
     assert.equal(ermittleTrustProxy(), false);
     process.env.TRUST_PROXY = "true";
     assert.equal(ermittleTrustProxy(), true);
-    process.env.TRUST_PROXY = "2";
-    assert.equal(ermittleTrustProxy(), 2);
     process.env.TRUST_PROXY = "1.2.3.4, 10.0.0.0/8";
     assert.deepEqual(ermittleTrustProxy(), ["1.2.3.4", "10.0.0.0/8"]);
+  } finally {
+    if (alt === undefined) delete process.env.TRUST_PROXY;
+    else process.env.TRUST_PROXY = alt;
+  }
+});
+
+test("ermittleTrustProxy: eine reine Hop-Zahl wird abgelehnt (GHSA-3m5p-2c4r-xxw2)", () => {
+  const alt = process.env.TRUST_PROXY;
+  try {
+    process.env.TRUST_PROXY = "2";
+    assert.throws(() => ermittleTrustProxy(), /Hop-Anzahl/);
   } finally {
     if (alt === undefined) delete process.env.TRUST_PROXY;
     else process.env.TRUST_PROXY = alt;

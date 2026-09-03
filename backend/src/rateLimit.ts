@@ -48,8 +48,15 @@ export const CODE_ANMELDUNG_RATE_LIMIT = { max: 60, timeWindow: "10 minutes" } a
  *   - "false": keinem Proxy vertrauen (req.ip = direkte Verbindung; hinter einem Proxy wuerden dann
  *     alle Clients als eine IP gezaehlt - nur fuer Direktbetrieb ohne Proxy sinnvoll).
  *   - "true": allen vertrauen (nur in einer vollstaendig kontrollierten Umgebung, sonst faelschbar).
- *   - Zahl: Anzahl der vertrauten Proxy-Hops.
  *   - Kommaliste: konkrete IPs/CIDR-Bereiche (z.B. "127.0.0.1,10.0.0.0/8").
+ *
+ * Eine reine Zahl (Hop-Anzahl) wird seit 2026-09 bewusst NICHT mehr unterstuetzt (GHSA-3m5p-2c4r-
+ * xxw2, behoben in Fastify 5.12.1): die Hop-Zahl allein prueft nicht die tatsaechliche Adresse des
+ * unmittelbaren Absenders, ein direkt zugreifender Client konnte sich durch genuegend gefaelschte
+ * `X-Forwarded-For`-Eintraege selbst als vertrauenswuerdig ausgeben. Fastify laesst eine Zahl seit
+ * diesem Patch zur Laufzeit ohnehin nicht mehr durch (faellt still auf "niemandem vertrauen"
+ * zurueck) - hier wird stattdessen sofort beim Start mit einer klaren Fehlermeldung abgebrochen,
+ * damit eine bestehende `TRUST_PROXY=<Zahl>`-Konfiguration nicht unbemerkt anders wirkt als vorher.
  */
 export function ermittleTrustProxy(): FastifyServerOptions["trustProxy"] {
   const roh = process.env.TRUST_PROXY?.trim();
@@ -58,6 +65,12 @@ export function ermittleTrustProxy(): FastifyServerOptions["trustProxy"] {
   }
   if (roh === "false") return false;
   if (roh === "true") return true;
-  if (/^\d+$/.test(roh)) return Number(roh);
+  if (/^\d+$/.test(roh)) {
+    throw new Error(
+      `TRUST_PROXY=${roh}: eine reine Hop-Anzahl wird nicht mehr unterstuetzt (unsicher, siehe ` +
+        "GHSA-3m5p-2c4r-xxw2). Bitte stattdessen die konkrete Proxy-IP bzw. ein CIDR-Netz eintragen, " +
+        'z.B. TRUST_PROXY="10.0.0.5" oder TRUST_PROXY="10.0.0.0/8".',
+    );
+  }
   return roh.split(",").map((eintrag) => eintrag.trim()).filter(Boolean);
 }
