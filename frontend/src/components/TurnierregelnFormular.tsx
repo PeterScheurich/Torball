@@ -49,6 +49,10 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
   const [gespeichert, setGespeichert] = useState(false);
   const [speichert, setSpeichert] = useState(false);
   const [resetFehler, setResetFehler] = useState<string | undefined>();
+  // Waehrend der Eingabe der Gesamtzeit der getippte Text: Ein Wert, der unter der Mindestdauer
+  // liegt (z. B. die "2" auf dem Weg zur "25"), darf nicht sofort korrigiert werden, sonst liesse
+  // sich die Zahl gar nicht eintippen. undefined = Anzeige des berechneten Werts.
+  const [gesamtzeitText, setGesamtzeitText] = useState<string | undefined>();
 
   // Uebernimmt einen frisch geladenen Serverstand (z.B. nach dem Speichern) in den lokalen Stand.
   useEffect(() => {
@@ -59,6 +63,22 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
     setR((p) => ({ ...p, [feld]: Number(wert) }));
     setGespeichert(false);
   }
+  // "Gesamtzeit pro Spiel" ist nur eine andere Eingabe fuer dieselbe Rechnung wie bisher:
+  // Spielzeit x Halbzeiten + Halbzeitpause + Puffer (pauseZwischenSpielenMinuten, gespeichert
+  // bleibt allein der Puffer - Datenmodell, Spielplan-Berechnung und alte Turniere bleiben
+  // unveraendert). Anlass: Ein Turnierleiter denkt in "ein Spiel dauert im Plan 25 Minuten", nicht
+  // in "10 Minuten Pause" (Rueckmeldung eines Testers, 2026-10-06).
+  const mindestdauer = r.spielzeitMinuten * r.anzahlHalbzeiten + r.pauseMinuten;
+  const gesamtzeit = mindestdauer + (r.pauseZwischenSpielenMinuten ?? 0);
+  const gesamtzeitZuKurz = gesamtzeitText !== undefined && Number(gesamtzeitText) < mindestdauer;
+  function gesamtzeitAendern(wert: string) {
+    setGesamtzeitText(wert);
+    const n = Number(wert);
+    if (wert.trim() !== "" && Number.isFinite(n) && n >= mindestdauer) {
+      zahl("pauseZwischenSpielenMinuten", String(Math.round(n) - mindestdauer));
+    }
+  }
+
   function text<K extends keyof Turnierregeln>(feld: K, wert: string) {
     setR((p) => ({ ...p, [feld]: wert }));
     setGespeichert(false);
@@ -141,11 +161,21 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
               </td>
             </tr>
             <tr>
-              <th scope="row"><label htmlFor="pauseZwischenSpielenMinuten">Pause zwischen Spielen (Minuten)</label></th>
+              <th scope="row"><label htmlFor="gesamtzeitProSpiel">Gesamtzeit pro Spiel im Spielplan (Minuten)</label></th>
               <td>
-                <input id="pauseZwischenSpielenMinuten" type="number" min={0} required
-                  value={r.pauseZwischenSpielenMinuten}
-                  onChange={(e) => zahl("pauseZwischenSpielenMinuten", e.target.value)} disabled={spielzeitGesperrt} />
+                <input id="gesamtzeitProSpiel" type="number" min={mindestdauer} required
+                  value={gesamtzeitText ?? gesamtzeit}
+                  aria-invalid={gesamtzeitZuKurz}
+                  aria-describedby="gesamtzeitProSpiel-hinweis"
+                  onChange={(e) => gesamtzeitAendern(e.target.value)}
+                  onBlur={() => setGesamtzeitText(undefined)} disabled={spielzeitGesperrt} />
+                {/* Immer sichtbar und kein gedaempfter Fliesstext: Die Aufschluesselung ist die
+                    Antwort auf "was steckt in dieser Zahl?". Live-Region fuer den Fehlerfall. */}
+                <p id="gesamtzeitProSpiel-hinweis" role={gesamtzeitZuKurz ? "alert" : undefined}>
+                  {gesamtzeitZuKurz
+                    ? `Mindestens ${mindestdauer} Minuten (Spielzeit und Halbzeitpause).`
+                    : `Davon ${mindestdauer} Minuten Spielzeit und Halbzeitpause, ${r.pauseZwischenSpielenMinuten ?? 0} Minuten Puffer (Netto-Spielzeit, Wechsel, Anpfiff).`}
+                </p>
               </td>
             </tr>
             <tr>

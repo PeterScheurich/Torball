@@ -207,7 +207,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie gebe ich mein Turnier für eine andere Person frei?",
         text: [
-          "Im Reiter „Übersicht“ trägst du unter „Freigabe für andere Benutzer“ die Person und die gewünschte Zugriffsstufe ein. Es gibt drei Stufen: Lesen (nur ansehen), Schreiben für Spielbetrieb (Spielplan und Ergebnisse bearbeiten) und volles Schreiben (zusätzlich Grunddaten, Mannschaften und Regeln bearbeiten).",
+          "Im Reiter „Übersicht“ gibst du unter „Freigabe für andere Benutzer“ die E-Mail-Adresse der Person ein, mit der sie angemeldet ist, und wählst die gewünschte Zugriffsstufe. Eine Liste aller Benutzer gibt es aus Datenschutzgründen nicht – du musst die Adresse also kennen. Es gibt drei Stufen: Lesen (nur ansehen), Schreiben für Spielbetrieb (Spielplan und Ergebnisse bearbeiten) und volles Schreiben (zusätzlich Grunddaten, Mannschaften und Regeln bearbeiten).",
           {
             hinweis:
               "Wer das Turnier selbst angelegt hat sowie Administratoren haben ohnehin immer vollen Zugriff – die Freigabe ist nur für zusätzliche Personen nötig.",

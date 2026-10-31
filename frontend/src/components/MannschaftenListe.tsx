@@ -552,6 +552,15 @@ export function MannschaftenListe({
               );
             })}
           </select>
+          {/* Anmerkung eines Testers (2026-10-06): Die Funktion "Mannschaften desselben Vereins
+              spielen zuerst gegeneinander" gibt es laengst, sie haengt aber am Verein - und der
+              kommt nur ueber die Stammdaten-Auswahl in die Mannschaft. Ohne diesen Hinweis ist der
+              Zusammenhang nicht zu finden. */}
+          <span className="feld-hinweis">
+            Wer ein Team aus den Stammdaten wählt, bringt seinen Verein mit. Mannschaften desselben Vereins spielen im
+            Spielplan dann zuerst gegeneinander (z. B. „München I“ gegen „München II“, bevor eine davon auf Landshut
+            trifft). Manuell erfasste Mannschaften haben keinen Verein.
+          </span>
           {teams.length === 0 ? (
             <span className="feld-hinweis">
               Noch keine Teams in den Stammdaten. Ein Team gehört zu einem Verein (ein Verein kann mehrere Teams

@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Turnier, TurnierBerechtigung, TurnierRolle } from "@torball/shared";
+import type { Turnier, TurnierRolle } from "@torball/shared";
 import {
-  getBenutzerListe,
   getLokaleSyncStatus,
   getTurnierBerechtigungen,
   getTurnierCodes,
+  sucheBenutzerFuerFreigabe,
   turnierBerechtigungEntziehen,
   turnierBerechtigungVergeben,
   turnierCodesSetzen,
   updateTurnier,
-  type BenutzerProfil,
   type LokaleSyncStatus,
+  type TurnierBerechtigungMitName,
   type TurnierCodesStatus,
 } from "../api";
 
@@ -34,9 +34,10 @@ const ALLE_BENUTZER_LABEL: Record<AlleBenutzerZugriff, string> = {
  * (turnier.zugriffFuerAlleBenutzer) fuer ALLE angemeldeten Benutzer auf einmal - z.B. fuer eine
  * Demo-Instanz, auf der beliebige (auch erst spaeter selbst-registrierte) Tester ein Turnier
  * nutzen koennen sollen, ohne einzeln freigeschaltet zu werden. Der Ersteller/Admin hat ohnehin
- * Vollzugriff und muss sich hier nicht selbst eintragen. Die Benutzerliste (fuer die Auswahl) ist
- * nur fuer Administrator/Manager abrufbar - fehlt sie, bleibt die Anzeige bestehender Freigaben
- * moeglich, nur das Vergeben ist dann nicht angeboten.
+ * Vollzugriff und muss sich hier nicht selbst eintragen. Eine Person wird ueber ihre GENAUE
+ * E-Mail-Adresse gefunden, nicht aus einer Liste gewaehlt (Datenschutz-Hinweis eines Testers,
+ * 2026-10-06): Die fruehere Auswahl zeigte Namen UND Adressen aller Konten und kam aus einem
+ * Endpunkt, der jeder Manager-Rolle das volle Profil aller Benutzer liefert.
  */
 export function TurnierFreigabe({
   turnier,
@@ -46,10 +47,10 @@ export function TurnierFreigabe({
   onGeaendert: (turnier: Turnier) => void;
 }) {
   const turnierId = turnier._id;
-  const [berechtigungen, setBerechtigungen] = useState<TurnierBerechtigung[]>([]);
-  const [benutzer, setBenutzer] = useState<BenutzerProfil[]>([]);
-  const [benutzerListeFehlt, setBenutzerListeFehlt] = useState(false);
-  const [zielBenutzerId, setZielBenutzerId] = useState("");
+  const [berechtigungen, setBerechtigungen] = useState<TurnierBerechtigungMitName[]>([]);
+  const [suchEmail, setSuchEmail] = useState("");
+  const [gefunden, setGefunden] = useState<{ benutzerId: string; name: string } | undefined>();
+  const [suchFehler, setSuchFehler] = useState<string | undefined>();
   const [rolle, setRolle] = useState<TurnierRolle>("turnierleitung");
   const [fehler, setFehler] = useState<string | undefined>();
 
@@ -88,9 +89,6 @@ export function TurnierFreigabe({
   useEffect(() => {
     laden();
     codesLaden();
-    getBenutzerListe()
-      .then(setBenutzer)
-      .catch(() => setBenutzerListeFehlt(true));
   }, [laden, codesLaden]);
 
   async function codeSetzen(
@@ -110,23 +108,32 @@ export function TurnierFreigabe({
     }
   }
 
-  const nameVon = (id: string) => benutzer.find((b) => b._id === id)?.name ?? id;
-  const vergebbareBenutzer = benutzer.filter((b) => !berechtigungen.some((x) => x.benutzerId === b._id));
+  async function suchen(event: React.FormEvent) {
+    event.preventDefault();
+    setGefunden(undefined);
+    setSuchFehler(undefined);
+    try {
+      setGefunden(await sucheBenutzerFuerFreigabe(turnierId, suchEmail.trim()));
+    } catch (err) {
+      setSuchFehler(err instanceof Error ? err.message : "Fehler bei der Suche");
+    }
+  }
 
   async function vergeben(event: React.FormEvent) {
     event.preventDefault();
-    if (!zielBenutzerId) return;
+    if (!gefunden) return;
     setFehler(undefined);
     try {
-      await turnierBerechtigungVergeben(turnierId, zielBenutzerId, rolle);
-      setZielBenutzerId("");
+      await turnierBerechtigungVergeben(turnierId, gefunden.benutzerId, rolle);
+      setGefunden(undefined);
+      setSuchEmail("");
       await laden();
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Fehler beim Vergeben der Freigabe");
     }
   }
 
-  async function entziehen(b: TurnierBerechtigung) {
+  async function entziehen(b: TurnierBerechtigungMitName) {
     setFehler(undefined);
     try {
       await turnierBerechtigungEntziehen(b._id);
@@ -195,7 +202,7 @@ export function TurnierFreigabe({
             <tbody>
               {berechtigungen.map((b) => (
                 <tr key={b._id}>
-                  <td>{nameVon(b.benutzerId)}</td>
+                  <td>{b.benutzerName ?? b.benutzerId}</td>
                   <td>{ROLLEN_LABEL[b.rolle]}</td>
                   <td>
                     <button type="button" onClick={() => entziehen(b)}>
@@ -209,30 +216,37 @@ export function TurnierFreigabe({
         </div>
       )}
 
-      {benutzerListeFehlt ? (
-        <p className="feld-hinweis">
-          Zum Vergeben einer Freigabe wird die Benutzerliste benötigt (nur für Administrator/Manager verfügbar).
-        </p>
-      ) : (
+      <h3>Person freigeben</h3>
+      {/* Volle Textfarbe: erklaert, WARUM es keine Auswahlliste gibt (siehe CLAUDE.md, Kontrast-Regel). */}
+      <p>
+        Gib die E-Mail-Adresse der Person ein, mit der sie bei Torball-Turniere angemeldet ist. Eine Liste aller
+        Benutzer gibt es aus Datenschutzgründen nicht.
+      </p>
+      <form onSubmit={suchen} className="schiedsrichter-formular">
+        <div className="feld">
+          <label htmlFor="freigabe-email">E-Mail-Adresse der Person</label>
+          <input
+            id="freigabe-email"
+            type="email"
+            autoComplete="off"
+            required
+            value={suchEmail}
+            onChange={(e) => {
+              setSuchEmail(e.target.value);
+              setGefunden(undefined);
+              setSuchFehler(undefined);
+            }}
+          />
+        </div>
+        <button type="submit">Person suchen</button>
+      </form>
+      {suchFehler && <p role="alert">{suchFehler}</p>}
+      {/* Ergebnis in einer Live-Region, die schon VOR dem Treffer im DOM steht (siehe CLAUDE.md). */}
+      <div role="status">{gefunden && <p>Gefunden: {gefunden.name}</p>}</div>
+      {gefunden && (
         <form onSubmit={vergeben} className="schiedsrichter-formular">
           <div className="feld">
-            <label htmlFor="freigabe-benutzer">Benutzer</label>
-            <select
-              id="freigabe-benutzer"
-              value={zielBenutzerId}
-              onChange={(e) => setZielBenutzerId(e.target.value)}
-              required
-            >
-              <option value="">– bitte wählen –</option>
-              {vergebbareBenutzer.map((b) => (
-                <option key={b._id} value={b._id}>
-                  {b.name} ({b.email})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="feld">
-            <label htmlFor="freigabe-rolle">Zugriff</label>
+            <label htmlFor="freigabe-rolle">Zugriff für {gefunden.name}</label>
             <select id="freigabe-rolle" value={rolle} onChange={(e) => setRolle(e.target.value as TurnierRolle)}>
               {(Object.keys(ROLLEN_LABEL) as TurnierRolle[]).map((r) => (
                 <option key={r} value={r}>
@@ -240,10 +254,11 @@ export function TurnierFreigabe({
                 </option>
               ))}
             </select>
+            <p className="feld-hinweis">
+              Die Rolle „Protokollant“ gibt es nur über die Codes weiter unten, nicht als Freigabe für ein Konto.
+            </p>
           </div>
-          <button type="submit" disabled={!zielBenutzerId}>
-            Freigeben
-          </button>
+          <button type="submit">Freigeben</button>
         </form>
       )}
 

@@ -178,6 +178,10 @@ bleibt Admin-only; der Menüpunkt ist jetzt für alle angemeldeten Personen
 sichtbar (vorher admin-only versteckt), das Formular für Nicht-Admins über
 dasselbe `disabled`-`<fieldset>`-Muster gesperrt.
 
+**Freigabe an Personen: nur per genauer E-Mail-Adresse, nie aus einer Benutzerliste (2026-10-06, Rückmeldung eines Testers).** `GET /benutzer` ist für Admin UND Manager freigegeben und liefert das VOLLE Profil aller Konten (alles außer Hashes/Geheimnissen: Telefon, Adresse, Verein/Verband, letzte Anmeldung) - die Freigabe-Oberfläche hat daraus eine Auswahl mit Name+Adresse aller Benutzer gebaut. Jetzt `POST /turniere/:id/berechtigungen/suche` (`turnierBerechtigung.ts`): genaue Adresse rein, nur `{benutzerId, name}` raus; keine Teilsuche, gesperrte Konten nicht auffindbar, Zugriff auf das Turnier nötig, `SENSIBEL_RATE_LIMIT`, POST damit die Adresse nicht in der URL steht. `GET .../berechtigungen` liefert den Namen mit (`benutzerName`), damit die Oberfläche keine Liste braucht. **Bewusst noch offen:** Die Benutzerverwaltung selbst zeigt Managern weiterhin alle Konten (Fachentscheidung nötig: Vereinszugehörigkeit am Konto, vom Admin gesetzt, Manager sehen nur den eigenen Verein). Bei jeder neuen Stelle, die Personen auswählen lässt: dieselbe Suche verwenden, keine Liste anbieten. Test: `freigabe-suche.integration.test.ts`.
+
+**„Gesamtzeit pro Spiel“ ist nur eine andere Eingabe, kein neues Feld (2026-10-06):** Gespeichert wird weiterhin allein `pauseZwischenSpielenMinuten` (der Puffer); `TurnierregelnFormular` zeigt Spielzeit × Halbzeiten + Halbzeitpause + Puffer als Gesamtzeit und rechnet beim Eintippen zurück. Beim Tippen muss der Text-Zwischenstand (`gesamtzeitText`) erhalten bleiben - ein Wert unter der Mindestdauer (die „2“ auf dem Weg zur „25“) darf nicht sofort korrigiert werden. Neue Standardwerte (`konfiguration.ts`): Puffer 13 (= 25 Minuten bei 2 × 5 + 2), `verlaengerungAktiv: false`.
+
 **Turnier-Codes (Abschnitt 21.3, Betriebsmodus „Lokales Netzwerk", kontoloser
 Zugriff):** ein Rechner hostet Backend+CouchDB lebend im LAN; weitere Geräte
 greifen über einen geteilten Code statt eines eigenen Kontos auf **genau ein**

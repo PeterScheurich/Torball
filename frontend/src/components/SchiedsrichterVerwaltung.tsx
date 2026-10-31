@@ -3,6 +3,7 @@ import type { Schiedsrichter, SchiedsrichterImTurnier, Verein } from "@torball/s
 import {
   createSchiedsrichter,
   deleteSchiedsrichter,
+  getMannschaften,
   getSchiedsrichter,
   getSchiedsrichterStammdaten,
   getVereine,
@@ -39,6 +40,8 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
   const { benutzer } = useAuth();
   const [schiedsrichter, setSchiedsrichter] = useState<SchiedsrichterImTurnier[]>([]);
   const [vereine, setVereine] = useState<Verein[]>([]);
+  // Vereine, die im Turnier mit einer Mannschaft vertreten sind (Auswahl-Einschraenkung, s. u.).
+  const [turnierVereinIds, setTurnierVereinIds] = useState<Set<string>>(new Set());
   const [stammdaten, setStammdaten] = useState<Schiedsrichter[]>([]);
   const [bearbeitung, setBearbeitung] = useState<Record<string, TextBearbeitung>>({});
   const [fehler, setFehler] = useState<string | undefined>();
@@ -58,15 +61,32 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
   // Schiedsrichter-Stammdaten (fuer "aus Stammdaten übernehmen") parallel.
   const laden = useCallback(async () => {
     try {
-      const [s, v, st] = await Promise.all([getSchiedsrichter(turnierId), getVereine(), getSchiedsrichterStammdaten()]);
+      const [s, v, st, m] = await Promise.all([
+        getSchiedsrichter(turnierId),
+        getVereine(),
+        getSchiedsrichterStammdaten(),
+        getMannschaften(turnierId),
+      ]);
       setSchiedsrichter(s);
       setVereine(v);
+      setTurnierVereinIds(new Set(m.map((x) => x.vereinId).filter((id): id is string => Boolean(id))));
       setStammdaten(st);
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Laden der Schiedsrichter");
     }
   }, [turnierId]);
+
+  /**
+   * Vereine, die im Auswahlfeld angeboten werden: nur die der Mannschaften in diesem Turnier
+   * (Anmerkung eines Testers, 2026-10-06 - Schiedsrichter nicht anwesender Vereine sind egal, und
+   * der Verein dient hier allein dazu, nicht die eigene Mannschaft zu pfeifen). Ein bereits
+   * gesetzter Verein bleibt immer sichtbar, sonst wuerde das Feld einen gespeicherten Wert
+   * stillschweigend leer anzeigen. Gibt es noch keine Mannschaft mit Verein, werden alle
+   * angeboten - eine leere Auswahl waere eine Sackgasse.
+   */
+  const waehlbareVereine = (aktuelleId?: string | null) =>
+    turnierVereinIds.size === 0 ? vereine : vereine.filter((v) => turnierVereinIds.has(v._id) || v._id === aktuelleId);
 
   useEffect(() => {
     laden();
@@ -346,7 +366,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
                       onChange={(e) => speichern(s, { vereinId: e.target.value || null })}
                     >
                       <option value="">— keine —</option>
-                      {vereine.map((v) => (
+                      {waehlbareVereine(s.vereinId).map((v) => (
                         <option key={v._id} value={v._id}>
                           {v.name}
                         </option>
@@ -455,12 +475,15 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
           <label htmlFor="sr-neu-verein">Verein (optional)</label>
           <select id="sr-neu-verein" value={neuVereinId} onChange={(e) => setNeuVereinId(e.target.value)}>
             <option value="">— keine —</option>
-            {vereine.map((v) => (
+            {waehlbareVereine(neuVereinId).map((v) => (
               <option key={v._id} value={v._id}>
                 {v.name}
               </option>
             ))}
           </select>
+          {turnierVereinIds.size > 0 && (
+            <p className="feld-hinweis">Zur Auswahl stehen die Vereine der Mannschaften in diesem Turnier.</p>
+          )}
         </div>
         <label className="schiedsrichter-lizenz">
           <input type="checkbox" checked={neuLizenz} onChange={(e) => setNeuLizenz(e.target.checked)} /> Lizenz vorhanden

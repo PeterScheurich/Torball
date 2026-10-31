@@ -22,7 +22,9 @@ import { formatiereDatum } from "../format";
 export function TurnierAnlegenPage() {
   const [name, setName] = useState("");
   const [datum, setDatum] = useState("");
-  const [startzeit, setStartzeit] = useState("");
+  // 09:00 als Vorbelegung: der uebliche Turnierbeginn (Anmerkung eines Testers, 2026-10-06) - bei
+  // jedem Turnier bisher von Hand einzutippen, obwohl es fast immer derselbe Wert ist.
+  const [startzeit, setStartzeit] = useState("09:00");
   const [anzahlFelder, setAnzahlFelder] = useState<1 | 2>(1);
   const [spielplanModus, setSpielplanModus] = useState<Spielmodus>("einfach");
   const [protokollierungsart, setProtokollierungsart] = useState<Protokollierungsart>("manuell");

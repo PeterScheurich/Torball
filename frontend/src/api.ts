@@ -724,8 +724,22 @@ export function totpDeaktivieren(passwort: string): Promise<BenutzerProfil> {
 
 // --- Turnier-Berechtigungen ---
 
-export function getTurnierBerechtigungen(turnierId: string): Promise<TurnierBerechtigung[]> {
+/** Eine vergebene Freigabe samt Namen der Person (der Server liefert ihn mit, damit keine Benutzerliste noetig ist). */
+export type TurnierBerechtigungMitName = TurnierBerechtigung & { benutzerName?: string };
+
+export function getTurnierBerechtigungen(turnierId: string): Promise<TurnierBerechtigungMitName[]> {
   return anfrage(`/turniere/${turnierId}/berechtigungen`);
+}
+
+/** Findet eine Person ueber ihre genaue E-Mail-Adresse - liefert nur ID und Namen, nie eine Liste. */
+export function sucheBenutzerFuerFreigabe(
+  turnierId: string,
+  email: string,
+): Promise<{ benutzerId: string; name: string }> {
+  return anfrage(`/turniere/${turnierId}/berechtigungen/suche`, {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
 }
 
 export function turnierBerechtigungVergeben(
