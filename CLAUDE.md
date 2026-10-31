@@ -535,6 +535,30 @@ Backend-Pruefung, Anzeige); ein neues Element ist eine Zeile dort plus eine Stel
 Das Turnier-PUT hat kein Schema, deshalb prueft `pruefeAnzeigeEinstellung` in `turnier.ts` von Hand (nur bekannte
 Schluessel, nur Wahrheitswerte). Test: `schiedsrichterAnzeige.test.ts`, `schiedsrichter-anzeige.integration.test.ts`.
 
+**Turniermodi: Gruppen, Endrunde, Platzierungsspiele (2026-10-31, Stufe 1; Konzept und alle Entscheidungen auf der
+Kanban-Karte "Turniermodi als Vorlagen"):** Eine Vorlage (`TurniermodusVorlage`, `shared/src/types/turniermodus.ts`) legt nur die
+STRUKTUR fest (Gruppen 1/2, erlaubte Endrundengroessen, Voreinstellungen); Teams je Gruppe und Endrundengroesse stellt die
+Turnierleitung je Turnier ein. **Die Berechnung ist rein und liegt in `shared/src/logik/turniermodus.ts`** (eingebaute Vorlagen,
+`baueModusPlan`: Paarungen fuer Endrunde 2/4/6/8, Platzierungsspiele nur als vollstaendige Paare, Hinweise in drei Stufen;
+`planeZeiten`; `loeseQuelleAuf`/`erzeugbarePlanSpiele`). Test: `backend/src/spielplan/turniermodus.test.ts`. **Das Turnier traegt eine
+KOPIE seiner Vorlage** (`Turnier.modus`: Vorlage + Einstellungen + `planZustand`) - so laeuft ein lokal geplantes Turnier auch auf dem
+Server, der die Vorlage nicht kennt, und eine spaetere Vorlagen-Aenderung veraendert kein laufendes Turnier; lokal angelegte Vorlagen
+werden bewusst NICHT synchronisiert. **Die STRUKTUR des Plans wird bei jedem Abruf neu berechnet** (`backend/src/spielplan/modus.ts::
+baueModusAnsicht`, aus Vorlage, Einstellungen und aktuellen Gruppengroessen); gespeichert wird nur `planZustand` je `planId` (erzeugtes
+Spiel, `versatzMinuten`, `entscheidung` bei Unentschieden). **Es gibt keinen neuen docType und keine Platzhalter-Spiele:** Spiele spaeterer
+Runden entstehen erst per `POST /turniere/:id/modus/erzeugen`, wenn die Quellen aufgeloest sind (21 Dateien/108 Stellen setzen feste
+Mannschaften je Spiel voraus). Dadurch brauchten Sync-Export/-Validierung, Kaskaden-Loeschung und Demo-Seed KEINE Aenderung.
+`Spiel.runde` bleibt die ZAHL des Zeit-Slots (Sortierung, Verschieben, Pruefungen rechnen damit): bei Endrundenspielen die fortlaufende
+Nummer nach Startzeit, der Name steht in `Spiel.bezeichnung`; `Spiel.planId` kennzeichnet Endrundenspiele, nur Spiele OHNE `planId`
+zaehlen in Tabellen (`berechneTabelle`). `Turnier.modus` ist ein NUR-SERVER-FELD (nicht ueber das normale Turnier-PUT setzbar). Ab dem
+Erzeugen der ersten Endrundenspiele sind Modus, Gruppen und Spielplan fest, und `abschliessen` verlangt, dass alle Plan-Spiele erzeugt
+sind. Gleichstand: `berechneRangfolge` meldet nur UNAUFGELOESTE Gleichstaende, die Turnierleitung legt die Reihenfolge fest (`modus.vorrang`,
+wirkt nur dort, wo die Tabellenkriterien nicht entscheiden). Auf der oeffentlichen Seite zeigt der "Weitere Ablauf" Platzhalter, aufgeloeste
+Namen erst bei freigegebenen Ergebnissen (sonst wuerden sie die Platzierungen verraten). Oberflaeche: `TurniermodusAuswahl` (Uebersicht,
+Anlege-Assistent), Gruppen-Spalte in `MannschaftenListe`, `ModusAblauf` (Spielplan-Reiter), Admin -> `TurniermodiPage` (nur ansehen).
+**Neue Vorlage aus bekannten Bausteinen = ein Eintrag in `EINGEBAUTE_TURNIERMODI`; ein neuer BAUSTEIN (z. B. drei Gruppen) braucht Code in
+`baueModusPlan`.** Stufe 2 (Editor, Export/Import, eigener docType) ist noch offen. Integrationstest: `turniermodus.integration.test.ts`.
+
 **Hell/Dunkel NUR fuer die Schiedsrichter-Anzeige (`schiedsrichter/anzeigeTheme.ts`,
 Nutzer-Vorgabe):** Bewusste **Ausnahme vom Zwei-Ebenen-Modell** (Theme/Dichte/Breite, siehe
 "Barrierefreiheit & Theming"): eigener `localStorage`-Schluessel, eigene CSS-Klassen

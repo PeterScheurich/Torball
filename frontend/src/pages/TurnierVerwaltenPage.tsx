@@ -707,7 +707,10 @@ export function TurnierVerwaltenPage() {
                     spielplanBegonnen={spielplanGesperrt}
                     onGespeichert={meldeGespeichert}
                     onFehler={setFehler}
-                    onModusGeaendert={turnierNeuLaden}
+                    onModusGeaendert={() => {
+                      turnierNeuLaden();
+                      setModusAktualisierung((n) => n + 1);
+                    }}
                     aktualisierung={modusAktualisierung}
                   />
                 </td>
@@ -1048,6 +1051,7 @@ export function TurnierVerwaltenPage() {
           gesperrt={eingabeGesperrt}
           onTurnierGeaendert={setTurnier}
           onGeaendert={setSpiele}
+          modusVersion={modusAktualisierung}
         />
       </div>
 

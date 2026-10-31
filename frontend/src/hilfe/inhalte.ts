@@ -160,6 +160,36 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
+        frage: "Was ist ein Turniermodus – Gruppen, Endrunde, Platzierungsspiele?",
+        text: [
+          "Der Turniermodus legt den Ablauf fest. „Jeder gegen Jeden“ kennt keine Endrunde. Bei „Zwei Gruppen“ spielen die Mannschaften zuerst innerhalb von Gruppe A und B, danach folgt eine Endrunde. Die Zahlen stellst du selbst ein: wie viele Mannschaften in jeder Gruppe sind (auch ungleich, z. B. 5 und 6) und wie groß die Endrunde ist.",
+          {
+            liste: [
+              "Endrunde mit 4: Halbfinale 1.A–2.B und 1.B–2.A, dann Finale und – wenn gewünscht – das Spiel um Platz 3.",
+              "Endrunde mit 6: Viertelfinale 2.A–3.B und 2.B–3.A. Die beiden Gruppensieger sind für das Halbfinale gesetzt: 1.A spielt gegen den Sieger von 2.A–3.B, 1.B gegen den Sieger von 2.B–3.A.",
+              "Endrunde mit 8: Viertelfinale über Kreuz (1.A–4.B, 2.A–3.B, 1.B–4.A, 2.B–3.A), danach Halbfinale, Finale und Spiel um Platz 3.",
+              "Platzierungsspiele: Wer nicht in der Endrunde steht, spielt gegen die gleich platzierte Mannschaft der anderen Gruppe (3.A–3.B um Platz 5, 4.A–4.B um Platz 7 …). Gibt es keinen Gegner, weil eine Gruppe größer ist, spielt diese Mannschaft nicht mit und wird nach dem Vorrundenergebnis eingeordnet.",
+              "Die Endrunde hat immer eine gerade Zahl von Mannschaften.",
+            ],
+          },
+          "Gewählt wird der Modus beim Anlegen oder später im Reiter „Übersicht“. Die Mannschaften teilst du im Reiter „Mannschaften“ den Gruppen zu – von Hand oder mit „Nach Reihenfolge auf Gruppen verteilen“. Im Reiter „Spielplan“ steht unter „Weiterer Ablauf“, welches Spiel wann und wo stattfindet, auch wenn die Mannschaften noch nicht feststehen („Sieger Halbfinale 1“). Die Zeiten richten sich nach der Spielzeit und sind vorläufig, solange die Vorrunde noch nicht erzeugt ist.",
+          {
+            vertiefung: {
+              titel: "Wie entstehen die Spiele der Endrunde?",
+              text: [
+                "Erst wenn die Ergebnisse feststehen, entstehen die Spiele: Sind alle Vorrundenspiele abgeschlossen, erzeugst du mit „Erzeugbare Spiele erzeugen“ die Platzierungsspiele und die erste K.-o.-Runde. Nach den Viertelfinalspielen folgen die Halbfinale, danach Finale und Spiel um Platz 3. Vorher kannst du die Zeit eines Spiels verschieben (das wirkt nur auf davon abhängige Spiele und das eigene Feld, nicht auf Spiele auf einem anderen Feld) oder die Paarung von Hand wählen.",
+                "Liegen Mannschaften nach allen Tabellenkriterien gleichauf, legst du die Reihenfolge selbst fest; endet ein K.-o.-Spiel unentschieden, bestimmst du den Sieger. Die Software warnt und schlägt vor – sie entscheidet nicht für dich.",
+                "Sobald Spiele der Endrunde erzeugt wurden, lassen sich Modus, Gruppen und Spielplan nicht mehr ändern, und das Turnier lässt sich erst abschließen, wenn alle Spiele der Endrunde erzeugt sind.",
+              ],
+            },
+          },
+          {
+            hinweis:
+              "Die Vorlagen sieht die Administration unter „Admin → Turniermodi“. Sie sind schreibgeschützt; eigene Vorlagen folgen in einer späteren Ausbaustufe.",
+          },
+        ],
+      },
+      {
         frage: "Was ist die Protokollierung?",
         text: [
           "Sie legt fest, wie Ergebnisse erfasst werden. „Manuell“: Es werden nur die Endergebnisse pro Spiel eingetragen – direkt in der Anwendung oder über einen Erfassungslink. „Digital“: Jedes Ereignis (Wurf, Tor, Foul, Auszeit, …) wird während des Spiels live protokolliert; das Ergebnis entsteht automatisch aus dem Protokoll. Mehr dazu im Hilfe-Thema „Digitale Protokollierung (Beta)“.",

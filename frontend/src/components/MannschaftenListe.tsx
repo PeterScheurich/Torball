@@ -315,7 +315,11 @@ export function MannschaftenListe({
     }
   }
 
+  const spielplanWarnung =
+    "Für dieses Turnier existiert bereits ein Spielplan. Nach einer Änderung der Gruppen passt er nicht mehr – er muss danach neu erzeugt werden. Trotzdem ändern?";
+
   async function gruppeSetzen(m: MannschaftImTurnier, wert: string) {
+    if (spielplanVersion > 0 && !window.confirm(spielplanWarnung)) return;
     setFehler(undefined);
     try {
       await updateMannschaft(m._id, { name: m.name, gruppe: wert === "A" || wert === "B" ? wert : null });
@@ -329,6 +333,7 @@ export function MannschaftenListe({
 
   // Schlangenverfahren nach der aktuellen Reihenfolge: A, B, B, A, A, B, ... - die Staerksten treffen nicht zuerst aufeinander.
   async function gruppenVerteilen() {
+    if (spielplanVersion > 0 && !window.confirm(spielplanWarnung)) return;
     setFehler(undefined);
     try {
       await verteileGruppen(turnierId);

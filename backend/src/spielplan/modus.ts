@@ -109,6 +109,20 @@ export function baueModusAnsicht(
     }
   }
 
+  // Wurden die Gruppen nach dem Erzeugen der Vorrunde geaendert, passen die Vorrundenspiele nicht mehr dazu.
+  if (vorlage.gruppen === 2) {
+    const gruppeVon = new Map(mannschaften.map((m) => [m._id, m.gruppe]));
+    const unpassend = spiele.filter(
+      (s) => !s.planId && (gruppeVon.get(s.mannschaftAId) !== gruppeVon.get(s.mannschaftBId) || s.gruppe !== gruppeVon.get(s.mannschaftAId)),
+    ).length;
+    if (unpassend > 0) {
+      hinweise.unshift({
+        stufe: "warnung",
+        text: `${unpassend} Vorrundenspiel${unpassend === 1 ? " passt" : "e passen"} nicht mehr zu den Gruppen – der Spielplan sollte neu erzeugt werden (Reiter „Spielplan“).`,
+      });
+    }
+  }
+
   // Zustand (erzeugtes Spiel, Verschiebung, Entscheidung) in den frisch berechneten Plan uebernehmen.
   const mitZustand: PlanSpiel[] = basis.spiele.map((s) => ({ ...s, ...(modus.planZustand[s.planId] ?? {}) }));
 

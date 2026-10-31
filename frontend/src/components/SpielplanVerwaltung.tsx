@@ -166,9 +166,17 @@ interface Props {
    *  bedienbar, der Server lehnte zwar mit 409 ab, aber die Sperre wirkte inkonsequent). Gilt
    *  ebenso fuer Vorschlag/Erzeugen/Rueckgaengig und die Schiedsrichter-Einteilung. */
   gesperrt?: boolean;
+  /** Wird hochgezaehlt, wenn sich Turniermodus oder Gruppen geaendert haben - der weitere Ablauf laedt dann neu. */
+  modusVersion?: number;
 }
 
-export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert, gesperrt = false }: Props) {
+export function SpielplanVerwaltung({
+  turnierId,
+  onGeaendert,
+  onTurnierGeaendert,
+  gesperrt = false,
+  modusVersion = 0,
+}: Props) {
   const [turnier, setTurnier] = useState<Turnier | undefined>();
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [spiele, setSpiele] = useState<Spiel[]>([]);
@@ -920,7 +928,7 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
         gesperrt={gesperrt}
         signatur={spiele
           .map((x) => `${x._id}:${x.status}:${x.ergebnisAbgeschlossen ? 1 : 0}:${x.ergebnisA ?? "-"}:${x.ergebnisB ?? "-"}`)
-          .join("|")}
+          .join("|") + `|m${modusVersion}`}
         onSpieleGeaendert={laden}
       />
     </div>

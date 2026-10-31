@@ -124,6 +124,13 @@ Torball ist eine Mannschaftssportart für blinde und sehbehinderte Menschen. Jed
 | Bundesliga (DE) alternativ | 2 Spieltage, je zwei Runden, Jeder gegen Jeden |
 | Vor- und Hauptrunde | 1 Spieltag, Vorgruppen (ggf. unterschiedlich groß), dann Haupt- und Trostrunde |
 
+**Turniermodi als Vorlagen (31.10.2026, Stufe 1 umgesetzt):** Gruppen, Endrunde und Platzierungsspiele sind als Vorlagen (Daten) umgesetzt; die Zahlen stellt die Turnierleitung je Turnier ein.
+- *Struktur der Vorlage:* Zahl der Gruppen (1 oder 2), erlaubte Endrundengrößen (0, 2, 4, 6, 8), Voreinstellungen, Regel „Endrunde hat gerade Teilnehmerzahl“ (Einstellung der Vorlage). Eingebaut: Jeder gegen Jeden; mit Endrunde; zwei Gruppen mit Endrunde / Kreuzvergleich / nur Platzierungsspiele.
+- *Einstellbar je Turnier:* Mannschaften je Gruppe (ungleich/ungerade erlaubt), Endrundengröße, Spiel um Platz 3, Platzierungsspiele. Das Turnier trägt eine **Kopie** seiner Vorlage, damit es auch auf einer Instanz läuft, die die Vorlage nicht kennt.
+- *Paarungen:* Endrunde 4: 1.A–2.B, 1.B–2.A. Endrunde 6: Viertelfinale 2.A–3.B, 2.B–3.A, Gruppensieger im Halbfinale gesetzt (1.A gegen Sieger 2.A–3.B). Endrunde 8: 1.A–4.B, 2.A–3.B, 1.B–4.A, 2.B–3.A, Halbfinale nach der Gruppenlogik (Sieger VF1–VF2, VF3–VF4). Platzierungsspiele nur als vollständige Paare gleicher Ränge; der Überhang einer größeren Gruppe spielt nicht mit und wird nach der Vorrunde eingeordnet.
+- *Ablauf:* Spiele späterer Runden entstehen erst, wenn die Mannschaften feststehen (Plan mit Platzhaltern vorab, auch öffentlich; Namen erst bei freigegebenen Ergebnissen). Zeiten richten sich nach der Spielzeit; eine Verschiebung wirkt auf abhängige Spiele und das eigene Feld, nicht auf parallele. Gleichstand und Unentschieden entscheidet die Turnierleitung nach der festgelegten Entscheidungsreihenfolge. Rückmeldungen in drei Stufen (Hinweis, Warnung, offene Stelle), nichts blockiert.
+- *Offen (Stufe 2):* Editor und Export/Import eigener Vorlagen (nur Admins; lokal angelegte Vorlagen werden nicht mit dem Server synchronisiert), Endplatzierung, „Meine Spiele“ für Schiedsrichter.
+
 Modi sollen möglichst frei über eine Admin-Funktion pflegbar sein, nicht fest im Code verankert. Weitere, komplexere Varianten (z. B. zusätzliche Finalspiele, Platzierungsspiele gleich platzierter Gruppenteams) sind denkbar, aber nicht als Vorlage für die erste Version erforderlich.
 
 **Wettbewerb über mehrere Spieltage:** Bei der Bundesliga ergeben Hin- und Rückrunde zusammen eine Gesamttabelle (`Wettbewerb`, siehe Abschnitt 20). Jeder Spieltag ist zusätzlich einzeln auswertbar. Die stabile Zuordnung einer Mannschaft über beide Spieltage hinweg erfolgt über die Team-Stammdaten (Abschnitt 15).

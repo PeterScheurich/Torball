@@ -7,6 +7,15 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Neu: Turniermodi mit Gruppen, Endrunde und Platzierungsspielen.** Neben „Jeder gegen Jeden“ gibt es jetzt
+  Turniere mit zwei Gruppen und einer Endrunde mit 2, 4, 6 oder 8 Mannschaften (Halbfinale, Finale, Spiel um Platz 3,
+  Platzierungsspiele, auch als Kreuzvergleich mit Viertelfinale). Die Gruppen dürfen unterschiedlich groß sein. Im
+  Reiter „Spielplan“ steht unter „Weiterer Ablauf“ schon bei der Planung, welches Spiel wann und wo stattfindet – mit
+  Platzhaltern wie „Sieger Halbfinale 1“ – und das auch auf der öffentlichen Seite. Die Spiele der Endrunde werden
+  erzeugt, sobald die Mannschaften feststehen; bei Gleichstand und Unentschieden entscheidet die Turnierleitung.
+  Tabellen gibt es je Gruppe. Die Vorlagen sieht die Administration unter „Admin → Turniermodi“ (eigene Vorlagen
+  folgen).
+
 - **Sicherheit: Windows-Freigabe nur noch fürs eigene Netz.** Die Firewall-Regel der lokalen Windows-Installation
   galt bisher für jede Adresse – sie beschränkt sich jetzt wirklich auf das eigene Netzwerk. Wer „Setup.cmd“ erneut
   ausführt, bekommt die engere Regel. Außerdem weisen Installer und Netzwerk-Anleitung deutlicher darauf hin, dass
