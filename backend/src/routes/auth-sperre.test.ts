@@ -15,7 +15,9 @@ const hatCouchDbKonfiguration =
   !!process.env.COUCHDB_PASSWORD;
 
 const TEST_PASSWORT = "TestPasswort!42";
-const NEUES_PASSWORT = "NeuesPasswort!99";
+// Muss die Passwortregeln erfuellen (12+ Zeichen, keine haeufige Folge wie "passwort") - seit der
+// Umstellung am 2026-08-30 wurde "NeuesPasswort!99" hier zu Recht mit 400 abgelehnt.
+const NEUES_PASSWORT = "Halle-Dienstag-Neu-99";
 
 async function neuerBenutzer(globaleRolle: "admin" | "manager" | "benutzer" = "benutzer") {
   const { insertDoc, newId } = await import("../repository");
