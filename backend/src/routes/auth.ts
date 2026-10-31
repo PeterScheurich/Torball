@@ -8,6 +8,7 @@ import { erstelleSession, loescheSessionPerToken } from "../auth/session";
 import { pruefeTotpCode } from "../auth/totp";
 import { aendereBenutzerAtomar } from "../auth/benutzerAenderung";
 import { inAbkuehlung, registriereFehlversuch } from "../auth/loginZaehler";
+import { ERSTES_KONTO_ID, legeErstesKontoAn } from "../auth/ersteinrichtung";
 import { aktuelleSystemeinstellungen, benachrichtigeNeuenAccount } from "../systemeinstellungen";
 import { SENSIBEL_RATE_LIMIT } from "../rateLimit";
 
@@ -193,11 +194,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       });
       if (verstoss) return reply.code(400).send({ error: verstoss });
 
-      const id = newId("benutzer");
       const benutzer: Benutzer = {
-        _id: id,
+        _id: ERSTES_KONTO_ID,
         docType: "benutzer",
-        benutzerId: id,
+        benutzerId: ERSTES_KONTO_ID,
         email: req.body.email.trim().toLowerCase(),
         passwortHash: await hashePasswort(req.body.passwort),
         name: req.body.name,
@@ -208,7 +208,13 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         gesperrt: false,
         erstelltAm: new Date().toISOString(),
       };
-      const gespeichert = await insertDoc(benutzer);
+      // Atomar: bei zwei gleichzeitigen Anfragen gewinnt genau eine (feste ID, siehe ersteinrichtung.ts).
+      const gespeichert = await legeErstesKontoAn(benutzer);
+      if (!gespeichert) {
+        return reply
+          .code(409)
+          .send({ error: "Es existiert bereits mindestens ein Benutzer - Bootstrap nicht mehr möglich." });
+      }
       return reply.code(201).send(oeffentlichesProfil(gespeichert));
     },
   );

@@ -7,6 +7,10 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Sicherheit: Die Ersteinrichtung kann nicht mehr zwei Administratoren erzeugen.** Wurde sie auf einer frischen
+  Installation von zwei Seiten gleichzeitig abgeschickt, entstanden bisher zwei Admin-Konten. Jetzt gelingt genau eine
+  Anlage, die andere wird abgewiesen.
+
 - **Sicherheit: sensible Aktionen am eigenen Konto verlangen eine erneute Bestätigung.** Wer die
   Zwei-Faktor-Anmeldung abschalten will, gibt jetzt Passwort **und** einen aktuellen Code ein (bisher nur das
   Passwort); bei aktiver 2FA lässt sich der Schlüssel nicht mehr einfach ersetzen. Einen Kopplungscode für eine
