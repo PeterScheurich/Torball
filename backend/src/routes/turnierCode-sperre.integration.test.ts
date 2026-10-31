@@ -55,9 +55,9 @@ async function neuesTurnier(erstelltVon: string): Promise<string> {
 }
 
 async function aufraeumen(ids: string[]) {
-  const { findById, deleteDoc } = await import("../repository");
+  const { findByIdUngeprueft, deleteDoc } = await import("../repository");
   for (const id of ids) {
-    const d = await findById(id);
+    const d = await findByIdUngeprueft(id);
     if (d) await deleteDoc(id, (d as { _rev: string })._rev);
   }
 }

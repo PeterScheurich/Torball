@@ -117,9 +117,31 @@ function turnierDefaults(
   };
 }
 
-/** Fehlende Felder aelterer, vor deren Einfuehrung angelegter Turnier-Dokumente auffuellen. */
-function mitDefaults(turnier: Turnier): Turnier {
-  return { ...turnier, spielplanModus: turnier.spielplanModus ?? "einfach" };
+/**
+ * Entfernt die bcrypt-Hashes der drei Turnier-Codes aus einer Antwort. Sie gehoeren in die
+ * Datenbank (die Code-Anmeldung vergleicht dagegen), aber nie zum Client: Die Codes sind von
+ * Menschen gewaehlt und teils kurz, und ein Leser (Lese-Freigabe, Protokollant-/Spielleitung-Code,
+ * `zugriffFuerAlleBenutzer`) konnte sonst den Hash des Turnierleitung-Codes offline knacken und
+ * hatte danach Vollzugriff (OWASP-Durchgang 2026-10-31). Ob ein Code gesetzt ist, sagt
+ * `GET /turniere/:id/codes` (nur Boolesche Flags). JEDE Antwort, die ein Turnier-Dokument enthaelt,
+ * laeuft deshalb ueber `antwort()`.
+ */
+function ohneCodeHashes(turnier: Turnier): Turnier {
+  const kopie = { ...turnier };
+  delete kopie.turnierleitungCodeHash;
+  delete kopie.spielleitungCodeHash;
+  delete kopie.protokollantCodeHash;
+  return kopie;
+}
+
+/** Antwort-Aufbereitung: fehlende Felder aelterer Turnier-Dokumente auffuellen, Code-Hashes entfernen. */
+function antwort(turnier: Turnier): Turnier {
+  return ohneCodeHashes({ ...turnier, spielplanModus: turnier.spielplanModus ?? "einfach" });
+}
+
+/** Speichert ein Turnier und liefert es in aufbereiteter Form (ohne Code-Hashes) zurueck. */
+async function speichereUndAntworte(turnier: Turnier): Promise<Turnier> {
+  return antwort(await insertDoc(turnier));
 }
 
 /**
@@ -160,7 +182,7 @@ function ohneServerFelder<T extends object>(body: T): T {
 export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   app.get("/turniere", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const alle = (await findAllByType<Turnier>("turnier")).map(mitDefaults);
+    const alle = (await findAllByType<Turnier>("turnier")).map(antwort);
     const zugriffe = await Promise.all(alle.map((t) => hatMindestens(t, req, "lesen")));
     const sichtbar = alle.filter((_, i) => zugriffe[i]);
 
@@ -176,12 +198,12 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{ Params: { id: string } }>("/turniere/:id", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const turnier = await findById<Turnier>(req.params.id);
+    const turnier = await findById<Turnier>(req.params.id, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(turnier, req, "lesen"))) {
       return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
     }
-    return mitDefaults(turnier);
+    return antwort(turnier);
   });
 
   app.post<{ Body: TurnierBody }>(
@@ -227,7 +249,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       };
       await insertDoc(leitung);
 
-      return reply.code(201).send(gespeichert);
+      return reply.code(201).send(antwort(gespeichert));
     },
   );
 
@@ -235,7 +257,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     "/turniere/:id",
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const bestehend = await findById<Turnier>(req.params.id);
+      const bestehend = await findById<Turnier>(req.params.id, "turnier");
       if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
       if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -254,6 +276,20 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         if (unerlaubt.length > 0) {
           return reply.code(409).send({
             error: "Turnier ist abgeschlossen. Zum Bearbeiten zuerst wieder öffnen (nur die Öffentlich-Freigabe ist änderbar).",
+          });
+        }
+      }
+      // Status per PUT nur zwischen entwurf und aktiv: Abschluss/Archivierung laufen ueber die eigenen
+      // Endpunkte (Vorbedingung "alle Ergebnisse erfasst", Widerruf der Ergebnis-Token). Der Kommentar
+      // bei NUR_SERVER_FELDER versprach das, durchgesetzt wurde es nicht - `status: "abgeschlossen"`
+      // im Body umging beides (OWASP-Durchgang 2026-10-31).
+      const gewuenschterStatus = (req.body as { status?: unknown }).status;
+      if (gewuenschterStatus !== undefined && gewuenschterStatus !== bestehend.status) {
+        const frei = ["entwurf", "aktiv"];
+        if (!frei.includes(String(gewuenschterStatus)) || !frei.includes(bestehend.status)) {
+          return reply.code(400).send({
+            error:
+              "Den Status „abgeschlossen“ oder „archiviert“ gibt es nur über „Turnier abschließen“ bzw. „Wieder öffnen“.",
           });
         }
       }
@@ -280,7 +316,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         zuletztBearbeitetVon: zuschreiber.benutzerId,
         zuletztBearbeitetVonName: zuschreiber.name,
       };
-      return insertDoc(aktualisiert);
+      return speichereUndAntworte(aktualisiert);
     },
   );
 
@@ -295,7 +331,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     neuerStatus: TurnierStatus,
   ) {
     if (!requireZugriff(req, reply)) return;
-    const bestehend = await findById<Turnier>(req.params.id);
+    const bestehend = await findById<Turnier>(req.params.id, "turnier");
     if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -306,7 +342,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     // Wiederoeffnen zaehlt als Bearbeitung; die Abschluss-Metadaten werden dabei zurueckgesetzt
     // (bei erneutem Abschliessen neu gesetzt).
     const zuschreiber = zuschreibung(req);
-    return insertDoc({
+    return speichereUndAntworte({
       ...bestehend,
       status: neuerStatus,
       geaendertAm: new Date().toISOString(),
@@ -324,7 +360,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   // immer ein konsistenter Endstand. Schreibzugriff noetig (= Turnierleitung/Verwalter).
   app.post<{ Params: { id: string } }>("/turniere/:id/abschliessen", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const bestehend = await findById<Turnier>(req.params.id);
+    const bestehend = await findById<Turnier>(req.params.id, "turnier");
     if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -362,7 +398,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
 
     const jetzt = new Date().toISOString();
     const zuschreiber = zuschreibung(req);
-    return insertDoc({
+    return speichereUndAntworte({
       ...bestehend,
       status: "abgeschlossen",
       geaendertAm: jetzt,
@@ -383,7 +419,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   // Funktion angelegt (siehe Datenimport-Spec).
   app.post<{ Params: { id: string } }>("/turniere/:id/regeln-entsperren", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const bestehend = await findById<Turnier>(req.params.id);
+    const bestehend = await findById<Turnier>(req.params.id, "turnier");
     if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -392,7 +428,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });
     }
     const zuschreiber = zuschreibung(req);
-    return insertDoc({
+    return speichereUndAntworte({
       ...bestehend,
       regelnGesperrt: false,
       geaendertAm: new Date().toISOString(),
@@ -423,7 +459,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     },
     async (req, reply) => {
       if (!requireRolle(req, reply, ["admin", "manager"])) return;
-      const basis = await findById<Turnier>(req.params.id);
+      const basis = await findById<Turnier>(req.params.id, "turnier");
       if (!basis) return reply.code(404).send({ error: "Vorgänger-Turnier nicht gefunden" });
       if (!(await hatMindestens(basis, req, "lesen"))) {
         return reply.code(403).send({ error: "Kein Zugriff auf das Vorgänger-Turnier" });
@@ -499,6 +535,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         // ungewollt Zugriff auf den neuen. Muss die Turnierleitung bewusst neu vergeben.
         turnierleitungCodeHash: undefined,
         spielleitungCodeHash: undefined,
+        protokollantCodeHash: undefined,
         // Ebenso keinen Sync-Checkout vom Vorgaenger erben - das abgeleitete Turnier ist neu
         // entstanden und war nie selbst ausgecheckt; sonst wuerde der periodische Check-in
         // (backend/src/sync/checkin.ts) Daten dieses Turniers faelschlich unter dem Checkout-
@@ -607,7 +644,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       };
       const mitBasis = await insertDoc({ ...neuesTurnier, spielplanBasis });
 
-      return reply.code(201).send(mitBasis);
+      return reply.code(201).send(antwort(mitBasis));
     },
   );
 
@@ -616,7 +653,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   // schreiben_voll-berechtigte Turnier-Code-Session (Turnierleitung-Code).
   app.delete<{ Params: { id: string } }>("/turniere/:id", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const bestehend = await findById<Turnier>(req.params.id);
+    const bestehend = await findById<Turnier>(req.params.id, "turnier");
     if (!bestehend) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(bestehend, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -700,7 +737,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         await findAllBySelector<Turnier>({ docType: "turnier", wettbewerbId: bestehend.wettbewerbId })
       ).filter((t) => t._id !== bestehend._id);
       if (andereImWettbewerb.length === 0) {
-        const wettbewerb = await findById<Wettbewerb>(bestehend.wettbewerbId);
+        const wettbewerb = await findById<Wettbewerb>(bestehend.wettbewerbId, "wettbewerb");
         if (wettbewerb) await deleteDoc(wettbewerb._id, wettbewerb._rev!);
       }
     }

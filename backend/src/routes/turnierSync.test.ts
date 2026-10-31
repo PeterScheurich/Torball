@@ -82,9 +82,9 @@ async function neuesTurnier(erstelltVon: string) {
 }
 
 async function aufraeumen(ids: string[]) {
-  const { findById, deleteDoc } = await import("../repository");
+  const { findById, findByIdUngeprueft, deleteDoc } = await import("../repository");
   for (const id of ids) {
-    const doc = await findById(id);
+    const doc = await findByIdUngeprueft(id);
     if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
   }
 }
@@ -93,7 +93,7 @@ test(
   "Instanz-Kopplung: gueltiger Code liefert Instanz-Token, Check-in damit erfolgreich, ungueltiger/widerrufener Token liefert 401",
   { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
   async () => {
-    const { insertDoc, findById } = await import("../repository");
+    const { insertDoc, findById, findByIdUngeprueft } = await import("../repository");
     const { erzeugeToken, hashe } = await import("../auth/token");
     const Fastify = (await import("fastify")).default;
     const { instanzSyncRoutes } = await import("./instanzSync");
@@ -103,7 +103,7 @@ test(
 
     const benutzerId = await neuerBenutzer();
     const { token: kopplungscode, hash } = erzeugeToken();
-    const benutzer = await findById<Benutzer>(benutzerId);
+    const benutzer = await findById<Benutzer>(benutzerId, "benutzer");
     await insertDoc({
       ...(benutzer as object),
       instanzKopplungscodeHash: hash,
@@ -124,7 +124,7 @@ test(
       aufzuraeumendeIds.push(instanzId);
 
       // Kopplungscode ist Einmal-Code - der Benutzer sollte ihn nicht mehr tragen.
-      const benutzerNachher = await findById<Benutzer>(benutzerId);
+      const benutzerNachher = await findById<Benutzer>(benutzerId, "benutzer");
       assert.equal(benutzerNachher!.instanzKopplungscodeHash, undefined);
 
       const checkinGueltig = await app.inject({
@@ -145,7 +145,7 @@ test(
       assert.equal(checkinUngueltig.statusCode, 401);
 
       // Widerrufen -> derselbe (vorher gueltige) Token wird abgelehnt.
-      const instanz = await findById<VerbundeneInstanz>(instanzId);
+      const instanz = await findById<VerbundeneInstanz>(instanzId, "verbundeneInstanz");
       await insertDoc({
         ...(instanz as object),
         widerrufen: true,
@@ -170,7 +170,7 @@ test(
   "sammleTurnierExport nimmt Stammdaten nur mit, wenn angefordert",
   { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
   async () => {
-    const { insertDoc, newId, findById, deleteDoc } = await import("../repository");
+    const { insertDoc, newId, findById, findByIdUngeprueft, deleteDoc } = await import("../repository");
     const { sammleTurnierExport } = await import("../sync/export");
 
     const benutzerId = await neuerBenutzer();
@@ -204,7 +204,7 @@ test(
       assert.equal(mitStammdaten.vereine[0]._id, vereinId);
     } finally {
       for (const id of [mannschaftId, vereinId, turnierId, benutzerId]) {
-        const doc = await findById(id);
+        const doc = await findByIdUngeprueft(id);
         if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
       }
     }
@@ -265,7 +265,7 @@ test(
     const Fastify = (await import("fastify")).default;
     const { instanzSyncRoutes } = await import("./instanzSync");
     const { turnierSyncRoutes } = await import("./turnierSync");
-    const { findById, insertDoc, deleteDoc } = await import("../repository");
+    const { findById, findByIdUngeprueft, insertDoc, deleteDoc } = await import("../repository");
     const { findeAktivesCheckout } = await import("../sync/instanz");
 
     const app = Fastify();
@@ -342,7 +342,7 @@ test(
       assert.equal(ersetzenOhneAdmin.statusCode, 403);
 
       // Auf Admin befoerdern -> ersetzen=true jetzt erfolgreich, neues aktives Checkout entsteht.
-      const quellBenutzerAktuell = await findById<Benutzer>(quellBenutzerId);
+      const quellBenutzerAktuell = await findById<Benutzer>(quellBenutzerId, "benutzer");
       await insertDoc({ ...(quellBenutzerAktuell as Benutzer), globaleRolle: "admin" });
       const ersetzenAlsAdmin = await app.inject({
         method: "POST",
@@ -355,7 +355,7 @@ test(
       aufzuraeumendeIds.push(ersetzenAlsAdmin.json().checkoutId);
     } finally {
       for (const id of aufzuraeumendeIds) {
-        const doc = await findById(id);
+        const doc = await findByIdUngeprueft(id);
         if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
       }
       await app.close();
@@ -372,7 +372,7 @@ test(
     const { authPreHandler } = await import("../auth/plugin");
     const { turnierRoutes } = await import("./turnier");
     const { erstelleSession } = await import("../auth/session");
-    const { insertDoc, newId, findById, deleteDoc } = await import("../repository");
+    const { insertDoc, newId, findById, findByIdUngeprueft, deleteDoc } = await import("../repository");
 
     const app = Fastify();
     await app.register(fastifyCookie);
@@ -408,11 +408,11 @@ test(
       assert.equal(versuch.statusCode, 409);
       assert.match(versuch.json().error, /lokalen Installation/);
 
-      const turnierUnveraendert = (await findById(turnierId)) as { name: string };
+      const turnierUnveraendert = (await findByIdUngeprueft(turnierId)) as { name: string };
       assert.equal(turnierUnveraendert.name, "Sync-Test-Turnier");
 
       // Nach Freigabe wieder normal aenderbar.
-      const checkout = await findById(checkoutId);
+      const checkout = await findByIdUngeprueft(checkoutId);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await insertDoc({ ...(checkout as object), status: "freigegeben" } as any);
       const versuchNachFreigabe = await app.inject({
@@ -424,7 +424,7 @@ test(
       assert.equal(versuchNachFreigabe.statusCode, 200);
     } finally {
       for (const id of aufzuraeumendeIds) {
-        const doc = await findById(id);
+        const doc = await findByIdUngeprueft(id);
         if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
       }
       await app.close();
@@ -459,7 +459,7 @@ test(
   async () => {
     const Fastify = (await import("fastify")).default;
     const { instanzSyncRoutes } = await import("./instanzSync");
-    const { findById, insertDoc, deleteDoc, newId } = await import("../repository");
+    const { findById, findByIdUngeprueft, insertDoc, deleteDoc, newId } = await import("../repository");
 
     const app = Fastify();
     await app.register(instanzSyncRoutes);
@@ -484,7 +484,7 @@ test(
 
     const aufzuraeumendeIds = [benutzerId, turnierId, fremdesTurnierId, erstelleInstanz.instanzId, checkoutId];
     try {
-      const bestehendesTurnier = await findById(turnierId);
+      const bestehendesTurnier = await findByIdUngeprueft(turnierId);
       const geaendertesExportPaket = {
         turnier: { ...(bestehendesTurnier as object), name: "Nach Check-in umbenannt", spielzeitMinuten: 7 },
         mannschaften: [],
@@ -517,15 +517,15 @@ test(
       });
       assert.equal(checkin.statusCode, 200);
 
-      const turnierNachher = (await findById(turnierId)) as { name: string; spielzeitMinuten: number };
+      const turnierNachher = (await findByIdUngeprueft(turnierId)) as { name: string; spielzeitMinuten: number };
       assert.equal(turnierNachher.name, "Nach Check-in umbenannt");
       assert.equal(turnierNachher.spielzeitMinuten, 7);
 
-      const fremdesTurnierNachher = (await findById(fremdesTurnierId)) as { name: string };
+      const fremdesTurnierNachher = (await findByIdUngeprueft(fremdesTurnierId)) as { name: string };
       assert.equal(fremdesTurnierNachher.name, "Sync-Test-Turnier", "unveraendert, da kein aktiver Checkout");
     } finally {
       for (const id of aufzuraeumendeIds) {
-        const doc = await findById(id);
+        const doc = await findByIdUngeprueft(id);
         if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
       }
       await app.close();
@@ -542,7 +542,7 @@ test(
     const { authPreHandler } = await import("../auth/plugin");
     const { turnierSyncRoutes } = await import("./turnierSync");
     const { erstelleSession } = await import("../auth/session");
-    const { insertDoc, newId, findById, deleteDoc } = await import("../repository");
+    const { insertDoc, newId, findById, findByIdUngeprueft, deleteDoc } = await import("../repository");
 
     const app = Fastify();
     await app.register(fastifyCookie);
@@ -608,7 +608,7 @@ test(
       assert.equal(statusDanach.json().ausgecheckt, false);
     } finally {
       for (const id of aufzuraeumendeIds) {
-        const doc = await findById(id);
+        const doc = await findByIdUngeprueft(id);
         if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
       }
       await app.close();

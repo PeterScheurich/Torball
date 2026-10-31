@@ -12,7 +12,7 @@ import { findById, insertDoc } from "../repository";
  */
 export async function markiereTurnierBearbeitet(turnierId: string, benutzer: Benutzer | undefined): Promise<void> {
   try {
-    const turnier = await findById<Turnier>(turnierId);
+    const turnier = await findById<Turnier>(turnierId, "turnier");
     if (!turnier) return;
     await insertDoc<Turnier>({
       ...turnier,

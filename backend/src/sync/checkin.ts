@@ -78,7 +78,7 @@ async function fuehreCheckinAus(logger: FastifyBaseLogger): Promise<void> {
 
   for (const download of body.ausstehendeDownloads) {
     await importiereTurnierExport(download.export, { ersetzen: false });
-    const importiertesTurnier = await findById<Turnier>(download.turnierId);
+    const importiertesTurnier = await findById<Turnier>(download.turnierId, "turnier");
     if (importiertesTurnier) {
       await insertDoc({ ...importiertesTurnier, lokalerSyncCheckoutId: download.checkoutId });
     }

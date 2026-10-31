@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import type { Turnier } from "@torball/shared";
-import { findById, insertDoc } from "../repository";
+import type { Turnier, TurnierCodeSession } from "@torball/shared";
+import { deleteDoc, findAllBySelector, findById, insertDoc } from "../repository";
 import { requireZugriff, setzeSessionCookie } from "../auth/plugin";
 import { hatMindestens, turnierAusgecheckt, TURNIER_AUSGECHECKT_FEHLER } from "../auth/turnierZugriff";
 import { hashePasswort, passwortStimmt } from "../auth/passwort";
@@ -26,9 +26,12 @@ const codesSetzenSchema = {
   properties: {
     // null loescht den jeweiligen Code (Konvention siehe CLAUDE.md: null statt undefined, damit
     // JSON.stringify das Feld nicht komplett aus dem Body fallen laesst).
-    turnierleitungCode: { type: ["string", "null"] },
-    spielleitungCode: { type: ["string", "null"] },
-    protokollantCode: { type: ["string", "null"] },
+    // Mindestlaenge 6: Ein Code wie "1234" haelt auch das Rate-Limit nicht auf (und das laesst sich im
+    // LAN umgehen); der Hash wird bcrypt-gespeichert, aber ein kurzer Code ist trotzdem schnell erraten.
+    // Gilt nur fuer NEU gesetzte Codes - bestehende bleiben gueltig (OWASP-Durchgang 2026-10-31).
+    turnierleitungCode: { type: ["string", "null"], minLength: 6 },
+    spielleitungCode: { type: ["string", "null"], minLength: 6 },
+    protokollantCode: { type: ["string", "null"], minLength: 6 },
   },
 } as const;
 
@@ -51,7 +54,7 @@ export async function turnierCodeRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: codesSetzenSchema } },
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const turnier = await findById<Turnier>(req.params.id);
+      const turnier = await findById<Turnier>(req.params.id, "turnier");
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
       if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -87,6 +90,25 @@ export async function turnierCodeRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const gespeichert = await insertDoc({ ...turnier, ...patch });
+
+      // Sitzungen beenden, die mit dem alten Code angemeldet wurden: Die Rolle steckt in der Sitzung
+      // (12 h gleitend), ein Wechsel oder das Loeschen des Codes aenderte daran bisher nichts - wer
+      // einen durchgesickerten Code ersetzte, blieb mit dem Alt-Inhaber trotzdem angemeldet.
+      const geaenderteRollen: Array<[string, "turnierleitung" | "spielleitung" | "protokollant"]> = [
+        ["turnierleitungCode", "turnierleitung"],
+        ["spielleitungCode", "spielleitung"],
+        ["protokollantCode", "protokollant"],
+      ];
+      for (const [feld, rolle] of geaenderteRollen) {
+        if (!(feld in req.body)) continue;
+        const sitzungen = await findAllBySelector<TurnierCodeSession>({
+          docType: "session",
+          sessionArt: "code",
+          turnierId: turnier._id,
+          rolle,
+        });
+        for (const sitzung of sitzungen) await deleteDoc(sitzung._id, sitzung._rev!);
+      }
       // Nie die Hashes an den Client zurueckgeben - nur, ob ein Code jeweils aktiv ist.
       return {
         turnierleitungCodeAktiv: Boolean(gespeichert.turnierleitungCodeHash),
@@ -98,7 +120,7 @@ export async function turnierCodeRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{ Params: { id: string } }>("/turniere/:id/codes", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const turnier = await findById<Turnier>(req.params.id);
+    const turnier = await findById<Turnier>(req.params.id, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -117,7 +139,7 @@ export async function turnierCodeRoutes(app: FastifyInstance): Promise<void> {
     "/turniere/:id/code-anmeldung",
     { schema: { body: codeAnmeldungSchema }, config: { rateLimit: CODE_ANMELDUNG_RATE_LIMIT } },
     async (req, reply) => {
-      const turnier = await findById<Turnier>(req.params.id);
+      const turnier = await findById<Turnier>(req.params.id, "turnier");
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
 
       const passtTurnierleitung =
@@ -147,7 +169,7 @@ export async function turnierCodeRoutes(app: FastifyInstance): Promise<void> {
    *  gesetzt. 401 wenn keine Code-Session aktiv ist, analog zu /auth/me. */
   app.get("/turnier-code/me", async (req, reply) => {
     if (!req.turnierCode) return reply.code(401).send({ error: "Nicht per Turnier-Code angemeldet" });
-    const turnier = await findById<Turnier>(req.turnierCode.turnierId);
+    const turnier = await findById<Turnier>(req.turnierCode.turnierId, "turnier");
     if (!turnier) return reply.code(401).send({ error: "Nicht per Turnier-Code angemeldet" });
     return { turnierId: turnier._id, turnierName: turnier.name, rolle: req.turnierCode.rolle };
   });

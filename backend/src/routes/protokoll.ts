@@ -130,13 +130,13 @@ async function ladeSchreibKontext(
   protokollId: string,
   reply: FastifyReply,
 ): Promise<{ protokoll: Spielprotokoll; spiel: Spiel; turnier: Turnier } | null> {
-  const protokoll = await findById<Spielprotokoll>(protokollId);
+  const protokoll = await findById<Spielprotokoll>(protokollId, "spielprotokoll");
   if (!protokoll) {
     reply.code(404).send({ error: "Protokoll nicht gefunden" });
     return null;
   }
-  const spiel = await findById<Spiel>(protokoll.spielId);
-  const turnier = spiel ? await findById<Turnier>(spiel.turnierId) : null;
+  const spiel = await findById<Spiel>(protokoll.spielId, "spiel");
+  const turnier = spiel ? await findById<Turnier>(spiel.turnierId, "turnier") : null;
   if (!spiel || !turnier) {
     reply.code(404).send({ error: "Zugehöriges Spiel oder Turnier nicht gefunden" });
     return null;
@@ -160,9 +160,9 @@ export async function protokollRoutes(app: FastifyInstance): Promise<void> {
   /** Protokoll + vollstaendiger Event-Strom eines Spiels (auch fuer die reine Ansicht). */
   app.get<{ Params: { spielId: string } }>("/spiele/:spielId/protokoll", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const spiel = await findById<Spiel>(req.params.spielId);
+    const spiel = await findById<Spiel>(req.params.spielId, "spiel");
     if (!spiel) return reply.code(404).send({ error: "Spiel nicht gefunden" });
-    const turnier = await findById<Turnier>(spiel.turnierId);
+    const turnier = await findById<Turnier>(spiel.turnierId, "turnier");
     if (!turnier || !(await hatMindestens(turnier, req, "lesen"))) {
       return reply.code(403).send({ error: "Kein Zugriff auf das zugehörige Turnier" });
     }
@@ -184,7 +184,7 @@ export async function protokollRoutes(app: FastifyInstance): Promise<void> {
    */
   app.get<{ Params: { id: string } }>("/turniere/:id/spielprotokolle", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const turnier = await findById<Turnier>(req.params.id);
+    const turnier = await findById<Turnier>(req.params.id, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(turnier, req, "lesen"))) {
       return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
@@ -202,9 +202,9 @@ export async function protokollRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: protokollAnlegenSchema } },
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const spiel = await findById<Spiel>(req.params.spielId);
+      const spiel = await findById<Spiel>(req.params.spielId, "spiel");
       if (!spiel) return reply.code(404).send({ error: "Spiel nicht gefunden" });
-      const turnier = await findById<Turnier>(spiel.turnierId);
+      const turnier = await findById<Turnier>(spiel.turnierId, "turnier");
       if (!turnier || !(await darfProtokollieren(turnier, req))) {
         return reply.code(403).send({ error: "Kein Protokoll-Zugriff auf das zugehörige Turnier" });
       }

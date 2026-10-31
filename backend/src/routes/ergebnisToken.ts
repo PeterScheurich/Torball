@@ -30,7 +30,7 @@ export async function ergebnisTokenRoutes(app: FastifyInstance): Promise<void> {
   // Widerrufen des Links bleibt dagegen der Turnierleitung vorbehalten (siehe unten).
   app.get<{ Params: { id: string } }>("/turniere/:id/ergebnis-token", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const turnier = await findById<Turnier>(req.params.id);
+    const turnier = await findById<Turnier>(req.params.id, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(turnier, req, "schreiben_spielbetrieb"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -42,7 +42,7 @@ export async function ergebnisTokenRoutes(app: FastifyInstance): Promise<void> {
   /** Erzeugt einen neuen Token; ein zuvor aktiver Token fuer dieses Turnier wird automatisch widerrufen. */
   app.post<{ Params: { id: string } }>("/turniere/:id/ergebnis-token", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const turnier = await findById<Turnier>(req.params.id);
+    const turnier = await findById<Turnier>(req.params.id, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -70,7 +70,7 @@ export async function ergebnisTokenRoutes(app: FastifyInstance): Promise<void> {
 
   app.post<{ Params: { id: string } }>("/turniere/:id/ergebnis-token/widerrufen", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const turnier = await findById<Turnier>(req.params.id);
+    const turnier = await findById<Turnier>(req.params.id, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -93,7 +93,7 @@ export async function ergebnisTokenRoutes(app: FastifyInstance): Promise<void> {
     const token = tokens[0];
     if (!token) return reply.code(404).send({ error: "Link ist ungültig oder wurde widerrufen." });
 
-    const turnier = await findById<Turnier>(token.turnierId);
+    const turnier = await findById<Turnier>(token.turnierId, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
 
     const [mannschaften, spiele] = await Promise.all([
@@ -147,7 +147,7 @@ export async function ergebnisTokenRoutes(app: FastifyInstance): Promise<void> {
       const token = tokens[0];
       if (!token) return reply.code(404).send({ error: "Link ist ungültig oder wurde widerrufen." });
 
-      const spiel = await findById<Spiel>(req.params.spielId);
+      const spiel = await findById<Spiel>(req.params.spielId, "spiel");
       if (!spiel || spiel.turnierId !== token.turnierId) {
         return reply.code(404).send({ error: "Spiel nicht gefunden" });
       }

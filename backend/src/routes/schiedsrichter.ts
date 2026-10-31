@@ -95,7 +95,7 @@ async function ladeTurnierMitZugriff(
   req: FastifyRequest,
   reply: FastifyReply,
 ): Promise<Turnier | undefined> {
-  const turnier = await findById<Turnier>(turnierId);
+  const turnier = await findById<Turnier>(turnierId, "turnier");
   if (!turnier) {
     reply.code(404).send({ error: "Turnier nicht gefunden" });
     return undefined;
@@ -122,7 +122,7 @@ async function ladeSchiedsrichterMitZugriff(
   req: FastifyRequest,
   reply: FastifyReply,
 ): Promise<SchiedsrichterImTurnier | undefined> {
-  const schiedsrichter = await findById<SchiedsrichterImTurnier>(id);
+  const schiedsrichter = await findById<SchiedsrichterImTurnier>(id, "schiedsrichterImTurnier");
   if (!schiedsrichter) {
     reply.code(404).send({ error: "Schiedsrichter nicht gefunden" });
     return undefined;

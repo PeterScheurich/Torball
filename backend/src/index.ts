@@ -1,10 +1,12 @@
 import path from "node:path";
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import fastifyCookie from "@fastify/cookie";
 import fastifyStatic from "@fastify/static";
 import fastifyRateLimit from "@fastify/rate-limit";
 import { authPreHandler } from "./auth/plugin";
 import { ermittleTrustProxy, GLOBAL_RATE_LIMIT } from "./rateLimit";
+import { schwaerzeTokens } from "./logSchutz";
+import { zentralerFehlerHandler } from "./fehlerBehandlung";
 import { sicherheitsHeaderHook } from "./sicherheitsHeader";
 import { ensureIndexes } from "./db";
 import { authRoutes } from "./routes/auth";
@@ -67,25 +69,26 @@ const serveFrontend = process.env.SERVE_FRONTEND === "true";
 // Protokollierung zusaetzlich in eine Datei, wenn LOG_DATEI gesetzt ist (Windows-Installation) -
 // sonst wie bisher nur auf die Konsole (Debian: systemd faengt das im Journal auf).
 const logAusgabe = logZiel();
+// Anfrage-Protokoll: wie Fastifys Standard, aber mit geschwaerzten Tokens in der URL (logSchutz.ts).
+const logOptionen = {
+  serializers: {
+    req(req: FastifyRequest) {
+      return {
+        method: req.method,
+        url: schwaerzeTokens(req.url),
+        host: req.host,
+        remoteAddress: req.ip,
+        remotePort: req.socket?.remotePort,
+      };
+    },
+  },
+};
 const server = Fastify({
-  logger: logAusgabe ? { stream: logAusgabe } : true,
+  logger: logAusgabe ? { ...logOptionen, stream: logAusgabe } : logOptionen,
   trustProxy: ermittleTrustProxy(),
 });
 
-// Uebersetzt einen unbehandelten CouchDB-Versionskonflikt (409 - tritt auf, wenn zwei Anfragen
-// nahezu gleichzeitig dasselbe Dokument aendern, z.B. eine Ergebniserfassung intern UND parallel
-// ueber den externen Erfassungslink) in eine verstaendliche deutsche Meldung, statt die rohe
-// CouchDB-Antwort ("Conflict"/"Document update conflict.") an den Client durchzureichen - fiel
-// beim Systemtest 2026-08-14 auf der Token-Erfassungsseite auf, die dieses Wort unuebersetzt
-// angezeigt haette. Alle anderen Fehler unveraendert weiterreichen (Fastifys eigenes Verhalten).
-server.setErrorHandler((error, _req, reply) => {
-  if ((error as { statusCode?: number }).statusCode === 409) {
-    return reply.code(409).send({
-      error: "Das wurde soeben von anderer Stelle geändert. Bitte neu laden und erneut versuchen.",
-    });
-  }
-  reply.send(error);
-});
+server.setErrorHandler(zentralerFehlerHandler);
 
 // Schlanker Health-Check (z.B. fuer Monitoring/Reverse-Proxy), ohne Anmeldung.
 server.get("/health", async () => {

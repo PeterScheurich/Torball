@@ -41,7 +41,7 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: ergebnisSchema } },
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const spiel = await findById<Spiel>(req.params.id);
+      const spiel = await findById<Spiel>(req.params.id, "spiel");
       if (!spiel) return reply.code(404).send({ error: "Spiel nicht gefunden" });
       if (!(await pruefeSpielZugriff(spiel, req, reply, "schreiben_spielbetrieb"))) return;
 
@@ -59,7 +59,7 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
   /** Einzelnes Spiel abschliessen (Abschnitt 14: "einzeln ... abschliessen"). */
   app.put<{ Params: { id: string } }>("/spiele/:id/abschliessen", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const spiel = await findById<Spiel>(req.params.id);
+    const spiel = await findById<Spiel>(req.params.id, "spiel");
     if (!spiel) return reply.code(404).send({ error: "Spiel nicht gefunden" });
     if (!(await pruefeSpielZugriff(spiel, req, reply, "schreiben_spielbetrieb"))) return;
     if (spiel.ergebnisA == null || spiel.ergebnisB == null) {
@@ -71,7 +71,7 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
   /** Alle Spiele mit erfasstem Ergebnis auf einmal abschliessen (Abschnitt 14: "... oder gesammelt (Turnier)"). */
   app.put<{ Params: { turnierId: string } }>("/turniere/:turnierId/spiele/abschliessen", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const turnier = await findById<Turnier>(req.params.turnierId);
+    const turnier = await findById<Turnier>(req.params.turnierId, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(turnier, req, "schreiben_spielbetrieb"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -95,7 +95,7 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{ Params: { id: string } }>("/turniere/:id/tabelle", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const turnier = await findById<Turnier>(req.params.id);
+    const turnier = await findById<Turnier>(req.params.id, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(turnier, req, "lesen"))) {
       return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });

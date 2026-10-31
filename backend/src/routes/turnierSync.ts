@@ -44,13 +44,13 @@ export async function turnierSyncRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: downloadAnfordernSchema } },
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const turnier = await findById<Turnier>(req.params.id);
+      const turnier = await findById<Turnier>(req.params.id, "turnier");
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
       if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
       }
 
-      const instanz = await findById<VerbundeneInstanz>(req.body.instanzId);
+      const instanz = await findById<VerbundeneInstanz>(req.body.instanzId, "verbundeneInstanz");
       if (!instanz || instanz.widerrufen || !req.benutzer || instanz.benutzerId !== req.benutzer._id) {
         return reply.code(404).send({ error: "Verbundene Instanz nicht gefunden" });
       }
@@ -77,7 +77,7 @@ export async function turnierSyncRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{ Params: { id: string } }>("/turniere/:id/checkout-status", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const turnier = await findById<Turnier>(req.params.id);
+    const turnier = await findById<Turnier>(req.params.id, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(turnier, req, "lesen"))) {
       return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
@@ -85,7 +85,7 @@ export async function turnierSyncRoutes(app: FastifyInstance): Promise<void> {
 
     const checkout = await findeAktivesCheckout(turnier._id);
     if (!checkout) return { ausgecheckt: false };
-    const instanz = await findById<VerbundeneInstanz>(checkout.instanzId);
+    const instanz = await findById<VerbundeneInstanz>(checkout.instanzId, "verbundeneInstanz");
     return {
       ausgecheckt: true,
       status: checkout.status,
@@ -96,7 +96,7 @@ export async function turnierSyncRoutes(app: FastifyInstance): Promise<void> {
 
   app.post<{ Params: { id: string } }>("/turniere/:id/checkout-freigeben", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const turnier = await findById<Turnier>(req.params.id);
+    const turnier = await findById<Turnier>(req.params.id, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -115,7 +115,7 @@ export async function turnierSyncRoutes(app: FastifyInstance): Promise<void> {
     "/turniere/:id/sync-upload",
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const turnier = await findById<Turnier>(req.params.id);
+      const turnier = await findById<Turnier>(req.params.id, "turnier");
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
       if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -169,7 +169,7 @@ export async function turnierSyncRoutes(app: FastifyInstance): Promise<void> {
     if (paketFehler) return reply.code(400).send({ error: `Ungültiges Turnier-Exportpaket: ${paketFehler}` });
 
     const turnierId = paket.turnier._id;
-    const bestehendesTurnier = await findById<Turnier>(turnierId);
+    const bestehendesTurnier = await findById<Turnier>(turnierId, "turnier");
 
     if (bestehendesTurnier) {
       if (!req.body.ersetzen) {
@@ -178,7 +178,7 @@ export async function turnierSyncRoutes(app: FastifyInstance): Promise<void> {
       if (await findeAktivesCheckout(turnierId)) {
         return reply.code(409).send({ error: "Turnier wird gerade aktiv verwaltet - zuerst Freigabe aufheben." });
       }
-      const instanzBenutzer = await findById<Benutzer>(instanz.benutzerId);
+      const instanzBenutzer = await findById<Benutzer>(instanz.benutzerId, "benutzer");
       if (!instanzBenutzer || instanzBenutzer.globaleRolle !== "admin") {
         return reply.code(403).send({ error: "Nur ein Admin darf ein bestehendes Turnier auf diese Weise ersetzen." });
       }

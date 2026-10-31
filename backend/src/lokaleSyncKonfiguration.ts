@@ -6,5 +6,5 @@ import { findById } from "./repository";
 export const LOKALE_SYNC_KONFIGURATION_ID = "lokaleSyncKonfiguration:global";
 
 export async function aktuelleLokaleSyncKonfiguration(): Promise<LokaleSyncKonfiguration | null> {
-  return findById<LokaleSyncKonfiguration>(LOKALE_SYNC_KONFIGURATION_ID);
+  return findById<LokaleSyncKonfiguration>(LOKALE_SYNC_KONFIGURATION_ID, "lokaleSyncKonfiguration");
 }

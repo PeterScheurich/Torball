@@ -17,7 +17,7 @@ export const STANDARD_SYSTEMEINSTELLUNGEN: Systemeinstellungen = {
 /** Die aktuell gueltigen Systemeinstellungen; Fallback auf die Standardwerte, solange noch
  *  keine gespeichert wurden (frische Installation). */
 export async function aktuelleSystemeinstellungen(): Promise<Systemeinstellungen> {
-  const doc = await findById<Systemeinstellungen>(SYSTEMEINSTELLUNGEN_ID);
+  const doc = await findById<Systemeinstellungen>(SYSTEMEINSTELLUNGEN_ID, "systemeinstellungen");
   return doc ?? STANDARD_SYSTEMEINSTELLUNGEN;
 }
 

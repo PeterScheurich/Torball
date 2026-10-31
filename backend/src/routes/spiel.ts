@@ -77,7 +77,7 @@ export async function pruefeSpielZugriff(
   reply: FastifyReply,
   mindestens: Zugriffsstufe,
 ): Promise<boolean> {
-  const turnier = await findById<Turnier>(spiel.turnierId);
+  const turnier = await findById<Turnier>(spiel.turnierId, "turnier");
   if (!turnier || !(await hatMindestens(turnier, req, mindestens))) {
     reply.code(403).send({ error: "Kein Zugriff auf das zugehörige Turnier" });
     return false;
@@ -98,7 +98,7 @@ export async function pruefeSpielZugriff(
 export async function spielRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { turnierId: string } }>("/turniere/:turnierId/spiele", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const turnier = await findById<Turnier>(req.params.turnierId);
+    const turnier = await findById<Turnier>(req.params.turnierId, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(turnier, req, "lesen"))) {
       return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
@@ -108,7 +108,7 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{ Params: { id: string } }>("/spiele/:id", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const spiel = await findById<Spiel>(req.params.id);
+    const spiel = await findById<Spiel>(req.params.id, "spiel");
     if (!spiel) return reply.code(404).send({ error: "Spiel nicht gefunden" });
     if (!(await pruefeSpielZugriff(spiel, req, reply, "lesen"))) return;
     return spiel;
@@ -119,7 +119,7 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: spielAnpassungSchema } },
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const bestehend = await findById<Spiel>(req.params.id);
+      const bestehend = await findById<Spiel>(req.params.id, "spiel");
       if (!bestehend) return reply.code(404).send({ error: "Spiel nicht gefunden" });
       if (!(await pruefeSpielZugriff(bestehend, req, reply, "schreiben_spielbetrieb"))) return;
       const aktualisiert: Spiel = { ...bestehend, ...ohneFelder(req.body, NUR_SERVER_PUT) };
@@ -141,7 +141,7 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: startzeitSchema } },
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const spiel = await findById<Spiel>(req.params.id);
+      const spiel = await findById<Spiel>(req.params.id, "spiel");
       if (!spiel) return reply.code(404).send({ error: "Spiel nicht gefunden" });
       if (!(await pruefeSpielZugriff(spiel, req, reply, "schreiben_spielbetrieb"))) return;
       if (!spiel.startzeitGeplant) {
@@ -155,7 +155,7 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
       }
       const deltaMs = neueZeit - alteZeit;
 
-      const turnier = await findById<Turnier>(spiel.turnierId);
+      const turnier = await findById<Turnier>(spiel.turnierId, "turnier");
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
 
       const alleSpiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: spiel.turnierId });
@@ -227,7 +227,7 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: reihenfolgeSchema } },
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const turnier = await findById<Turnier>(req.params.turnierId);
+      const turnier = await findById<Turnier>(req.params.turnierId, "turnier");
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
       if (!(await hatMindestens(turnier, req, "schreiben_spielbetrieb"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -282,10 +282,14 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
     "/turniere/:turnierId/schiedsrichter-zuordnung",
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const turnier = await findById<Turnier>(req.params.turnierId);
+      const turnier = await findById<Turnier>(req.params.turnierId, "turnier");
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
       if (!(await hatMindestens(turnier, req, "schreiben_spielbetrieb"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+      }
+      // Fehlte hier, obwohl CLAUDE.md die Sperre fuer alle Schreib-Pfade nennt (OWASP-Durchgang 2026-10-31).
+      if (turnierGesperrt(turnier)) {
+        return reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
       }
       if (await turnierAusgecheckt(turnier._id)) {
         return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });

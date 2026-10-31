@@ -58,9 +58,9 @@ async function neuesTurnier(erstelltVon: string): Promise<string> {
 }
 
 async function aufraeumen(ids: string[]) {
-  const { findById, deleteDoc } = await import("../repository");
+  const { findById, findByIdUngeprueft, deleteDoc } = await import("../repository");
   for (const id of ids) {
-    const doc = await findById(id);
+    const doc = await findByIdUngeprueft(id);
     if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
   }
 }
@@ -74,7 +74,7 @@ test(
     const { authPreHandler } = await import("../auth/plugin");
     const { mannschaftRoutes } = await import("./mannschaft");
     const { erstelleSession } = await import("../auth/session");
-    const { findById } = await import("../repository");
+    const { findById, findByIdUngeprueft } = await import("../repository");
 
     const app = Fastify();
     await app.register(fastifyCookie);
@@ -113,7 +113,7 @@ test(
       assert.equal(typeof m.reihenfolge, "number");
 
       // Kern des Fixes: KEIN Fremd-Dokument unter der injizierten _id angelegt.
-      const fremd = await findById(fremdeId);
+      const fremd = await findByIdUngeprueft(fremdeId);
       assert.equal(fremd, null, "unter der injizierten _id darf nichts existieren");
     } finally {
       await aufraeumen([mannschaftId, fremdeId, turnierId, adminId].filter(Boolean) as string[]);
@@ -131,7 +131,7 @@ test(
     const { authPreHandler } = await import("../auth/plugin");
     const { vereinRoutes } = await import("./verein");
     const { erstelleSession } = await import("../auth/session");
-    const { findById } = await import("../repository");
+    const { findById, findByIdUngeprueft } = await import("../repository");
 
     const app = Fastify();
     await app.register(fastifyCookie);
@@ -156,7 +156,7 @@ test(
       vereinId = v._id;
       assert.ok(v._id.startsWith("verein:"));
       assert.equal(v.docType, "verein");
-      assert.equal(await findById(fremdeId), null);
+      assert.equal(await findByIdUngeprueft(fremdeId), null);
     } finally {
       await aufraeumen([vereinId, fremdeId, adminId].filter(Boolean) as string[]);
       await app.close();
@@ -173,7 +173,7 @@ test(
     const { authPreHandler } = await import("../auth/plugin");
     const { benutzerRoutes } = await import("./benutzer");
     const { erstelleSession } = await import("../auth/session");
-    const { findById } = await import("../repository");
+    const { findById, findByIdUngeprueft } = await import("../repository");
 
     const app = Fastify();
     await app.register(fastifyCookie);
@@ -186,7 +186,7 @@ test(
     const cookie = `torball_session=${token}`;
 
     try {
-      const vorher = await findById<Benutzer>(zielId);
+      const vorher = await findById<Benutzer>(zielId, "benutzer");
       const hashVorher = vorher!.passwortHash;
 
       const antwort = await app.inject({
@@ -202,7 +202,7 @@ test(
       });
       assert.equal(antwort.statusCode, 200);
 
-      const nachher = await findById<Benutzer>(zielId);
+      const nachher = await findById<Benutzer>(zielId, "benutzer");
       // Regression: erlaubtes Feld (name) wurde übernommen.
       assert.equal(nachher!.name, "Neuer Name");
       // Kern des Fixes: sensible Felder NICHT injiziert.

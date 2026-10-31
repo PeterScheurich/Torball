@@ -20,7 +20,7 @@ const NUR_SERVER_PUT = [...IDENTITAETS_FELDER, "spielerId", "mannschaftId"] as c
 
 /** Turnier eines Spielers ueber seine Mannschaft ermitteln (fuer die Bearbeitet-Markierung). */
 async function turnierIdVonMannschaft(mannschaftId: string): Promise<string | undefined> {
-  return (await findById<MannschaftImTurnier>(mannschaftId))?.turnierId;
+  return (await findById<MannschaftImTurnier>(mannschaftId, "mannschaftImTurnier"))?.turnierId;
 }
 
 // CRUD fuer Spieler/Kader. Spieler haengen an der MANNSCHAFT (mannschaftId), nicht direkt am
@@ -84,12 +84,12 @@ async function ladeMannschaftMitZugriff(
   req: FastifyRequest,
   reply: FastifyReply,
 ): Promise<MannschaftImTurnier | undefined> {
-  const mannschaft = await findById<MannschaftImTurnier>(mannschaftId);
+  const mannschaft = await findById<MannschaftImTurnier>(mannschaftId, "mannschaftImTurnier");
   if (!mannschaft) {
     reply.code(404).send({ error: "Mannschaft nicht gefunden" });
     return undefined;
   }
-  const turnier = await findById<Turnier>(mannschaft.turnierId);
+  const turnier = await findById<Turnier>(mannschaft.turnierId, "turnier");
   if (!turnier || !(await hatMindestens(turnier, req, stufe))) {
     reply.code(403).send({ error: "Kein Zugriff auf das zugehörige Turnier" });
     return undefined;
@@ -114,7 +114,7 @@ async function ladeSpielerMitZugriff(
   req: FastifyRequest,
   reply: FastifyReply,
 ): Promise<Spieler | undefined> {
-  const spieler = await findById<Spieler>(id);
+  const spieler = await findById<Spieler>(id, "spieler");
   if (!spieler) {
     reply.code(404).send({ error: "Spieler nicht gefunden" });
     return undefined;

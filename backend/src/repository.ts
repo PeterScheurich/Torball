@@ -48,11 +48,27 @@ export async function findAllBySelector<T extends TorballDokument>(
   return findeAlleSeiten<T>(selector);
 }
 
-/** Einzelnes Dokument per ID; null (statt Fehler), wenn es nicht existiert. */
-export async function findById<T extends TorballDokument>(id: string): Promise<T | null> {
+/**
+ * Einzelnes Dokument per ID, wenn es existiert UND den erwarteten Typ hat - sonst null.
+ *
+ * Der Typ ist bewusst ein Pflichtparameter: Die IDs kommen in den Routen aus der URL, und eine ID
+ * liefert in CouchDB ein Dokument jedes beliebigen Typs. Ein falscher Typ wird deshalb wie "nicht
+ * gefunden" behandelt. Das Generic `T` allein schuetzt NICHT - es existiert nur zur Compile-Zeit.
+ */
+export async function findById<T extends TorballDokument>(id: string, docType: T["docType"]): Promise<T | null> {
+  const doc = await findByIdUngeprueft(id);
+  if (!doc || (doc as { docType?: string }).docType !== docType) return null;
+  return doc as unknown as T;
+}
+
+/**
+ * Einzelnes Dokument per ID OHNE Typpruefung (null, wenn es nicht existiert). Nur fuer Faelle, in
+ * denen der Typ tatsaechlich offen ist (Tests, Skripte, generische Aufraeumarbeiten) - in Routen
+ * mit einer ID aus dem Request immer `findById(id, docType)` verwenden.
+ */
+export async function findByIdUngeprueft(id: string): Promise<TorballDokument | null> {
   try {
-    const doc = await db.get(id);
-    return doc as unknown as T;
+    return (await db.get(id)) as unknown as TorballDokument;
   } catch (err) {
     if (isNotFound(err)) return null;
     throw err;

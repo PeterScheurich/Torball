@@ -118,7 +118,7 @@ export async function oeffentlichRoutes(app: FastifyInstance): Promise<void> {
    * nicht freigeschalteter Link wenigstens den richtigen Namen zeigt).
    */
   app.get<{ Params: { id: string } }>("/oeffentlich/turniere/:id", async (req, reply) => {
-    const turnier = await findById<Turnier>(req.params.id);
+    const turnier = await findById<Turnier>(req.params.id, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
 
     const [mannschaften, spiele] = await Promise.all([

@@ -25,7 +25,7 @@ export function mailPostfachAktiv(): boolean {
 /** Die aktuellen Betriebsparameter; Fallback auf Standardwerte, solange noch keine gespeichert
  *  wurden (frische Installation bzw. noch nie ueber die Oberflaeche angepasst). */
 export async function aktuelleMailPostfachEinstellungen(): Promise<MailPostfachEinstellungen> {
-  const doc = await findById<MailPostfachEinstellungen>(MAIL_POSTFACH_EINSTELLUNGEN_ID);
+  const doc = await findById<MailPostfachEinstellungen>(MAIL_POSTFACH_EINSTELLUNGEN_ID, "mailPostfachEinstellungen");
   return doc ?? STANDARD_MAIL_POSTFACH_EINSTELLUNGEN;
 }
 

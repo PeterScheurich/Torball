@@ -116,7 +116,7 @@ export async function kanbanRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: kanbanBodySchema } },
     async (req, reply) => {
       if (!vorbedingung(req, reply)) return;
-      const bestehend = await findById<KanbanKarte>(req.params.id);
+      const bestehend = await findById<KanbanKarte>(req.params.id, "kanbanKarte");
       if (!bestehend || bestehend.docType !== "kanbanKarte") {
         return reply.code(404).send({ error: "Karte nicht gefunden" });
       }
@@ -159,7 +159,7 @@ export async function kanbanRoutes(app: FastifyInstance): Promise<void> {
     },
     async (req, reply) => {
       if (!vorbedingung(req, reply)) return;
-      const karte = await findById<KanbanKarte>(req.params.id);
+      const karte = await findById<KanbanKarte>(req.params.id, "kanbanKarte");
       if (!karte || karte.docType !== "kanbanKarte") {
         return reply.code(404).send({ error: "Karte nicht gefunden" });
       }
@@ -191,7 +191,7 @@ export async function kanbanRoutes(app: FastifyInstance): Promise<void> {
     },
     async (req, reply) => {
       if (!vorbedingung(req, reply)) return;
-      const karte = await findById<KanbanKarte>(req.params.id);
+      const karte = await findById<KanbanKarte>(req.params.id, "kanbanKarte");
       if (!karte || karte.docType !== "kanbanKarte") {
         return reply.code(404).send({ error: "Karte nicht gefunden" });
       }
@@ -214,7 +214,7 @@ export async function kanbanRoutes(app: FastifyInstance): Promise<void> {
 
   app.delete<{ Params: { id: string } }>("/kanban/karten/:id", async (req, reply) => {
     if (!vorbedingung(req, reply)) return;
-    const karte = await findById<KanbanKarte>(req.params.id);
+    const karte = await findById<KanbanKarte>(req.params.id, "kanbanKarte");
     if (!karte || karte.docType !== "kanbanKarte") {
       return reply.code(404).send({ error: "Karte nicht gefunden" });
     }

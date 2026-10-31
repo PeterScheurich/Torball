@@ -19,7 +19,7 @@ test(
   "DELETE /turniere/:id loescht die vollstaendige Kaskade (Mannschaften/Spieler/Schiedsrichter/Spiele + Token/Berechtigungen/Checkouts/Ergebnis-Aenderungen/verwaisten Wettbewerb)",
   { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
   async () => {
-    const { findAllBySelector, findById, insertDoc, newId, deleteDoc } = await import("../repository");
+    const { findAllBySelector, findByIdUngeprueft, insertDoc, newId, deleteDoc } = await import("../repository");
     const Fastify = (await import("fastify")).default;
     const fastifyCookie = (await import("@fastify/cookie")).default;
     const { authPreHandler, SESSION_COOKIE_NAME } = await import("../auth/plugin");
@@ -212,7 +212,7 @@ test(
       });
       assert.equal(response.statusCode, 204);
 
-      assert.equal(await findById(turnierId), null, "Turnier haette geloescht sein muessen");
+      assert.equal(await findByIdUngeprueft(turnierId), null, "Turnier haette geloescht sein muessen");
 
       const verbleibendeMannschaften = await findAllBySelector({
         docType: "mannschaftImTurnier",
@@ -260,7 +260,7 @@ test(
         0,
         "Ergebnis-Aenderungen haetten mitgeloescht werden muessen",
       );
-      assert.equal(await findById(wettbewerbId), null, "verwaister Wettbewerb haette mitgeloescht werden muessen");
+      assert.equal(await findByIdUngeprueft(wettbewerbId), null, "verwaister Wettbewerb haette mitgeloescht werden muessen");
     } finally {
       // Aufraeumen falls der Test selbst fehlschlaegt, bevor die Kaskade greifen konnte.
       for (const id of [
@@ -278,7 +278,7 @@ test(
         benutzerId,
         session._id,
       ]) {
-        const doc = await findById(id);
+        const doc = await findByIdUngeprueft(id);
         if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
       }
       await app.close();

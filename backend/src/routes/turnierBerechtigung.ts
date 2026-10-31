@@ -32,7 +32,7 @@ export async function turnierBerechtigungRoutes(app: FastifyInstance): Promise<v
   // Alle fuer ein Turnier vergebenen Berechtigungen (nur mit Schreibzugriff einsehbar).
   app.get<{ Params: { turnierId: string } }>("/turniere/:turnierId/berechtigungen", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const turnier = await findById<Turnier>(req.params.turnierId);
+    const turnier = await findById<Turnier>(req.params.turnierId, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
@@ -46,7 +46,7 @@ export async function turnierBerechtigungRoutes(app: FastifyInstance): Promise<v
     return Promise.all(
       berechtigungen.map(async (b) => ({
         ...b,
-        benutzerName: (await findById<Benutzer>(b.benutzerId))?.name,
+        benutzerName: (await findById<Benutzer>(b.benutzerId, "benutzer"))?.name,
       })),
     );
   });
@@ -66,7 +66,7 @@ export async function turnierBerechtigungRoutes(app: FastifyInstance): Promise<v
     { schema: { body: benutzerSucheSchema }, config: { rateLimit: SENSIBEL_RATE_LIMIT } },
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const turnier = await findById<Turnier>(req.params.turnierId);
+      const turnier = await findById<Turnier>(req.params.turnierId, "turnier");
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
       if (!(await turnierZugriffsstufe(turnier, req))) {
         return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
@@ -91,7 +91,7 @@ export async function turnierBerechtigungRoutes(app: FastifyInstance): Promise<v
     { schema: { body: berechtigungVergebenSchema } },
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const turnier = await findById<Turnier>(req.params.turnierId);
+      const turnier = await findById<Turnier>(req.params.turnierId, "turnier");
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
 
       const eigeneStufe = await turnierZugriffsstufe(turnier, req);
@@ -103,7 +103,7 @@ export async function turnierBerechtigungRoutes(app: FastifyInstance): Promise<v
         return reply.code(403).send({ error: "Nur mit vollem Schreibzugriff können Schreibrechte vergeben werden." });
       }
 
-      const zielBenutzer = await findById(req.body.benutzerId);
+      const zielBenutzer = await findById<Benutzer>(req.body.benutzerId, "benutzer");
       if (!zielBenutzer) return reply.code(400).send({ error: "Referenzierter Benutzer existiert nicht" });
 
       const bestehende = await findAllBySelector<TurnierBerechtigung>({
@@ -134,10 +134,10 @@ export async function turnierBerechtigungRoutes(app: FastifyInstance): Promise<v
   /** Abschnitt 21.2: "Schreibrechte koennen von jedem mit Schreibrecht entzogen werden." */
   app.delete<{ Params: { id: string } }>("/berechtigungen/:id", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const bestehend = await findById<TurnierBerechtigung>(req.params.id);
+    const bestehend = await findById<TurnierBerechtigung>(req.params.id, "turnierBerechtigung");
     if (!bestehend) return reply.code(404).send({ error: "Berechtigung nicht gefunden" });
 
-    const turnier = await findById<Turnier>(bestehend.turnierId);
+    const turnier = await findById<Turnier>(bestehend.turnierId, "turnier");
     if (!turnier || !(await hatMindestens(turnier, req, "schreiben_voll"))) {
       return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
     }

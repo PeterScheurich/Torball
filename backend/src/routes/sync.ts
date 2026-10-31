@@ -115,7 +115,7 @@ export async function syncRoutes(app: FastifyInstance): Promise<void> {
 
   app.post("/sync/trennen", async (req, reply) => {
     if (!requireRolle(req, reply, ["admin"])) return;
-    const bestehend = await findById(LOKALE_SYNC_KONFIGURATION_ID);
+    const bestehend = await findById(LOKALE_SYNC_KONFIGURATION_ID, "lokaleSyncKonfiguration");
     if (bestehend) await deleteDoc(bestehend._id, (bestehend as { _rev: string })._rev);
     return reply.code(204).send();
   });

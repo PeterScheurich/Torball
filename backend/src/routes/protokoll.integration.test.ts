@@ -77,9 +77,9 @@ async function neuesSpiel(turnierId: string): Promise<string> {
 }
 
 async function aufraeumen(ids: string[]) {
-  const { findById, deleteDoc } = await import("../repository");
+  const { findById, findByIdUngeprueft, deleteDoc } = await import("../repository");
   for (const id of ids) {
-    const d = await findById(id);
+    const d = await findByIdUngeprueft(id);
     if (d) await deleteDoc(id, (d as { _rev: string })._rev);
   }
 }
@@ -101,7 +101,7 @@ test(
   { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
   async () => {
     const { erstelleSession } = await import("../auth/session");
-    const { findById } = await import("../repository");
+    const { findById, findByIdUngeprueft } = await import("../repository");
     const app = await baueApp();
 
     const adminId = await neuerAdmin();
@@ -209,7 +209,7 @@ test(
         events.map((_, i) => i + 1),
       );
 
-      const spiel = await findById<Spiel>(spielId);
+      const spiel = await findById<Spiel>(spielId, "spiel");
       assert.equal(spiel?.ergebnisA, 1);
       assert.equal(spiel?.ergebnisB, 0);
     } finally {

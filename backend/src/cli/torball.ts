@@ -19,6 +19,7 @@ import { erstelleSnapshot, stelleSnapshotWiederher } from "../demo/snapshot";
 import { erstelleMailBericht } from "../mail/bericht";
 import { erstelleSicherung, spieleSicherungEin, vorgeschlagenerDateiname } from "../sicherung/datei";
 import { letzteLogZeilen } from "../logDatei";
+import { schwaerzeTokens } from "../logSchutz";
 import { db } from "../db";
 
 type Optionen = Record<string, string>;
@@ -244,7 +245,8 @@ async function diagnose(optionen: Optionen): Promise<void> {
   if (log.length === 0) {
     zeilen.push("(keine Logdatei konfiguriert oder noch nichts protokolliert - siehe LOG_DATEI)");
   } else {
-    zeilen.push(...log);
+    // Tokens schwaerzen: Der Bericht ist zum Weitergeben gedacht (siehe logSchutz.ts).
+    zeilen.push(...log.map(schwaerzeTokens));
   }
 
   const ziel =

@@ -18,7 +18,7 @@ const hatCouchDbKonfiguration =
   !!process.env.COUCHDB_PASSWORD;
 
 async function testSetup() {
-  const { insertDoc, deleteDoc, findById, newId } = await import("../repository");
+  const { insertDoc, deleteDoc, findByIdUngeprueft, newId } = await import("../repository");
   const { turnierZugriffsstufe } = await import("./turnierZugriff");
 
   const turnierId = newId("turnier");
@@ -77,13 +77,13 @@ async function testSetup() {
 
   const aufraeumen = async () => {
     for (const id of [turnierId, benutzerId]) {
-      const doc = await findById(id);
+      const doc = await findByIdUngeprueft(id);
       if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
     }
   };
 
-  const turnier = await findById(turnierId);
-  const benutzer = await findById(benutzerId);
+  const turnier = await findByIdUngeprueft(turnierId);
+  const benutzer = await findByIdUngeprueft(benutzerId);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return { turnierZugriffsstufe, turnier: turnier as any, benutzer: benutzer as any, aufraeumen, newId, insertDoc };
 }
@@ -155,15 +155,15 @@ test(
 
         assert.equal(await turnierZugriffsstufe(turnier, { benutzer }), erwartet, `Rolle "${rolle}"`);
 
-        const { findById, deleteDoc } = await import("../repository");
-        const gespeichert = await findById(berechtigungId);
+        const { findByIdUngeprueft, deleteDoc } = await import("../repository");
+        const gespeichert = await findByIdUngeprueft(berechtigungId);
         if (gespeichert) await deleteDoc(berechtigungId, (gespeichert as { _rev: string })._rev);
         berechtigungId = undefined;
       }
     } finally {
       if (berechtigungId) {
-        const { findById, deleteDoc } = await import("../repository");
-        const gespeichert = await findById(berechtigungId);
+        const { findByIdUngeprueft, deleteDoc } = await import("../repository");
+        const gespeichert = await findByIdUngeprueft(berechtigungId);
         if (gespeichert) await deleteDoc(berechtigungId, (gespeichert as { _rev: string })._rev);
       }
       await aufraeumen();
@@ -208,7 +208,7 @@ test(
   async () => {
     const { turnier, aufraeumen, newId, insertDoc } = await testSetup();
     const { turnierAusgecheckt } = await import("./turnierZugriff");
-    const { findById, deleteDoc } = await import("../repository");
+    const { findByIdUngeprueft, deleteDoc } = await import("../repository");
     const checkoutId = newId("turnierCheckout");
     try {
       assert.equal(await turnierAusgecheckt(turnier._id), false, "ohne Checkout-Dokument");
@@ -226,17 +226,17 @@ test(
       } as any);
       assert.equal(await turnierAusgecheckt(turnier._id), true, "Status 'angefordert' zaehlt bereits als ausgecheckt");
 
-      const angefordert = await findById(checkoutId);
+      const angefordert = await findByIdUngeprueft(checkoutId);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await insertDoc({ ...(angefordert as object), status: "aktiv" } as any);
       assert.equal(await turnierAusgecheckt(turnier._id), true, "Status 'aktiv'");
 
-      const aktiv = await findById(checkoutId);
+      const aktiv = await findByIdUngeprueft(checkoutId);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await insertDoc({ ...(aktiv as object), status: "freigegeben" } as any);
       assert.equal(await turnierAusgecheckt(turnier._id), false, "nach Freigabe nicht mehr gesperrt");
     } finally {
-      const doc = await findById(checkoutId);
+      const doc = await findByIdUngeprueft(checkoutId);
       if (doc) await deleteDoc(checkoutId, (doc as { _rev: string })._rev);
       await aufraeumen();
     }
@@ -270,8 +270,8 @@ test(
       });
       assert.equal(stufe, "schreiben_voll");
     } finally {
-      const { findById, deleteDoc } = await import("../repository");
-      const gespeichert = await findById(berechtigungId);
+      const { findByIdUngeprueft, deleteDoc } = await import("../repository");
+      const gespeichert = await findByIdUngeprueft(berechtigungId);
       if (gespeichert) await deleteDoc(berechtigungId, (gespeichert as { _rev: string })._rev);
       await aufraeumen();
     }

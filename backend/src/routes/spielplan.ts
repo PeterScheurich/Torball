@@ -111,7 +111,7 @@ async function ladeUndBerechneVorschlag(
   reply: FastifyReply,
   mindestens: Zugriffsstufe,
 ): Promise<VorschlagErgebnis | undefined> {
-  const turnier = await findById<Turnier>(turnierId);
+  const turnier = await findById<Turnier>(turnierId, "turnier");
   if (!turnier) {
     reply.code(404).send({ error: "Turnier nicht gefunden" });
     return undefined;
@@ -190,7 +190,7 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
         // Frontend hat bereits eine (ggf. manuell umsortierte) Vorschau gezeigt - genau
         // diese wird gespeichert, statt sie hier blind neu zu berechnen und die
         // Umsortierung des Nutzers zu verwerfen.
-        const geladenesTurnier = await findById<Turnier>(req.params.id);
+        const geladenesTurnier = await findById<Turnier>(req.params.id, "turnier");
         if (!geladenesTurnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
         if (!(await hatMindestens(geladenesTurnier, req, "schreiben_voll"))) {
           return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });

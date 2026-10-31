@@ -6,7 +6,9 @@ import { CODE_ANMELDUNG_RATE_LIMIT, ermittleTrustProxy, GLOBAL_RATE_LIMIT, SENSI
 
 test("ermittleTrustProxy: Default vertraut Loopback + privaten Netzbereichen", () => {
   const alt = process.env.TRUST_PROXY;
+  const altServe = process.env.SERVE_FRONTEND;
   delete process.env.TRUST_PROXY;
+  delete process.env.SERVE_FRONTEND;
   try {
     const wert = ermittleTrustProxy();
     assert.ok(Array.isArray(wert));
@@ -15,6 +17,25 @@ test("ermittleTrustProxy: Default vertraut Loopback + privaten Netzbereichen", (
   } finally {
     if (alt === undefined) delete process.env.TRUST_PROXY;
     else process.env.TRUST_PROXY = alt;
+    if (altServe !== undefined) process.env.SERVE_FRONTEND = altServe;
+  }
+});
+
+test("ermittleTrustProxy: lokale Installation (SERVE_FRONTEND, ohne Proxy) vertraut niemandem", () => {
+  const altProxy = process.env.TRUST_PROXY;
+  const altServe = process.env.SERVE_FRONTEND;
+  delete process.env.TRUST_PROXY;
+  try {
+    process.env.SERVE_FRONTEND = "true";
+    assert.equal(ermittleTrustProxy(), false);
+    // Eine ausdrueckliche Einstellung gewinnt weiterhin.
+    process.env.TRUST_PROXY = "10.0.0.5";
+    assert.deepEqual(ermittleTrustProxy(), ["10.0.0.5"]);
+  } finally {
+    if (altProxy === undefined) delete process.env.TRUST_PROXY;
+    else process.env.TRUST_PROXY = altProxy;
+    if (altServe === undefined) delete process.env.SERVE_FRONTEND;
+    else process.env.SERVE_FRONTEND = altServe;
   }
 });
 

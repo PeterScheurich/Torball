@@ -66,7 +66,7 @@ export async function schiedsrichterStammdatenRoutes(app: FastifyInstance): Prom
     { schema: { body: schiedsrichterStammdatenSchema } },
     async (req, reply) => {
       if (!requireRolle(req, reply, ["admin", "manager"])) return;
-      const bestehend = await findById<Schiedsrichter>(req.params.id);
+      const bestehend = await findById<Schiedsrichter>(req.params.id, "schiedsrichter");
       if (!bestehend) return reply.code(404).send({ error: "Schiedsrichter nicht gefunden" });
       const aktualisiert: Schiedsrichter = {
         ...bestehend,
@@ -83,7 +83,7 @@ export async function schiedsrichterStammdatenRoutes(app: FastifyInstance): Prom
 
   app.delete<{ Params: { id: string } }>("/schiedsrichter-stammdaten/:id", async (req, reply) => {
     if (!requireRolle(req, reply, ["admin", "manager"])) return;
-    const bestehend = await findById<Schiedsrichter>(req.params.id);
+    const bestehend = await findById<Schiedsrichter>(req.params.id, "schiedsrichter");
     if (!bestehend) return reply.code(404).send({ error: "Schiedsrichter nicht gefunden" });
     await deleteDoc(bestehend._id, bestehend._rev!);
     return reply.code(204).send();

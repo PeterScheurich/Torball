@@ -42,7 +42,7 @@ export async function sammleTurnierExport(
   turnierId: string,
   optionen: { stammdatenMitnehmen: boolean },
 ): Promise<TurnierExportPaket> {
-  const turnier = await findById<Turnier>(turnierId);
+  const turnier = await findById<Turnier>(turnierId, "turnier");
   if (!turnier) throw new Error("Turnier nicht gefunden");
 
   const mannschaften = await findAllBySelector<MannschaftImTurnier>({
@@ -76,13 +76,13 @@ export async function sammleTurnierExport(
       ),
     );
     const teamIds = new Set(mannschaften.map((m) => m.teamId).filter((id): id is string => !!id));
-    vereine = (await Promise.all([...vereinIds].map((id) => findById<Verein>(id)))).filter(
+    vereine = (await Promise.all([...vereinIds].map((id) => findById<Verein>(id, "verein")))).filter(
       (v): v is Verein => v !== null,
     );
-    teams = (await Promise.all([...teamIds].map((id) => findById<Team>(id)))).filter((t): t is Team => t !== null);
+    teams = (await Promise.all([...teamIds].map((id) => findById<Team>(id, "team")))).filter((t): t is Team => t !== null);
   }
 
-  const wettbewerb = turnier.wettbewerbId ? await findById<Wettbewerb>(turnier.wettbewerbId) : null;
+  const wettbewerb = turnier.wettbewerbId ? await findById<Wettbewerb>(turnier.wettbewerbId, "wettbewerb") : null;
 
   return { turnier, mannschaften, spieler, spiele, schiedsrichter, spielprotokolle, events, vereine, teams, wettbewerb };
 }

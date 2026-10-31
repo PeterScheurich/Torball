@@ -40,9 +40,9 @@ async function neuerBenutzer(globaleRolle: "admin" | "manager" | "benutzer" = "b
 }
 
 async function aufraeumen(ids: string[]) {
-  const { findById, deleteDoc } = await import("../repository");
+  const { findById, findByIdUngeprueft, deleteDoc } = await import("../repository");
   for (const id of ids) {
-    const doc = await findById(id);
+    const doc = await findByIdUngeprueft(id);
     if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
   }
 }
@@ -54,7 +54,7 @@ test(
     const Fastify = (await import("fastify")).default;
     const fastifyCookie = (await import("@fastify/cookie")).default;
     const { authRoutes } = await import("./auth");
-    const { findById, insertDoc } = await import("../repository");
+    const { findById, findByIdUngeprueft, insertDoc } = await import("../repository");
 
     const app = Fastify();
     await app.register(fastifyCookie);
@@ -72,7 +72,7 @@ test(
         assert.equal(antwort.statusCode, 401, `Versuch ${i + 1} sollte 401 liefern`);
       }
 
-      const benutzerNachher = await findById<Benutzer>(benutzerId);
+      const benutzerNachher = await findById<Benutzer>(benutzerId, "benutzer");
       assert.equal(benutzerNachher!.gesperrt, false, "Konto darf NICHT dauerhaft gesperrt sein");
       assert.equal(benutzerNachher!.gesperrtGrund, undefined);
       assert.ok(
@@ -90,7 +90,7 @@ test(
       assert.equal(waehrendSperre.statusCode, 401);
 
       // Abkuehlzeit "ablaufen" lassen (in die Vergangenheit setzen) -> richtiges Passwort greift wieder.
-      const vorAblauf = await findById<Benutzer>(benutzerId);
+      const vorAblauf = await findById<Benutzer>(benutzerId, "benutzer");
       await insertDoc<Benutzer>({ ...vorAblauf!, loginKontoGesperrtBis: new Date(Date.now() - 1000).toISOString() });
 
       const nachAblauf = await app.inject({
@@ -100,7 +100,7 @@ test(
       });
       assert.equal(nachAblauf.statusCode, 200, "Nach Ablauf der Abkuehlzeit muss der Login gelingen");
 
-      const danach = await findById<Benutzer>(benutzerId);
+      const danach = await findById<Benutzer>(benutzerId, "benutzer");
       assert.equal(danach!.fehlgeschlageneLoginVersuche, 0, "Zaehler zuruecksetzen");
       assert.equal(danach!.loginKontoGesperrtBis, undefined, "Abkuehlzeit muss geloescht sein");
     } finally {
@@ -117,7 +117,7 @@ test(
     const Fastify = (await import("fastify")).default;
     const fastifyCookie = (await import("@fastify/cookie")).default;
     const { authRoutes } = await import("./auth");
-    const { findById } = await import("../repository");
+    const { findById, findByIdUngeprueft } = await import("../repository");
 
     const app = Fastify();
     await app.register(fastifyCookie);
@@ -132,7 +132,7 @@ test(
           payload: { email: `${benutzerId}@example.invalid`, passwort: "falsches-passwort" },
         });
       }
-      const zwischenstand = await findById<Benutzer>(benutzerId);
+      const zwischenstand = await findById<Benutzer>(benutzerId, "benutzer");
       assert.equal(zwischenstand!.fehlgeschlageneLoginVersuche, 3);
 
       const erfolgreich = await app.inject({
@@ -142,7 +142,7 @@ test(
       });
       assert.equal(erfolgreich.statusCode, 200);
 
-      const danach = await findById<Benutzer>(benutzerId);
+      const danach = await findById<Benutzer>(benutzerId, "benutzer");
       assert.equal(danach!.fehlgeschlageneLoginVersuche, 0);
     } finally {
       await aufraeumen([benutzerId]);
@@ -157,7 +157,7 @@ test(
   async () => {
     const Fastify = (await import("fastify")).default;
     const { benutzerRoutes } = await import("./benutzer");
-    const { insertDoc, findById } = await import("../repository");
+    const { insertDoc, findById, findByIdUngeprueft } = await import("../repository");
     const { erzeugeToken, hashe } = await import("../auth/token");
 
     const app = Fastify();
@@ -167,7 +167,7 @@ test(
     const manuellId = await neuerBenutzer();
     try {
       const fehlversucheToken = erzeugeToken();
-      const fehlversucheBenutzer = await findById<Benutzer>(fehlversucheId);
+      const fehlversucheBenutzer = await findById<Benutzer>(fehlversucheId, "benutzer");
       await insertDoc<Benutzer>({
         ...fehlversucheBenutzer!,
         gesperrt: true,
@@ -178,7 +178,7 @@ test(
       });
 
       const manuellToken = erzeugeToken();
-      const manuellBenutzer = await findById<Benutzer>(manuellId);
+      const manuellBenutzer = await findById<Benutzer>(manuellId, "benutzer");
       await insertDoc<Benutzer>({
         ...manuellBenutzer!,
         gesperrt: true,
@@ -193,7 +193,7 @@ test(
         payload: { neuesPasswort: NEUES_PASSWORT },
       });
       assert.equal(resetFehlversuche.statusCode, 200);
-      const fehlversucheDanach = await findById<Benutzer>(fehlversucheId);
+      const fehlversucheDanach = await findById<Benutzer>(fehlversucheId, "benutzer");
       assert.equal(fehlversucheDanach!.gesperrt, false, "Fehlversuche-Sperre haette aufgehoben werden muessen");
       assert.equal(fehlversucheDanach!.gesperrtGrund, undefined);
       assert.equal(fehlversucheDanach!.fehlgeschlageneLoginVersuche, 0);
@@ -204,7 +204,7 @@ test(
         payload: { neuesPasswort: NEUES_PASSWORT },
       });
       assert.equal(resetManuell.statusCode, 200, "Passwort selbst darf trotzdem geaendert werden");
-      const manuellDanach = await findById<Benutzer>(manuellId);
+      const manuellDanach = await findById<Benutzer>(manuellId, "benutzer");
       assert.equal(manuellDanach!.gesperrt, true, "Manuelle Sperre darf NICHT aufgehoben werden");
       assert.equal(manuellDanach!.gesperrtGrund, "manuell");
     } finally {
@@ -223,7 +223,7 @@ test(
     const { authPreHandler } = await import("../auth/plugin");
     const { benutzerRoutes } = await import("./benutzer");
     const { erstelleSession } = await import("../auth/session");
-    const { findById } = await import("../repository");
+    const { findById, findByIdUngeprueft } = await import("../repository");
 
     const app = Fastify();
     await app.register(fastifyCookie);
@@ -266,7 +266,7 @@ test(
       assert.equal(gesperrt.json().gesperrtGrund, "manuell");
 
       // Vorher ein paar Fehlversuche simulieren, damit das Zuruecksetzen beim Entsperren pruefbar ist.
-      const vorEntsperren = await findById<Benutzer>(zielId);
+      const vorEntsperren = await findById<Benutzer>(zielId, "benutzer");
       const { insertDoc } = await import("../repository");
       await insertDoc<Benutzer>({ ...vorEntsperren!, fehlgeschlageneLoginVersuche: 7 });
 
@@ -278,7 +278,7 @@ test(
       });
       assert.equal(entsperrt.statusCode, 200);
       assert.equal(entsperrt.json().gesperrtGrund, undefined);
-      const danach = await findById<Benutzer>(zielId);
+      const danach = await findById<Benutzer>(zielId, "benutzer");
       assert.equal(danach!.fehlgeschlageneLoginVersuche, 0);
     } finally {
       await aufraeumen([adminId, zielId]);

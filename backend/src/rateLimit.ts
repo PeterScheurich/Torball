@@ -60,6 +60,14 @@ export const CODE_ANMELDUNG_RATE_LIMIT = { max: 60, timeWindow: "10 minutes" } a
  */
 export function ermittleTrustProxy(): FastifyServerOptions["trustProxy"] {
   const roh = process.env.TRUST_PROXY?.trim();
+  if (!roh && process.env.SERVE_FRONTEND === "true") {
+    // Lokale Installation: ein einziger Prozess ohne Reverse-Proxy davor, im Hallen-WLAN erreichbar
+    // (HOST=0.0.0.0). Der Standard unten vertraut ALLEN privaten Netzen - dort ist aber jedes Geraet im
+    // WLAN selbst "ein vertrauter Proxy" und konnte sich per gefaelschtem X-Forwarded-For fuer jeden
+    // Request eine andere IP geben und damit jedes Rate-Limit (Code-Anmeldung, Registrierung ...)
+    // aushebeln (OWASP-Durchgang 2026-10-31). Ohne Proxy gibt es nichts zu vertrauen.
+    return false;
+  }
   if (!roh) {
     return ["127.0.0.1", "::1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "fc00::/7", "fe80::/10"];
   }

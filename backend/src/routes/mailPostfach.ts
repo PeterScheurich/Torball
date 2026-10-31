@@ -81,7 +81,7 @@ export async function mailPostfachRoutes(app: FastifyInstance): Promise<void> {
     },
     async (req, reply) => {
       if (!vorbedingung(req, reply)) return;
-      const mail = await findById<MailNachricht>(req.params.id);
+      const mail = await findById<MailNachricht>(req.params.id, "mailNachricht");
       if (!mail || mail.docType !== "mailNachricht") {
         return reply.code(404).send({ error: "Mail nicht gefunden" });
       }
@@ -99,7 +99,7 @@ export async function mailPostfachRoutes(app: FastifyInstance): Promise<void> {
   // erhalten (Nutzer-Vorgabe), daher unproblematisch auch fuer noch nicht "erledigte" Mails.
   app.delete<{ Params: { id: string } }>("/mail-postfach/nachrichten/:id", async (req, reply) => {
     if (!vorbedingung(req, reply)) return;
-    const mail = await findById<MailNachricht>(req.params.id);
+    const mail = await findById<MailNachricht>(req.params.id, "mailNachricht");
     if (!mail || mail.docType !== "mailNachricht") {
       return reply.code(404).send({ error: "Mail nicht gefunden" });
     }
@@ -111,7 +111,7 @@ export async function mailPostfachRoutes(app: FastifyInstance): Promise<void> {
   // erkannt hat (Werkzeug fuer die manuelle Nachbearbeitung/"Abarbeiten" des Postfachs).
   app.post<{ Params: { id: string } }>("/mail-postfach/nachrichten/:id/karte", async (req, reply) => {
     if (!vorbedingung(req, reply)) return;
-    const mail = await findById<MailNachricht>(req.params.id);
+    const mail = await findById<MailNachricht>(req.params.id, "mailNachricht");
     if (!mail || mail.docType !== "mailNachricht") {
       return reply.code(404).send({ error: "Mail nicht gefunden" });
     }

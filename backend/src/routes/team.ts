@@ -40,7 +40,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
   // Einzelnes Team per ID.
   app.get<{ Params: { id: string } }>("/teams/:id", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const team = await findById<Team>(req.params.id);
+    const team = await findById<Team>(req.params.id, "team");
     if (!team) return reply.code(404).send({ error: "Team nicht gefunden" });
     return team;
   });
@@ -52,7 +52,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: teamBodySchema } },
     async (req, reply) => {
       if (!requireRolle(req, reply, ["admin", "manager"])) return;
-      const vereinExistiert = await findById(req.body.vereinId);
+      const vereinExistiert = await findById(req.body.vereinId, "verein");
       if (!vereinExistiert) {
         return reply.code(400).send({ error: "Referenzierter Verein existiert nicht" });
       }
@@ -75,7 +75,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: teamBodySchema } },
     async (req, reply) => {
       if (!requireRolle(req, reply, ["admin", "manager"])) return;
-      const bestehend = await findById<Team>(req.params.id);
+      const bestehend = await findById<Team>(req.params.id, "team");
       if (!bestehend) return reply.code(404).send({ error: "Team nicht gefunden" });
       const aktualisiert: Team = { ...bestehend, ...ohneFelder(req.body, NUR_SERVER) };
       return insertDoc(aktualisiert);
@@ -85,7 +85,7 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
   // Team loeschen.
   app.delete<{ Params: { id: string } }>("/teams/:id", async (req, reply) => {
     if (!requireRolle(req, reply, ["admin", "manager"])) return;
-    const bestehend = await findById<Team>(req.params.id);
+    const bestehend = await findById<Team>(req.params.id, "team");
     if (!bestehend) return reply.code(404).send({ error: "Team nicht gefunden" });
     await deleteDoc(bestehend._id, bestehend._rev!);
     return reply.code(204).send();

@@ -51,7 +51,7 @@ export async function authPreHandler(req: FastifyRequest): Promise<void> {
     return;
   }
 
-  const benutzer = await findById<Benutzer>(session.benutzerId);
+  const benutzer = await findById<Benutzer>(session.benutzerId, "benutzer");
   if (!benutzer || benutzer.gesperrt) return;
 
   req.benutzer = benutzer;

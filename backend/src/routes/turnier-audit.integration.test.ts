@@ -34,17 +34,17 @@ async function neuerAdmin() {
 }
 
 async function aufraeumenTurnier(turnierId: string) {
-  const { findAllBySelector, findById, deleteDoc } = await import("../repository");
+  const { findAllBySelector, findById, findByIdUngeprueft, deleteDoc } = await import("../repository");
   const schiris = await findAllBySelector<SchiedsrichterImTurnier>({ docType: "schiedsrichterImTurnier", turnierId });
   for (const s of schiris) await deleteDoc(s._id, s._rev!);
-  const t = await findById<Turnier>(turnierId);
+  const t = await findById<Turnier>(turnierId, "turnier");
   if (t) await deleteDoc(t._id, t._rev!);
 }
 
 async function aufraeumen(ids: string[]) {
-  const { findById, deleteDoc } = await import("../repository");
+  const { findById, findByIdUngeprueft, deleteDoc } = await import("../repository");
   for (const id of ids) {
-    const doc = await findById(id);
+    const doc = await findByIdUngeprueft(id);
     if (doc) await deleteDoc(id, (doc as { _rev: string })._rev);
   }
 }

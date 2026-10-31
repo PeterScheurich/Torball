@@ -105,7 +105,7 @@ export async function instanzSyncRoutes(app: FastifyInstance): Promise<void> {
 
     // Bestaetigte Downloads: "angefordert" -> "aktiv".
     for (const checkoutId of req.body.bestaetigteCheckoutIds ?? []) {
-      const checkout = await findById<TurnierCheckout>(checkoutId);
+      const checkout = await findById<TurnierCheckout>(checkoutId, "turnierCheckout");
       if (checkout && checkout.instanzId === instanz.instanzId && checkout.status === "angefordert") {
         await insertDoc({ ...checkout, status: "aktiv", uebertragenAm: new Date().toISOString() });
       }

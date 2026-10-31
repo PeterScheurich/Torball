@@ -64,7 +64,7 @@ export async function erstelleCodeSession(
 /** Loest den Cookie-Token zur Session auf; eine abgelaufene Session wird dabei geloescht und als
  *  "nicht vorhanden" (null) behandelt. */
 export async function findeSessionPerToken(token: string): Promise<Session | null> {
-  const session = await findById<Session>(sessionIdVon(token));
+  const session = await findById<Session>(sessionIdVon(token), "session");
   if (!session) return null;
   if (new Date(session.laeuftAbAm).getTime() < Date.now()) {
     await deleteDoc(session._id, session._rev!);
@@ -89,7 +89,7 @@ export async function beruehreSession(session: Session): Promise<void> {
 
 /** Beendet die eine Session zu diesem Token (Logout). */
 export async function loescheSessionPerToken(token: string): Promise<void> {
-  const session = await findById<Session>(sessionIdVon(token));
+  const session = await findById<Session>(sessionIdVon(token), "session");
   if (session) await deleteDoc(session._id, session._rev!);
 }
 

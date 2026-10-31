@@ -120,12 +120,12 @@ async function ladeMitLesezugriff(
   reply: FastifyReply,
 ): Promise<MannschaftImTurnier | undefined> {
   if (!requireZugriff(req, reply)) return undefined;
-  const mannschaft = await findById<MannschaftImTurnier>(id);
+  const mannschaft = await findById<MannschaftImTurnier>(id, "mannschaftImTurnier");
   if (!mannschaft) {
     reply.code(404).send({ error: "Mannschaft nicht gefunden" });
     return undefined;
   }
-  const turnier = await findById<Turnier>(mannschaft.turnierId);
+  const turnier = await findById<Turnier>(mannschaft.turnierId, "turnier");
   if (!turnier || !(await hatMindestens(turnier, req, "lesen"))) {
     reply.code(403).send({ error: "Kein Zugriff auf das zugehörige Turnier" });
     return undefined;
@@ -151,12 +151,12 @@ async function ladeMitSchreibzugriff(
   reply: FastifyReply,
 ): Promise<MannschaftImTurnier | undefined> {
   if (!requireZugriff(req, reply)) return undefined;
-  const mannschaft = await findById<MannschaftImTurnier>(id);
+  const mannschaft = await findById<MannschaftImTurnier>(id, "mannschaftImTurnier");
   if (!mannschaft) {
     reply.code(404).send({ error: "Mannschaft nicht gefunden" });
     return undefined;
   }
-  const turnier = await findById<Turnier>(mannschaft.turnierId);
+  const turnier = await findById<Turnier>(mannschaft.turnierId, "turnier");
   if (!turnier || !(await hatMindestens(turnier, req, "schreiben_voll"))) {
     reply.code(403).send({ error: "Kein Schreibzugriff auf das zugehörige Turnier" });
     return undefined;
@@ -181,7 +181,7 @@ async function ladeMitSchreibzugriff(
 export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { turnierId: string } }>("/turniere/:turnierId/mannschaften", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    const turnier = await findById<Turnier>(req.params.turnierId);
+    const turnier = await findById<Turnier>(req.params.turnierId, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
     if (!(await hatMindestens(turnier, req, "lesen"))) {
       return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
@@ -201,7 +201,7 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: mannschaftBodySchema } },
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const turnier = await findById<Turnier>(req.body.turnierId);
+      const turnier = await findById<Turnier>(req.body.turnierId, "turnier");
       if (!turnier) {
         return reply.code(400).send({ error: "Referenziertes Turnier existiert nicht" });
       }
@@ -274,10 +274,14 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: reihenfolgeSchema } },
     async (req, reply) => {
       if (!requireZugriff(req, reply)) return;
-      const turnier = await findById<Turnier>(req.params.turnierId);
+      const turnier = await findById<Turnier>(req.params.turnierId, "turnier");
       if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
       if (!(await hatMindestens(turnier, req, "schreiben_voll"))) {
         return reply.code(403).send({ error: "Kein Schreibzugriff auf dieses Turnier" });
+      }
+      // Fehlte hier, obwohl CLAUDE.md die Sperre fuer alle Schreib-Pfade nennt (OWASP-Durchgang 2026-10-31).
+      if (turnierGesperrt(turnier)) {
+        return reply.code(409).send({ error: TURNIER_GESPERRT_FEHLER });
       }
       if (await turnierAusgecheckt(turnier._id)) {
         return reply.code(409).send({ error: TURNIER_AUSGECHECKT_FEHLER });

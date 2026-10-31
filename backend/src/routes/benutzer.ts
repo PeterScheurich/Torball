@@ -316,7 +316,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: benutzerAktualisierenSchema } },
     async (req, reply) => {
       if (!requireRolle(req, reply, ["admin", "manager"])) return;
-      const bestehend = await findById<Benutzer>(req.params.id);
+      const bestehend = await findById<Benutzer>(req.params.id, "benutzer");
       if (!bestehend) return reply.code(404).send({ error: "Benutzer nicht gefunden" });
 
       const vergebendeRolle = req.benutzer!.globaleRolle;
@@ -366,7 +366,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
    */
   app.post<{ Params: { id: string } }>("/benutzer/:id/passwort-reset-ausloesen", async (req, reply) => {
     if (!requireRolle(req, reply, ["admin", "manager"])) return;
-    const ziel = await findById<Benutzer>(req.params.id);
+    const ziel = await findById<Benutzer>(req.params.id, "benutzer");
     if (!ziel) return reply.code(404).send({ error: "Benutzer nicht gefunden" });
     if (!darfZielRolleVergeben(req.benutzer!.globaleRolle, ziel.globaleRolle)) {
       return reply.code(403).send({ error: "Diesen Benutzer darfst du nicht bearbeiten." });
@@ -414,7 +414,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
    */
   app.post<{ Params: { id: string } }>("/benutzer/:id/einladung-erneut-senden", async (req, reply) => {
     if (!requireRolle(req, reply, ["admin", "manager"])) return;
-    const ziel = await findById<Benutzer>(req.params.id);
+    const ziel = await findById<Benutzer>(req.params.id, "benutzer");
     if (!ziel) return reply.code(404).send({ error: "Benutzer nicht gefunden" });
     if (!darfZielRolleVergeben(req.benutzer!.globaleRolle, ziel.globaleRolle)) {
       return reply.code(403).send({ error: "Diesen Benutzer darfst du nicht bearbeiten." });
@@ -472,7 +472,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         .code(400)
         .send({ error: "Die eigene 2FA bitte im Profil (mit Passwort-Bestätigung) deaktivieren." });
     }
-    const bestehend = await findById<Benutzer>(req.params.id);
+    const bestehend = await findById<Benutzer>(req.params.id, "benutzer");
     if (!bestehend) return reply.code(404).send({ error: "Benutzer nicht gefunden" });
     const aktualisiert = await insertDoc({ ...bestehend, zweiFaAktiv: false, zweiFaSecret: undefined });
     return oeffentlichesProfil(aktualisiert);
@@ -697,7 +697,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
 
   app.post<{ Params: { id: string } }>("/benutzer/mich/instanzen/:id/widerrufen", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const instanz = await findById<VerbundeneInstanz>(req.params.id);
+    const instanz = await findById<VerbundeneInstanz>(req.params.id, "verbundeneInstanz");
     if (!instanz || instanz.benutzerId !== req.benutzer!._id) {
       return reply.code(404).send({ error: "Instanz nicht gefunden" });
     }

@@ -50,7 +50,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
   // Einzelner Verein per ID.
   app.get<{ Params: { id: string } }>("/vereine/:id", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
-    const verein = await findById<Verein>(req.params.id);
+    const verein = await findById<Verein>(req.params.id, "verein");
     if (!verein) return reply.code(404).send({ error: "Verein nicht gefunden" });
     return verein;
   });
@@ -79,7 +79,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: vereinBodySchema } },
     async (req, reply) => {
       if (!requireRolle(req, reply, ["admin", "manager"])) return;
-      const bestehend = await findById<Verein>(req.params.id);
+      const bestehend = await findById<Verein>(req.params.id, "verein");
       if (!bestehend) return reply.code(404).send({ error: "Verein nicht gefunden" });
       const aktualisiert: Verein = { ...bestehend, ...ohneFelder(req.body, NUR_SERVER) };
       return insertDoc(aktualisiert);
@@ -89,7 +89,7 @@ export async function vereinRoutes(app: FastifyInstance): Promise<void> {
   // Verein loeschen - nur, wenn kein Team mehr auf ihn verweist (sonst 409).
   app.delete<{ Params: { id: string } }>("/vereine/:id", async (req, reply) => {
     if (!requireRolle(req, reply, ["admin", "manager"])) return;
-    const bestehend = await findById<Verein>(req.params.id);
+    const bestehend = await findById<Verein>(req.params.id, "verein");
     if (!bestehend) return reply.code(404).send({ error: "Verein nicht gefunden" });
 
     // Referenzielle Integritaet wie im Datenmodell vorgesehen (fk_team_verein: ON DELETE RESTRICT).

@@ -13,7 +13,7 @@ export const STANDARD_WARTUNG: Wartung = {
 };
 
 export async function aktuelleWartung(): Promise<Wartung> {
-  const doc = await findById<Wartung>(WARTUNG_ID);
+  const doc = await findById<Wartung>(WARTUNG_ID, "wartung");
   return doc ?? STANDARD_WARTUNG;
 }
 

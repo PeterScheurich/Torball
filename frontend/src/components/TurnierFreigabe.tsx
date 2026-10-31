@@ -20,6 +20,9 @@ const ROLLEN_LABEL: Record<TurnierRolle, string> = {
   lesen: "Nur lesen",
 };
 
+/** Wie im Backend (turnierCode.ts, codesSetzenSchema): kuerzere Codes sind zu leicht zu erraten. */
+const CODE_MINDESTLAENGE = 6;
+
 type AlleBenutzerZugriff = "kein" | "lesen" | "schreiben";
 
 const ALLE_BENUTZER_LABEL: Record<AlleBenutzerZugriff, string> = {
@@ -267,7 +270,9 @@ export function TurnierFreigabe({
       <p>
         Alternativer Zugriff ohne eigenes Konto für Geräte im selben Netzwerk wie der Turnier-Server (Betriebsmodus
         „Lokales Netzwerk"). Wer den Code kennt, meldet sich unter{" "}
-        <code>{`${window.location.origin}/turniere/${turnierId}/code`}</code> an.
+        <code>{`${window.location.origin}/turniere/${turnierId}/code`}</code> an. Ein Code braucht mindestens{" "}
+        {CODE_MINDESTLAENGE} Zeichen; wird ein Code geändert oder entfernt, werden die Geräte, die damit angemeldet
+        waren, abgemeldet.
       </p>
 
       {/* Lokale Windows-Installation: ohne aktivierten Netzwerkzugriff (HOST=127.0.0.1, der
@@ -334,7 +339,7 @@ export function TurnierFreigabe({
                 <button
                   type="button"
                   onClick={() => codeSetzen("turnierleitungCode", turnierleitungCodeEingabe.trim())}
-                  disabled={!turnierleitungCodeEingabe.trim()}
+                  disabled={turnierleitungCodeEingabe.trim().length < CODE_MINDESTLAENGE}
                 >
                   Speichern
                 </button>{" "}
@@ -363,7 +368,7 @@ export function TurnierFreigabe({
                 <button
                   type="button"
                   onClick={() => codeSetzen("spielleitungCode", spielleitungCodeEingabe.trim())}
-                  disabled={!spielleitungCodeEingabe.trim()}
+                  disabled={spielleitungCodeEingabe.trim().length < CODE_MINDESTLAENGE}
                 >
                   Speichern
                 </button>{" "}
@@ -395,7 +400,7 @@ export function TurnierFreigabe({
                   <button
                     type="button"
                     onClick={() => codeSetzen("protokollantCode", protokollantCodeEingabe.trim())}
-                    disabled={!protokollantCodeEingabe.trim()}
+                    disabled={protokollantCodeEingabe.trim().length < CODE_MINDESTLAENGE}
                   >
                     Speichern
                   </button>{" "}

@@ -75,11 +75,11 @@ async function neueMannschaft(turnierId: string, name: string): Promise<string> 
 }
 
 async function aufraeumen(turnierId: string, extra: string[]) {
-  const { findAllBySelector, findById, deleteDoc } = await import("../repository");
+  const { findAllBySelector, findByIdUngeprueft, deleteDoc } = await import("../repository");
   const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId });
   for (const s of spiele) await deleteDoc(s._id, s._rev!);
   for (const id of extra) {
-    const d = await findById(id);
+    const d = await findByIdUngeprueft(id);
     if (d) await deleteDoc(id, (d as { _rev: string })._rev);
   }
 }
