@@ -597,7 +597,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
             liste: [
               "Passwort vergessen: Du kannst für ein Konto einen Zurücksetz-Link auslösen. Die Person kann sich damit selbst ein neues Passwort setzen.",
               "Einladung nie angekommen: Bei einem Konto, das noch nicht aktiviert wurde, lässt sich die Einladung erneut senden. Der alte Link wird dabei ungültig.",
-              "Authenticator-App verloren: Nur Administratoren können die Zwei-Faktor-Anmeldung eines fremden Kontos deaktivieren – danach genügen wieder E-Mail und Passwort, und die Person kann sie neu einrichten. Für das eigene Konto geht das nicht auf diesem Weg, sondern nur im eigenen Profil mit Passwort-Bestätigung.",
+              "Authenticator-App verloren: Nur Administratoren können die Zwei-Faktor-Anmeldung eines fremden Kontos deaktivieren – danach genügen wieder E-Mail und Passwort, und die Person kann sie neu einrichten. Für das eigene Konto geht das nicht auf diesem Weg, sondern nur im eigenen Profil – dort verlangt das Deaktivieren dein Passwort und einen aktuellen Code aus der Authenticator-App.",
             ],
           },
           "Nach fünf falschen Versuchen – ob Passwort oder Bestätigungscode – pausiert die Anmeldung übrigens nur zeitweise und gibt sich danach von selbst wieder frei – hier musst du nichts tun.",
@@ -698,7 +698,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie richte ich die Zwei-Faktor-Anmeldung (2FA) ein?",
         text: [
-          "Unter {{profil}} → „Zwei-Faktor-Authentifizierung“ startest du die Einrichtung, scannst den angezeigten QR-Code mit einer Authenticator-App (oder gibst den Schlüssel manuell ein) und bestätigst mit dem Code aus der App. Danach fragt die Anmeldung neben dem Passwort zusätzlich diesen Code ab.",
+          "Unter {{profil}} → „Zwei-Faktor-Authentifizierung“ startest du die Einrichtung, scannst den angezeigten QR-Code mit einer Authenticator-App (oder gibst den Schlüssel manuell ein) und bestätigst mit dem Code aus der App. Danach fragt die Anmeldung neben dem Passwort zusätzlich diesen Code ab. Zum Abschalten oder Neu-Einrichten deaktivierst du die 2FA zuerst im selben Abschnitt – dafür brauchst du dein Passwort und einen aktuellen Code. Solange 2FA aktiv ist, lässt sich der Schlüssel nicht einfach ersetzen.",
           {
             vertiefung: {
               titel: "Was ist eine Authenticator-App?",
@@ -817,7 +817,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie verbinde ich die lokale Installation mit dem Server?",
         text: [
-          "Auf dem Server (dort, wo das Turnier normalerweise verwaltet wird) erzeugst du unter {{profil}} → „Verbundene Instanzen“ einen Kopplungscode (15 Minuten gültig).",
+          "Auf dem Server (dort, wo das Turnier normalerweise verwaltet wird) erzeugst du unter {{profil}} → „Verbundene Instanzen“ einen Kopplungscode (15 Minuten gültig). Dazu gibst du noch einmal dein Passwort ein, weil der Code eine lokale Installation dauerhaft mit deinem Konto verbindet.",
           "Auf der lokalen Installation gibst du unter {{einstellungen}} → „Turnier-Sync“ die Server-Adresse und diesen Code ein. Ab dann sind beide dauerhaft verbunden und die lokale Installation meldet sich automatisch regelmäßig beim Server.",
         ],
       },

@@ -7,6 +7,12 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Sicherheit: sensible Aktionen am eigenen Konto verlangen eine erneute Bestätigung.** Wer die
+  Zwei-Faktor-Anmeldung abschalten will, gibt jetzt Passwort **und** einen aktuellen Code ein (bisher nur das
+  Passwort); bei aktiver 2FA lässt sich der Schlüssel nicht mehr einfach ersetzen. Einen Kopplungscode für eine
+  lokale Installation gibt es nur noch nach erneuter Passwort-Eingabe. So kann eine offen gelassene Sitzung nicht
+  genutzt werden, um den zweiten Faktor auszutauschen oder eine Installation dauerhaft zu koppeln.
+
 - **Neu: lokale Installation auch für Linux (Debian, Ubuntu und davon abgeleitete Systeme).** `bash Setup-Linux.sh`
   im entpackten Quellcode-Ordner richtet alles ein – Node.js, die Datenbank, die App als Hintergrunddienst, auf
   Wunsch die Freigabe für andere Geräte im eigenen Netz (nur dort, nicht im Internet) und einen Eintrag im

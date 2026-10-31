@@ -6,6 +6,8 @@ import { managerSiehtKonto, profilFuerManager } from "../auth/benutzerSicht";
 import { hashePasswort, passwortRegelVerstoss, passwortStimmt } from "../auth/passwort";
 import { requireAuth, requireRolle } from "../auth/plugin";
 import { loescheAlleSessionenVonBenutzer, loescheAndereSessionenVonBenutzer } from "../auth/session";
+import { pruefeBestaetigung } from "../auth/bestaetigung";
+import { aendereBenutzerAtomar } from "../auth/benutzerAenderung";
 import { erzeugeOtpAuthUri, erzeugeQrCodeDataUri, erzeugeTotpSecret, totpCodeGueltig } from "../auth/totp";
 import { erzeugeToken, hashe } from "../auth/token";
 import { sendeMail } from "../mail/transport";
@@ -683,6 +685,13 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
 
   app.post("/benutzer/2fa/einrichten", async (req, reply) => {
     if (!requireAuth(req, reply)) return;
+    // Bei aktiver 2FA wuerde das Einrichten den Secret ersetzen, ohne dass Passwort oder ein
+    // aktueller Code verlangt wuerden - eine gestohlene Sitzung koennte so den zweiten Faktor
+    // austauschen und den Besitzer aussperren. Das Profil bietet es ohnehin nur bei inaktiver 2FA an;
+    // wer neu einrichten will, deaktiviert zuerst (das verlangt Passwort UND Code).
+    if (req.benutzer!.zweiFaAktiv) {
+      return reply.code(409).send({ error: "2FA ist bereits aktiv. Zum Neu-Einrichten bitte erst deaktivieren." });
+    }
     const secret = erzeugeTotpSecret();
     const otpAuthUri = erzeugeOtpAuthUri(req.benutzer!.email, secret);
     const qrCodeDataUri = await erzeugeQrCodeDataUri(otpAuthUri);
@@ -707,21 +716,30 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  app.post<{ Body: { passwort: string } }>(
+  app.post<{ Body: { passwort: string; code?: string } }>(
     "/benutzer/2fa/deaktivieren",
-    { schema: { body: { type: "object", required: ["passwort"], properties: { passwort: { type: "string" } } } } },
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["passwort"],
+          properties: { passwort: { type: "string" }, code: { type: "string" } },
+        },
+      },
+    },
     async (req, reply) => {
       if (!requireAuth(req, reply)) return;
-      if (!req.benutzer!.passwortHash || !(await passwortStimmt(req.body.passwort, req.benutzer!.passwortHash))) {
-        return reply.code(401).send({ error: "Passwort ist falsch." });
-      }
-      const aktualisiert = await insertDoc({
-        ...req.benutzer!,
+      // Passwort UND (bei aktiver 2FA) ein aktueller Code: Nur das Passwort genuegte frueher - wer eine
+      // offene Sitzung und das Passwort hatte, schaltete den zweiten Faktor einfach ab.
+      const bestaetigung = await pruefeBestaetigung(req.benutzer!, req.body, true);
+      if (!bestaetigung.ok) return reply.code(bestaetigung.status).send({ error: bestaetigung.fehler });
+      const aktualisiert = await aendereBenutzerAtomar(req.benutzer!._id, (b) => ({
+        ...b,
         zweiFaAktiv: false,
         zweiFaSecret: undefined,
         zweiFaLetzterZeitschritt: undefined,
-      });
-      return oeffentlichesProfil(aktualisiert);
+      }));
+      return oeffentlichesProfil(aktualisiert ?? req.benutzer!);
     },
   );
 
@@ -730,16 +748,25 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
   // Installation einmalig ein dauerhaftes Credential eintauscht (siehe routes/instanzSync.ts,
   // POST /instanzen/kopplung-einloesen).
 
-  app.post("/benutzer/mich/instanz-kopplungscode", async (req, reply) => {
-    if (!requireAuth(req, reply)) return;
-    const { token, hash } = erzeugeToken();
-    await insertDoc({
-      ...req.benutzer!,
-      instanzKopplungscodeHash: hash,
-      instanzKopplungscodeAblauf: new Date(Date.now() + KOPPLUNG_GUELTIG_MS).toISOString(),
-    });
-    return reply.send({ kopplungscode: token, gueltigBis: new Date(Date.now() + KOPPLUNG_GUELTIG_MS).toISOString() });
-  });
+  // Der Kopplungscode wird gegen ein DAUERHAFTES Instanz-Token eingetauscht - das Erzeugen verlangt
+  // deshalb das aktuelle Passwort (Projektregel: sensible Selbst-Aenderungen), nicht nur eine Sitzung.
+  app.post<{ Body: { passwort: string } }>(
+    "/benutzer/mich/instanz-kopplungscode",
+    { schema: { body: { type: "object", required: ["passwort"], properties: { passwort: { type: "string" } } } } },
+    async (req, reply) => {
+      if (!requireAuth(req, reply)) return;
+      const bestaetigung = await pruefeBestaetigung(req.benutzer!, req.body, false);
+      if (!bestaetigung.ok) return reply.code(bestaetigung.status).send({ error: bestaetigung.fehler });
+      const { token, hash } = erzeugeToken();
+      const gueltigBis = new Date(Date.now() + KOPPLUNG_GUELTIG_MS).toISOString();
+      await aendereBenutzerAtomar(req.benutzer!._id, (b) => ({
+        ...b,
+        instanzKopplungscodeHash: hash,
+        instanzKopplungscodeAblauf: gueltigBis,
+      }));
+      return reply.send({ kopplungscode: token, gueltigBis });
+    },
+  );
 
   app.get("/benutzer/mich/instanzen", async (req, reply) => {
     if (!requireAuth(req, reply)) return;

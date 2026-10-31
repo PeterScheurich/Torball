@@ -1669,6 +1669,13 @@ Zielgruppe der wertvollste Test, den dieses Projekt machen kann.
   lesen, ableiten, bei Revisionskonflikt wiederholen) - das urspruengliche "lesen, hochzaehlen, mit alter Revision
   schreiben" verlor bei gleichzeitigen Anfragen Versuche (nur eine Anfrage gewann, die anderen scheiterten
   ungezaehlt). Neue Login-artige Zaehler dort mitziehen. Test: `auth-2fa-sperre.integration.test.ts`.
+  **Sensible Aktionen am eigenen Konto gehen durch `pruefeBestaetigung`** (`auth/bestaetigung.ts`): aktuelles Passwort,
+  bei aktiver 2FA zusaetzlich ein aktueller Code (einmalig gueltig); falsche Eingaben zaehlen auf DENSELBEN Zaehler
+  (`auth/loginZaehler.ts`), waehrend der Abkuehlzeit 429. Angewendet auf 2FA-Deaktivieren (Passwort + Code) und
+  Kopplungscode erzeugen (Passwort); 2FA-Einrichten ist bei aktiver 2FA gesperrt (409, erst deaktivieren). **Nach einer
+  Bestaetigung schreibt der Endpunkt ueber `aendereBenutzerAtomar`, NIE mit `req.benutzer` zurueck** - die Pruefung hat das
+  Konto bereits veraendert (Zaehler/Zeitschritt), eine Rueckschrift mit der alten Revision scheiterte mit 409. Neue sensible
+  Aktion = dort einhaengen. Test: `sensible-aktionen.integration.test.ts`.
 - **Login-Antwortzeit gleich halten** (Sicherheitsdurchsicht 2026-08-20): `/auth/login` ruft an den
   Pfaden, die sonst ohne bcrypt sofort zurückkehren würden (Konto existiert nicht / Konto in
   Abkühlzeit), `verbrenneLoginZeit()` (`backend/src/auth/passwort.ts`, bcrypt-Vergleich gegen einen

@@ -69,6 +69,7 @@ export function ProfilPage() {
   const [einrichtung, setEinrichtung] = useState<TotpEinrichtung | undefined>();
   const [code, setCode] = useState("");
   const [deaktivierenPasswort, setDeaktivierenPasswort] = useState("");
+  const [deaktivierenCode, setDeaktivierenCode] = useState("");
   const [fehler, setFehler] = useState<string | undefined>();
   const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
   const [hinweis, setHinweis] = useState<string | undefined>();
@@ -84,6 +85,7 @@ export function ProfilPage() {
   // Turnier-Sync (Abschnitt 21.3/23): mit diesem Konto gekoppelte lokale Installationen.
   const [instanzen, setInstanzen] = useState<VerbundeneInstanzProfil[]>([]);
   const [neuerKopplungscode, setNeuerKopplungscode] = useState<string | undefined>();
+  const [kopplungPasswort, setKopplungPasswort] = useState("");
   const instanzenLaden = useCallback(() => {
     getVerbundeneInstanzen()
       .then(setInstanzen)
@@ -93,11 +95,13 @@ export function ProfilPage() {
     instanzenLaden();
   }, [instanzenLaden]);
 
-  async function kopplungscodeErzeugen() {
+  async function kopplungscodeErzeugen(event: React.FormEvent) {
+    event.preventDefault();
     setFehler(undefined);
     try {
-      const { kopplungscode } = await erzeugeInstanzKopplungscode();
+      const { kopplungscode } = await erzeugeInstanzKopplungscode(kopplungPasswort);
       setNeuerKopplungscode(kopplungscode);
+      setKopplungPasswort("");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Erzeugen des Kopplungscodes");
     }
@@ -262,9 +266,10 @@ export function ProfilPage() {
     event.preventDefault();
     setFehler(undefined);
     try {
-      const aktualisiert = await totpDeaktivieren(deaktivierenPasswort);
+      const aktualisiert = await totpDeaktivieren(deaktivierenPasswort, deaktivierenCode);
       aktualisiereBenutzer(aktualisiert);
       setDeaktivierenPasswort("");
+      setDeaktivierenCode("");
       setHinweis("Zwei-Faktor-Authentifizierung wurde deaktiviert.");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Passwort ist falsch");
@@ -563,6 +568,18 @@ export function ProfilPage() {
                 onChange={(e) => setDeaktivierenPasswort(e.target.value)}
               />
             </div>
+            <div className="feld">
+              <label htmlFor="deaktivierenCode">Aktueller Code aus der Authenticator-App</label>
+              <input
+                id="deaktivierenCode"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required
+                value={deaktivierenCode}
+                onChange={(e) => setDeaktivierenCode(e.target.value)}
+              />
+            </div>
             <button type="submit">2FA deaktivieren</button>
           </form>
         </>
@@ -647,9 +664,24 @@ export function ProfilPage() {
         </div>
       )}
 
-      <button type="button" onClick={kopplungscodeErzeugen}>
-        Neue Instanz koppeln
-      </button>
+      <form onSubmit={kopplungscodeErzeugen}>
+        <div className="feld">
+          <label htmlFor="kopplungPasswort">Passwort zur Bestätigung</label>
+          <input
+            id="kopplungPasswort"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={kopplungPasswort}
+            onChange={(e) => setKopplungPasswort(e.target.value)}
+          />
+          <span className="feld-hinweis">
+            Der Kopplungscode verbindet eine lokale Installation dauerhaft mit deinem Konto – deshalb fragen wir
+            hier noch einmal nach.
+          </span>
+        </div>
+        <button type="submit">Neue Instanz koppeln</button>
+      </form>
     </>
   );
 }

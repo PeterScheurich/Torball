@@ -927,6 +927,11 @@ am Konto gemerkt, derselbe oder ein früherer Code wird abgewiesen. Gleichzeitig
 mitgezählt (atomare Änderung mit Wiederholung bei Revisionskonflikt). Bewusst in Kauf genommen: Wer das Passwort
 kennt, kann das Konto durch falsche Codes für höchstens die Abkühlzeit sperren – dieselbe Abwägung wie beim Passwort.
 
+**Erneute Bestätigung sensibler Aktionen (31.10.2026):** Das Deaktivieren der eigenen 2FA verlangt Passwort **und**
+einen aktuellen Code; bei aktiver 2FA lässt sich der Schlüssel nicht neu einrichten (erst deaktivieren). Das Erzeugen
+eines Kopplungscodes für eine lokale Installation verlangt das Passwort. Falsche Eingaben zählen auf denselben Zähler
+wie beim Login (gleiche Abkühlzeit); ein Code gilt auch hier nur einmal.
+
 ## 22. Spielprotokoll und Event-Sourcing
 
 ### 22.1 Grundprinzip

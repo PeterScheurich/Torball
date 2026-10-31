@@ -723,8 +723,9 @@ export function totpBestaetigen(code: string): Promise<BenutzerProfil> {
   return anfrage("/benutzer/2fa/bestaetigen", { method: "POST", body: JSON.stringify({ code }) });
 }
 
-export function totpDeaktivieren(passwort: string): Promise<BenutzerProfil> {
-  return anfrage("/benutzer/2fa/deaktivieren", { method: "POST", body: JSON.stringify({ passwort }) });
+/** Verlangt das Passwort und, solange 2FA aktiv ist, einen aktuellen Code aus der App. */
+export function totpDeaktivieren(passwort: string, code: string): Promise<BenutzerProfil> {
+  return anfrage("/benutzer/2fa/deaktivieren", { method: "POST", body: JSON.stringify({ passwort, code }) });
 }
 
 // --- Turnier-Berechtigungen ---
@@ -1147,8 +1148,9 @@ export function trenneVonServer(): Promise<void> {
 
 export type VerbundeneInstanzProfil = Omit<VerbundeneInstanz, "instanzTokenHash">;
 
-export function erzeugeInstanzKopplungscode(): Promise<{ kopplungscode: string; gueltigBis: string }> {
-  return anfrage("/benutzer/mich/instanz-kopplungscode", { method: "POST" });
+/** Der Kopplungscode wird gegen ein dauerhaftes Token getauscht - deshalb Passwort-Bestaetigung. */
+export function erzeugeInstanzKopplungscode(passwort: string): Promise<{ kopplungscode: string; gueltigBis: string }> {
+  return anfrage("/benutzer/mich/instanz-kopplungscode", { method: "POST", body: JSON.stringify({ passwort }) });
 }
 
 export function getVerbundeneInstanzen(): Promise<VerbundeneInstanzProfil[]> {
