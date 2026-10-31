@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { Benutzer, GlobaleRolle, VerbundeneInstanz } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findAllByType, findById, insertDoc, newId } from "../repository";
 import { oeffentlichesProfil } from "../auth/benutzerProfil";
+import { managerSiehtKonto, profilFuerManager } from "../auth/benutzerSicht";
 import { hashePasswort, passwortRegelVerstoss, passwortStimmt } from "../auth/passwort";
 import { requireAuth, requireRolle } from "../auth/plugin";
 import { loescheAlleSessionenVonBenutzer, loescheAndereSessionenVonBenutzer } from "../auth/session";
@@ -29,6 +30,7 @@ interface BenutzerAnlegenBody {
   name: string;
   vorname?: string;
   globaleRolle: GlobaleRolle;
+  vereinId?: string;
 }
 
 const benutzerAnlegenSchema = {
@@ -39,6 +41,8 @@ const benutzerAnlegenSchema = {
     name: { type: "string", minLength: 1 },
     vorname: { type: "string" },
     globaleRolle: { type: "string", enum: ["admin", "manager", "benutzer"] },
+    // Nur ein Admin darf einen Verein vorgeben; bei einer Einladung durch einen Manager gilt dessen Verein.
+    vereinId: { type: "string" },
   },
 } as const;
 
@@ -46,6 +50,8 @@ interface BenutzerAktualisierenBody {
   name?: string;
   globaleRolle?: GlobaleRolle;
   gesperrt?: boolean;
+  /** null loescht die Zuordnung. Nur ein Admin darf das setzen. */
+  vereinId?: string | null;
 }
 
 const benutzerAktualisierenSchema = {
@@ -54,6 +60,7 @@ const benutzerAktualisierenSchema = {
     name: { type: "string", minLength: 1 },
     globaleRolle: { type: "string", enum: ["admin", "manager", "benutzer"] },
     gesperrt: { type: "boolean" },
+    vereinId: { type: ["string", "null"] },
   },
 } as const;
 
@@ -61,7 +68,12 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
   app.get("/benutzer", async (req, reply) => {
     if (!requireRolle(req, reply, ["admin", "manager"])) return;
     const alle = await findAllByType<Benutzer>("benutzer");
-    return alle.map(oeffentlichesProfil);
+    // Admin: alle Konten. Manager: nur die eigenen, selbst eingeladenen und die des eigenen Vereins -
+    // und auch davon nur die zum Verwalten noetigen Felder, keine Kontaktdaten (benutzerSicht.ts).
+    if (req.benutzer!.globaleRolle === "admin") return alle.map(oeffentlichesProfil);
+    return alle
+      .filter((b) => managerSiehtKonto(req.benutzer!, b))
+      .map((b) => profilFuerManager(oeffentlichesProfil(b)));
   });
 
   /**
@@ -88,6 +100,20 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(409).send({ error: "Ein Benutzer mit dieser E-Mail-Adresse existiert bereits." });
       }
 
+      // Verein des neuen Kontos: Ein Manager vergibt keinen - die Einladung erbt seinen eigenen (so
+      // sieht er sie in seiner Liste und sie gehoert gleich zum richtigen Verein). Ein Admin darf einen
+      // vorgeben.
+      let vereinId: string | undefined = req.benutzer!.globaleRolle === "manager" ? req.benutzer!.vereinId : undefined;
+      if (req.body.vereinId) {
+        if (req.benutzer!.globaleRolle !== "admin") {
+          return reply.code(403).send({ error: "Nur Administratoren ordnen Konten einem Verein zu." });
+        }
+        if (!(await findById(req.body.vereinId, "verein"))) {
+          return reply.code(400).send({ error: "Der angegebene Verein existiert nicht." });
+        }
+        vereinId = req.body.vereinId;
+      }
+
       const { token, hash } = erzeugeToken();
       const id = newId("benutzer");
       const benutzer: Benutzer = {
@@ -95,6 +121,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         docType: "benutzer",
         benutzerId: id,
         email,
+        vereinId,
         name: req.body.name,
         vorname: req.body.vorname?.trim() || undefined,
         globaleRolle: req.body.globaleRolle,
@@ -318,10 +345,23 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       if (!requireRolle(req, reply, ["admin", "manager"])) return;
       const bestehend = await findById<Benutzer>(req.params.id, "benutzer");
       if (!bestehend) return reply.code(404).send({ error: "Benutzer nicht gefunden" });
+      // Ein Manager kennt nur "seine" Konten - fuer alle anderen gilt: nicht gefunden (nicht 403,
+      // das wuerde verraten, dass es das Konto gibt).
+      if (req.benutzer!.globaleRolle === "manager" && !managerSiehtKonto(req.benutzer!, bestehend)) {
+        return reply.code(404).send({ error: "Benutzer nicht gefunden" });
+      }
 
       const vergebendeRolle = req.benutzer!.globaleRolle;
       if (!darfZielRolleVergeben(vergebendeRolle, bestehend.globaleRolle)) {
         return reply.code(403).send({ error: "Diesen Benutzer darfst du nicht bearbeiten." });
+      }
+      if ("vereinId" in req.body) {
+        if (vergebendeRolle !== "admin") {
+          return reply.code(403).send({ error: "Nur Administratoren ordnen Konten einem Verein zu." });
+        }
+        if (req.body.vereinId && !(await findById(req.body.vereinId, "verein"))) {
+          return reply.code(400).send({ error: "Der angegebene Verein existiert nicht." });
+        }
       }
       if (req.body.globaleRolle && !darfZielRolleVergeben(vergebendeRolle, req.body.globaleRolle)) {
         return reply.code(403).send({ error: "Diese Rolle darfst du nicht vergeben." });
@@ -344,10 +384,11 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       // sich hier sensible Felder wie passwortHash, zweiFaSecret oder die Token-Hashes in ein fremdes
       // Konto injizieren (Konto-Uebernahme). globaleRolle bleibt an die darfZielRolleVergeben-Pruefung
       // oben gebunden; gesperrt wird ueber sperrPatch mitgesetzt.
-      const aenderungen: Partial<Pick<Benutzer, "name" | "globaleRolle" | "gesperrt">> = {};
+      const aenderungen: Partial<Pick<Benutzer, "name" | "globaleRolle" | "gesperrt" | "vereinId">> = {};
       if (req.body.name !== undefined) aenderungen.name = req.body.name;
       if (req.body.globaleRolle !== undefined) aenderungen.globaleRolle = req.body.globaleRolle;
       if ("gesperrt" in req.body) aenderungen.gesperrt = req.body.gesperrt;
+      if ("vereinId" in req.body) aenderungen.vereinId = req.body.vereinId ?? undefined;
 
       const aktualisiert = await insertDoc({ ...bestehend, ...aenderungen, ...sperrPatch });
       return oeffentlichesProfil(aktualisiert);
@@ -368,6 +409,9 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
     if (!requireRolle(req, reply, ["admin", "manager"])) return;
     const ziel = await findById<Benutzer>(req.params.id, "benutzer");
     if (!ziel) return reply.code(404).send({ error: "Benutzer nicht gefunden" });
+    if (req.benutzer!.globaleRolle === "manager" && !managerSiehtKonto(req.benutzer!, ziel)) {
+      return reply.code(404).send({ error: "Benutzer nicht gefunden" });
+    }
     if (!darfZielRolleVergeben(req.benutzer!.globaleRolle, ziel.globaleRolle)) {
       return reply.code(403).send({ error: "Diesen Benutzer darfst du nicht bearbeiten." });
     }
@@ -416,6 +460,9 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
     if (!requireRolle(req, reply, ["admin", "manager"])) return;
     const ziel = await findById<Benutzer>(req.params.id, "benutzer");
     if (!ziel) return reply.code(404).send({ error: "Benutzer nicht gefunden" });
+    if (req.benutzer!.globaleRolle === "manager" && !managerSiehtKonto(req.benutzer!, ziel)) {
+      return reply.code(404).send({ error: "Benutzer nicht gefunden" });
+    }
     if (!darfZielRolleVergeben(req.benutzer!.globaleRolle, ziel.globaleRolle)) {
       return reply.code(403).send({ error: "Diesen Benutzer darfst du nicht bearbeiten." });
     }

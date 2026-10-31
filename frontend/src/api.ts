@@ -631,7 +631,8 @@ export function benutzerEinladen(
 
 export function benutzerAktualisieren(
   id: string,
-  daten: Partial<Pick<Benutzer, "name" | "globaleRolle" | "gesperrt">>,
+  // vereinId: null loescht die Zuordnung; nur ein Admin darf sie setzen (der Server prueft das).
+  daten: Partial<Pick<Benutzer, "name" | "globaleRolle" | "gesperrt">> & { vereinId?: string | null },
 ): Promise<BenutzerProfil> {
   return anfrage(`/benutzer/${id}`, { method: "PUT", body: JSON.stringify(daten) });
 }

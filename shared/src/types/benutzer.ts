@@ -1,4 +1,4 @@
-import { BenutzerId, CouchMeta, Zeitstempel } from "./common";
+import { BenutzerId, CouchMeta, VereinId, Zeitstempel } from "./common";
 
 /** Siehe Gesamtspezifikation Abschnitt 21.1. */
 export type GlobaleRolle = "admin" | "manager" | "benutzer";
@@ -36,6 +36,13 @@ export interface Benutzer extends CouchMeta {
   gesperrt: boolean;
   letzteAnmeldung?: Zeitstempel;
   erstelltVon?: BenutzerId;
+  /**
+   * Zugehoerigkeit zu einem Verein (Stammdaten). Vergibt AUSSCHLIESSLICH ein Admin - die Person selbst
+   * kann sie nicht setzen. Grundlage der eingeschraenkten Sicht fuer Manager: Ein Manager sieht nur
+   * sich selbst, die von ihm eingeladenen Konten und die Konten seines Vereins (siehe
+   * backend/src/auth/benutzerSicht.ts). Eine Einladung durch einen Manager erbt dessen Verein.
+   */
+  vereinId?: VereinId;
   erstelltAm: Zeitstempel;
 
   /**

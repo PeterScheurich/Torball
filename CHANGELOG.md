@@ -7,6 +7,15 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Datenschutz: Manager sehen nicht mehr alle Konten.** Ein Manager sieht in der Benutzerverwaltung nur noch
+  sein eigenes Konto, die Personen, die er selbst eingeladen hat, und die Konten seines Vereins – ohne
+  Telefonnummer, Adresse und ähnliche Angaben. Administratoren sehen weiterhin alle. Neu ist die Spalte „Verein“:
+  Die Vereinszugehörigkeit eines Kontos vergibt ein Administrator, die Person selbst kann sie nicht ändern.
+  Wer als Manager jemanden einlädt, bringt ihn damit automatisch in den eigenen Verein. **Bitte nach dem
+  Aktualisieren** den Managern einen Verein zuordnen – bis dahin sehen sie nur ihr eigenes Konto und ihre
+  eigenen Einladungen. Ein Turnier für jemanden aus einem anderen Verein freigeben geht weiterhin über die
+  E-Mail-Adresse.
+
 - **Neu: Turnierart „National“ oder „International“.** Beim Anlegen (und später in der Übersicht) wählbar.
   Bei einem internationalen Turnier, etwa nach IBSA-Regeln, gilt „Nichtantreten“ als 5:0 statt 3:0, und bei den
   Mannschaften steht „Land“ statt „Bundesland“ (ohne die Liste deutscher Bundesländer). Beim Wechsel der Art

@@ -578,6 +578,17 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
+        frage: "Warum sehe ich als Manager nicht alle Konten?",
+        text: [
+          "Aus Datenschutzgründen sieht ein Manager nur sein eigenes Konto, die Personen, die er selbst eingeladen hat, und die Konten seines Vereins. Administratoren sehen alle Konten. Auch bei den Konten, die du siehst, bekommst du nur das Nötige angezeigt – Telefonnummer und Adresse gehören nicht dazu.",
+          "Die Vereinszugehörigkeit eines Kontos vergibt ein Administrator in der Benutzerverwaltung (Spalte „Verein“); die Person selbst kann sie nicht ändern. Lädst du als Manager jemanden ein, gehört die Person automatisch zu deinem Verein. Ist dir selbst noch kein Verein zugeordnet, sprich einen Administrator an.",
+          {
+            hinweis:
+              "Ein Turnier für jemanden aus einem anderen Verein freizugeben geht trotzdem: Du gibst im Freigabe-Dialog die E-Mail-Adresse der Person ein – eine Liste aller Konten gibt es nicht.",
+          },
+        ],
+      },
+      {
         frage: "Jemand kommt nicht mehr in sein Konto – was kann ich tun?",
         text: [
           "In der Benutzerverwaltung (nur für Administrator und Manager) gibt es je nach Fall drei Wege:",

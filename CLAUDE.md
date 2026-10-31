@@ -184,7 +184,7 @@ bleibt Admin-only; der Menüpunkt ist jetzt für alle angemeldeten Personen
 sichtbar (vorher admin-only versteckt), das Formular für Nicht-Admins über
 dasselbe `disabled`-`<fieldset>`-Muster gesperrt.
 
-**Freigabe an Personen: nur per genauer E-Mail-Adresse, nie aus einer Benutzerliste (2026-10-06, Rückmeldung eines Testers).** `GET /benutzer` ist für Admin UND Manager freigegeben und liefert das VOLLE Profil aller Konten (alles außer Hashes/Geheimnissen: Telefon, Adresse, Verein/Verband, letzte Anmeldung) - die Freigabe-Oberfläche hat daraus eine Auswahl mit Name+Adresse aller Benutzer gebaut. Jetzt `POST /turniere/:id/berechtigungen/suche` (`turnierBerechtigung.ts`): genaue Adresse rein, nur `{benutzerId, name}` raus; keine Teilsuche, gesperrte Konten nicht auffindbar, Zugriff auf das Turnier nötig, `SENSIBEL_RATE_LIMIT`, POST damit die Adresse nicht in der URL steht. `GET .../berechtigungen` liefert den Namen mit (`benutzerName`), damit die Oberfläche keine Liste braucht. **Bewusst noch offen:** Die Benutzerverwaltung selbst zeigt Managern weiterhin alle Konten (Fachentscheidung nötig: Vereinszugehörigkeit am Konto, vom Admin gesetzt, Manager sehen nur den eigenen Verein). Bei jeder neuen Stelle, die Personen auswählen lässt: dieselbe Suche verwenden, keine Liste anbieten. Test: `freigabe-suche.integration.test.ts`.
+**Freigabe an Personen: nur per genauer E-Mail-Adresse, nie aus einer Benutzerliste (2026-10-06, Rückmeldung eines Testers).** `GET /benutzer` ist für Admin UND Manager freigegeben und liefert das VOLLE Profil aller Konten (alles außer Hashes/Geheimnissen: Telefon, Adresse, Verein/Verband, letzte Anmeldung) - die Freigabe-Oberfläche hat daraus eine Auswahl mit Name+Adresse aller Benutzer gebaut. Jetzt `POST /turniere/:id/berechtigungen/suche` (`turnierBerechtigung.ts`): genaue Adresse rein, nur `{benutzerId, name}` raus; keine Teilsuche, gesperrte Konten nicht auffindbar, Zugriff auf das Turnier nötig, `SENSIBEL_RATE_LIMIT`, POST damit die Adresse nicht in der URL steht. `GET .../berechtigungen` liefert den Namen mit (`benutzerName`), damit die Oberfläche keine Liste braucht. **Erledigt am selben Tag (Stufe 2):** Die Benutzerverwaltung zeigt Managern nur noch eigene, selbst eingeladene und Vereins-Konten (siehe übernächster Absatz). Bei jeder neuen Stelle, die Personen auswählen lässt: dieselbe Suche verwenden, keine Liste anbieten. Test: `freigabe-suche.integration.test.ts`.
 
 **„Gesamtzeit pro Spiel“ ist nur eine andere Eingabe, kein neues Feld (2026-10-06):** Gespeichert wird weiterhin allein `pauseZwischenSpielenMinuten` (der Puffer); `TurnierregelnFormular` zeigt Spielzeit × Halbzeiten + Halbzeitpause + Puffer als Gesamtzeit und rechnet beim Eintippen zurück. Beim Tippen muss der Text-Zwischenstand (`gesamtzeitText`) erhalten bleiben - ein Wert unter der Mindestdauer (die „2“ auf dem Weg zur „25“) darf nicht sofort korrigiert werden. Neue Standardwerte (`konfiguration.ts`): Puffer 13 (= 25 Minuten bei 2 × 5 + 2), `verlaengerungAktiv: false`.
 
@@ -1320,6 +1320,19 @@ Turnier zurückgeben, ziehen das mit. Die Hashes bleiben in der Datenbank (Code-
 Turnier-Codes: Mindestlänge 6 (nur neu gesetzte), ein geänderter oder gelöschter Code beendet die
 Code-Sitzungen DIESER Rolle (`turnierCode.ts`). Test: `turnier-codehashes.integration.test.ts`,
 `owasp-haertung.integration.test.ts`.
+
+**Manager sehen nur „ihre“ Konten (2026-10-31, Auftraggeber-Entscheidung, Datenschutz/DSGVO):** `GET /benutzer`
+lieferte jeder Manager-Rolle das VOLLE Profil ALLER Konten. Jetzt (`backend/src/auth/benutzerSicht.ts`):
+Admin sieht alle; ein **Manager** sieht sich selbst, die von ihm eingeladenen Konten (`erstelltVon`) und die
+Konten desselben Vereins (`Benutzer.vereinId`) - und von anderen nur `MANAGER_SICHT_FELDER` (keine Telefon-/
+Adressdaten). Ein Manager OHNE Verein sieht NICHT „alle ohne Verein“. **Die Regel gilt auch für die Routen mit
+`:id`** (PUT, passwort-reset-ausloesen, einladung-erneut-senden): ein fremdes Konto ist für einen Manager
+„nicht gefunden“ (404, nicht 403 - das würde die Existenz verraten). Den Verein am Konto setzt NUR ein Admin
+(`PUT /benutzer/:id` mit `vereinId`, `null` löscht); eine Einladung durch einen Manager erbt dessen Verein, ein
+Manager darf keinen vorgeben. Die Freigabe-Suche per genauer E-Mail-Adresse (siehe oben) bleibt bewusst
+vereinsübergreifend. **Wer eine neue Route mit einem Benutzer-`:id` baut, ruft für Manager `managerSiehtKonto`
+auf.** Test: `benutzerSicht.test.ts`, `benutzer-sicht.integration.test.ts`. Die Regel betrifft bewusst nur die
+Rolle Manager (Auftraggeber: „erst mal nur auf Manager anwenden“).
 
 **Turnierart national/international und das Regelprofil (2026-10-31, Auftraggeber-Entscheidung nach
 Tester-Rückmeldung):** `Turnier.turnierart?` (`national` | `international`, fehlt = national). Wirkung über

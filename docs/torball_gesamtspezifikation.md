@@ -26,6 +26,7 @@
 | Erkenntnisse aus der Umsetzung (Turnier-Sync / Instanz-Kopplung) | 20.08.2026 | Abschnitte 19, 21.3 und 23 aktualisiert: die am 13.08. noch als „vorgemerkt" geführte Sync-Resilienz der Zentralen Plattform ist inzwischen umgesetzt – aber bewusst **ohne** PouchDB↔CouchDB: eine strikte 1:1-Instanz-Kopplung mit Checkout-Modell (Server-Turnier ist entweder frei oder an genau eine lokale Installation ausgecheckt), Voll-Synchronisation per Check-in alle 45 s und serverseitiger Schreibsperre während des Checkouts. Der ursprünglich spezifizierte PouchDB-Sync (23.1/23.2) bleibt für den Standalone-Modus vorgemerkt. Details siehe `docs/Protokolle/2026-08-13-turnier-sync-grundlage.md` und `docs/Protokolle/2026-08-19-turnier-sync-vollsync-sperre.md`. |
 | Rückmeldungen eines Testers (Freigabe, Gesamtzeit, Standardwerte) | 06.10.2026 | Abschnitte 5.1, 8 und 21.2 angepasst: Freigabe per genauer E-Mail-Adresse statt Benutzerliste (Datenschutz); „Pause zwischen Spielen“ wird als Gesamtzeit pro Spiel eingegeben, Standard 25 Min.; Verlängerung bei Unentschieden standardmäßig inaktiv. |
 | Turnierart national/international | 31.10.2026 | Abschnitt 5.1 ergänzt: Regelprofil je Turnierart (Nichtantreten 5:0 bei international, „Land“ statt „Bundesland“), erweiterbar. |
+| Datenschutz: Sicht der Manager | 31.10.2026 | Abschnitt 21.1 ergänzt: Manager sehen nur eigene, selbst eingeladene und Vereins-Konten, ohne Kontaktdaten; Verein am Konto nur durch Admins. |
 
 Dieses Dokument ersetzt die einzelnen Vorgängerdokumente inhaltlich (führt sie zusammen). Sie bleiben als Historie im Projekt erhalten.
 
@@ -835,6 +836,13 @@ Kein zusätzliches Datenmodell-Element nötig: Ein Spieler gilt als ausgesetzt z
 | Admin | Alle inkl. Admins | Ja | Alles |
 | Manager | Benutzer + Manager | Ja (Hauptaufgabe) | Eigene + zugewiesene |
 | Benutzer | Nein | Nein | Nur zugewiesene |
+
+**Sicht auf andere Konten (Datenschutz, 31.10.2026):** Ein Admin sieht alle Konten. Ein **Manager** sieht nur
+sich selbst, die von ihm eingeladenen Konten und die Konten **seines Vereins** – und von anderen nur die zum
+Verwalten nötigen Felder (keine Telefonnummer, Adresse oder Voreinstellungen). Die Vereinszugehörigkeit
+(`Benutzer.vereinId`) vergibt **ausschließlich ein Admin**; eine Einladung durch einen Manager erbt dessen Verein.
+Die Regel gilt zunächst nur für die Rolle Manager. Eine Person aus einem fremden Verein erreicht man über die
+**genaue E-Mail-Adresse** (Freigabe-Dialog, 21.2), nie über eine Liste.
 
 ### 21.2 Turnierbezogene Berechtigungen
 

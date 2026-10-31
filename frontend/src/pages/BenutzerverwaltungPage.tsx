@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { GlobaleRolle } from "@torball/shared";
+import type { GlobaleRolle, Verein } from "@torball/shared";
 import {
   benutzerAktualisieren,
   benutzerEinladen,
@@ -7,9 +7,11 @@ import {
   benutzerPasswortResetAusloesen,
   benutzerZweiFaDeaktivieren,
   getBenutzerListe,
+  getVereine,
   type BenutzerProfil,
 } from "../api";
 import { useAuth } from "../auth";
+import { SpeicherHinweis, useSpeicherHinweis } from "../components/SpeicherHinweis";
 
 /** Anzeige-Labels der globalen Rollen. */
 const ROLLEN_LABEL: Record<GlobaleRolle, string> = {
@@ -27,6 +29,8 @@ const ROLLEN_LABEL: Record<GlobaleRolle, string> = {
 export function BenutzerverwaltungPage() {
   const { benutzer: angemeldeter } = useAuth();
   const [liste, setListe] = useState<BenutzerProfil[]>([]);
+  const [vereine, setVereine] = useState<Verein[]>([]);
+  const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
   const [name, setName] = useState("");
   const [vorname, setVorname] = useState("");
   const [email, setEmail] = useState("");
@@ -48,6 +52,11 @@ export function BenutzerverwaltungPage() {
 
   useEffect(() => {
     laden();
+    // Fuer die Anzeige des Vereins (Admin: Auswahl, Manager: Name) - die Liste der Vereine ist fuer
+    // jede Anmeldung lesbar.
+    getVereine()
+      .then(setVereine)
+      .catch(() => {});
   }, [laden]);
 
   // Welche Rollen der/die Angemeldete vergeben darf: nur ein Admin darf "admin" vergeben.
@@ -86,6 +95,18 @@ export function BenutzerverwaltungPage() {
 
   // Aendert die globale Rolle eines Benutzers (Eigen-Account und - fuer Manager - Admins sind
   // im UI gesperrt, damit sich niemand selbst hoch-/herunterstuft; der Server prueft zusaetzlich).
+  // Nur ein Admin ordnet ein Konto einem Verein zu (Datenschutz: darauf beruht die eingeschraenkte
+  // Sicht der Manager). Speichert sofort, deshalb mit angesagter Rueckmeldung.
+  async function vereinAendern(b: BenutzerProfil, vereinId: string) {
+    try {
+      await benutzerAktualisieren(b._id, { vereinId: vereinId || null });
+      meldeGespeichert(`Verein von ${b.name} gespeichert.`);
+      await laden();
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Zuordnen des Vereins");
+    }
+  }
+
   async function rolleAendern(id: string, neueRolle: GlobaleRolle) {
     try {
       await benutzerAktualisieren(id, { globaleRolle: neueRolle });
@@ -165,8 +186,17 @@ export function BenutzerverwaltungPage() {
     <>
       <h1>Benutzerverwaltung</h1>
       {fehler && <p role="alert">{fehler}</p>}
+      <SpeicherHinweis hinweis={speicherHinweis} />
 
       <h2>Bestehende Benutzer</h2>
+      {/* Volle Textfarbe: erklaert, warum die Liste kuerzer ist als erwartet (siehe CLAUDE.md). */}
+      {angemeldeter?.globaleRolle === "manager" && (
+        <p>
+          Du siehst dein eigenes Konto, die Personen, die du eingeladen hast, und die Konten deines Vereins.
+          {!angemeldeter.vereinId &&
+            " Dir ist noch kein Verein zugeordnet – das kann ein Administrator hier tun, dann siehst du auch die Konten deines Vereins."}
+        </p>
+      )}
       <div className="tabellen-wrapper">
         <table>
           <thead>
@@ -174,6 +204,7 @@ export function BenutzerverwaltungPage() {
               <th scope="col">Name</th>
               <th scope="col">E-Mail</th>
               <th scope="col">Rolle</th>
+              <th scope="col">Verein</th>
               <th scope="col">Status</th>
               <th scope="col">Aktionen</th>
             </tr>
@@ -202,6 +233,25 @@ export function BenutzerverwaltungPage() {
                       </option>
                     ))}
                   </select>
+                </td>
+                <td>
+                  {angemeldeter?.globaleRolle === "admin" ? (
+                    <>
+                      <label className="sr-only" htmlFor={`verein-${b._id}`}>
+                        Verein von {b.name}
+                      </label>
+                      <select id={`verein-${b._id}`} value={b.vereinId ?? ""} onChange={(e) => vereinAendern(b, e.target.value)}>
+                        <option value="">— keiner —</option>
+                        {vereine.map((v) => (
+                          <option key={v._id} value={v._id}>
+                            {v.name}
+                          </option>
+                        ))}
+                      </select>
+                    </>
+                  ) : (
+                    (vereine.find((v) => v._id === b.vereinId)?.name ?? "—")
+                  )}
                 </td>
                 <td>
                   {b.gesperrt
