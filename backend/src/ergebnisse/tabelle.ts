@@ -13,6 +13,8 @@ export interface TabellenZeile {
   toreGegen: number;
   tordifferenz: number;
   punkte: number;
+  /** Gruppe der Vorrunde (Turniermodus mit zwei Gruppen); fehlt sonst. */
+  gruppe?: string;
 }
 
 /**
@@ -49,7 +51,9 @@ export function berechneTabelle(
     });
   }
 
-  const gewertete = spiele.filter((s) => s.ergebnisA != null && s.ergebnisB != null);
+  // Nur Vorrundenspiele zaehlen in die Tabelle: Spiele spaeterer Runden (Turniermodus mit Endrunde,
+  // `planId` gesetzt) entscheiden ueber den Weiterweg, nicht ueber die Gruppen-/Turniertabelle.
+  const gewertete = spiele.filter((s) => !s.planId && s.ergebnisA != null && s.ergebnisB != null);
 
   for (const spiel of gewertete) {
     const a = zeilenNachId.get(spiel.mannschaftAId);
@@ -100,6 +104,74 @@ export function berechneTabelle(
   const zeilen = [...zeilenNachId.values()];
   zeilen.sort((x, y) => vergleicheZeilen(x, y, turnier.tabellenKriterien, gewertete));
   return zeilen;
+}
+
+/**
+ * Tabellen eines Turniermodus mit Gruppen: je Gruppe eine eigene Tabelle (jede Zeile traegt ihre Gruppe),
+ * Gruppe A vor Gruppe B. Die von der Turnierleitung festgelegte Rangentscheidung bei Gleichstand wirkt mit.
+ * Ohne Gruppen-Modus: die normale Tabelle.
+ */
+export function berechneTabellen(turnier: Turnier, mannschaften: MannschaftImTurnier[], spiele: Spiel[]): TabellenZeile[] {
+  if (turnier.modus?.vorlage.gruppen !== 2) return berechneTabelle(turnier, mannschaften, spiele);
+  const zeilen: TabellenZeile[] = [];
+  for (const g of ["A", "B"]) {
+    const gruppe = mannschaften.filter((m) => m.gruppe === g);
+    const ids = new Set(gruppe.map((m) => m._id));
+    const gruppenSpiele = spiele.filter((s) => ids.has(s.mannschaftAId) && ids.has(s.mannschaftBId));
+    const r = berechneRangfolge(turnier, gruppe, gruppenSpiele, turnier.modus.vorrang?.[g]);
+    zeilen.push(...r.zeilen.map((z) => ({ ...z, gruppe: g })));
+  }
+  return zeilen;
+}
+
+/** Mannschaften, die nach ALLEN Tabellenkriterien gleichauf liegen (Plaetze von-bis, 1-basiert). */
+export interface Gleichstand {
+  vonPlatz: number;
+  bisPlatz: number;
+  mannschaftIds: string[];
+}
+
+export interface Rangfolge {
+  zeilen: TabellenZeile[];
+  /** Nur UNAUFGELOESTE Gleichstaende - die Turnierleitung entscheidet (Auftraggeber 31.10.2026). */
+  gleichstaende: Gleichstand[];
+}
+
+/**
+ * Tabelle plus Erkennung echter Gleichstaende (Turniermodus mit Endrunde: wer Platz 2 und 3 belegt,
+ * entscheidet ueber die Paarungen). Zuerst gilt die festgelegte Entscheidungsreihenfolge
+ * (`turnier.tabellenKriterien`); bleibt eine Gruppe gleichauf, wirkt die von der Turnierleitung
+ * festgelegte Reihenfolge `vorrang` (Mannschafts-IDs) - aber nur, wenn sie ALLE gleichauf liegenden
+ * Mannschaften nennt. Sonst bleibt der Gleichstand offen und wird gemeldet.
+ */
+export function berechneRangfolge(
+  turnier: Turnier,
+  mannschaften: MannschaftImTurnier[],
+  spiele: Spiel[],
+  vorrang?: string[],
+): Rangfolge {
+  const zeilen = berechneTabelle(turnier, mannschaften, spiele);
+  const gewertete = spiele.filter((s) => !s.planId && s.ergebnisA != null && s.ergebnisB != null);
+  const gleichstaende: Gleichstand[] = [];
+  let i = 0;
+  while (i < zeilen.length) {
+    let j = i;
+    while (j + 1 < zeilen.length && vergleicheZeilen(zeilen[j], zeilen[j + 1], turnier.tabellenKriterien, gewertete) === 0) {
+      j++;
+    }
+    if (j > i) {
+      const lauf = zeilen.slice(i, j + 1);
+      const ids = lauf.map((z) => z.mannschaftId);
+      if (vorrang && ids.every((id) => vorrang.includes(id))) {
+        lauf.sort((a, b) => vorrang.indexOf(a.mannschaftId) - vorrang.indexOf(b.mannschaftId));
+        zeilen.splice(i, lauf.length, ...lauf);
+      } else {
+        gleichstaende.push({ vonPlatz: i + 1, bisPlatz: j + 1, mannschaftIds: ids });
+      }
+    }
+    i = j + 1;
+  }
+  return { zeilen, gleichstaende };
 }
 
 /**

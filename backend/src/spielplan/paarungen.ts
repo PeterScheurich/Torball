@@ -12,6 +12,8 @@ export interface Paarung {
   prioritaet: PaarungsPrioritaet;
   /** Bei doppeltem Turnier (wiederholungen=2): 1 = erstes, 2 = zweites Aufeinandertreffen. */
   durchgang: number;
+  /** Gruppe der Vorrunde (Turniermodus mit zwei Gruppen); fehlt sonst. */
+  gruppe?: string;
 }
 
 /**
@@ -56,6 +58,32 @@ export function erzeugePaarungen(
   }
 
   return paarungen;
+}
+
+/**
+ * Vorrunde mit Gruppen: jeder gegen jeden INNERHALB jeder Gruppe (Turniermodus mit zwei Gruppen).
+ * Die Paarungen der Gruppen werden abwechselnd gemischt (A, B, A, B ...), damit bei nur einem Feld nicht
+ * erst die ganze Gruppe A und dann die ganze Gruppe B spielt - die Planung greift sonst in dieser Reihenfolge zu.
+ * Mannschaften ohne Gruppe duerfen nicht uebergeben werden (das prueft der Aufrufer).
+ */
+export function erzeugeGruppenPaarungen(
+  mannschaften: MannschaftImTurnier[],
+  wiederholungen: 1 | 2,
+  bundeslandBeruecksichtigen: boolean,
+): Paarung[] {
+  const nachGruppe = ["A", "B"].map((g) =>
+    erzeugePaarungen(
+      mannschaften.filter((m) => m.gruppe === g),
+      wiederholungen,
+      bundeslandBeruecksichtigen,
+    ).map((p) => ({ ...p, gruppe: g })),
+  );
+  const ergebnis: Paarung[] = [];
+  const laenge = Math.max(nachGruppe[0].length, nachGruppe[1].length);
+  for (let i = 0; i < laenge; i++) {
+    for (const liste of nachGruppe) if (i < liste.length) ergebnis.push(liste[i]);
+  }
+  return ergebnis;
 }
 
 function prioritaetVon(

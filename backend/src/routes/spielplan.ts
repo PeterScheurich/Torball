@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { MannschaftImTurnier, Spiel, SpielplanBasis, Spielprotokoll, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
-import { erzeugePaarungen } from "../spielplan/paarungen";
+import { erzeugeGruppenPaarungen, erzeugePaarungen } from "../spielplan/paarungen";
 import { erstelleSpielplanVorschlag, type SpielplanEintrag } from "../spielplan/planung";
 import { berechneStartzeit } from "../spielplan/zeitplanung";
 import { requireZugriff } from "../auth/plugin";
@@ -61,7 +61,12 @@ function inhaltlichGleich(
  * Bewusst KEINE Pruefung, ob die Paarungsmenge exakt der erzeugePaarungen-Ausgabe entspricht - das
  * wuerde legitimes manuelles Umsortieren/Anpassen zu eng einschraenken.
  */
-function pruefeSpielplanEintraege(eintraege: SpielplanEintrag[], mannschaftIds: Set<string>): string | null {
+function pruefeSpielplanEintraege(
+  eintraege: SpielplanEintrag[],
+  mannschaftIds: Set<string>,
+  gruppeVon: Map<string, string | undefined> = new Map(),
+  mitGruppen = false,
+): string | null {
   const belegtProSlot = new Map<number, Set<string>>();
   for (const e of eintraege) {
     if (!mannschaftIds.has(e.mannschaftAId) || !mannschaftIds.has(e.mannschaftBId)) {
@@ -69,6 +74,10 @@ function pruefeSpielplanEintraege(eintraege: SpielplanEintrag[], mannschaftIds: 
     }
     if (e.mannschaftAId === e.mannschaftBId) {
       return "Ein Spiel darf nicht dieselbe Mannschaft gegen sich selbst enthalten.";
+    }
+    // Turniermodus mit Gruppen: Vorrundenspiele finden nur INNERHALB einer Gruppe statt.
+    if (mitGruppen && (e.gruppe !== gruppeVon.get(e.mannschaftAId) || e.gruppe !== gruppeVon.get(e.mannschaftBId))) {
+      return "Ein Vorrundenspiel darf nur Mannschaften derselben Gruppe enthalten.";
     }
     const belegt = belegtProSlot.get(e.slot) ?? new Set<string>();
     if (belegt.has(e.mannschaftAId) || belegt.has(e.mannschaftBId)) {
@@ -93,6 +102,9 @@ async function hatSpielprotokolle(turnierId: string): Promise<boolean> {
   const protokolle = await findAllBySelector<Spielprotokoll>({ docType: "spielprotokoll", turnierId });
   return protokolle.length > 0;
 }
+
+const ENDRUNDE_ERZEUGT_FEHLER =
+  "Der Spielplan kann nicht neu erzeugt werden: Spiele der Endrunde wurden bereits erzeugt.";
 
 const SPIELPROTOKOLLE_FEHLER =
   "Spielplan kann nicht neu erzeugt werden: es gibt bereits begonnene Spielprotokolle";
@@ -142,6 +154,10 @@ async function ladeUndBerechneVorschlag(
     reply.code(409).send({ error: SPIELPROTOKOLLE_FEHLER });
     return undefined;
   }
+  if (bestehendeSpiele.some((spiel) => spiel.planId)) {
+    reply.code(409).send({ error: ENDRUNDE_ERZEUGT_FEHLER });
+    return undefined;
+  }
 
   const wiederholungen = query.wiederholungen === "2" ? 2 : 1;
 
@@ -157,7 +173,26 @@ async function ladeUndBerechneVorschlag(
     return undefined;
   }
 
-  const paarungen = erzeugePaarungen(mannschaften, wiederholungen, turnier.bundeslandBeruecksichtigen ?? false);
+  let paarungen;
+  if (turnier.modus?.vorlage.gruppen === 2) {
+    // Turniermodus mit zwei Gruppen: erst muss jede Mannschaft einer Gruppe angehoeren.
+    const ohneGruppe = mannschaften.filter((m) => m.gruppe !== "A" && m.gruppe !== "B");
+    if (ohneGruppe.length > 0) {
+      reply.code(400).send({
+        error: `Bitte zuerst alle Mannschaften einer Gruppe zuordnen (noch ohne Gruppe: ${ohneGruppe.map((m) => m.name).join(", ")}).`,
+      });
+      return undefined;
+    }
+    for (const g of ["A", "B"]) {
+      if (mannschaften.filter((m) => m.gruppe === g).length < 2) {
+        reply.code(400).send({ error: `Gruppe ${g} braucht mindestens zwei Mannschaften für eine Vorrunde.` });
+        return undefined;
+      }
+    }
+    paarungen = erzeugeGruppenPaarungen(mannschaften, wiederholungen, turnier.bundeslandBeruecksichtigen ?? false);
+  } else {
+    paarungen = erzeugePaarungen(mannschaften, wiederholungen, turnier.bundeslandBeruecksichtigen ?? false);
+  }
   const vorschlag = erstelleSpielplanVorschlag(paarungen, turnier.felder);
 
   return { turnier, vorschlag, wiederholungen };
@@ -224,6 +259,9 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
       if (await hatSpielprotokolle(turnier._id)) {
         return reply.code(409).send({ error: SPIELPROTOKOLLE_FEHLER });
       }
+      if (bestehende.some((spiel) => spiel.planId)) {
+        return reply.code(409).send({ error: ENDRUNDE_ERZEUGT_FEHLER });
+      }
 
       // Eintragsliste gegen die harten Regeln pruefen, bevor sie gespeichert wird - der
       // eintraege-Pfad (manuell umsortierte Vorschau) uebernaehme sie sonst ungeprueft. Fuer den
@@ -232,7 +270,12 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
         docType: "mannschaftImTurnier",
         turnierId: turnier._id,
       });
-      const eintragFehler = pruefeSpielplanEintraege(vorschlag, new Set(mannschaftenFuerPruefung.map((m) => m._id)));
+      const eintragFehler = pruefeSpielplanEintraege(
+        vorschlag,
+        new Set(mannschaftenFuerPruefung.map((m) => m._id)),
+        new Map(mannschaftenFuerPruefung.map((m) => [m._id, m.gruppe])),
+        turnier.modus?.vorlage.gruppen === 2,
+      );
       if (eintragFehler) return reply.code(400).send({ error: eintragFehler });
 
       // Keine neue Version anlegen, wenn sich inhaltlich nichts geaendert hat (z.B. mehrfaches
@@ -262,6 +305,7 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
           runde: String(eintrag.slot + 1),
           feldId: eintrag.feldId,
           startzeitGeplant: berechneStartzeit(turnier, eintrag.slot),
+          ...(eintrag.gruppe === "A" || eintrag.gruppe === "B" ? { gruppe: eintrag.gruppe } : {}),
           mannschaftAId: eintrag.mannschaftAId,
           mannschaftBId: eintrag.mannschaftBId,
           status: "geplant",

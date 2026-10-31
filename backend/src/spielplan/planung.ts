@@ -7,6 +7,8 @@ export interface SpielplanEintrag {
   feldId: string;
   /** Fortlaufender Zeit-Slot; alle Eintraege desselben Slots laufen parallel auf verschiedenen Feldern. */
   slot: number;
+  /** Gruppe der Vorrunde (Turniermodus mit zwei Gruppen), aus der Paarung uebernommen. */
+  gruppe?: string;
   /** Nur gesetzt, wenn die Back-to-Back-Regel fuer diese Paarung nicht einhaltbar war (siehe Modul-Kommentar unten). */
   warnung?: string;
 }
@@ -179,6 +181,7 @@ function fuelleSlot(
         mannschaftBId: paarung.mannschaftBId,
         feldId: felder[feldIndex].feldId,
         slot,
+        ...(paarung.gruppe ? { gruppe: paarung.gruppe } : {}),
         ...(optionen.erlaubeBackToBack
           ? { warnung: "Direktes Folgespiel (Back-to-Back) konnte nicht vermieden werden" }
           : {}),

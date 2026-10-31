@@ -75,6 +75,13 @@ export interface PlanSpiel {
   entscheidung?: string;
 }
 
+/** Der gespeicherte Teil eines Plan-Spiels (siehe `TurnierModus.planZustand`). */
+export interface PlanSpielZustand {
+  spielId?: string;
+  versatzMinuten?: number;
+  entscheidung?: string;
+}
+
 /** Stufen der Rueckmeldung (Auftraggeber 31.10.2026): nichts davon blockiert. */
 export type HinweisStufe = "hinweis" | "warnung" | "offen";
 
@@ -98,7 +105,12 @@ export interface ModusPlan {
 export interface TurnierModus {
   vorlage: TurniermodusVorlage;
   einstellungen: ModusEinstellungen;
-  plan: PlanSpiel[];
+  /**
+   * Zustand je Plan-Spiel (Schluessel = `planId`). Die STRUKTUR des Plans wird bei jedem Abruf aus Vorlage,
+   * Einstellungen und den aktuellen Gruppengroessen neu berechnet - gespeichert wird nur, was sich nicht
+   * ableiten laesst: das erzeugte Spiel, eine Verschiebung und eine Entscheidung bei Unentschieden.
+   */
+  planZustand: Record<string, PlanSpielZustand>;
   /**
    * Manuelle Rangentscheidung bei Gleichstand (Turnierleitung), je Gruppe ("" bei einer Gruppe):
    * Mannschafts-IDs in der gewuenschten Reihenfolge. Wirkt NUR dort, wo die Tabellenkriterien

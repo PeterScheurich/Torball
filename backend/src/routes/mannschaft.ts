@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { MannschaftImTurnier, Spieler, Turnier } from "@torball/shared";
+import type { GruppenKennung, MannschaftImTurnier, Spieler, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireZugriff } from "../auth/plugin";
 import {
@@ -36,6 +36,8 @@ interface MannschaftBody {
   betreuer2IstSchiedsrichter?: boolean;
   betreuer3Name?: string;
   betreuer3IstSchiedsrichter?: boolean;
+  /** Gruppe der Vorrunde (Turniermodus mit zwei Gruppen). */
+  gruppe?: GruppenKennung;
 }
 
 const mannschaftBodySchema = {
@@ -57,6 +59,7 @@ const mannschaftBodySchema = {
     betreuer2IstSchiedsrichter: { type: "boolean" },
     betreuer3Name: { type: "string" },
     betreuer3IstSchiedsrichter: { type: "boolean" },
+    gruppe: { type: "string", enum: ["A", "B"] },
   },
 } as const;
 
@@ -75,6 +78,8 @@ interface MannschaftAktualisierungBody {
   betreuer2IstSchiedsrichter?: boolean;
   betreuer3Name?: string;
   betreuer3IstSchiedsrichter?: boolean;
+  /** null loescht die Gruppenzuordnung (nur im Schema erlaubt, der TS-Typ kennt es bewusst nicht). */
+  gruppe?: GruppenKennung;
 }
 
 // Optionale Freitextfelder akzeptieren beim Aktualisieren bewusst auch null, damit ein
@@ -98,6 +103,7 @@ const mannschaftAktualisierungSchema = {
     betreuer2IstSchiedsrichter: { type: "boolean" },
     betreuer3Name: { type: ["string", "null"] },
     betreuer3IstSchiedsrichter: { type: "boolean" },
+    gruppe: { type: ["string", "null"], enum: ["A", "B", null] },
   },
 } as const;
 
@@ -261,7 +267,20 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
           .send({ error: "Dieses Team ist in diesem Turnier bereits als Mannschaft angemeldet" });
       }
 
+      // Die Gruppe ist Grundlage des Endrunden-Plans: sobald Spiele der Endrunde erzeugt wurden, bleibt sie fest.
+      if ("gruppe" in req.body && (req.body.gruppe ?? undefined) !== bestehend.gruppe) {
+        const turnier = await findById<Turnier>(bestehend.turnierId, "turnier");
+        const endrundeErzeugt = Object.values(turnier?.modus?.planZustand ?? {}).some((z) => Boolean(z.spielId));
+        if (endrundeErzeugt) {
+          return reply
+            .code(409)
+            .send({ error: "Es wurden bereits Spiele der Endrunde erzeugt - die Gruppen lassen sich nicht mehr ändern." });
+        }
+      }
+
       const aktualisiert: MannschaftImTurnier = { ...bestehend, ...ohneFelder(req.body, NUR_SERVER_PUT) };
+      // null = Zuordnung loeschen (ein JSON-null soll nicht im Dokument stehen bleiben).
+      if ((aktualisiert.gruppe as unknown) === null) delete aktualisiert.gruppe;
       const gespeichert = await insertDoc(aktualisiert);
       await markiereTurnierBearbeitet(bestehend.turnierId, req.benutzer);
       return gespeichert;

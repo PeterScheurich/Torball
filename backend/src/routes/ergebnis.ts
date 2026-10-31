@@ -9,7 +9,7 @@ import {
   TURNIER_GESPERRT_FEHLER,
   turnierGesperrt,
 } from "../auth/turnierZugriff";
-import { berechneGesamttabelle, berechneTabelle } from "../ergebnisse/tabelle";
+import { berechneGesamttabelle, berechneTabellen } from "../ergebnisse/tabelle";
 import { pruefeSpielZugriff } from "./spiel";
 
 interface ErgebnisBody {
@@ -129,6 +129,6 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id });
-    return berechneTabelle(turnier, mannschaften, spiele);
+    return berechneTabellen(turnier, mannschaften, spiele);
   });
 }

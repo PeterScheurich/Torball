@@ -18,6 +18,7 @@ import type {
   Wettbewerb,
 } from "@torball/shared";
 import { pruefeSchiedsrichterAnzeige } from "@torball/shared";
+import { baueModusAnsicht } from "../spielplan/modus";
 import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth, requireRolle, requireZugriff } from "../auth/plugin";
 import {
@@ -170,6 +171,9 @@ const NUR_SERVER_FELDER: ReadonlyArray<string> = [
   "abgeschlossenVon",
   "abgeschlossenVonName",
   "abgeschlossenAm",
+  // Der Turniermodus (Vorlagenkopie, Plan, Rangentscheidungen) wird nur ueber die Modus-Routen
+  // (routes/turniermodus.ts) gesetzt - dort wird er gegen die Vorlage geprueft.
+  "modus",
 ];
 
 /** Entfernt die nur-Server-Felder aus einem eingehenden Body (flache Kopie, mutiert das Original
@@ -410,6 +414,21 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(409).send({
         error: `Turnier kann nicht abgeschlossen werden: ${ohneErgebnis.length} Spiel(e) haben noch kein erfasstes Ergebnis.`,
       });
+    }
+
+    // Turniermodus mit Endrunde: Spiele, die noch nicht erzeugt wurden, gibt es als Dokument noch nicht -
+    // das Turnier waere sonst "fertig", obwohl Halbfinale/Finale nie gespielt wurden.
+    if (bestehend.modus) {
+      const mannschaften = await findAllBySelector<MannschaftImTurnier>({
+        docType: "mannschaftImTurnier",
+        turnierId: bestehend._id,
+      });
+      const offeneRunden = baueModusAnsicht(bestehend, mannschaften, spiele)?.plan.filter((p) => !p.spielId) ?? [];
+      if (offeneRunden.length > 0) {
+        return reply.code(409).send({
+          error: `Turnier kann nicht abgeschlossen werden: ${offeneRunden.length} geplante Spiel(e) der Endrunde wurden noch nicht erzeugt.`,
+        });
+      }
     }
 
     // Alle erfassten, aber noch nicht finalisierten Ergebnisse auf "Fertig" setzen.
