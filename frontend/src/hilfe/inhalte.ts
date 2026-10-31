@@ -764,6 +764,18 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
+        frage: "Ist mein Konto auf der lokalen Installation dasselbe wie auf dem Server?",
+        text: [
+          "Nein. Bei der Ersteinrichtung legst du auf dem Turnier-Rechner ein eigenes Konto mit eigenem Passwort an. Es ist unabhängig vom Konto auf dem Server – die beiden werden nicht abgeglichen.",
+          "Das heißt: Änderst du ein Passwort, gilt die Änderung nur dort, wo du sie vorgenommen hast. Ein auf dem Server zurückgesetztes Passwort ändert nichts am lokalen Konto und umgekehrt.",
+          {
+            hinweis:
+              "Du darfst für beide dieselbe E-Mail-Adresse und auch dasselbe Passwort verwenden – es bleibt aber Handarbeit, sie gleich zu halten. Ein Passwort-Manager nimmt dir das ab und ist hier die einfachste Lösung.",
+          },
+          "Die Verbindung zum Server läuft nicht über das lokale Passwort, sondern über den Kopplungscode, den du im Profil deines Server-Kontos erzeugst. Ein anderes lokales Passwort stört die Kopplung deshalb nicht.",
+        ],
+      },
+      {
         frage: "Wie arbeiten am Turniertag weitere Geräte (Smartphones/Tablets) mit?",
         text: [
           "Alle Geräte müssen dafür im selben lokalen Netzwerk sein wie der Turnier-Rechner – zum Beispiel über einen mitgebrachten WLAN-Router (nur Strom nötig, kein Internet!), das Hallen-WLAN oder notfalls einen Handy-Hotspot. Die Helfer-Geräte brauchen keine eigene App: Sie öffnen die Anwendung einfach im Browser über die Netzwerk-Adresse des Turnier-Rechners.",
