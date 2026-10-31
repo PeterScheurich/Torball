@@ -1,17 +1,23 @@
 import type { FastifyRequest } from "fastify";
-import type { TurnierCheckout, VerbundeneInstanz } from "@torball/shared";
+import type { Benutzer, TurnierCheckout, VerbundeneInstanz } from "@torball/shared";
 import { hashe } from "../auth/token";
-import { findAllBySelector } from "../repository";
+import { findAllBySelector, findById } from "../repository";
 
 /** Findet die verbundene Instanz zu einem Klartext-Token (Check-in/Sync-Import-Auth). Nie
- *  widerrufene Instanzen. */
+ *  widerrufene Instanzen - und nie die eines gesperrten oder geloeschten Kontos: Das Token hat keinen
+ *  Ablauf, ein gesperrter Benutzer haette sonst ueber seine gekoppelte lokale Installation weiter
+ *  Turnierstaende hochladen koennen (OWASP-Durchgang 2026-10-31). */
 export async function findeInstanzPerToken(tokenWert: string): Promise<VerbundeneInstanz | null> {
   const treffer = await findAllBySelector<VerbundeneInstanz>({
     docType: "verbundeneInstanz",
     instanzTokenHash: hashe(tokenWert),
     widerrufen: false,
   });
-  return treffer[0] ?? null;
+  const instanz = treffer[0];
+  if (!instanz) return null;
+  const besitzer = await findById<Benutzer>(instanz.benutzerId, "benutzer");
+  if (!besitzer || besitzer.gesperrt) return null;
+  return instanz;
 }
 
 /** Liest das Bearer-Token aus dem Authorization-Header (Instanz-zu-Instanz-Auth - kein

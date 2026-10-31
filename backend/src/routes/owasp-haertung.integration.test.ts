@@ -212,3 +212,84 @@ test(
     }
   },
 );
+
+test(
+  "Instanz-Token eines GESPERRTEN Kontos wird nicht mehr akzeptiert",
+  { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
+  async () => {
+    const { insertDoc, newId, findById } = await import("../repository");
+    const { findeInstanzPerToken } = await import("../sync/instanz");
+    const { hashe } = await import("../auth/token");
+    const besitzerId = await neuerAdmin();
+    const instanzId = newId("verbundeneInstanz");
+    const token = `testtoken-${instanzId}`;
+    await insertDoc({
+      _id: instanzId,
+      docType: "verbundeneInstanz",
+      instanzId,
+      benutzerId: besitzerId,
+      instanzTokenHash: hashe(token),
+      erstelltAm: new Date().toISOString(),
+      widerrufen: false,
+    } as never);
+    try {
+      assert.equal((await findeInstanzPerToken(token))?._id, instanzId, "ein aktives Konto: Token gueltig");
+      const besitzer = (await findById<Benutzer>(besitzerId, "benutzer"))!;
+      await insertDoc<Benutzer>({ ...besitzer, gesperrt: true });
+      assert.equal(await findeInstanzPerToken(token), null, "ein gesperrtes Konto: Token ungueltig");
+    } finally {
+      await aufraeumen([instanzId, besitzerId]);
+    }
+  },
+);
+
+test(
+  "Oeffentliche Seite: Die Sektion Spielplan liefert keine Ergebnisse, wenn die Ergebnisse nicht freigegeben sind",
+  { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
+  async () => {
+    const Fastify = (await import("fastify")).default;
+    const { oeffentlichRoutes } = await import("./oeffentlich");
+    const { insertDoc, newId } = await import("../repository");
+    const app = Fastify();
+    await app.register(oeffentlichRoutes);
+
+    const adminId = await neuerAdmin();
+    const turnierId = await neuesTurnier(adminId, "aktiv");
+    const spielId = newId("spiel");
+    try {
+      const turnier = (await (await import("../repository")).findById<Turnier>(turnierId, "turnier"))!;
+      await insertDoc<Turnier>({ ...turnier, oeffentlichSpielplan: true, oeffentlichErgebnisse: false } as Turnier);
+      await insertDoc({
+        _id: spielId,
+        docType: "spiel",
+        spielId,
+        turnierId,
+        runde: 1,
+        feldId: "feld:1",
+        mannschaftAId: "mannschaftImTurnier:a",
+        mannschaftBId: "mannschaftImTurnier:b",
+        status: "beendet",
+        ergebnisA: 7,
+        ergebnisB: 3,
+        istForfait: false,
+        ergebnisAbgeschlossen: true,
+      } as never);
+
+      const ohne = await app.inject({ method: "GET", url: `/oeffentlich/turniere/${turnierId}` });
+      assert.equal(ohne.statusCode, 200);
+      const spielOhne = (ohne.json() as { spielplan: { spiele: Array<Record<string, unknown>> } }).spielplan.spiele[0];
+      assert.equal(spielOhne.runde, 1, "der Spielplan selbst muss sichtbar sein");
+      assert.ok(!("ergebnisA" in spielOhne) && !("ergebnisB" in spielOhne), "keine Ergebnisse ohne Freigabe");
+      assert.ok(!ohne.body.includes('"ergebnisA":7'));
+
+      const t2 = (await (await import("../repository")).findById<Turnier>(turnierId, "turnier"))!;
+      await insertDoc<Turnier>({ ...t2, oeffentlichErgebnisse: true } as Turnier);
+      const mit = await app.inject({ method: "GET", url: `/oeffentlich/turniere/${turnierId}` });
+      const spielMit = (mit.json() as { spielplan: { spiele: Array<Record<string, unknown>> } }).spielplan.spiele[0];
+      assert.equal(spielMit.ergebnisA, 7, "mit Freigabe der Ergebnisse sind sie sichtbar");
+    } finally {
+      await aufraeumen([spielId, turnierId, adminId]);
+      await app.close();
+    }
+  },
+);

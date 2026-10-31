@@ -104,7 +104,10 @@ export async function turnierBerechtigungRoutes(app: FastifyInstance): Promise<v
       }
 
       const zielBenutzer = await findById<Benutzer>(req.body.benutzerId, "benutzer");
-      if (!zielBenutzer) return reply.code(400).send({ error: "Referenzierter Benutzer existiert nicht" });
+      // Gesperrte Konten sind auch ueber die Suche nicht auffindbar - hier dasselbe, falls jemand die ID kennt.
+      if (!zielBenutzer || zielBenutzer.gesperrt) {
+        return reply.code(400).send({ error: "Referenzierter Benutzer existiert nicht" });
+      }
 
       const bestehende = await findAllBySelector<TurnierBerechtigung>({
         docType: "turnierBerechtigung",

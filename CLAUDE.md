@@ -114,7 +114,8 @@ Tabellen:** Alle Entitäten (`Turnier`, `MannschaftImTurnier`, `Spiel`,
 Datenbank und werden über ein `docType`-Feld unterschieden (Union-Typ
 `TorballDokument` in `shared/src/types/index.ts`). `backend/src/repository.ts`
 stellt die generischen CRUD-Helfer bereit (`findAllByType`,
-`findAllBySelector`, `findById`, `insertDoc`, `deleteDoc`), die von allen
+`findAllBySelector`, `findById(id, docType)` - der Typ ist Pflicht, siehe unten -, `insertDoc`,
+`deleteDoc`), die von allen
 Routen-Dateien verwendet werden – nie direkt `db.find(...)` ohne `limit`
 aufrufen: CouchDBs Mango-`_find` liefert ohne explizites `limit` nur die
 ersten 25 Treffer, `findAllByType`/`findAllBySelector` blättern das intern
@@ -1296,6 +1297,44 @@ Abschluss-Felder wieder ab. **Diese Zuschreibungs-/Identitätsfelder setzt aussc
 `ohneServerFelder()` aus `req.body`, bevor sie ihn übernehmen – sonst ließen sie sich über die
 Schnittstelle fälschen (POST spreizte `...req.body` über die Server-Felder). `status` bleibt bewusst
 erlaubt (entwurf↔aktiv); Abschluss/Archivierung nur über die eigenen Endpunkte.
+
+**`findById` verlangt den Dokumenttyp - Pfad-IDs sind genauso Eingaben wie Body-Felder (2026-10-31,
+OWASP-Durchgang, kritischer Fund):** Die Absicherung vom 20.08. schloss nur den Body (`_id`/`docType`
+per `ohneFelder()`); die ID im PFAD (`/vereine/:id`) lieferte über `findById` ein Dokument JEDES Typs.
+Routen, die dann `{ ...bestehend, ...req.body }` zurückschrieben, konnten so z. B. ein Benutzerkonto
+verändern; `GET` verriet beliebige Dokumente, `DELETE` löschte sie. Seit 2026-10-31 ist der Typ ein
+**Pflichtparameter**: `findById<Verein>(req.params.id, "verein")` liefert bei einem Dokument anderen
+Typs `null` (= 404). **Das Generic allein schützt NICHT** - es existiert nur zur Compile-Zeit. Wer
+bewusst ohne Typ lesen muss (Tests, Skripte), nimmt `findByIdUngeprueft` - in einer Route mit ID aus
+dem Request ist das ein Review-Fund. Test: `typverwechslung.integration.test.ts`. **Merksatz: Bei
+jedem Eingabeweg-Fund (Body, Pfad, Query, Header, Paketinhalt beim Sync) ALLE Wege prüfen, nicht nur den
+gemeldeten.** Dasselbe Muster gilt für den Sync-Import: Er prüft vor dem ersten Schreiben, dass bereits
+vorhandene Ziel-Dokumente gleichen Typs sind und zu DIESEM Turnier gehören
+(`sync/import.ts::gehoertZuTurnier`, Spieler über die Mannschaften des Turniers in der EIGENEN
+Datenbank - nie über das, was das Paket behauptet).
+
+**Turnier-Antworten nie mit Code-Hashes (2026-10-31):** Jede Antwort, die ein Turnier-Dokument
+enthält, läuft in `routes/turnier.ts` über `antwort()` bzw. `speichereUndAntworte()` (entfernt
+`turnierleitungCodeHash`/`spielleitungCodeHash`/`protokollantCodeHash`). Neue Routen, die ein
+Turnier zurückgeben, ziehen das mit. Die Hashes bleiben in der Datenbank (Code-Anmeldung).
+Turnier-Codes: Mindestlänge 6 (nur neu gesetzte), ein geänderter oder gelöschter Code beendet die
+Code-Sitzungen DIESER Rolle (`turnierCode.ts`). Test: `turnier-codehashes.integration.test.ts`,
+`owasp-haertung.integration.test.ts`.
+
+**Tokens nie im Log (2026-10-31):** Fastify loggt die volle URL, mehrere URLs tragen ein Klartext-Token
+im Pfad (`/benutzer/passwort-reset/…`, `/benutzer/einladung/…`, `/ergebnis-erfassung/…`).
+`logSchutz.ts::schwaerzeTokens` wird im Request-Serializer (`index.ts`) und im Diagnose-Bericht
+(`torball diagnose`) angewendet. Neue Pfade mit Token → dort in `TOKEN_PFAD` ergänzen. Der Reset-Link
+ohne SMTP steht bewusst weiter im Server-Log (Fallback der lokalen Installation, nur für den Betreiber
+sichtbar) - er wird nur aus dem Diagnose-Bericht geschwärzt. nginx-Accesslogs sind davon nicht erfasst.
+Der zentrale Fehler-Handler (`fehlerBehandlung.ts`) gibt bei 5xx keine Originalmeldung mehr aus
+(Datenbank-Adresse u. ä.).
+
+**Sicherheitsdurchgang nach OWASP Top 10:2025 (2026-10-31):** Vollständiges Protokoll samt offener
+Funde: `docs/Protokolle/2026-10-31-owasp-durchgang.md`; offene Punkte stehen als Karten
+„Sicherheit: …“ im Entwicklungs-Board. Vorgehen für künftige Durchgänge: Prüfer nur lesend, jeden Fund
+einzeln im Code nachvollziehen und mit einem Test belegen (erst rot, dann grün). Commit-Texte zu einer
+noch nicht ausgerollten Lücke neutral halten - das Repository wird öffentlich gespiegelt.
 
 **Body-Feld-Injektion generell abgesichert (2026-08-20, Backend-Review, Karten A1–A3):** Fastify
 reicht unbekannte Body-Felder **standardmäßig durch** (AJV `removeAdditional: false`, kein

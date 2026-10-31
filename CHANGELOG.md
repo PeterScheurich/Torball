@@ -7,6 +7,19 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Sicherheit: Durchgang nach den OWASP Top 10.** Auf Anregung eines Testers wurde die Anwendung
+  Punkt für Punkt gegen die zehn häufigsten Schwachstellenarten geprüft. Behoben wurden unter
+  anderem: Dokumente werden beim Aufruf über eine Adresse jetzt auf ihren Typ geprüft; die
+  Zugangscodes eines Turniers sind nicht mehr in Antworten enthalten; ein Turnier-Abgleich einer
+  gekoppelten lokalen Installation kann kein Turnier einer anderen Veranstaltung mehr überschreiben;
+  Zugangslinks tauchen nicht mehr im Server-Protokoll und im Diagnose-Bericht auf; bei Serverfehlern
+  werden keine internen Angaben mehr angezeigt. Außerdem: Neue Turnier-Codes brauchen mindestens
+  6 Zeichen, und wer einen Code ändert oder entfernt, meldet damit angemeldete Geräte ab. Ein
+  abgeschlossenes Turnier lässt sich auch über die Mannschafts-Reihenfolge und die
+  Schiedsrichter-Zuordnung nicht mehr verändern. Auf der öffentlichen Seite erscheinen Ergebnisse im
+  Spielplan nur noch, wenn die Ergebnisse freigegeben sind. Offene, kleinere Punkte stehen als Karten
+  im Entwicklungs-Board.
+
 - **Freigabe: Person über die E-Mail-Adresse finden, keine Liste aller Benutzer mehr.** Wer ein Turnier für jemanden freigibt, sah bisher eine Auswahl mit Namen und E-Mail-Adressen aller Konten – und der dahinterliegende Abruf lieferte jeder Person mit der Rolle „Manager“ sogar das vollständige Profil aller Benutzer (auch Telefon, Adresse, Verein). Das war aus Datenschutzsicht nicht vertretbar, ein Tester hat darauf hingewiesen. Jetzt gibt man die E-Mail-Adresse der Person ein und sieht nur ihren Namen, zur Bestätigung. Eine Liste und eine Teilsuche gibt es bewusst nicht; wer die Adresse nicht kennt, findet niemanden. Dabei erklärt der Dialog auch, dass die Rolle „Protokollant“ nur über die Codes vergeben wird. Die Benutzerverwaltung für Administratoren und Manager ist davon noch nicht betroffen – dort sehen Manager weiterhin alle Konten; das ist als nächster Schritt vorgemerkt.
 
 - **Regeln: „Gesamtzeit pro Spiel“ statt „Pause zwischen Spielen“.** Turnierleitende denken in „ein Spiel dauert im Plan 25 Minuten“, nicht in „10 Minuten Pause“. Das Feld zeigt jetzt die Gesamtzeit und rechnet den Puffer daraus; die Aufschlüsselung (Spielzeit und Halbzeitpause, Puffer) steht direkt darunter. Neuer Standard: 25 Minuten statt bisher 22. Bestehende Turniere und gespeicherte Standardregeln ändern sich nicht.

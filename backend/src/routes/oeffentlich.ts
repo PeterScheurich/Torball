@@ -5,7 +5,7 @@ import { berechneGesamttabelle, berechneTabelle, type TabellenZeile } from "../e
 
 /** Nie an die oeffentliche Seite ausliefern (Abschnitt 13: "Spielplan ... ohne
  * Schiedsrichter"; Abschnitt 24.3: Schiedsrichter grundsaetzlich nicht genannt). */
-function oeffentlichesSpiel(s: Spiel) {
+function oeffentlichesSpiel(s: Spiel, mitErgebnis = true) {
   return {
     _id: s._id,
     runde: s.runde,
@@ -14,10 +14,16 @@ function oeffentlichesSpiel(s: Spiel) {
     mannschaftAId: s.mannschaftAId,
     mannschaftBId: s.mannschaftBId,
     status: s.status,
-    ergebnisA: s.ergebnisA,
-    ergebnisB: s.ergebnisB,
-    istForfait: s.istForfait,
-    ergebnisAbgeschlossen: s.ergebnisAbgeschlossen,
+    // Ergebnisfelder nur, wenn die Ergebnisse freigegeben sind: Die Sektion "Spielplan" hat ihren
+    // EIGENEN Schalter und lieferte sie bisher trotzdem mit (OWASP-Durchgang 2026-10-31).
+    ...(mitErgebnis
+      ? {
+          ergebnisA: s.ergebnisA,
+          ergebnisB: s.ergebnisB,
+          istForfait: s.istForfait,
+          ergebnisAbgeschlossen: s.ergebnisAbgeschlossen,
+        }
+      : {}),
   };
 }
 
@@ -80,7 +86,7 @@ async function ladeWettbewerb(
       spieltagNummer: p.turnier.spieltagNummer ?? 1,
       name: p.turnier.name,
       tabelle: berechneTabelle(p.turnier, p.mannschaften, p.spiele),
-      spiele: p.spiele.map(oeffentlichesSpiel),
+      spiele: p.spiele.map((x) => oeffentlichesSpiel(x)),
       mannschaften: p.mannschaften.map((m) => ({ _id: m._id, name: m.name, bundesland: m.bundesland })),
       felder: p.turnier.felder,
     })),
@@ -172,14 +178,14 @@ export async function oeffentlichRoutes(app: FastifyInstance): Promise<void> {
         ? {
             version: turnier.spielplanVersion,
             geaendertAm: turnier.spielplanGeaendertAm,
-            spiele: spiele.map(oeffentlichesSpiel),
+            spiele: spiele.map((s) => oeffentlichesSpiel(s, Boolean(turnier.oeffentlichErgebnisse))),
           }
         : null,
 
       ergebnisse: turnier.oeffentlichErgebnisse
         ? {
             tabelle: berechneTabelle(turnier, mannschaften, spiele),
-            spiele: spiele.map(oeffentlichesSpiel),
+            spiele: spiele.map((x) => oeffentlichesSpiel(x)),
           }
         : null,
 
