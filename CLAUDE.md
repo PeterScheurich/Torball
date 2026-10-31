@@ -1321,6 +1321,17 @@ Turnier-Codes: Mindestlänge 6 (nur neu gesetzte), ein geänderter oder gelösch
 Code-Sitzungen DIESER Rolle (`turnierCode.ts`). Test: `turnier-codehashes.integration.test.ts`,
 `owasp-haertung.integration.test.ts`.
 
+**Turnierart national/international und das Regelprofil (2026-10-31, Auftraggeber-Entscheidung nach
+Tester-Rückmeldung):** `Turnier.turnierart?` (`national` | `international`, fehlt = national). Wirkung über
+`REGELPROFIL_NACH_TURNIERART` in `backend/src/konfiguration.ts` (aktuell nur `international: { forfaitErgebnis:
+"5:0" }`): Beim Anlegen liegt das Profil ÜBER den Standardregeln und UNTER ausdrücklichen Body-Angaben; beim
+Wechsel per `PUT` wird nur nachgezogen, wenn der Wert noch dem Profil der bisherigen Art entspricht (Handarbeit
+bleibt) und das Turnier keine gesperrten Regeln hat (`regelnGesperrt`). **Eine weitere Abweichung ist eine Zeile
+dort plus ein Test - kein Datenmodell.** Im Frontend ändert sich nur die BESCHRIFTUNG („Land“ statt
+„Bundesland“, keine Bundesland-Vorschlagsliste; Prop `international` an `MannschaftenListe`, `land` an
+`TurnierregelnFormular`); das gespeicherte Feld heißt weiter `bundesland`. Test:
+`turnierart.integration.test.ts`.
+
 **Tokens nie im Log (2026-10-31):** Fastify loggt die volle URL, mehrere URLs tragen ein Klartext-Token
 im Pfad (`/benutzer/passwort-reset/…`, `/benutzer/einladung/…`, `/ergebnis-erfassung/…`).
 `logSchutz.ts::schwaerzeTokens` wird im Request-Serializer (`index.ts`) und im Diagnose-Bericht

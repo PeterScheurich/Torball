@@ -27,7 +27,7 @@ import {
   turnierGesperrt,
   zuschreibung,
 } from "../auth/turnierZugriff";
-import { aktuelleTurnierregeln } from "../konfiguration";
+import { aktuelleTurnierregeln, regelprofil } from "../konfiguration";
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 import { berechneStartzeit } from "../spielplan/zeitplanung";
 
@@ -87,6 +87,7 @@ const turnierBodySchema = {
     status: { type: "string", enum: ["entwurf", "aktiv", "abgeschlossen", "archiviert"] },
     protokollierungsart: { type: "string", enum: ["digital", "manuell"] },
     spielplanModus: { type: "string", enum: ["einfach", "doppelt"] },
+    turnierart: { type: "string", enum: ["national", "international"] },
   },
   // Weitere Turnier-Felder sind ueber die TypeScript-Typen abgedeckt; hier nur die
   // Pflichtfelder und die beiden Enum-Felder strikt validiert.
@@ -222,6 +223,9 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
         erstelltVonName: req.benutzer!.name,
         erstelltMitKonfigVersion: version,
         ...turnierDefaults(regeln),
+        // Regelprofil der Turnierart (z. B. Nichtantreten 5:0 bei international) UEBER den Standardregeln,
+        // aber unter ausdruecklichen Angaben im Body.
+        ...regelprofil(req.body.turnierart),
         // Server-kontrollierte Felder aus dem Body entfernen, damit der Client die oben gesetzten
         // Identitaets-/Zuschreibungsfelder (erstelltVon usw.) nicht ueberschreiben kann.
         ...ohneServerFelder(req.body),
@@ -306,12 +310,31 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       if (logo !== undefined && logo !== null && (typeof logo !== "string" || !logo.startsWith("data:image/"))) {
         return reply.code(400).send({ error: "Das Turnier-Logo muss eine Bild-Data-URL (data:image/…) sein." });
       }
+      // Turnierart: nur die zwei bekannten Werte. Beim WECHSEL werden die vom Profil vorbelegten Regeln
+      // nachgezogen - aber nur, solange sie noch dem Profil der bisherigen Art entsprechen. Wer das
+      // Ergebnis bei Nichtantreten von Hand geaendert hat (z. B. 4:0), behaelt seinen Wert. Bei einem
+      // abgeleiteten Turnier mit gesperrten Regeln (regelnGesperrt) bleiben die Regeln unberuehrt.
+      const gewuenschteArt = (req.body as { turnierart?: unknown }).turnierart;
+      if (gewuenschteArt !== undefined && gewuenschteArt !== "national" && gewuenschteArt !== "international") {
+        return reply.code(400).send({ error: "Die Turnierart muss „national“ oder „international“ sein." });
+      }
+      let profilNachzug: Partial<Turnierregeln> = {};
+      const bisherigeArt = bestehend.turnierart ?? "national";
+      if (gewuenschteArt && gewuenschteArt !== bisherigeArt && !bestehend.regelnGesperrt) {
+        const { regeln: standard } = await aktuelleTurnierregeln();
+        const alt = { ...standard, ...regelprofil(bisherigeArt) };
+        const neu = { ...standard, ...regelprofil(gewuenschteArt) };
+        if (!("forfaitErgebnis" in req.body) && bestehend.forfaitErgebnis === alt.forfaitErgebnis) {
+          profilNachzug = { forfaitErgebnis: neu.forfaitErgebnis };
+        }
+      }
       const zuschreiber = zuschreibung(req);
       const aktualisiert: Turnier = {
         ...bestehend,
         // Server-kontrollierte Felder aus dem Body entfernen (Identitaet, erstelltVon, Abschluss-
         // Daten) - die Bearbeitungs-Zuschreibung setzt der Server unten selbst.
         ...ohneServerFelder(req.body),
+        ...profilNachzug,
         geaendertAm: new Date().toISOString(),
         zuletztBearbeitetVon: zuschreiber.benutzerId,
         zuletztBearbeitetVonName: zuschreiber.name,

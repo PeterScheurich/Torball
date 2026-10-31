@@ -1,4 +1,4 @@
-import type { Systemkonfiguration, TabellenKriterium, Turnierregeln } from "@torball/shared";
+import type { Systemkonfiguration, TabellenKriterium, Turnierart, Turnierregeln } from "@torball/shared";
 import { findAllBySelector } from "./repository";
 
 /**
@@ -68,4 +68,22 @@ export async function aktuelleTurnierregeln(): Promise<{ regeln: Turnierregeln; 
   const konfig = await aktuelleSystemkonfiguration();
   if (!konfig) return { regeln: STANDARD_TURNIERREGELN };
   return { regeln: nurRegeln(konfig), version: konfig.version };
+}
+
+/**
+ * Regelprofil je Turnierart: Voreinstellungen, die beim Anlegen ueber die Standardregeln gelegt werden
+ * (und beim Wechsel der Turnierart nachgezogen, solange sie nicht von Hand geaendert wurden).
+ * "national" ist bewusst leer - es gelten die Standardregeln der Systemkonfiguration. Eine weitere
+ * Abweichung international (z. B. Zeitnehmer-Pflicht, Strafen, Wertung) ist hier eine zusaetzliche
+ * Zeile plus Test, ohne Aenderung am Datenmodell. Quelle der bisherigen Eintraege: IBSA-Regel "Nicht
+ * Antreten = 5:0" (Tester-Rueckmeldung 2026-10-06, Auftraggeber-Entscheidung 2026-10-31).
+ */
+export const REGELPROFIL_NACH_TURNIERART: Record<Turnierart, Partial<Turnierregeln>> = {
+  national: {},
+  international: { forfaitErgebnis: "5:0" },
+};
+
+/** Die Regeln, die ein Profil vorbelegt (leer fuer national oder ein unbekanntes/fehlendes Feld). */
+export function regelprofil(art: Turnierart | undefined): Partial<Turnierregeln> {
+  return REGELPROFIL_NACH_TURNIERART[art ?? "national"] ?? {};
 }

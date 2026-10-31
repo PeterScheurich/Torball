@@ -129,10 +129,21 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Welche Grunddaten trage ich im ersten Schritt ein?",
         text: [
-          "Pflicht sind Name, Datum und Startzeit. Dazu wählst du die Anzahl der Spielfelder, den Spielmodus und die Protokollierung.",
+          "Pflicht sind Name, Datum und Startzeit. Dazu wählst du die Turnierart, die Anzahl der Spielfelder, den Spielmodus und die Protokollierung.",
           {
             hinweis:
               "Die Startzeit lässt sich nach dem Anlegen nirgends mehr ändern – trage sie deshalb gleich korrekt ein.",
+          },
+        ],
+      },
+      {
+        frage: "Was ist der Unterschied zwischen einem nationalen und einem internationalen Turnier?",
+        text: [
+          "Die Turnierart steuert einige Voreinstellungen. Bei einem internationalen Turnier (zum Beispiel nach IBSA-Regeln) gilt „Nichtantreten“ als 5:0 statt 3:0, und bei den Mannschaften zählt das Land statt des Bundeslands – Mannschaften desselben Landes spielen dann, wenn du die Länder-Regel einschaltest, möglichst früh gegeneinander.",
+          "Du kannst die Turnierart später in der Übersicht ändern. Das Ergebnis bei Nichtantreten wird dabei nur angepasst, solange es noch dem bisherigen Standard entspricht – hast du es selbst geändert, bleibt dein Wert.",
+          {
+            hinweis:
+              "Weitere Unterschiede zwischen nationalen und internationalen Regeln können nachgerüstet werden. Wenn dir eine fehlt, gib uns Bescheid.",
           },
         ],
       },

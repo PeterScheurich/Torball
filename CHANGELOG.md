@@ -7,6 +7,12 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Neu: Turnierart „National“ oder „International“.** Beim Anlegen (und später in der Übersicht) wählbar.
+  Bei einem internationalen Turnier, etwa nach IBSA-Regeln, gilt „Nichtantreten“ als 5:0 statt 3:0, und bei den
+  Mannschaften steht „Land“ statt „Bundesland“ (ohne die Liste deutscher Bundesländer). Beim Wechsel der Art
+  passt sich das Ergebnis bei Nichtantreten nur an, wenn es noch dem bisherigen Standard entspricht – von Hand
+  Geändertes bleibt. Weitere Unterschiede lassen sich später ergänzen.
+
 - **Sicherheit: Durchgang nach den OWASP Top 10.** Auf Anregung eines Testers wurde die Anwendung
   Punkt für Punkt gegen die zehn häufigsten Schwachstellenarten geprüft. Behoben wurden unter
   anderem: Dokumente werden beim Aufruf über eine Adresse jetzt auf ihren Typ geprüft; die

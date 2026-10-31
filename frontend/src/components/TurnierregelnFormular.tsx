@@ -31,6 +31,8 @@ interface Props {
    * Regel-Felder wirken sich nur auf Anzeige/Ergebnistabelle aus und bleiben aenderbar.
    */
   spielzeitGesperrt?: boolean;
+  /** Internationales Turnier: die Spielplan-Regel nach Bundesland heisst dann "Land" (nur Beschriftung). */
+  land?: boolean;
 }
 
 /**
@@ -44,7 +46,7 @@ function mitFeldDefaults(w: Turnierregeln): Turnierregeln {
   return { ...w, forfaitErgebnis: w.forfaitErgebnis || "3:0" };
 }
 
-export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWerte, spielzeitGesperrt }: Props) {
+export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWerte, spielzeitGesperrt, land }: Props) {
   const [r, setR] = useState<Turnierregeln>(() => mitFeldDefaults(werte));
   const [gespeichert, setGespeichert] = useState(false);
   const [speichert, setSpeichert] = useState(false);
@@ -293,13 +295,13 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
               <td></td>
             </tr>
             <tr>
-              <th scope="row"><label htmlFor="bundeslandBeruecksichtigen">Bundesland-Regel bei der Spielplan-Erstellung</label></th>
+              <th scope="row"><label htmlFor="bundeslandBeruecksichtigen">{land ? "Länder-Regel" : "Bundesland-Regel"} bei der Spielplan-Erstellung</label></th>
               <td className="regeln-eingabe-spalte">
                 <input id="bundeslandBeruecksichtigen" type="checkbox" checked={r.bundeslandBeruecksichtigen}
                   onChange={(e) => schalter("bundeslandBeruecksichtigen", e.target.checked)} />
               </td>
               <td className="feld-hinweis-spalte">
-                Mannschaften desselben Bundeslands möglichst früh gegeneinander einplanen – nachrangig zur Vermeidung
+                Mannschaften {land ? "desselben Landes" : "desselben Bundeslands"} möglichst früh gegeneinander einplanen – nachrangig zur Vermeidung
                 von Direkt-Folgespielen. Eigenheit für Wettbewerbe mit festem Regionalbezug (Bundesliga, Deutsche
                 Meisterschaft), deshalb standardmäßig aus.
               </td>

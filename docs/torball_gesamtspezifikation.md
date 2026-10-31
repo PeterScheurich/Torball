@@ -25,6 +25,7 @@
 | Erkenntnisse aus der Umsetzung (Pause zwischen Spielen) | 20.08.2026 | Abschnitte 5.1 + 8 präzisiert: Zeitplanung berücksichtigte bisher keinen Puffer zwischen zwei aufeinanderfolgenden Spielen auf demselben Feld, obwohl bereits als „konfigurierbare Toleranz" erwähnt – neues konfigurierbares Feld „Pause zwischen Spielen" (Standard 10 Min.), fließt zusätzlich zur Halbzeitpause in die Startzeit-Berechnung ein. Details siehe `docs/Protokolle/2026-08-20-pause-zwischen-spielen.md`. |
 | Erkenntnisse aus der Umsetzung (Turnier-Sync / Instanz-Kopplung) | 20.08.2026 | Abschnitte 19, 21.3 und 23 aktualisiert: die am 13.08. noch als „vorgemerkt" geführte Sync-Resilienz der Zentralen Plattform ist inzwischen umgesetzt – aber bewusst **ohne** PouchDB↔CouchDB: eine strikte 1:1-Instanz-Kopplung mit Checkout-Modell (Server-Turnier ist entweder frei oder an genau eine lokale Installation ausgecheckt), Voll-Synchronisation per Check-in alle 45 s und serverseitiger Schreibsperre während des Checkouts. Der ursprünglich spezifizierte PouchDB-Sync (23.1/23.2) bleibt für den Standalone-Modus vorgemerkt. Details siehe `docs/Protokolle/2026-08-13-turnier-sync-grundlage.md` und `docs/Protokolle/2026-08-19-turnier-sync-vollsync-sperre.md`. |
 | Rückmeldungen eines Testers (Freigabe, Gesamtzeit, Standardwerte) | 06.10.2026 | Abschnitte 5.1, 8 und 21.2 angepasst: Freigabe per genauer E-Mail-Adresse statt Benutzerliste (Datenschutz); „Pause zwischen Spielen“ wird als Gesamtzeit pro Spiel eingegeben, Standard 25 Min.; Verlängerung bei Unentschieden standardmäßig inaktiv. |
+| Turnierart national/international | 31.10.2026 | Abschnitt 5.1 ergänzt: Regelprofil je Turnierart (Nichtantreten 5:0 bei international, „Land“ statt „Bundesland“), erweiterbar. |
 
 Dieses Dokument ersetzt die einzelnen Vorgängerdokumente inhaltlich (führt sie zusammen). Sie bleiben als Historie im Projekt erhalten.
 
@@ -138,6 +139,15 @@ Modi sollen möglichst frei über eine Admin-Funktion pflegbar sein, nicht fest 
 - Zusatzinformationen (Anreise, Hotel etc.) – siehe auch Dokumenten-Anhänge, Abschnitt 5.1 unten
 
 **Erkenntnisse aus der Umsetzung (Geo-Referenz):** Keine eingebettete Karte, sondern zwei Links neben dem Geo-Feld zu Google Maps/OpenStreetMap (vorausgefüllt mit Spielort-Name/-Adresse als Suche). Enthält das Geo-Feld bereits ein „Breite, Länge"-Koordinatenpaar, springen beide Dienste direkt an diese Position. Bewusste Einschränkung: Eine auf der fremden Kartenseite markierte Position kann nicht automatisch zurück ins Formular übernommen werden (kein Datenkanal zwischen fremder Seite und eigener App ohne eingebettete Karte) – Koordinaten müssen dort abgelesen und hier von Hand eingetragen werden.
+
+**Turnierart** (neu, 31.10.2026): `national` (Standard) oder `international` (z. B. IBSA-Turnier), beim Anlegen
+wählbar und in der Übersicht änderbar. Sie legt ein **Regelprofil** über die Standardregeln: Bei `international`
+gilt „Nichtantreten“ als **5:0** (IBSA; national 3:0), und bei Mannschaften zählt das **Land** statt des
+Bundeslands (nur die Beschriftung – das Feld und die Paarungs-Priorität nach Abschnitt 8 bleiben dieselben).
+Beim Wechsel der Turnierart wird das Nichtantreten-Ergebnis nur nachgezogen, solange es noch dem Profil der
+bisherigen Art entspricht; von Hand Geändertes bleibt. **Erweiterbar:** Jede weitere Abweichung (z. B.
+Zeitnehmer-Pflicht, Strafen, Wertung) ist eine zusätzliche Zeile im Regelprofil (`REGELPROFIL_NACH_TURNIERART`),
+ohne Änderung am Datenmodell – welche IBSA-Regeln im Einzelnen abweichen, ist noch zu spezifizieren.
 
 **Protokollierungsart** (neu, siehe Abschnitt 14):
 - `digital`: vollständige Ereignisprotokollierung

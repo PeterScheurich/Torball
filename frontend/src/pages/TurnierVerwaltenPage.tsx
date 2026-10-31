@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import type { Protokollierungsart, Spiel, Spielmodus, Turnier, TurnierStatus, Turnierregeln } from "@torball/shared";
+import type {
+  Protokollierungsart,
+  Spiel,
+  Spielmodus,
+  Turnier,
+  Turnierart,
+  TurnierStatus,
+  Turnierregeln,
+} from "@torball/shared";
 import {
   getSpiele,
   getSystemkonfiguration,
@@ -277,6 +285,17 @@ export function TurnierVerwaltenPage() {
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern des Spielmodus");
+    }
+  }
+
+  // Die Antwort enthaelt bereits die nachgezogenen Regeln (z. B. Nichtantreten 5:0) - der Regeln-Reiter
+  // liest dasselbe Turnier-Objekt und zeigt sie sofort.
+  async function turnierartAendern(art: Turnierart) {
+    try {
+      setTurnier(await updateTurnier(turnierId, { turnierart: art }));
+      setFehler(undefined);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Turnierart");
     }
   }
 
@@ -611,6 +630,26 @@ export function TurnierVerwaltenPage() {
               </tr>
               <tr>
                 <th scope="row">
+                  <label htmlFor="turnierart">Turnierart</label>
+                </th>
+                <td>
+                  <select
+                    id="turnierart"
+                    disabled={eingabeGesperrt}
+                    value={turnier.turnierart ?? "national"}
+                    onChange={(e) => turnierartAendern(e.target.value === "international" ? "international" : "national")}
+                  >
+                    <option value="national">National</option>
+                    <option value="international">International (z. B. IBSA)</option>
+                  </select>
+                  <p className="feld-hinweis">
+                    International: „Nichtantreten“ = 5:0, bei Mannschaften zählt das Land. Beim Wechsel wird das
+                    Ergebnis bei Nichtantreten nur angepasst, wenn es noch dem bisherigen Standard entspricht.
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
                   <label htmlFor="spielplanModus">Spielmodus</label>
                 </th>
                 <td>
@@ -886,6 +925,7 @@ export function TurnierVerwaltenPage() {
             standardWerte={getSystemkonfiguration}
             hinweis="Diese Regeln gelten nur für dieses Turnier. Die Standardwerte für neue Turniere legst du unter Stammdaten → Standardregeln fest."
             spielzeitGesperrt={spielplanGesperrt}
+            land={turnier.turnierart === "international"}
           />
         </fieldset>
       </div>
@@ -909,6 +949,7 @@ export function TurnierVerwaltenPage() {
           maxSpielerJeMannschaft={turnier.maxSpielerJeMannschaft}
           digitaleProtokollierung={turnier.protokollierungsart === "digital"}
           gesperrt={eingabeGesperrt}
+          international={turnier.turnierart === "international"}
         />
       </div>
 

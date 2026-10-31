@@ -27,6 +27,7 @@ import type {
   Spieler,
   SpielerStatus,
   Spielmodus,
+  Turnierart,
   Spielprotokoll,
   SystemeinstellungenOeffentlich,
   Systemkonfiguration,
@@ -110,6 +111,7 @@ export interface NeuesTurnier {
   startzeit?: string;
   felder: Spielfeld[];
   spielplanModus?: Spielmodus;
+  turnierart?: Turnierart;
   protokollierungsart?: Protokollierungsart;
   schiedsrichterPlanung?: boolean;
 }
@@ -171,6 +173,7 @@ export function updateTurnier(
     Pick<
       Turnier,
       | "spielplanModus"
+      | "turnierart"
       | "protokollierungsart"
       | "protokollBestaetigungErforderlich"
       | "name"

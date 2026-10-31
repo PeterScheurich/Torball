@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Protokollierungsart, Spielmodus, Turnier } from "@torball/shared";
+import type { Protokollierungsart, Spielmodus, Turnier, Turnierart } from "@torball/shared";
 import { createTurnier, getTurniere, turnierAbleiten } from "../api";
 import { formatiereDatum } from "../format";
 
@@ -27,6 +27,7 @@ export function TurnierAnlegenPage() {
   const [startzeit, setStartzeit] = useState("09:00");
   const [anzahlFelder, setAnzahlFelder] = useState<1 | 2>(1);
   const [spielplanModus, setSpielplanModus] = useState<Spielmodus>("einfach");
+  const [turnierart, setTurnierart] = useState<Turnierart>("national");
   const [protokollierungsart, setProtokollierungsart] = useState<Protokollierungsart>("manuell");
   const [schiedsrichterPlanung, setSchiedsrichterPlanung] = useState(false);
   const [fehler, setFehler] = useState<string | undefined>();
@@ -68,6 +69,7 @@ export function TurnierAnlegenPage() {
         startzeit: startzeit || undefined,
         felder,
         spielplanModus,
+        turnierart,
         protokollierungsart,
         schiedsrichterPlanung,
       });
@@ -135,6 +137,21 @@ export function TurnierAnlegenPage() {
                 <option value={1}>1</option>
                 <option value={2}>2</option>
               </select>
+            </div>
+            <div className="feld">
+              <label htmlFor="turnierart">Turnierart</label>
+              <select
+                id="turnierart"
+                value={turnierart}
+                onChange={(e) => setTurnierart(e.target.value === "international" ? "international" : "national")}
+              >
+                <option value="national">National</option>
+                <option value="international">International (z. B. IBSA)</option>
+              </select>
+              <p className="feld-hinweis">
+                Bei einem internationalen Turnier gilt „Nichtantreten“ als 5:0 (national 3:0), und bei den
+                Mannschaften zählt das Land statt des Bundeslands. Beides lässt sich später ändern.
+              </p>
             </div>
             <div className="feld">
               <label htmlFor="spielplanModus">Spielmodus</label>

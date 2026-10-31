@@ -21,6 +21,7 @@ export function MannschaftenErfassenPage() {
   const [maxSehendeSpieler, setMaxSehendeSpieler] = useState<number | undefined>();
   const [maxSpielerJeMannschaft, setMaxSpielerJeMannschaft] = useState<number | undefined>();
   const [digital, setDigital] = useState(false);
+  const [international, setInternational] = useState(false);
 
   useEffect(() => {
     getTurnier(turnierId)
@@ -29,6 +30,7 @@ export function MannschaftenErfassenPage() {
         setMaxSehendeSpieler(t.maxSehendeSpieler);
         setMaxSpielerJeMannschaft(t.maxSpielerJeMannschaft);
         setDigital(t.protokollierungsart === "digital");
+        setInternational(t.turnierart === "international");
       })
       .catch(() => {});
   }, [turnierId]);
@@ -54,6 +56,7 @@ export function MannschaftenErfassenPage() {
         maxSehendeSpieler={maxSehendeSpieler}
         maxSpielerJeMannschaft={maxSpielerJeMannschaft}
         digitaleProtokollierung={digital}
+        international={international}
       />
 
       <button type="button" onClick={() => navigate(naechsterPfad)} disabled={anzahl < 2}>

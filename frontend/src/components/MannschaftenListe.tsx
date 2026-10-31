@@ -62,6 +62,9 @@ interface Props {
   /** Turnier abgeschlossen: Bearbeitung sperren (Name/Bundesland/Betreuer/Kader/Reihenfolge/Anlegen/
    *  Loeschen). Das Auf-/Zuklappen des Kaders bleibt moeglich, damit die Daten ansehbar sind. */
   gesperrt?: boolean;
+  /** Internationales Turnier: bei den Mannschaften zaehlt das LAND statt des Bundeslands (nur die
+   *  Beschriftung und die Vorschlagsliste - das gespeicherte Feld bleibt `bundesland`). */
+  international?: boolean;
 }
 
 export function MannschaftenListe({
@@ -72,7 +75,11 @@ export function MannschaftenListe({
   maxSpielerJeMannschaft,
   digitaleProtokollierung,
   gesperrt = false,
+  international = false,
 }: Props) {
+  const landWort = international ? "Land" : "Bundesland";
+  // Die Vorschlagsliste enthaelt die deutschen Bundeslaender - fuer ein Land nicht passend.
+  const vorschlagsliste = international ? undefined : "bundeslaender-liste";
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
   const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
@@ -330,7 +337,7 @@ export function MannschaftenListe({
         <div className="tabellen-wrapper">
         <table>
           <caption className="sr-only">
-            Angemeldete Mannschaften, Name und Bundesland bearbeitbar; Trainer/Betreuer und Kader je Mannschaft über
+            Angemeldete Mannschaften, Name und {landWort} bearbeitbar; Trainer/Betreuer und Kader je Mannschaft über
             den Kader-Bereich; Reihenfolge per Ziehpunkt oder Pfeiltasten änderbar
           </caption>
           <thead>
@@ -341,7 +348,7 @@ export function MannschaftenListe({
               <th scope="col">
                 Name <span className="pflicht-stern" title="Pflichtfeld">*</span>
               </th>
-              <th scope="col">Bundesland</th>
+              <th scope="col">{landWort}</th>
               <th scope="col">Aktionen</th>
             </tr>
           </thead>
@@ -412,11 +419,11 @@ export function MannschaftenListe({
                 </td>
                 <td>
                   <label className="sr-only" htmlFor={`bundesland-${m._id}`}>
-                    Bundesland von {m.name}
+                    {landWort} von {m.name}
                   </label>
                   <input
                     id={`bundesland-${m._id}`}
-                    list="bundeslaender-liste"
+                    list={vorschlagsliste}
                     disabled={gesperrt}
                     value={bearbeitung[m._id]?.bundesland ?? ""}
                     onChange={(e) =>
@@ -587,10 +594,10 @@ export function MannschaftenListe({
           />
         </div>
         <div className="feld">
-          <label htmlFor="mannschaftBundesland">Bundesland (optional)</label>
+          <label htmlFor="mannschaftBundesland">{landWort} (optional)</label>
           <input
             id="mannschaftBundesland"
-            list="bundeslaender-liste"
+            list={vorschlagsliste}
             value={neuesBundesland}
             onChange={(e) => setNeuesBundesland(e.target.value)}
           />

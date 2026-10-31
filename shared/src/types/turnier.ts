@@ -19,6 +19,9 @@ export type Protokollierungsart = "digital" | "manuell";
 /** Rundenmodus für die automatische Spielplan-Erstellung (Abschnitt 8). */
 export type Spielmodus = "einfach" | "doppelt";
 
+/** National oder international (z. B. IBSA) - siehe `Turnier.turnierart`. */
+export type Turnierart = "national" | "international";
+
 /** Reihenfolge der Kriterien bestimmt die Tabellensortierung bei Gleichstand. */
 export type TabellenKriterium =
   | "punkte"
@@ -137,6 +140,13 @@ export interface Turnier extends CouchMeta, Turnierregeln {
 
   /** Jeder-gegen-Jeden einfach oder doppelt; steuert die Spielplan-Erzeugung (Abschnitt 8). */
   spielplanModus: Spielmodus;
+  /**
+   * National (Standard; fehlt das Feld, gilt national) oder international (z. B. IBSA-Turnier).
+   * Steuert Voreinstellungen und Beschriftungen, siehe `REGELPROFIL_NACH_TURNIERART` im Backend:
+   * Nichtantreten 5:0 statt 3:0, und bei Mannschaften zaehlt das LAND statt des Bundeslands.
+   * Weitere Unterschiede sind als zusaetzliche Zeilen in diesem Regelprofil nachruestbar.
+   */
+  turnierart?: Turnierart;
   /**
    * Ob im Anlege-Assistenten ein eigener Schritt zum Erfassen der Schiedsrichter (vor dem
    * Spielplan) durchlaufen wird. Rein den Assistenten-Ablauf steuernd - die
