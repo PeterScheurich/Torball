@@ -1901,6 +1901,23 @@ Zielgruppe der wertvollste Test, den dieses Projekt machen kann.
   ist noch offen. Details: `docs/Protokolle/2026-08-12-windows-installer-option-a.md`,
   Bugfix-Hintergrund: „Nebenbefunde" in `docs/Protokolle/2026-08-13-turnier-sync-grundlage.md`.
 
+**Lokale Linux-Installation (2026-10-31, GESCHRIEBEN, aber noch auf keinem echten System erprobt):**
+`Setup-Linux.sh` (Wurzel, Weiterleiter wie `Setup.cmd`) -> `deploy/installieren-linux.sh`; dazu
+`deploy/aktualisieren-linux.sh` und `deploy/deinstallieren-linux.sh`, Anleitung `INSTALLATION-LINUX.md`.
+Unterstuetzt Debian/Ubuntu-Familie (`ID`/`ID_LIKE`; bei Mint/Pop! zaehlt `UBUNTU_CODENAME` fuer die
+CouchDB-Paketquelle). Aufbau wie der Windows-Installer: gleiches Erklaeren-und-Zustimmen-Muster
+(`bestaetige_aenderung`, Ablehnung beim Installer = Abbruch, beim Deinstaller = nur dieser Schritt wird
+uebersprungen, riskante Schritte mit Standard "nein"), `backend/.env` nur bei der Erstanlage geschrieben
+(`SERVE_FRONTEND=true`, `LOG_DATEI`), CouchDB-Systemdatenbanken von Hand anlegen, Datenbank-Benutzer als `admins`
+UND `members` der einen Datenbank. **Unterschiede zu Windows:** Programm liegt unter `/opt/torball-turniere/app` und
+laeuft als Systemdienst `torball-turniere` mit eigenem Dienstbenutzer `torball` (kein sichtbares Server-Fenster);
+Firewall-Freigabe (ufw/firewalld) bewusst **nur fuer das eigene Subnetz**, gemerkt in
+`/etc/torball-turniere/firewall-regeln` fuer den Deinstaller; ein Update aus dem ZIP geht wie unter Windows ueber
+erneutes `Setup-Linux.sh` (`tar` kopiert ueber den Bestand, `backend/.env` ausgenommen). Test ohne Tastatur:
+`TORBALL_UNBEAUFSICHTIGT=1` (+ `TORBALL_PORT`, `TORBALL_NETZWERK=ja|nein`). **Beim Aendern von Fragen oder
+Ablauf `INSTALLATION-LINUX.md` mitziehen.** Mac: bewusst nicht (kein Test moeglich). Naechster Schritt: Durchlauf auf
+zwei frischen Systemen (Debian ohne Oberflaeche, Ubuntu mit Oberflaeche), danach Karte "Lokale Installation auf Linux" schliessen.
+
 **Projektordner-Verlegung + Installations-Anleitung (2026-08-21, Nutzer-Fund):** Das Quellcode-ZIP
 wird erfahrungsgemäß im Downloads-Ordner entpackt und dort installiert – die komplette
 Installation (Programmdateien, `backend/.env`, Ziel der Desktop-Verknüpfung) hängt dann an einem

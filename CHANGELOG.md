@@ -7,6 +7,13 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Neu: lokale Installation auch für Linux (Debian, Ubuntu und davon abgeleitete Systeme).** `bash Setup-Linux.sh`
+  im entpackten Quellcode-Ordner richtet alles ein – Node.js, die Datenbank, die App als Hintergrunddienst, auf
+  Wunsch die Freigabe für andere Geräte im eigenen Netz (nur dort, nicht im Internet) und einen Eintrag im
+  Anwendungsmenü. Wie beim Windows-Installer wird jede Änderung am Rechner vorher erklärt und bestätigt. Dazu gibt es
+  Befehle zum Aktualisieren und Deinstallieren (siehe `INSTALLATION-LINUX.md`). **Hinweis:** Diese Variante ist neu
+  und noch nicht auf echten Systemen erprobt.
+
 - **Sicherheit: Zwei-Faktor-Code lässt sich nicht mehr erraten oder wiederverwenden.** Bisher zählte die
   Anmeldung nur falsche Passwörter – wer das Passwort kannte, konnte den Bestätigungscode beliebig oft
   ausprobieren. Jetzt zählen falsche Codes genauso wie falsche Passwörter und führen nach fünf Fehlversuchen zur

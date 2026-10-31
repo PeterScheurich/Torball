@@ -787,7 +787,8 @@ export const HILFE_THEMEN: HilfeThema[] = [
             hinweis:
               "Dafür ist einmalig eine Internetverbindung nötig (für die Downloads) – danach läuft die lokale Installation komplett offline.",
           },
-          "Für andere Betriebssysteme oder Fragen dazu wende dich an deine Turnierleitung bzw. die technische Betreuung.",
+          "Unter Linux (Debian, Ubuntu und davon abgeleitete Systeme) funktioniert es entsprechend: Quellcode-ZIP entpacken und im Ordner „bash Setup-Linux.sh“ starten. Der Installer erklärt jeden Schritt und fragt vorher um Zustimmung; die Schritt-für-Schritt-Anleitung heißt „INSTALLATION-LINUX.md“ und liegt im entpackten Ordner. Diese Linux-Variante ist neu und noch nicht auf vielen Systemen erprobt – über Rückmeldungen freuen wir uns.",
+          "Für macOS gibt es bisher keine Installation. Bei Fragen dazu wende dich an deine Turnierleitung bzw. die technische Betreuung.",
         ],
       },
       {
