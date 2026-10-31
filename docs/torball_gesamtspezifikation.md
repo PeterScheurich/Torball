@@ -919,6 +919,14 @@ Mindestlänge 12 Zeichen. **Keine Vorgaben zur Zusammensetzung** (Großbuchstabe
 
 Verpflichtend für Admin, optional für alle anderen, Einrichtung bei erster Anmeldung.
 
+**Schutz vor Raten und Wiederverwenden (31.10.2026):** Ein falscher Bestätigungscode zählt wie ein falsches Passwort
+auf **denselben** Zähler; ab fünf Fehlversuchen greift dieselbe zeitbasierte Abkühlzeit (bis 30 Minuten, kein
+Dauer-Lockout). Der Zähler wird erst durch einen vollständig gelungenen Anmeldevorgang zurückgesetzt – nicht schon
+dadurch, dass das Passwort stimmte. Ein Code gilt **nur einmal**: der Zeitschritt des zuletzt angenommenen Codes wird
+am Konto gemerkt, derselbe oder ein früherer Code wird abgewiesen. Gleichzeitig gesendete Versuche werden alle
+mitgezählt (atomare Änderung mit Wiederholung bei Revisionskonflikt). Bewusst in Kauf genommen: Wer das Passwort
+kennt, kann das Konto durch falsche Codes für höchstens die Abkühlzeit sperren – dieselbe Abwägung wie beim Passwort.
+
 ## 22. Spielprotokoll und Event-Sourcing
 
 ### 22.1 Grundprinzip

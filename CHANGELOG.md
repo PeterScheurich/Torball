@@ -7,6 +7,12 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Sicherheit: Zwei-Faktor-Code lässt sich nicht mehr erraten oder wiederverwenden.** Bisher zählte die
+  Anmeldung nur falsche Passwörter – wer das Passwort kannte, konnte den Bestätigungscode beliebig oft
+  ausprobieren. Jetzt zählen falsche Codes genauso wie falsche Passwörter und führen nach fünf Fehlversuchen zur
+  gleichen kurzen Wartezeit (sie endet von selbst). Ein Code wird außerdem nur ein einziges Mal angenommen, und
+  gleichzeitig gesendete Versuche werden alle mitgezählt.
+
 - **Schiedsrichter-Anzeige am Feld ist einstellbar.** Spielstand und Fouls sind immer zu sehen. Restzeit,
   Auszeiten, Wurfzähler, die 8-Sekunden-Anzeige sowie Strafwurf und Penalty lassen sich je Turnier einzeln
   ausblenden (Reiter „Übersicht“, bei digitaler Protokollierung). Die Änderung gilt auch während des Turniers und

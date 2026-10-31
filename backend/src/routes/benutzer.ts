@@ -521,7 +521,12 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
     }
     const bestehend = await findById<Benutzer>(req.params.id, "benutzer");
     if (!bestehend) return reply.code(404).send({ error: "Benutzer nicht gefunden" });
-    const aktualisiert = await insertDoc({ ...bestehend, zweiFaAktiv: false, zweiFaSecret: undefined });
+    const aktualisiert = await insertDoc({
+      ...bestehend,
+      zweiFaAktiv: false,
+      zweiFaSecret: undefined,
+      zweiFaLetzterZeitschritt: undefined,
+    });
     return oeffentlichesProfil(aktualisiert);
   });
 
@@ -683,7 +688,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
     const qrCodeDataUri = await erzeugeQrCodeDataUri(otpAuthUri);
 
     // Noch nicht aktiv (zweiFaAktiv bleibt false) - erst /bestaetigen schaltet es scharf.
-    await insertDoc({ ...req.benutzer!, zweiFaSecret: secret });
+    await insertDoc({ ...req.benutzer!, zweiFaSecret: secret, zweiFaLetzterZeitschritt: undefined });
     return { secret, otpAuthUri, qrCodeDataUri };
   });
 
@@ -710,7 +715,12 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       if (!req.benutzer!.passwortHash || !(await passwortStimmt(req.body.passwort, req.benutzer!.passwortHash))) {
         return reply.code(401).send({ error: "Passwort ist falsch." });
       }
-      const aktualisiert = await insertDoc({ ...req.benutzer!, zweiFaAktiv: false, zweiFaSecret: undefined });
+      const aktualisiert = await insertDoc({
+        ...req.benutzer!,
+        zweiFaAktiv: false,
+        zweiFaSecret: undefined,
+        zweiFaLetzterZeitschritt: undefined,
+      });
       return oeffentlichesProfil(aktualisiert);
     },
   );

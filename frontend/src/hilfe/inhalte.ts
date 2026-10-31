@@ -600,7 +600,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
               "Authenticator-App verloren: Nur Administratoren können die Zwei-Faktor-Anmeldung eines fremden Kontos deaktivieren – danach genügen wieder E-Mail und Passwort, und die Person kann sie neu einrichten. Für das eigene Konto geht das nicht auf diesem Weg, sondern nur im eigenen Profil mit Passwort-Bestätigung.",
             ],
           },
-          "Nach fünf falschen Passwort-Versuchen pausiert die Anmeldung übrigens nur zeitweise und gibt sich danach von selbst wieder frei – hier musst du nichts tun.",
+          "Nach fünf falschen Versuchen – ob Passwort oder Bestätigungscode – pausiert die Anmeldung übrigens nur zeitweise und gibt sich danach von selbst wieder frei – hier musst du nichts tun.",
         ],
       },
       {
@@ -638,7 +638,11 @@ export const HILFE_THEMEN: HilfeThema[] = [
           },
           {
             hinweis:
-              "Nach fünf falschen Passwort-Versuchen hintereinander pausiert die Anmeldung für dieses Konto einige Minuten; bei weiteren Fehlversuchen verlängert sich die Wartezeit auf höchstens 30 Minuten. Die Sperre läuft von selbst wieder ab – du musst also nichts weiter tun als warten. Wer nicht warten möchte, setzt sich über „Passwort vergessen“ ein neues Passwort; das hebt die Sperre sofort auf.",
+              "Nach fünf falschen Versuchen hintereinander pausiert die Anmeldung für dieses Konto einige Minuten – dabei zählen falsche Passwörter und falsche Bestätigungscodes gemeinsam; bei weiteren Fehlversuchen verlängert sich die Wartezeit auf höchstens 30 Minuten. Während der Pause erscheint immer die Meldung „E-Mail oder Passwort ist falsch“, auch wenn deine Eingaben stimmen. Die Sperre läuft von selbst wieder ab – du musst also nichts weiter tun als warten. Wer nicht warten möchte, setzt sich über „Passwort vergessen“ ein neues Passwort; das hebt die Sperre sofort auf.",
+          },
+          {
+            hinweis:
+              "Ein Bestätigungscode aus der Authenticator-App gilt nur ein einziges Mal. Wurde gerade ein Code verwendet, wartest du bis zum nächsten (die App wechselt ihn etwa alle 30 Sekunden) – derselbe Code wird kein zweites Mal angenommen, auch wenn er in der App noch angezeigt wird.",
           },
         ],
       },

@@ -1661,6 +1661,14 @@ Zielgruppe der wertvollste Test, den dieses Projekt machen kann.
 - Sensible Felder (Passwort-Hash, 2FA-Secret, Einladungs-/Reset-Token-Hashes)
   dürfen nie über die API zurückgegeben werden - immer über
   `oeffentlichesProfil()` (`backend/src/auth/benutzerProfil.ts`) filtern.
+- **Der zweite Faktor zaehlt wie das Passwort (2026-10-31, OWASP-Durchgang):** `/auth/login` zaehlt einen falschen
+  2FA-Code auf DENSELBEN Zaehler wie ein falsches Passwort (`registriereFehlversuch`), und der Zaehler faellt nur bei
+  einem vollstaendig gelungenen Login auf 0 - nicht schon, wenn das Passwort stimmte. Ein Code gilt nur einmal
+  (`Benutzer.zweiFaLetzterZeitschritt`, otplib `afterTimeStep`, wird vor dem Anmelden festgehalten). **Jede
+  Aenderung am Zaehler und am Zeitschritt laeuft ueber `aendereBenutzerAtomar`** (`auth/benutzerAenderung.ts`: frisch
+  lesen, ableiten, bei Revisionskonflikt wiederholen) - das urspruengliche "lesen, hochzaehlen, mit alter Revision
+  schreiben" verlor bei gleichzeitigen Anfragen Versuche (nur eine Anfrage gewann, die anderen scheiterten
+  ungezaehlt). Neue Login-artige Zaehler dort mitziehen. Test: `auth-2fa-sperre.integration.test.ts`.
 - **Login-Antwortzeit gleich halten** (Sicherheitsdurchsicht 2026-08-20): `/auth/login` ruft an den
   Pfaden, die sonst ohne bcrypt sofort zurückkehren würden (Konto existiert nicht / Konto in
   Abkühlzeit), `verbrenneLoginZeit()` (`backend/src/auth/passwort.ts`, bcrypt-Vergleich gegen einen

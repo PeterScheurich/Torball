@@ -5,7 +5,8 @@ import { oeffentlichesProfil } from "../auth/benutzerProfil";
 import { hashePasswort, passwortRegelVerstoss, passwortStimmt, verbrenneLoginZeit } from "../auth/passwort";
 import { loescheSessionCookie, SESSION_COOKIE_NAME, setzeSessionCookie } from "../auth/plugin";
 import { erstelleSession, loescheSessionPerToken } from "../auth/session";
-import { totpCodeGueltig } from "../auth/totp";
+import { pruefeTotpCode } from "../auth/totp";
+import { aendereBenutzerAtomar } from "../auth/benutzerAenderung";
 import { aktuelleSystemeinstellungen, benachrichtigeNeuenAccount } from "../systemeinstellungen";
 import { SENSIBEL_RATE_LIMIT } from "../rateLimit";
 
@@ -64,6 +65,23 @@ function abkuehlzeitMs(versuche: number): number {
   return minuten * 60 * 1000;
 }
 
+const CODE_FEHLER = "Der Bestätigungscode ist ungültig.";
+
+/** Zaehlt einen gescheiterten Anmeldeversuch (falsches Passwort ODER falscher 2FA-Code) und setzt ab
+ *  der Schwelle die Abkuehlzeit. Atomar, damit auch gleichzeitig gesendete Versuche mitzaehlen. */
+async function registriereFehlversuch(benutzerId: string): Promise<void> {
+  await aendereBenutzerAtomar(benutzerId, (b) => {
+    const versuche = (b.fehlgeschlageneLoginVersuche ?? 0) + 1;
+    return {
+      ...b,
+      fehlgeschlageneLoginVersuche: versuche,
+      ...(versuche >= FEHLVERSUCHE_SCHWELLE
+        ? { loginKontoGesperrtBis: new Date(Date.now() + abkuehlzeitMs(versuche)).toISOString() }
+        : {}),
+    };
+  });
+}
+
 // SENSIBEL_RATE_LIMIT (striktes IP-Limit fuer sensible Endpunkte) kommt aus ../rateLimit. Login
 // selbst bekommt bewusst KEIN eigenes IP-Limit: die zeitbasierte Sperre pro Konto (oben) drosselt
 // Passwort-Raten unabhaengig von der IP - wichtig hinter NAT, wo viele Geraete eines Spielorts
@@ -118,15 +136,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(401).send({ error: ANMELDE_FEHLER });
     }
     if (!(await passwortStimmt(req.body.passwort, benutzer.passwortHash))) {
-      const versuche = (benutzer.fehlgeschlageneLoginVersuche ?? 0) + 1;
-      const abgekuehltAb = versuche >= FEHLVERSUCHE_SCHWELLE;
-      await insertDoc({
-        ...benutzer,
-        fehlgeschlageneLoginVersuche: versuche,
-        ...(abgekuehltAb
-          ? { loginKontoGesperrtBis: new Date(Date.now() + abkuehlzeitMs(versuche)).toISOString() }
-          : {}),
-      });
+      await registriereFehlversuch(benutzer._id);
       return reply.code(401).send({ error: ANMELDE_FEHLER });
     }
 
@@ -134,20 +144,40 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       if (!req.body.totpCode) {
         return reply.send({ benoetigtTotp: true });
       }
-      if (!benutzer.zweiFaSecret || !(await totpCodeGueltig(benutzer.zweiFaSecret, req.body.totpCode))) {
-        return reply.code(401).send({ error: "Der Bestätigungscode ist ungültig." });
+      // Ein falscher Code zaehlt genau wie ein falsches Passwort (gleicher Zaehler, gleiche
+      // Abkuehlzeit): Wer das Passwort kennt, durfte den sechsstelligen Code sonst unbegrenzt raten.
+      // Der Zaehler wird erst durch einen vollstaendig gelungenen Login zurueckgesetzt - nicht schon
+      // dadurch, dass das Passwort stimmte.
+      const pruefung = benutzer.zweiFaSecret
+        ? await pruefeTotpCode(benutzer.zweiFaSecret, req.body.totpCode, benutzer.zweiFaLetzterZeitschritt)
+        : ({ gueltig: false } as const);
+      if (!pruefung.gueltig) {
+        await registriereFehlversuch(benutzer._id);
+        return reply.code(401).send({ error: CODE_FEHLER });
+      }
+      // Den Zeitschritt VOR dem Anmelden festhalten - atomar: Kommen zwei Anmeldungen mit demselben
+      // Code gleichzeitig an, sieht die zweite beim erneuten Lesen den gemerkten Schritt und verliert.
+      const verbraucht = await aendereBenutzerAtomar(benutzer._id, (b) =>
+        (b.zweiFaLetzterZeitschritt ?? -1) >= pruefung.zeitschritt
+          ? undefined
+          : { ...b, zweiFaLetzterZeitschritt: pruefung.zeitschritt },
+      );
+      if (!verbraucht) {
+        await registriereFehlversuch(benutzer._id);
+        return reply.code(401).send({ error: CODE_FEHLER });
       }
     }
 
     const { token } = await erstelleSession(benutzer._id);
     setzeSessionCookie(reply, token);
 
-    const aktualisiert = await insertDoc({
-      ...benutzer,
-      letzteAnmeldung: new Date().toISOString(),
-      fehlgeschlageneLoginVersuche: 0,
-      loginKontoGesperrtBis: undefined,
-    });
+    const aktualisiert =
+      (await aendereBenutzerAtomar(benutzer._id, (b) => ({
+        ...b,
+        letzteAnmeldung: new Date().toISOString(),
+        fehlgeschlageneLoginVersuche: 0,
+        loginKontoGesperrtBis: undefined,
+      }))) ?? benutzer;
     return oeffentlichesProfil(aktualisiert);
   });
 

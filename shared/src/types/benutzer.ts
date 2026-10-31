@@ -87,6 +87,12 @@ export interface Benutzer extends CouchMeta {
    */
   loginKontoGesperrtBis?: Zeitstempel;
   /**
+   * Zeitschritt (30-Sekunden-Fenster) des zuletzt angenommenen 2FA-Codes. Ein Code aus diesem oder
+   * einem frueheren Schritt wird nicht mehr angenommen - sonst liesse sich ein mitgelesener Code
+   * innerhalb seiner Gueltigkeit ein zweites Mal verwenden. Vom Server gesetzt, nie nach aussen.
+   */
+  zweiFaLetzterZeitschritt?: number;
+  /**
    * Unterscheidet, WARUM `gesperrt` gesetzt ist - wichtig, damit ein Passwort-Reset nur eine
    * automatische Fehlversuche-Sperre aufhebt, nie eine bewusste Admin-Sperre (die haette sich
    * sonst ueber den Reset-Link aushebeln lassen). Vom Server gesetzt, nie vom Client. Der Wert

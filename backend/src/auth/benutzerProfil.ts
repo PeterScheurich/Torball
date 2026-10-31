@@ -6,6 +6,7 @@ export type OeffentlichesBenutzerProfil = Omit<
   Benutzer,
   | "passwortHash"
   | "zweiFaSecret"
+  | "zweiFaLetzterZeitschritt"
   | "einladungTokenHash"
   | "einladungAblauf"
   | "resetTokenHash"
@@ -23,6 +24,7 @@ export function oeffentlichesProfil(benutzer: Benutzer): OeffentlichesBenutzerPr
   const {
     passwortHash,
     zweiFaSecret,
+    zweiFaLetzterZeitschritt,
     einladungTokenHash,
     einladungAblauf,
     resetTokenHash,
