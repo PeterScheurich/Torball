@@ -9,6 +9,7 @@ import {
   getVereine,
   mannschaftReihenfolgeAendern,
   updateMannschaft,
+  verteileGruppen,
 } from "../api";
 import { BUNDESLAENDER } from "../bundeslaender";
 import { SpielerKader } from "./SpielerKader";
@@ -65,6 +66,11 @@ interface Props {
   /** Internationales Turnier: bei den Mannschaften zaehlt das LAND statt des Bundeslands (nur die
    *  Beschriftung und die Vorschlagsliste - das gespeicherte Feld bleibt `bundesland`). */
   international?: boolean;
+  /** Turniermodus mit zwei Gruppen: zeigt die Spalte „Gruppe“ und den Knopf zum Verteilen. */
+  zweiGruppen?: boolean;
+  /** Die Gruppen sind fest (Vorrundenspiele begonnen oder Endrunde erzeugt). */
+  gruppenGesperrt?: boolean;
+  onGruppenGeaendert?: () => void;
 }
 
 export function MannschaftenListe({
@@ -76,6 +82,9 @@ export function MannschaftenListe({
   digitaleProtokollierung,
   gesperrt = false,
   international = false,
+  zweiGruppen = false,
+  gruppenGesperrt = false,
+  onGruppenGeaendert,
 }: Props) {
   const landWort = international ? "Land" : "Bundesland";
   // Die Vorschlagsliste enthaelt die deutschen Bundeslaender - fuer ein Land nicht passend.
@@ -306,6 +315,31 @@ export function MannschaftenListe({
     }
   }
 
+  async function gruppeSetzen(m: MannschaftImTurnier, wert: string) {
+    setFehler(undefined);
+    try {
+      await updateMannschaft(m._id, { name: m.name, gruppe: wert === "A" || wert === "B" ? wert : null });
+      await laden();
+      meldeGespeichert(wert ? `${m.name}: Gruppe ${wert} gespeichert.` : `${m.name}: Gruppenzuordnung entfernt.`);
+      onGruppenGeaendert?.();
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern der Gruppe");
+    }
+  }
+
+  // Schlangenverfahren nach der aktuellen Reihenfolge: A, B, B, A, A, B, ... - die Staerksten treffen nicht zuerst aufeinander.
+  async function gruppenVerteilen() {
+    setFehler(undefined);
+    try {
+      await verteileGruppen(turnierId);
+      await laden();
+      meldeGespeichert("Mannschaften auf die Gruppen verteilt.");
+      onGruppenGeaendert?.();
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Verteilen auf die Gruppen");
+    }
+  }
+
   async function anNeuePositionVerschieben(vonIndex: number, nachIndex: number) {
     if (vonIndex === nachIndex || vonIndex < 0 || nachIndex < 0 || nachIndex >= mannschaftenSortiert.length) return;
     const neueReihenfolge = verschobeneListe(mannschaftenSortiert, vonIndex, nachIndex).map((m) => m._id);
@@ -331,6 +365,20 @@ export function MannschaftenListe({
         </p>
       )}
 
+      {zweiGruppen && mannschaften.length > 0 && (
+        <p>
+          <button type="button" onClick={gruppenVerteilen} disabled={gesperrt || gruppenGesperrt}>
+            Nach Reihenfolge auf Gruppen verteilen
+          </button>{" "}
+          Gruppe A: {mannschaften.filter((m) => m.gruppe === "A").length} Mannschaften, Gruppe B:{" "}
+          {mannschaften.filter((m) => m.gruppe === "B").length} Mannschaften
+          {mannschaften.some((m) => m.gruppe !== "A" && m.gruppe !== "B") &&
+            ` – ${mannschaften.filter((m) => m.gruppe !== "A" && m.gruppe !== "B").length} noch ohne Gruppe`}
+          . Die Gruppen dürfen unterschiedlich groß sein.
+          {gruppenGesperrt && " Die Gruppen sind fest, sobald Spiele begonnen haben."}
+        </p>
+      )}
+
       {mannschaften.length === 0 ? (
         <p>Noch keine Mannschaften angelegt.</p>
       ) : (
@@ -349,6 +397,7 @@ export function MannschaftenListe({
                 Name <span className="pflicht-stern" title="Pflichtfeld">*</span>
               </th>
               <th scope="col">{landWort}</th>
+              {zweiGruppen && <th scope="col">Gruppe</th>}
               <th scope="col">Aktionen</th>
             </tr>
           </thead>
@@ -435,6 +484,23 @@ export function MannschaftenListe({
                     }}
                   />
                 </td>
+                {zweiGruppen && (
+                  <td>
+                    <label className="sr-only" htmlFor={`gruppe-${m._id}`}>
+                      Gruppe von {m.name}
+                    </label>
+                    <select
+                      id={`gruppe-${m._id}`}
+                      disabled={gesperrt || gruppenGesperrt}
+                      value={m.gruppe ?? ""}
+                      onChange={(e) => gruppeSetzen(m, e.target.value)}
+                    >
+                      <option value="">– keine –</option>
+                      <option value="A">Gruppe A</option>
+                      <option value="B">Gruppe B</option>
+                    </select>
+                  </td>
+                )}
                 <td className="mannschaft-aktionen">
                   <button
                     type="button"
@@ -466,7 +532,7 @@ export function MannschaftenListe({
               </tr>
               {offeneKader.has(m._id) && (
                 <tr>
-                  <td colSpan={4} id={`kader-${m._id}`} className="kader-zelle">
+                  <td colSpan={zweiGruppen ? 5 : 4} id={`kader-${m._id}`} className="kader-zelle">
                     {/* Ansehen bleibt moeglich; bei abgeschlossenem Turnier sind Betreuer-Felder
                         und der Kader (SpielerKader) ueber das disabled-<fieldset> gesperrt. */}
                     <fieldset className="blank-fieldset" disabled={gesperrt}>

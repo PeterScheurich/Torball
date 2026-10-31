@@ -39,6 +39,7 @@ import { bildAlsLogoDataUrl, MAX_LOGO_BYTES } from "../logoBild";
 import { formatiereDatum, formatiereUhrzeit } from "../format";
 import { useAuth } from "../auth";
 import { SpeicherHinweis, useSpeicherHinweis } from "../components/SpeicherHinweis";
+import { TurniermodusAuswahl } from "../components/TurniermodusAuswahl";
 
 type Tab = "uebersicht" | "regeln" | "mannschaften" | "schiedsrichter" | "spielplan" | "ergebnisse";
 
@@ -161,6 +162,8 @@ export function TurnierVerwaltenPage() {
   // Bedingung wie spielplanGesperrt dort: irgendein Spiel ist nicht mehr "geplant" oder hat ein
   // abgeschlossenes Ergebnis.
   const [spiele, setSpiele] = useState<Spiel[]>([]);
+  // Wird hochgezaehlt, wenn sich die Gruppenzuordnung aendert - die Modus-Auswahl laedt dann ihre Hinweise neu.
+  const [modusAktualisierung, setModusAktualisierung] = useState(0);
   // Digitale Protokollierung: SOBALD irgendein Spielprotokoll existiert, gilt das Turnier als
   // begonnen - wie beim ersten manuell erfassten Ergebnis (Nutzer-Vorgabe 21.08.2026), auch wenn
   // die Spieluhr noch nie lief (Spiel-Status dann noch "geplant").
@@ -182,6 +185,12 @@ export function TurnierVerwaltenPage() {
     spielplan: null,
     ergebnisse: null,
   });
+
+  function turnierNeuLaden() {
+    getTurnier(turnierId)
+      .then(setTurnier)
+      .catch(() => {});
+  }
 
   useEffect(() => {
     getTurnier(turnierId)
@@ -683,6 +692,24 @@ export function TurnierVerwaltenPage() {
                     <option value="einfach">Jeder gegen Jeden (einfach)</option>
                     <option value="doppelt">Jeder zweimal gegen Jeden (doppelt)</option>
                   </select>
+                  <p className="feld-hinweis">Gilt für die Vorrunde (bei zwei Gruppen innerhalb jeder Gruppe).</p>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="turniermodus">Turniermodus</label>
+                </th>
+                <td>
+                  <TurniermodusAuswahl
+                    turnierId={turnierId}
+                    gesperrt={eingabeGesperrt}
+                    spielplanVorhanden={spiele.length > 0}
+                    spielplanBegonnen={spielplanGesperrt}
+                    onGespeichert={meldeGespeichert}
+                    onFehler={setFehler}
+                    onModusGeaendert={turnierNeuLaden}
+                    aktualisierung={modusAktualisierung}
+                  />
                 </td>
               </tr>
               <tr>
@@ -995,6 +1022,11 @@ export function TurnierVerwaltenPage() {
           digitaleProtokollierung={turnier.protokollierungsart === "digital"}
           gesperrt={eingabeGesperrt}
           international={turnier.turnierart === "international"}
+          zweiGruppen={turnier.modus?.vorlage.gruppen === 2}
+          gruppenGesperrt={
+            spielplanGesperrt || Object.values(turnier.modus?.planZustand ?? {}).some((z) => Boolean(z.spielId))
+          }
+          onGruppenGeaendert={() => setModusAktualisierung((n) => n + 1)}
         />
       </div>
 

@@ -22,6 +22,7 @@ export function MannschaftenErfassenPage() {
   const [maxSpielerJeMannschaft, setMaxSpielerJeMannschaft] = useState<number | undefined>();
   const [digital, setDigital] = useState(false);
   const [international, setInternational] = useState(false);
+  const [zweiGruppen, setZweiGruppen] = useState(false);
 
   useEffect(() => {
     getTurnier(turnierId)
@@ -31,6 +32,7 @@ export function MannschaftenErfassenPage() {
         setMaxSpielerJeMannschaft(t.maxSpielerJeMannschaft);
         setDigital(t.protokollierungsart === "digital");
         setInternational(t.turnierart === "international");
+        setZweiGruppen(t.modus?.vorlage.gruppen === 2);
       })
       .catch(() => {});
   }, [turnierId]);
@@ -57,6 +59,7 @@ export function MannschaftenErfassenPage() {
         maxSpielerJeMannschaft={maxSpielerJeMannschaft}
         digitaleProtokollierung={digital}
         international={international}
+        zweiGruppen={zweiGruppen}
       />
 
       <button type="button" onClick={() => navigate(naechsterPfad)} disabled={anzahl < 2}>

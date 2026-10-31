@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Protokollierungsart, Spielmodus, Turnier, Turnierart } from "@torball/shared";
-import { createTurnier, getTurniere, turnierAbleiten } from "../api";
+import type { Protokollierungsart, Spielmodus, Turnier, Turnierart, TurniermodusVorlage } from "@torball/shared";
+import { createTurnier, getTurniere, getTurniermodi, setzeTurniermodus, turnierAbleiten } from "../api";
 import { formatiereDatum } from "../format";
 
 /**
@@ -28,6 +28,10 @@ export function TurnierAnlegenPage() {
   const [anzahlFelder, setAnzahlFelder] = useState<1 | 2>(1);
   const [spielplanModus, setSpielplanModus] = useState<Spielmodus>("einfach");
   const [turnierart, setTurnierart] = useState<Turnierart>("national");
+  // Turniermodus (Gruppen/Endrunde): Standard ist "Jeder gegen Jeden" wie bisher. Endrundengroesse und Haken
+  // stellt die Turnierleitung spaeter in der Uebersicht ein (die Vorlage bringt sinnvolle Voreinstellungen mit).
+  const [turniermodi, setTurniermodi] = useState<TurniermodusVorlage[]>([]);
+  const [turniermodusId, setTurniermodusId] = useState("jeder-gegen-jeden");
   const [protokollierungsart, setProtokollierungsart] = useState<Protokollierungsart>("manuell");
   const [schiedsrichterPlanung, setSchiedsrichterPlanung] = useState(false);
   const [fehler, setFehler] = useState<string | undefined>();
@@ -37,6 +41,12 @@ export function TurnierAnlegenPage() {
   const navigate = useNavigate();
 
   // Kandidaten fuer die Datenuebernahme laden: abgeschlossene/archivierte Turniere.
+  useEffect(() => {
+    getTurniermodi()
+      .then(setTurniermodi)
+      .catch(() => setTurniermodi([]));
+  }, []);
+
   useEffect(() => {
     getTurniere()
       .then((alle) => setUebernehmbare(alle.filter((t) => t.status === "abgeschlossen" || t.status === "archiviert")))
@@ -73,6 +83,15 @@ export function TurnierAnlegenPage() {
         protokollierungsart,
         schiedsrichterPlanung,
       });
+      if (turniermodusId !== "jeder-gegen-jeden") {
+        try {
+          await setzeTurniermodus(neu._id, turniermodusId);
+        } catch {
+          // Das Turnier ist angelegt; der Modus laesst sich in der Uebersicht noch einmal waehlen.
+          navigate(`/turniere/${encodeURIComponent(neu._id)}`);
+          return;
+        }
+      }
       navigate(`/turniere/${encodeURIComponent(neu._id)}/regeln-erfassen`);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Anlegen");
@@ -164,6 +183,23 @@ export function TurnierAnlegenPage() {
                 <option value="doppelt">Jeder zweimal gegen Jeden (doppelt)</option>
               </select>
             </div>
+            {turniermodi.length > 1 && (
+              <div className="feld">
+                <label htmlFor="turniermodus">Turniermodus</label>
+                <select id="turniermodus" value={turniermodusId} onChange={(e) => setTurniermodusId(e.target.value)}>
+                  {turniermodi.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="feld-hinweis">
+                  {turniermodi.find((v) => v.id === turniermodusId)?.beschreibung} Größe der Endrunde, Spiel um Platz 3 und
+                  Platzierungsspiele stellst du später in der Übersicht ein; die Mannschaften teilst du bei zwei Gruppen im
+                  Schritt „Mannschaften“ auf die Gruppen auf. Der „Spielmodus“ oben gilt für die Vorrunde.
+                </p>
+              </div>
+            )}
             <div className="feld">
               <label htmlFor="protokollierungsart">Protokollierung</label>
               <select

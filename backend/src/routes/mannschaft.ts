@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { GruppenKennung, MannschaftImTurnier, Spieler, Turnier } from "@torball/shared";
+import type { GruppenKennung, MannschaftImTurnier, Spiel, Spieler, Turnier } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireZugriff } from "../auth/plugin";
 import {
@@ -275,6 +275,12 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
           return reply
             .code(409)
             .send({ error: "Es wurden bereits Spiele der Endrunde erzeugt - die Gruppen lassen sich nicht mehr ändern." });
+        }
+        const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: bestehend.turnierId });
+        if (spiele.some((s) => s.status !== "geplant" || s.ergebnisAbgeschlossen)) {
+          return reply
+            .code(409)
+            .send({ error: "Es gibt bereits begonnene Spiele - die Gruppen lassen sich nicht mehr ändern." });
         }
       }
 

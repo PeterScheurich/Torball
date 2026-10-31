@@ -110,6 +110,13 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
         (turnier.modus?.vorlage.id === vorlage.id ? turnier.modus.einstellungen : standardModusEinstellungen(vorlage));
       const fehler = pruefeModusEinstellungen(vorlage, einstellungen);
       if (fehler) return reply.code(400).send({ error: fehler });
+      // Ein anderer Modus (andere Gruppen) passt nicht mehr zu bereits begonnenen Vorrundenspielen.
+      if ((turnier.modus?.vorlage.id ?? "jeder-gegen-jeden") !== vorlage.id) {
+        const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id });
+        if (spiele.some((s) => s.status !== "geplant" || s.ergebnisAbgeschlossen)) {
+          return reply.code(409).send({ error: "Es gibt bereits begonnene Spiele – der Turniermodus lässt sich nicht mehr wechseln." });
+        }
+      }
 
       const aktualisiert = await aendereTurnierAtomar(turnier._id, (t) => ({
         ...t,
@@ -186,6 +193,20 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(409).send({ error: "Im Moment gibt es nichts zu erzeugen – die Paarungen stehen noch nicht fest." });
     }
 
+    // `runde` ist die Nummer des Zeit-Slots (Sortierung, Verschieben und Pruefungen rechnen damit) - bei Spielen
+    // der Endrunde die fortlaufende Nummer nach der Startzeit, hinter dem letzten Vorrunden-Slot. Spiele mit gleicher
+    // Startzeit (zwei Felder) bekommen dieselbe Nummer. Der Name steht in `bezeichnung`.
+    const vorhandene = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id });
+    const letzterVorrundenSlot = Math.max(
+      0,
+      ...vorhandene.filter((s) => !s.planId).map((s) => Number(s.runde)).filter((n) => Number.isFinite(n)),
+    );
+    const startzeiten = [...new Set(ansicht.plan.map((p) => p.startzeitGeplant).filter((z): z is string => Boolean(z)))].sort();
+    const slotVon = (p: (typeof ansicht.plan)[number]) =>
+      letzterVorrundenSlot +
+      1 +
+      (p.startzeitGeplant ? startzeiten.indexOf(p.startzeitGeplant) : ansicht.plan.indexOf(p));
+
     const neueSpiele: Spiel[] = [];
     for (const p of ziele) {
       const o = overrides[p.planId];
@@ -198,8 +219,7 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
         docType: "spiel",
         spielId: id,
         turnierId: turnier._id,
-        // `runde` darf laut Typ auch ein Name sein ("Finale", "Platz 3").
-        runde: p.bezeichnung,
+        runde: String(slotVon(p)),
         bezeichnung: p.bezeichnung,
         planId: p.planId,
         feldId: p.feldId,
@@ -258,7 +278,23 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(400).send({ error: "Die Reihenfolge darf nur Mannschaften dieser Gruppe enthalten, jede höchstens einmal." });
       }
       const aktualisiert = await aendereTurnierAtomar(turnier._id, (t) =>
-        t.modus ? { ...t, modus: { ...t.modus, vorrang: { ...t.modus.vorrang, [req.body.gruppe]: reihenfolge } } } : undefined,
+        t.modus
+          ? {
+              ...t,
+              modus: {
+                ...t.modus,
+                // Mehrere Gleichstaende einer Gruppe (z. B. Plaetze 2-3 und 5-6) laufen in EINER Liste: die neue
+                // Entscheidung ersetzt nur die genannten Mannschaften, fruehere bleiben davor stehen.
+                vorrang: {
+                  ...t.modus.vorrang,
+                  [req.body.gruppe]: [
+                    ...(t.modus.vorrang?.[req.body.gruppe] ?? []).filter((id) => !reihenfolge.includes(id)),
+                    ...reihenfolge,
+                  ],
+                },
+              },
+            }
+          : undefined,
       );
       await markiereTurnierBearbeitet(turnier._id, req.benutzer);
       return aktualisiert ? ((await ladeAnsicht(aktualisiert)) ?? { vorlage: null }) : { vorlage: null };

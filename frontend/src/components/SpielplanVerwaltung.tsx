@@ -16,6 +16,7 @@ import {
 } from "../api";
 import { formatiereUhrzeit } from "../format";
 import { TabListe } from "./TabListe";
+import { ModusAblauf } from "./ModusAblauf";
 import { schiedsrichterKonflikt } from "../schiedsrichterKonflikt";
 import { spielplanBasisAenderungen } from "../spielplanBasisDiff";
 import { berechneStartzeit, spieldauerMinuten } from "../zeitplanung";
@@ -770,7 +771,15 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
                                 ▼
                               </button>
                             </td>
-                            <td>{anzeigeIndex + 1}</td>
+                            <td>
+                              {anzeigeIndex + 1}
+                              {(s.bezeichnung || s.gruppe) && (
+                                <>
+                                  <br />
+                                  <small>{s.bezeichnung ?? `Gruppe ${s.gruppe}`}</small>
+                                </>
+                              )}
+                            </td>
                             <td>
                               <label className="sr-only" htmlFor={`spiel-zeit-${s._id}`}>
                                 Startzeit von Spiel {anzeigeIndex + 1}
@@ -902,6 +911,18 @@ export function SpielplanVerwaltung({ turnierId, onGeaendert, onTurnierGeaendert
       ) : (
         <p>Noch kein Spielplan erzeugt.</p>
       )}
+
+      {/* Turniermodus mit Endrunde/Platzierungsspielen: der weitere Ablauf mit Platzhaltern und Zeiten. */}
+      <ModusAblauf
+        turnierId={turnierId}
+        felder={turnier.felder}
+        mannschaften={mannschaften}
+        gesperrt={gesperrt}
+        signatur={spiele
+          .map((x) => `${x._id}:${x.status}:${x.ergebnisAbgeschlossen ? 1 : 0}:${x.ergebnisA ?? "-"}:${x.ergebnisB ?? "-"}`)
+          .join("|")}
+        onSpieleGeaendert={laden}
+      />
     </div>
   );
 }

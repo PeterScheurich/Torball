@@ -5,6 +5,7 @@ import type {
   Event as ProtokollEvent,
   EventTyp,
   GlobaleRolle,
+  GruppenKennung,
   Halbzeit,
   Mannschaftsseite,
   KanbanKarte,
@@ -18,6 +19,9 @@ import type {
   MailNachricht,
   MailPostfachEinstellungenOeffentlich,
   MannschaftImTurnier,
+  ModusEinstellungen,
+  PlanHinweis,
+  PlanSpiel,
   Protokollierungsart,
   Schiedsrichter,
   SchiedsrichterImTurnier,
@@ -38,6 +42,7 @@ import type {
   Turnierregeln,
   TurnierCodeRolle,
   TurnierRolle,
+  TurniermodusVorlage,
   Verein,
   VerbundeneInstanz,
   VideoEintrag,
@@ -274,6 +279,7 @@ export function updateWartung(daten: {
 export interface NeueMannschaft {
   turnierId: string;
   name: string;
+  gruppe?: GruppenKennung;
   teamId?: string;
   vereinId?: string;
   bundesland?: string;
@@ -295,6 +301,8 @@ export function createMannschaft(daten: NeueMannschaft): Promise<MannschaftImTur
 
 export interface MannschaftAktualisierung {
   name: string;
+  /** Gruppe der Vorrunde (Turniermodus mit zwei Gruppen); null loescht die Zuordnung. */
+  gruppe?: GruppenKennung | null;
   vereinId?: string | null;
   /** null sendet, um ein gesetztes Bundesland gezielt zu leeren (siehe VereinAktualisierung). */
   bundesland?: string | null;
@@ -907,6 +915,8 @@ export interface TabellenZeile {
   toreGegen: number;
   tordifferenz: number;
   punkte: number;
+  /** Gruppe der Vorrunde (Turniermodus mit zwei Gruppen); fehlt sonst. */
+  gruppe?: string;
 }
 
 export function getTabelle(turnierId: string): Promise<TabellenZeile[]> {
@@ -965,6 +975,8 @@ export function ergebnisPerTokenSetzen(
 export interface OeffentlichesSpiel {
   _id: string;
   runde?: string;
+  gruppe?: string;
+  bezeichnung?: string;
   feldId?: string;
   startzeitGeplant?: string;
   mannschaftAId: string;
@@ -990,8 +1002,10 @@ export interface OeffentlicherSpieltag {
 export interface OeffentlicheTurnierseite {
   turnierId: string;
   name: string;
-  mannschaften: { _id: string; name: string; bundesland?: string }[];
+  mannschaften: { _id: string; name: string; bundesland?: string; gruppe?: string }[];
   felder: Spielfeld[];
+  /** Turniermodus (Name, Anzahl Gruppen) oder null ohne Modus. */
+  modus?: { name: string; gruppen: number } | null;
   /** Turnier-Logo als Data-URL; null = Standard-Torball-Logo anzeigen. */
   logoDataUrl: string | null;
   /** Nur gesetzt, wenn das Turnier zu einem Wettbewerb mit >= 2 oeffentlich freigegebenen Spieltagen
@@ -1020,6 +1034,15 @@ export interface OeffentlicheTurnierseite {
     version: number;
     geaendertAm?: string;
     spiele: OeffentlichesSpiel[];
+    /** Weiterer Ablauf: noch nicht erzeugte Spiele spaeterer Runden mit Platzhaltern. */
+    ablauf?: {
+      planId: string;
+      bezeichnung: string;
+      textA: string;
+      textB: string;
+      feldId?: string;
+      startzeitGeplant?: string;
+    }[];
   } | null;
   ergebnisse: {
     tabelle: TabellenZeile[];
@@ -1281,4 +1304,98 @@ export function erstelleMailBericht(): Promise<MailBericht> {
 
 export function getMailBerichte(): Promise<MailBericht[]> {
   return anfrage("/mail-postfach/berichte");
+}
+
+// --- Turniermodi (Gruppen, Endrunde, Platzierungsspiele) ---
+
+/** Ein Plan-Spiel samt Aufloesung - siehe backend/src/spielplan/modus.ts. */
+export interface PlanSpielAnsicht extends PlanSpiel {
+  mannschaftAId?: string;
+  mannschaftBId?: string;
+  textA: string;
+  textB: string;
+  erzeugbar: boolean;
+  ergebnisA?: number;
+  ergebnisB?: number;
+  ergebnisAbgeschlossen?: boolean;
+  /** Endete unentschieden - die Turnierleitung legt den Sieger fest. */
+  unentschieden?: boolean;
+}
+
+export interface GleichstandAnsicht {
+  gruppe: string;
+  vonPlatz: number;
+  bisPlatz: number;
+  mannschaften: { id: string; name: string }[];
+}
+
+export interface ModusAnsicht {
+  vorlage: TurniermodusVorlage;
+  einstellungen: ModusEinstellungen;
+  gruppenGroessen: number[];
+  plan: PlanSpielAnsicht[];
+  hinweise: PlanHinweis[];
+  gleichstaende: GleichstandAnsicht[];
+  vorrundeFertig: Record<string, boolean>;
+  rangfolge: Record<string, string[]>;
+  /** Die Zeiten sind geschaetzt (die Vorrunde ist noch nicht erzeugt). */
+  zeitenGeschaetzt: boolean;
+}
+
+/** Ohne Turniermodus liefert der Server `{ vorlage: null }`. */
+export type ModusAntwort = ModusAnsicht | { vorlage: null };
+
+export function istModusAnsicht(a: ModusAntwort): a is ModusAnsicht {
+  return a.vorlage !== null;
+}
+
+export function getTurniermodi(): Promise<TurniermodusVorlage[]> {
+  return anfrage("/turniermodi");
+}
+
+export function getModusPlan(turnierId: string): Promise<ModusAntwort> {
+  return anfrage(`/turniere/${segment(turnierId)}/modus-plan`);
+}
+
+export function setzeTurniermodus(
+  turnierId: string,
+  turniermodusId: string,
+  einstellungen?: ModusEinstellungen,
+): Promise<ModusAntwort> {
+  return anfrage(`/turniere/${segment(turnierId)}/modus`, {
+    method: "PUT",
+    body: JSON.stringify({ turniermodusId, ...(einstellungen ? { einstellungen } : {}) }),
+  });
+}
+
+export function verteileGruppen(turnierId: string): Promise<ModusAntwort> {
+  return anfrage(`/turniere/${segment(turnierId)}/gruppen-verteilen`, { method: "POST" });
+}
+
+/** Erzeugt die Spiele, deren Paarungen feststehen; `overrides` waehlt eine Paarung von Hand. */
+export function erzeugeModusSpiele(
+  turnierId: string,
+  daten: { planIds?: string[]; overrides?: Record<string, { mannschaftAId: string; mannschaftBId: string }> } = {},
+): Promise<{ erzeugt: { spielId: string; bezeichnung: string }[]; ansicht?: ModusAntwort }> {
+  return anfrage(`/turniere/${segment(turnierId)}/modus/erzeugen`, { method: "POST", body: JSON.stringify(daten) });
+}
+
+/** Rangentscheidung bei Gleichstand: Mannschafts-IDs der Gruppe in der gewuenschten Reihenfolge. */
+export function setzeModusVorrang(turnierId: string, gruppe: string, reihenfolge: string[]): Promise<ModusAntwort> {
+  return anfrage(`/turniere/${segment(turnierId)}/modus/vorrang`, {
+    method: "PUT",
+    body: JSON.stringify({ gruppe, reihenfolge }),
+  });
+}
+
+/** Verschiebung (Minuten) und/oder Siegerentscheidung bei Unentschieden; null loescht den Wert. */
+export function aendereModusPlanSpiel(
+  turnierId: string,
+  planId: string,
+  daten: { versatzMinuten?: number | null; entscheidung?: string | null },
+): Promise<ModusAntwort> {
+  return anfrage(`/turniere/${segment(turnierId)}/modus/plan/${segment(planId)}`, {
+    method: "PUT",
+    body: JSON.stringify(daten),
+  });
 }

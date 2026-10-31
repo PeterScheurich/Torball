@@ -114,7 +114,16 @@ test(
         assert.equal(gruppeVon.get(s.mannschaftAId), s.gruppe);
         assert.equal(gruppeVon.get(s.mannschaftBId), s.gruppe, "Vorrundenspiele nur innerhalb einer Gruppe");
       }
+      // Schon vor der Vorrunde nennt die Vorschau eine (geschaetzte) Zeit - Grundlage: Anzahl Spiele und Felder.
+      const vorVorrunde = (await anfrage("GET", `/turniere/${turnierId}/modus-plan`)).json() as ModusAnsicht;
+      assert.equal(vorVorrunde.zeitenGeschaetzt, true);
+      assert.ok(vorVorrunde.plan.every((p) => p.startzeitGeplant), "jedes geplante Spiel hat eine geschaetzte Zeit");
       assert.equal((await anfrage("POST", `/turniere/${turnierId}/spielplan`)).statusCode, 201);
+      assert.equal(
+        ((await anfrage("GET", `/turniere/${turnierId}/modus-plan`)).json() as ModusAnsicht).zeitenGeschaetzt,
+        false,
+        "mit erzeugter Vorrunde gelten die echten Zeiten",
+      );
 
       // --- Vor den Ergebnissen: der Plan steht mit Platzhaltern, nichts ist erzeugbar
       let plan = (await anfrage("GET", `/turniere/${turnierId}/modus-plan`)).json() as ModusAnsicht;
@@ -177,7 +186,8 @@ test(
       const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId });
       const hf = spiele.find((s) => s.planId === "HF1")!;
       assert.deepEqual([hf.mannschaftAId, hf.mannschaftBId], [ids[0], ids[2]]);
-      assert.equal(hf.runde, "Halbfinale 1");
+      const letzteVorrunde = Math.max(...spiele.filter((s) => !s.planId).map((s) => Number(s.runde)));
+      assert.ok(Number(hf.runde) > letzteVorrunde, "die Endrunde folgt hinter dem letzten Vorrunden-Slot (runde ist eine Zahl)");
       assert.equal(hf.bezeichnung, "Halbfinale 1");
       assert.equal(hf.gruppe, undefined, "Endrundenspiele gehoeren zu keiner Gruppe");
 
@@ -202,11 +212,14 @@ test(
       plan = (await anfrage("GET", `/turniere/${turnierId}/modus-plan`)).json() as ModusAnsicht;
       assert.ok(plan.plan.every((p) => !p.erzeugbar || p.planId === "PL5"), "ohne Sieger von HF2 steht das Finale noch nicht fest");
       const hf2 = plan.plan.find((p) => p.planId === "HF2")!;
+      assert.equal(hf2.unentschieden, true, "das unentschiedene Halbfinale wird gekennzeichnet");
+      assert.ok(!plan.plan.find((p) => p.planId === "HF1")!.unentschieden);
       const nichtImSpiel = await anfrage("PUT", `/turniere/${turnierId}/modus/plan/HF2`, { entscheidung: ids[5] });
       assert.equal(nichtImSpiel.statusCode, 400, "der Sieger muss eine der beiden Mannschaften sein");
       const entschieden = await anfrage("PUT", `/turniere/${turnierId}/modus/plan/HF2`, { entscheidung: hf2.mannschaftBId });
       assert.equal(entschieden.statusCode, 200);
       plan = entschieden.json() as ModusAnsicht;
+      assert.ok(!plan.plan.find((p) => p.planId === "HF2")!.unentschieden, "nach der Entscheidung nicht mehr");
       assert.deepEqual(plan.plan.filter((p) => p.erzeugbar).map((p) => p.planId).sort(), ["F", "P3"]);
       const finale = plan.plan.find((p) => p.planId === "F")!;
       assert.equal(finale.textB, hf2.textB, "Sieger Halbfinale 2 laut Entscheidung der Turnierleitung");

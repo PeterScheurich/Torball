@@ -419,9 +419,12 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
       {tabelle.length === 0 ? (
         <p>Noch keine Ergebnisse erfasst.</p>
       ) : (
-        <div className="tabellen-wrapper">
+        // Turniermodus mit Gruppen: je Gruppe eine eigene Tabelle (die Zeilen tragen ihre Gruppe), sonst eine.
+        [...new Set(tabelle.map((z) => z.gruppe ?? ""))].map((gruppe) => (
+        <div key={gruppe} className="tabellen-wrapper">
+          {gruppe && <h3>Gruppe {gruppe}</h3>}
           <table>
-            <caption className="sr-only">Turniertabelle</caption>
+            <caption className="sr-only">{gruppe ? `Tabelle Gruppe ${gruppe}` : "Turniertabelle"}</caption>
             <thead>
               <tr>
                 <th scope="col">Platz</th>
@@ -436,7 +439,9 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
               </tr>
             </thead>
             <tbody>
-              {tabelle.map((zeile, index) => (
+              {tabelle
+                .filter((z) => (z.gruppe ?? "") === gruppe)
+                .map((zeile, index) => (
                 <tr key={zeile.mannschaftId}>
                   <td>{index + 1}</td>
                   <td>{nameVon(zeile.mannschaftId)}</td>
@@ -454,6 +459,7 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
             </tbody>
           </table>
         </div>
+        ))
       )}
 
       {!digital && <h2>Ergebniserfassung ohne Anmeldung</h2>}

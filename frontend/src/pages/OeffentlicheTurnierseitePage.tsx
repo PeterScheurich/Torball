@@ -104,7 +104,15 @@ function SpieleTabelle({ spiele, mannschaften, felder, zeigeErgebnis }: SpieleTa
         <tbody>
           {spieleSortiert.map((s, index) => (
             <tr key={s._id}>
-              <td>{index + 1}</td>
+              <td>
+                {index + 1}
+                {(s.bezeichnung || s.gruppe) && (
+                  <>
+                    <br />
+                    <small>{s.bezeichnung ?? `Gruppe ${s.gruppe}`}</small>
+                  </>
+                )}
+              </td>
               {mehrereFelder && <td>{nameVonFeld(s.feldId)}</td>}
               <td>{formatiereUhrzeit(s.startzeitGeplant)}</td>
               <td>{nameVonMannschaft(s.mannschaftAId)}</td>
@@ -133,10 +141,15 @@ function TabellenAnzeige({ tabelle, mannschaften }: TabellenAnzeigeProps) {
   if (tabelle.length === 0) {
     return <p>Noch keine Ergebnisse erfasst.</p>;
   }
+  // Turniermodus mit Gruppen: je Gruppe eine eigene Tabelle (die Zeilen tragen ihre Gruppe), sonst eine.
+  const gruppen = [...new Set(tabelle.map((z) => z.gruppe ?? ""))];
   return (
-    <div className="tabellen-wrapper">
+    <>
+      {gruppen.map((gruppe) => (
+    <div key={gruppe} className="tabellen-wrapper">
+      {gruppe && <h3>Gruppe {gruppe}</h3>}
       <table>
-        <caption className="sr-only">Turniertabelle</caption>
+        <caption className="sr-only">{gruppe ? `Tabelle Gruppe ${gruppe}` : "Turniertabelle"}</caption>
         <thead>
           <tr>
             <th scope="col">Platz</th>
@@ -151,7 +164,9 @@ function TabellenAnzeige({ tabelle, mannschaften }: TabellenAnzeigeProps) {
           </tr>
         </thead>
         <tbody>
-          {tabelle.map((zeile, index) => (
+          {tabelle
+            .filter((z) => (z.gruppe ?? "") === gruppe)
+            .map((zeile, index) => (
             <tr key={zeile.mannschaftId}>
               <td>{index + 1}</td>
               <td>{mannschaften.find((m) => m._id === zeile.mannschaftId)?.name ?? zeile.mannschaftId}</td>
@@ -169,6 +184,8 @@ function TabellenAnzeige({ tabelle, mannschaften }: TabellenAnzeigeProps) {
         </tbody>
       </table>
     </div>
+      ))}
+    </>
   );
 }
 
@@ -492,6 +509,42 @@ export function OeffentlicheTurnierseitePage() {
                 felder={daten.felder}
                 zeigeErgebnis={false}
               />
+              {daten.spielplan.ablauf && daten.spielplan.ablauf.length > 0 && (
+                <>
+                  <h2>Weiterer Ablauf</h2>
+                  <p>
+                    Diese Spiele stehen erst fest, wenn die vorherigen Runden gespielt sind. Die Zeiten sind
+                    vorläufig und können sich verschieben.
+                  </p>
+                  <div className="tabellen-wrapper">
+                    <table>
+                      <caption className="sr-only">Weiterer Ablauf mit Platzhaltern</caption>
+                      <thead>
+                        <tr>
+                          <th scope="col">Spiel</th>
+                          {daten.felder.length > 1 && <th scope="col">Feld</th>}
+                          <th scope="col">Startzeit (vorläufig)</th>
+                          <th scope="col">Paarung</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {daten.spielplan.ablauf.map((a) => (
+                          <tr key={a.planId}>
+                            <td>{a.bezeichnung}</td>
+                            {daten.felder.length > 1 && (
+                              <td>{daten.felder.find((f) => f.feldId === a.feldId)?.name ?? ""}</td>
+                            )}
+                            <td>{a.startzeitGeplant ? formatiereUhrzeit(a.startzeitGeplant) : "–"}</td>
+                            <td>
+                              {a.textA} – {a.textB}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

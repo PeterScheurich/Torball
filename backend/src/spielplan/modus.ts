@@ -15,6 +15,7 @@ import {
   planeZeiten,
   quelleText,
   siegerVerlierer,
+  berechneStartzeit,
   spieldauerMinuten,
 } from "@torball/shared";
 import { berechneRangfolge, type Gleichstand } from "../ergebnisse/tabelle";
@@ -36,6 +37,11 @@ export interface PlanSpielAnsicht extends PlanSpiel {
   textB: string;
   /** Kann jetzt erzeugt werden (beide Quellen aufgeloest, noch kein Spiel). */
   erzeugbar: boolean;
+  /** Erzeugtes Spiel: Ergebnis, sobald erfasst - und ob es unentschieden endete (dann entscheidet die Turnierleitung). */
+  ergebnisA?: number;
+  ergebnisB?: number;
+  ergebnisAbgeschlossen?: boolean;
+  unentschieden?: boolean;
 }
 
 export interface GleichstandAnsicht {
@@ -56,6 +62,8 @@ export interface ModusAnsicht {
   vorrundeFertig: Record<string, boolean>;
   /** Rangfolge je Gruppe (Mannschafts-IDs), sobald die Vorrunde fertig und der Gleichstand entschieden ist. */
   rangfolge: Record<string, string[]>;
+  /** Die Zeiten beruhen auf einer Schaetzung (die Vorrunde ist noch nicht erzeugt): Anzahl Spiele / Felder. */
+  zeitenGeschaetzt: boolean;
 }
 
 const gruppenSchluessel = (vorlage: TurniermodusVorlage): string[] => (vorlage.gruppen === 2 ? ["A", "B"] : [""]);
@@ -155,7 +163,21 @@ export function baueModusAnsicht(
     .map((s) => s.startzeitVoraussichtlich ?? s.startzeitGeplant)
     .filter((z): z is string => Boolean(z))
     .map((z) => new Date(z).getTime());
-  const vorrundeEnde = letzteStarts.length > 0 ? new Date(Math.max(...letzteStarts) + dauer * 60_000) : undefined;
+  let vorrundeEnde = letzteStarts.length > 0 ? new Date(Math.max(...letzteStarts) + dauer * 60_000) : undefined;
+  // Noch keine Vorrunde erzeugt: Das Ende aus der Zahl der Spiele schaetzen (Untergrenze - die Planung
+  // kann einzelne Pausen einlegen), damit die Vorschau schon bei der Planung eine Zeit nennt.
+  let zeitenGeschaetzt = false;
+  if (vorrundeAlle.length === 0 && turnier.felder.length > 0) {
+    const durchgaenge = turnier.spielplanModus === "doppelt" ? 2 : 1;
+    const anzahlSpiele = groessen.reduce((summe, g) => summe + (g * (g - 1)) / 2, 0) * durchgaenge;
+    if (anzahlSpiele > 0) {
+      const ende = berechneStartzeit(turnier, Math.ceil(anzahlSpiele / turnier.felder.length));
+      if (ende) {
+        vorrundeEnde = new Date(ende);
+        zeitenGeschaetzt = true;
+      }
+    }
+  }
   const mitZeiten = planeZeiten(mitZustand, turnier.felder, vorrundeEnde, dauer);
 
   const plan: PlanSpielAnsicht[] = mitZeiten.map((s) => {
@@ -165,6 +187,9 @@ export function baueModusAnsicht(
     // Ein bereits erzeugtes Spiel ist massgeblich - seine Mannschaften, Zeit und sein Feld zaehlen.
     const mannschaftAId = spiel?.mannschaftAId ?? a;
     const mannschaftBId = spiel?.mannschaftBId ?? b;
+    const abgeschlossen = Boolean(spiel?.ergebnisAbgeschlossen);
+    const unentschieden =
+      abgeschlossen && spiel?.ergebnisA != null && spiel.ergebnisA === spiel.ergebnisB && !s.entscheidung;
     return {
       ...s,
       feldId: spiel?.feldId ?? s.feldId,
@@ -174,8 +199,20 @@ export function baueModusAnsicht(
       textA: mannschaftAId ? (namen.get(mannschaftAId) ?? mannschaftAId) : quelleText(s.quelleA, mitZeiten),
       textB: mannschaftBId ? (namen.get(mannschaftBId) ?? mannschaftBId) : quelleText(s.quelleB, mitZeiten),
       erzeugbar: erzeugbar.has(s.planId),
+      ...(spiel ? { ergebnisA: spiel.ergebnisA, ergebnisB: spiel.ergebnisB, ergebnisAbgeschlossen: abgeschlossen } : {}),
+      ...(unentschieden ? { unentschieden: true } : {}),
     };
   });
 
-  return { vorlage, einstellungen, gruppenGroessen: groessen, plan, hinweise, gleichstaende, vorrundeFertig, rangfolge };
+  return {
+    vorlage,
+    einstellungen,
+    gruppenGroessen: groessen,
+    plan,
+    hinweise,
+    gleichstaende,
+    vorrundeFertig,
+    rangfolge,
+    zeitenGeschaetzt,
+  };
 }
