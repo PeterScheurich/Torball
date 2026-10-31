@@ -95,17 +95,20 @@ function Bestaetige-Systemaenderung {
 # Legt (bzw. erneuert) die Windows-Firewall-Regel fuer eingehende Verbindungen auf den App-Port
 # an. -Profile Any statt nur "Privat": Hallen-/Vereins-WLANs stuft Windows haeufig als
 # "oeffentliches Netzwerk" ein - eine auf private Netze beschraenkte Regel wuerde den
-# Hauptanwendungsfall (Helfer-Geraete am Turnierort) stillschweigend blockieren. Der Zugriff
-# bleibt trotzdem aufs lokale Netz beschraenkt (kein Port-Forwarding ins Internet), und die App
-# verlangt weiterhin Anmeldung bzw. Turnier-Code. Loeschen+Neuanlegen statt Aktualisieren haelt
-# die Regel auch bei geaendertem Port aktuell und ist idempotent.
+# Hauptanwendungsfall (Helfer-Geraete am Turnierort) stillschweigend blockieren. Dass der Zugriff
+# aufs lokale Netz beschraenkt bleibt, erzwingt erst -RemoteAddress LocalSubnet: ohne dieses Argument
+# gilt die Regel fuer JEDE Adresse (Tethering, Port-Weiterleitung am Router, anderes Netz) - der
+# fruehere Kommentar behauptete die Beschraenkung nur (Sicherheitsdurchgang 2026-10-31). Die App
+# verlangt zusaetzlich weiterhin Anmeldung bzw. Turnier-Code. Loeschen+Neuanlegen statt Aktualisieren
+# haelt die Regel auch bei geaendertem Port aktuell und ist idempotent - ein erneuter Setup.cmd-Lauf
+# zieht damit auch bestehende Installationen auf die engere Regel nach.
 function Set-TorballFirewallRegel {
     param([int]$Port)
     $regelName = "Torball-Turniere Server"
     Get-NetFirewallRule -DisplayName $regelName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
     New-NetFirewallRule -DisplayName $regelName -Direction Inbound -Action Allow -Protocol TCP `
-        -LocalPort $Port -Profile Any | Out-Null
-    Write-Host "Windows-Firewall-Regel '$regelName' angelegt (eingehend, TCP-Port $Port)."
+        -LocalPort $Port -Profile Any -RemoteAddress LocalSubnet | Out-Null
+    Write-Host "Windows-Firewall-Regel '$regelName' angelegt (eingehend, TCP-Port $Port, nur aus dem eigenen Netz)."
 }
 
 # Fragt, ob andere Geraete im lokalen Netzwerk auf die App zugreifen koennen sollen (Betriebsmodus
@@ -123,8 +126,11 @@ function Frage-Netzwerkzugriff {
     Write-Host "Auswirkung auf diesen Rechner: Die App wird im lokalen Netzwerk erreichbar gemacht und in"
     Write-Host "der Windows-Firewall wird eine Regel angelegt, die eingehende Verbindungen auf dem App-Port"
     Write-Host "erlaubt. Zugriff hat nur, wer im selben (W)LAN ist UND sich in der App anmeldet bzw. einen"
-    Write-Host "Turnier-Code kennt - aus dem Internet ist der Rechner dadurch nicht erreichbar. Ohne diesen"
-    Write-Host "Schritt laesst sich die App nur auf diesem Rechner selbst benutzen."
+    Write-Host "Turnier-Code kennt - aus dem Internet ist der Rechner dadurch nicht erreichbar (die Regel gilt nur"
+    Write-Host "fuer das eigene Netz). Die Verbindung im Netz ist allerdings UNVERSCHLUESSELT: Bitte nur in einem"
+    Write-Host "Netz mit Passwortschutz (WPA2/WPA3) verwenden, dessen Passwort nur deine Helfer kennen - nicht in"
+    Write-Host "einem offenen oder fuer viele Gaeste zugaenglichen WLAN. Ohne diesen Schritt laesst sich die App"
+    Write-Host "nur auf diesem Rechner selbst benutzen."
     $antwort = Frage-MitDefault -Text "Netzwerkzugriff aktivieren? (j/n)" -Standard $Standard
     return ($antwort -in @("j", "J", "ja", "Ja", "JA"))
 }

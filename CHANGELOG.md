@@ -7,6 +7,11 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Sicherheit: Windows-Freigabe nur noch fürs eigene Netz.** Die Firewall-Regel der lokalen Windows-Installation
+  galt bisher für jede Adresse – sie beschränkt sich jetzt wirklich auf das eigene Netzwerk. Wer „Setup.cmd“ erneut
+  ausführt, bekommt die engere Regel. Außerdem weisen Installer und Netzwerk-Anleitung deutlicher darauf hin, dass
+  die Verbindung im Netz unverschlüsselt ist und nur in einem passwortgeschützten eigenen WLAN genutzt werden sollte.
+
 - **Sicherheit: Die Ersteinrichtung kann nicht mehr zwei Administratoren erzeugen.** Wurde sie auf einer frischen
   Installation von zwei Seiten gleichzeitig abgeschickt, entstanden bisher zwei Admin-Konten. Jetzt gelingt genau eine
   Anlage, die andere wird abgewiesen.
