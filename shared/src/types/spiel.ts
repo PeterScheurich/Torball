@@ -7,6 +7,7 @@ import {
   TurnierId,
   Zeitstempel,
 } from "./common";
+import type { GruppenKennung } from "./turniermodus";
 
 export type SpielStatus = "geplant" | "laeuft" | "beendet" | "abgeschlossen";
 
@@ -34,4 +35,12 @@ export interface Spiel extends CouchMeta {
    * wo ein Spiel direkt von "geplant" zu "Ergebnis erfasst" springen kann.
    */
   ergebnisAbgeschlossen: boolean;
+  /**
+   * Turniermodus mit Gruppen/Endrunde: Gruppe eines Vorrundenspiels und - bei Spielen spaeterer Runden -
+   * die Kennung im Plan (`PlanSpiel.planId`) samt Anzeigename. Fehlt bei Modi ohne Gruppen. Vorrundenspiele
+   * haben keine `planId`; nur sie zaehlen in die Gruppentabellen.
+   */
+  gruppe?: GruppenKennung;
+  planId?: string;
+  bezeichnung?: string;
 }

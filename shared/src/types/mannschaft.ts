@@ -1,4 +1,5 @@
 import { CouchMeta, MannschaftId, TeamId, TurnierId, VereinId } from "./common";
+import type { GruppenKennung } from "./turniermodus";
 
 /**
  * Siehe Gesamtspezifikation Abschnitt 20.7/15. teamId/vereinId sind reine
@@ -44,4 +45,9 @@ export interface MannschaftImTurnier extends CouchMeta {
    * neu generierter Spielplan-Vorschlaege.
    */
   reihenfolge: number;
+  /**
+   * Gruppe der Vorrunde (Turniermodus mit zwei Gruppen). Fehlt bei Modi ohne Gruppen. Die Gruppengroesse
+   * ergibt sich aus der Zuordnung - sie ist je Turnier frei (z. B. A = 5, B = 6 Mannschaften).
+   */
+  gruppe?: GruppenKennung;
 }

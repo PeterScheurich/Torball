@@ -9,3 +9,4 @@ export * from "./logik/ereignisse";
 export * from "./logik/schiedsrichterKonflikt";
 export * from "./logik/passwortRegeln";
 export * from "./logik/schiedsrichterAnzeige";
+export * from "./logik/turniermodus";

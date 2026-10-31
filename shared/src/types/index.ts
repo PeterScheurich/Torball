@@ -9,6 +9,7 @@ export * from "./stammdaten";
 export * from "./wettbewerb";
 export * from "./turnier";
 export * from "./turnierpause";
+export * from "./turniermodus";
 export * from "./mannschaft";
 export * from "./spieler";
 export * from "./schiedsrichter";

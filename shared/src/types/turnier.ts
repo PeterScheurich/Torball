@@ -1,4 +1,5 @@
 import { BenutzerId, CouchMeta, FeldId, TurnierId, WettbewerbId, Zeitstempel } from "./common";
+import type { TurnierModus } from "./turniermodus";
 
 /**
  * Lebenszyklus eines Turniers:
@@ -221,6 +222,13 @@ export interface Turnier extends CouchMeta, Turnierregeln {
    * Elemente sichtbar - siehe `schiedsrichterAnzeigeOptionen` in shared/src/logik.
    */
   schiedsrichterAnzeige?: SchiedsrichterAnzeigeOptionen;
+
+  /**
+   * Turniermodus (Gruppen, Endrunde, Platzierungsspiele): Kopie der gewaehlten Vorlage, die Einstellungen
+   * und der Plan der spaeteren Runden - siehe `TurnierModus`. Fehlt der Wert, gilt "Jeder gegen Jeden"
+   * ohne Endrunde, also das Verhalten vor Einfuehrung der Modi.
+   */
+  modus?: TurnierModus;
 
   /**
    * Turnier-Sync (Grundlage, Abschnitt 21.3/23): rein lokale Buchführung DIESER Installation,
