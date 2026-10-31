@@ -22,6 +22,15 @@ export type Spielmodus = "einfach" | "doppelt";
 /** National oder international (z. B. IBSA) - siehe `Turnier.turnierart`. */
 export type Turnierart = "national" | "international";
 
+/** Optionale Elemente der Schiedsrichter-Anzeige; `false` blendet aus, fehlend/`true` zeigt an. */
+export interface SchiedsrichterAnzeigeOptionen {
+  restzeit?: boolean;
+  auszeiten?: boolean;
+  wurfzaehler?: boolean;
+  achtSekunden?: boolean;
+  strafwurf?: boolean;
+}
+
 /** Reihenfolge der Kriterien bestimmt die Tabellensortierung bei Gleichstand. */
 export type TabellenKriterium =
   | "punkte"
@@ -205,6 +214,13 @@ export interface Turnier extends CouchMeta, Turnierregeln {
    * Turniere); fehlt das Feld, gilt der einstufige Abschluss.
    */
   protokollBestaetigungErforderlich?: boolean;
+
+  /**
+   * Anzeige am Spielfeld fuer den Schiedsrichter (zweiter Bildschirm): welche Zusatzelemente
+   * erscheinen. Spielstand und Foulzaehler sind immer da. Fehlt das Feld (oder ein Wert), sind die
+   * Elemente sichtbar - siehe `schiedsrichterAnzeigeOptionen` in shared/src/logik.
+   */
+  schiedsrichterAnzeige?: SchiedsrichterAnzeigeOptionen;
 
   /**
    * Turnier-Sync (Grundlage, Abschnitt 21.3/23): rein lokale Buchführung DIESER Installation,

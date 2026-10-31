@@ -10,6 +10,11 @@ import type {
   Turnierregeln,
 } from "@torball/shared";
 import {
+  SCHIEDSRICHTER_ANZEIGE_ELEMENTE,
+  schiedsrichterAnzeigeOptionen,
+  type SchiedsrichterAnzeigeOptionen,
+} from "@torball/shared";
+import {
   getSpiele,
   getSystemkonfiguration,
   getTurnierProtokolle,
@@ -305,6 +310,22 @@ export function TurnierVerwaltenPage() {
       setFehler(undefined);
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Protokollierungsart");
+    }
+  }
+
+  // Zusatzelemente der Schiedsrichter-Anzeige. Bewusst auch bei laufendem Spielplan aenderbar (anders
+  // als Protokollierung/Spielzeit): die Einstellung beeinflusst nur die Darstellung, nie die Daten -
+  // und gerade waehrend des Turniers stellt sich heraus, was am Feld stoert.
+  async function schiedsrichterAnzeigeAendern(schluessel: keyof SchiedsrichterAnzeigeOptionen, an: boolean) {
+    if (!turnier) return;
+    try {
+      const neu = { ...schiedsrichterAnzeigeOptionen(turnier.schiedsrichterAnzeige), [schluessel]: an };
+      setTurnier(await updateTurnier(turnierId, { schiedsrichterAnzeige: neu }));
+      setFehler(undefined);
+      const bezeichnung = SCHIEDSRICHTER_ANZEIGE_ELEMENTE.find((e) => e.schluessel === schluessel)?.bezeichnung;
+      meldeGespeichert(`${bezeichnung}: ${an ? "wird angezeigt" : "wird ausgeblendet"}.`);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern der Anzeige-Einstellung");
     }
   }
 
@@ -718,6 +739,30 @@ export function TurnierVerwaltenPage() {
                   )}
                 </td>
               </tr>
+              {turnier.protokollierungsart === "digital" && (
+                <tr>
+                  <th scope="row">Schiedsrichter-Anzeige</th>
+                  <td>
+                    <fieldset className="anzeige-optionen" disabled={eingabeGesperrt}>
+                      <legend>Zusätzlich zu Spielstand und Fouls anzeigen:</legend>
+                      {SCHIEDSRICHTER_ANZEIGE_ELEMENTE.map(({ schluessel, bezeichnung }) => (
+                        <label key={schluessel}>
+                          <input
+                            type="checkbox"
+                            checked={schiedsrichterAnzeigeOptionen(turnier.schiedsrichterAnzeige)[schluessel]}
+                            onChange={(e) => schiedsrichterAnzeigeAendern(schluessel, e.target.checked)}
+                          />{" "}
+                          {bezeichnung}
+                        </label>
+                      ))}
+                    </fieldset>
+                    <p className="feld-hinweis">
+                      Gilt für die zweite Anzeige am Spielfeld. Spielstand und Foulzähler sind immer zu sehen. Eine
+                      Änderung erscheint dort nach spätestens 15 Sekunden.
+                    </p>
+                  </td>
+                </tr>
+              )}
               {(
                 [
                   { feld: "spielortName", label: "Spielort (Name)" },

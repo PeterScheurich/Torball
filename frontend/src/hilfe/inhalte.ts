@@ -488,9 +488,10 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie richte ich die Anzeige für den Schiedsrichter ein?",
         text: [
-          "Auf einem zweiten Bildschirm am Feld kann eine eigene Anzeige laufen, die dem Schiedsrichter Spielstand, Restzeit, die 8-Sekunden-Frist, Fouls und Auszeiten zeigt. Sie wird nicht bedient und ändert nie Daten.",
+          "Auf einem zweiten Bildschirm am Feld kann eine eigene Anzeige laufen, die dem Schiedsrichter Spielstand und Fouls zeigt – und, wenn du es möchtest, Restzeit, die 8-Sekunden-Frist und Auszeiten. Sie wird nicht bedient und ändert nie Daten.",
           {
             liste: [
+              "Was zusätzlich zu Spielstand und Fouls erscheint, stellst du je Turnier im Reiter „Übersicht“ ein (Block „Schiedsrichter-Anzeige“, nur bei digitaler Protokollierung): Restzeit, Auszeiten, Wurfzähler, 8-Sekunden-Anzeige sowie Strafwurf und Penalty lassen sich einzeln ausblenden. Spielstand und Fouls sind immer zu sehen. Die Einstellung darfst du auch während des Turniers ändern; auf der Anzeige erscheint sie nach spätestens 15 Sekunden, ohne dass du das Fenster neu laden musst.",
               "Öffnen über den Knopf „Schiedsrichter-Anzeige öffnen“ auf der Protokollseite. Das neue Fenster auf den zweiten Bildschirm ziehen und dort auf „Vollbild“ schalten.",
               "Die Seiten der Mannschaften sind vertauscht – der Schiedsrichter steht dem Protokollanten gegenüber, für ihn liegt links, was für den Protokollanten rechts liegt. Die Schrift bleibt normal lesbar. Beim Seitenwechsel zur Halbzeit tauscht auch die Anzeige automatisch mit.",
               "Die Anzeige gehört zum Feld, nicht zu einem einzelnen Spiel: Nach dem Abpfiff bleibt sie offen und zeigt das letzte Ergebnis und die nächste Begegnung, bis das nächste Spiel beginnt.",

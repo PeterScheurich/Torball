@@ -526,6 +526,15 @@ Faellt der Kanal aus (>10 s Stille), rechnet die Seite den Stand aus Server-Date
 ganzen `ProtokollStand`** - macht sichtbar, wovon die zweite Ansicht wirklich abhaengt.
 (4) **Keine Bedienung ausser Vollbild und Hell/Dunkel**, kein Klick aendert je Daten.
 
+**Schiedsrichter-Anzeige ist je Turnier konfigurierbar (2026-10-31, Auftraggeber: „konfigurierbar, wo moeglich
+und sinnvoll“):** Pflicht sind Spielstand und Foulzaehler; Restzeit, Auszeiten, Wurfzaehler, 8-Sekunden-Anzeige
+und Strafwurf/Penalty schaltet die Turnierleitung ab (`Turnier.schiedsrichterAnzeige`, fehlend = sichtbar, Block in
+der Uebersicht nur bei digitaler Protokollierung, auch bei laufendem Spielplan aenderbar - es aendert nur die
+Darstellung). **Die Liste der Elemente steht EINMAL in `shared/src/logik/schiedsrichterAnzeige.ts`** (Oberflaeche,
+Backend-Pruefung, Anzeige); ein neues Element ist eine Zeile dort plus eine Stelle in `SchiedsrichterSichtPage.tsx`.
+Das Turnier-PUT hat kein Schema, deshalb prueft `pruefeAnzeigeEinstellung` in `turnier.ts` von Hand (nur bekannte
+Schluessel, nur Wahrheitswerte). Test: `schiedsrichterAnzeige.test.ts`, `schiedsrichter-anzeige.integration.test.ts`.
+
 **Hell/Dunkel NUR fuer die Schiedsrichter-Anzeige (`schiedsrichter/anzeigeTheme.ts`,
 Nutzer-Vorgabe):** Bewusste **Ausnahme vom Zwei-Ebenen-Modell** (Theme/Dichte/Breite, siehe
 "Barrierefreiheit & Theming"): eigener `localStorage`-Schluessel, eigene CSS-Klassen

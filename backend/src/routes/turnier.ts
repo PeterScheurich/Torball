@@ -17,6 +17,7 @@ import type {
   TurnierStatus,
   Wettbewerb,
 } from "@torball/shared";
+import { pruefeSchiedsrichterAnzeige } from "@torball/shared";
 import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireAuth, requireRolle, requireZugriff } from "../auth/plugin";
 import {
@@ -180,6 +181,13 @@ function ohneServerFelder<T extends object>(body: T): T {
   return kopie as T;
 }
 
+/** Das Feld hat kein Schema (die Turnier-Routen lassen unbekannte Felder durch), daher hier von
+ *  Hand: nur bekannte Elemente, nur Wahrheitswerte - sonst landete beliebiger Inhalt im Turnier. */
+function pruefeAnzeigeEinstellung(body: object): string | undefined {
+  const wert = (body as { schiedsrichterAnzeige?: unknown }).schiedsrichterAnzeige;
+  return wert === undefined ? undefined : pruefeSchiedsrichterAnzeige(wert);
+}
+
 export async function turnierRoutes(app: FastifyInstance): Promise<void> {
   app.get("/turniere", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
@@ -212,6 +220,8 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: turnierBodySchema } },
     async (req, reply) => {
       if (!requireRolle(req, reply, ["admin", "manager"])) return;
+      const anzeigeFehler = pruefeAnzeigeEinstellung(req.body);
+      if (anzeigeFehler) return reply.code(400).send({ error: anzeigeFehler });
       const id = newId("turnier");
       const { regeln, version } = await aktuelleTurnierregeln();
       const turnier: Turnier = {
@@ -310,6 +320,8 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       if (logo !== undefined && logo !== null && (typeof logo !== "string" || !logo.startsWith("data:image/"))) {
         return reply.code(400).send({ error: "Das Turnier-Logo muss eine Bild-Data-URL (data:image/…) sein." });
       }
+      const anzeigeFehler = pruefeAnzeigeEinstellung(req.body);
+      if (anzeigeFehler) return reply.code(400).send({ error: anzeigeFehler });
       // Turnierart: nur die zwei bekannten Werte. Beim WECHSEL werden die vom Profil vorbelegten Regeln
       // nachgezogen - aber nur, solange sie noch dem Profil der bisherigen Art entsprechen. Wer das
       // Ergebnis bei Nichtantreten von Hand geaendert hat (z. B. 4:0), behaelt seinen Wert. Bei einem

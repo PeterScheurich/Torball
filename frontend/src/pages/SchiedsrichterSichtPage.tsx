@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import type { MannschaftImTurnier, Mannschaftsseite, Spiel, Turnier } from "@torball/shared";
+import { schiedsrichterAnzeigeOptionen } from "@torball/shared";
 import { getMannschaften, getSpiele, getSpielProtokoll, getTurnier } from "../api";
 import { formatiereUhrzeit } from "../format";
 import { berechneProtokollStand } from "../protokoll/stand";
@@ -349,6 +350,10 @@ export function SchiedsrichterSichtPage() {
 
   const stand: AnzeigeStand = aktiv.stand;
 
+  // Welche Zusatzelemente das Turnier zeigen will (Spielstand und Fouls sind immer da). Kommt aus
+  // dem Turnier-Dokument und damit ueber den 15-Sekunden-Abruf - eine Aenderung wirkt ohne Neuladen.
+  const zeige = schiedsrichterAnzeigeOptionen(turnier?.schiedsrichterAnzeige);
+
   /**
    * DIE Spiegelung: Die Protokollseite zeigt bei `seiteAVertauscht` B links - hier ist es
    * genau umgekehrt, weil der Schiedsrichter von der anderen Feldseite schaut. Weil dieser
@@ -392,7 +397,7 @@ export function SchiedsrichterSichtPage() {
    * 3. Nach einem Wurf, solange keine Seite den Ball hat - neutral, ueber die volle Breite.
    */
   const band = (() => {
-    if (stand.strafwurfFrist) {
+    if (zeige.strafwurf && stand.strafwurfFrist) {
       const rest = restSekunden(stand.strafwurfFrist);
       return {
         seite: stand.strafwurfFrist.mannschaft,
@@ -402,6 +407,7 @@ export function SchiedsrichterSichtPage() {
         abgelaufen: rest <= 0,
       };
     }
+    if (!zeige.achtSekunden) return undefined;
     if (stand.uhrLaeuft && stand.letzteKontrolle) {
       const rest = restSekunden(stand.letzteKontrolle);
       return {
@@ -442,16 +448,18 @@ export function SchiedsrichterSichtPage() {
         <span>
           Fouls <b className={stand.fouls[seite] >= 3 ? "sr-alarm" : undefined}>{stand.fouls[seite]}</b>
         </span>
-        <span>
-          Auszeit{" "}
-          <b>
-            {stand.timeouts[seite]}/{aktiv.timeoutsJeHalbzeit}
-          </b>
-        </span>
+        {zeige.auszeiten && (
+          <span>
+            Auszeit{" "}
+            <b>
+              {stand.timeouts[seite]}/{aktiv.timeoutsJeHalbzeit}
+            </b>
+          </span>
+        )}
         {/* Der Wurfzaehler erscheint erst ab dem dritten Wurf in Folge und ab dem vierten rot:
             Der vierte Wurf desselben Spielers ist ein Foul, das der Schiedsrichter pfeifen
             muss - vorher ist die Zahl fuer ihn ohne Belang und wuerde nur ablenken. */}
-        {stand.wurfAnzahl[seite] >= 3 && (
+        {zeige.wurfzaehler && stand.wurfAnzahl[seite] >= 3 && (
           <span>
             <b className={stand.wurfAnzahl[seite] >= 4 ? "sr-alarm" : undefined}>
               {stand.wurfAnzahl[seite]}. Wurf in Folge
@@ -492,23 +500,30 @@ export function SchiedsrichterSichtPage() {
         <div className="sr-mitte">
           {teamBlock(linkeSeite, "links")}
           <div className="sr-kern">
-            <div className={`sr-zeit ${ueberhang ? "sr-alarm" : ""}`}>{restZeit}</div>
-            <div className="sr-kern-label">{ueberhang ? "Überhang" : "Restzeit"}</div>
-            <div className="sr-stand">
+            {zeige.restzeit && (
+              <>
+                <div className={`sr-zeit ${ueberhang ? "sr-alarm" : ""}`}>{restZeit}</div>
+                <div className="sr-kern-label">{ueberhang ? "Überhang" : "Restzeit"}</div>
+              </>
+            )}
+            {/* Ohne Restzeit ist der Spielstand das Wichtigste auf der Tafel und wird groesser. */}
+            <div className={zeige.restzeit ? "sr-stand" : "sr-stand sr-stand-gross"}>
               {tore(linkeSeite)} : {tore(rechteSeite)}
             </div>
           </div>
           {teamBlock(rechteSeite, "rechts")}
         </div>
 
-        {band && band.seite === undefined ? (
-          <div className="sr-band">{bandFeld("voll")}</div>
-        ) : (
-          <div className="sr-band">
-            {bandFeld(linkeSeite)}
-            {bandFeld(rechteSeite)}
-          </div>
-        )}
+        {/* Sind beide Fristen abgeschaltet, entfaellt das ganze Band samt leerem Rahmen. */}
+        {(zeige.achtSekunden || zeige.strafwurf) &&
+          (band && band.seite === undefined ? (
+            <div className="sr-band">{bandFeld("voll")}</div>
+          ) : (
+            <div className="sr-band">
+              {bandFeld(linkeSeite)}
+              {bandFeld(rechteSeite)}
+            </div>
+          ))}
 
         {!paketFrisch && (
           <p className="sr-verzoegert">

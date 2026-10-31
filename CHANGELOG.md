@@ -7,6 +7,11 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Schiedsrichter-Anzeige am Feld ist einstellbar.** Spielstand und Fouls sind immer zu sehen. Restzeit,
+  Auszeiten, Wurfzähler, die 8-Sekunden-Anzeige sowie Strafwurf und Penalty lassen sich je Turnier einzeln
+  ausblenden (Reiter „Übersicht“, bei digitaler Protokollierung). Die Änderung gilt auch während des Turniers und
+  erscheint nach spätestens 15 Sekunden auf der Anzeige. Ohne Einstellung bleibt alles wie bisher sichtbar.
+
 - **Datenschutz: Manager sehen nicht mehr alle Konten.** Ein Manager sieht in der Benutzerverwaltung nur noch
   sein eigenes Konto, die Personen, die er selbst eingeladen hat, und die Konten seines Vereins – ohne
   Telefonnummer, Adresse und ähnliche Angaben. Administratoren sehen weiterhin alle. Neu ist die Spalte „Verein“:

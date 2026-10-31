@@ -450,6 +450,15 @@ Vorher war davon nur die Uhr-Seite umgesetzt (ein `P` stoppt seit 21.08. die Spi
 
 ### Schiedsrichter-Anzeige auf dem zweiten Bildschirm (umgesetzt 28.08.2026)
 
+> **Konfigurierbar seit 31.10.2026 (Auftraggeber: „konfigurierbar, wo möglich und sinnvoll“).** Spielstand und
+> Foulzähler sind **Pflicht** (so wie die Tafel auf dem Protokollantentisch). Alles andere schaltet die
+> Turnierleitung je Turnier ab: Restzeit, Auszeiten, Wurfzähler, 8-Sekunden-Anzeige (nach Wurf/Kontrolle) und
+> Strafwurf/Penalty (eigenes Element, weil jemand die Frist abschalten, aber wissen will, wer den Strafwurf wirft).
+> Standard: alles an – fehlende Werte gelten als „sichtbar“, bestehende Turniere ändern sich nicht. Gespeichert am
+> Turnier (`schiedsrichterAnzeige`), Liste der Elemente und Prüfung in `shared/src/logik/schiedsrichterAnzeige.ts`.
+> Die Anzeige liest die Einstellung aus dem 15-Sekunden-Abruf des Turniers (kein Neuladen nötig). Ohne Restzeit wird
+> der Spielstand größer; sind 8-Sekunden-Anzeige **und** Strafwurf aus, entfällt das ganze Band samt Rahmen.
+
 Zweite Ansicht als Orientierung für den Schiedsrichter, der immer auf der **gegenüberliegenden**
 Seite des Protokollanten steht: Spielstand, Restzeit, 8-Sekunden-Frist, Fouls und offene
 Auszeiten. Route `/turniere/:turnierId/felder/:feldId/schiedsrichter`

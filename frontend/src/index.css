@@ -2865,6 +2865,11 @@ body.protokoll-vollbild-aktiv .protokoll-vb-hinweise p {
   color: var(--sr-leise);
 }
 .sr-stand { font-size: 7cqw; font-weight: 700; line-height: 1; }
+.sr-stand-gross { font-size: 13cqw; }
+
+/* Einstellung der Schiedsrichter-Anzeige in der Turnier-Uebersicht: eine Spalte Haken statt Rahmen. */
+.anzeige-optionen { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.anzeige-optionen legend { padding: 0; margin-bottom: 0.35rem; }
 
 /* Das 8-Sekunden-Band: nur die Haelfte der betroffenen Mannschaft ist gefuellt - aus der
  * Entfernung ist damit die SEITE erkennbar, bevor die Zahl gelesen wird. */

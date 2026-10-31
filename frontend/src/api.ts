@@ -176,6 +176,7 @@ export function updateTurnier(
       | "turnierart"
       | "protokollierungsart"
       | "protokollBestaetigungErforderlich"
+      | "schiedsrichterAnzeige"
       | "name"
       | "felder"
       | "oeffentlichTurnierinfos"
