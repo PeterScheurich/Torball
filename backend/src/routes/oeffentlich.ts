@@ -1,7 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import type { MannschaftImTurnier, Spiel, Spielfeld, Turnier } from "@torball/shared";
+import { quelleText } from "@torball/shared";
 import { findAllBySelector, findAllByType, findById } from "../repository";
-import { berechneGesamttabelle, berechneTabelle, type TabellenZeile } from "../ergebnisse/tabelle";
+import { berechneGesamttabelle, berechneTabelle, berechneTabellen, type TabellenZeile } from "../ergebnisse/tabelle";
+import { baueModusAnsicht } from "../spielplan/modus";
 
 /** Nie an die oeffentliche Seite ausliefern (Abschnitt 13: "Spielplan ... ohne
  * Schiedsrichter"; Abschnitt 24.3: Schiedsrichter grundsaetzlich nicht genannt). */
@@ -9,6 +11,9 @@ function oeffentlichesSpiel(s: Spiel, mitErgebnis = true) {
   return {
     _id: s._id,
     runde: s.runde,
+    // Turniermodus: Gruppe der Vorrunde bzw. Name der Endrundenrunde ("Halbfinale 1").
+    gruppe: s.gruppe,
+    bezeichnung: s.bezeichnung,
     feldId: s.feldId,
     startzeitGeplant: s.startzeitGeplant,
     mannschaftAId: s.mannschaftAId,
@@ -25,6 +30,21 @@ function oeffentlichesSpiel(s: Spiel, mitErgebnis = true) {
         }
       : {}),
   };
+}
+
+function ablaufFuerOeffentlichkeit(turnier: Turnier, mannschaften: MannschaftImTurnier[], spiele: Spiel[]) {
+  const plan = baueModusAnsicht(turnier, mannschaften, spiele)?.plan ?? [];
+  const mitNamen = Boolean(turnier.oeffentlichErgebnisse);
+  return plan
+    .filter((p) => !p.spielId)
+    .map((p) => ({
+      planId: p.planId,
+      bezeichnung: p.bezeichnung,
+      textA: mitNamen ? p.textA : quelleText(p.quelleA, plan),
+      textB: mitNamen ? p.textB : quelleText(p.quelleB, plan),
+      feldId: p.feldId,
+      startzeitGeplant: p.startzeitGeplant,
+    }));
 }
 
 interface OeffentlicherSpieltag {
@@ -148,8 +168,10 @@ export async function oeffentlichRoutes(app: FastifyInstance): Promise<void> {
       // brauchen die Namen zum Aufloesen der mannschaftAId/mannschaftBId-Referenzen, auch
       // wenn die reinen Turnierinfos separat abgeschaltet sind. Mannschaftsnamen selbst
       // sind nicht sensibel.
-      mannschaften: mannschaften.map((m) => ({ _id: m._id, name: m.name, bundesland: m.bundesland })),
+      mannschaften: mannschaften.map((m) => ({ _id: m._id, name: m.name, bundesland: m.bundesland, gruppe: m.gruppe })),
       felder: turnier.felder,
+      // Turniermodus (Name und Anzahl der Gruppen) - nicht sensibel, die Seite zeigt damit Gruppentabellen.
+      modus: turnier.modus ? { name: turnier.modus.vorlage.name, gruppen: turnier.modus.vorlage.gruppen } : null,
       // Logo (Branding) immer mitliefern - nicht sensibel; fehlt es, zeigt die Seite das Standard-Logo.
       logoDataUrl: turnier.logoDataUrl ?? null,
 
@@ -179,12 +201,17 @@ export async function oeffentlichRoutes(app: FastifyInstance): Promise<void> {
             version: turnier.spielplanVersion,
             geaendertAm: turnier.spielplanGeaendertAm,
             spiele: spiele.map((s) => oeffentlichesSpiel(s, Boolean(turnier.oeffentlichErgebnisse))),
+            // Weiterer Ablauf: die Spiele spaeterer Runden, die noch nicht erzeugt sind - mit Platzhaltern
+            // ("Sieger Halbfinale 1"), Zeit und Feld. Schon erzeugte Spiele stehen oben in `spiele`.
+            // Aufgeloeste Mannschaftsnamen nur, wenn die Ergebnisse freigegeben sind - sonst wuerden sie die
+            // Platzierungen verraten, bevor die Turnierleitung die Ergebnisse oeffentlich macht.
+            ablauf: ablaufFuerOeffentlichkeit(turnier, mannschaften, spiele),
           }
         : null,
 
       ergebnisse: turnier.oeffentlichErgebnisse
         ? {
-            tabelle: berechneTabelle(turnier, mannschaften, spiele),
+            tabelle: berechneTabellen(turnier, mannschaften, spiele),
             spiele: spiele.map((x) => oeffentlichesSpiel(x)),
           }
         : null,

@@ -47,13 +47,14 @@ test(
     const { spielplanRoutes } = await import("./spielplan");
     const { turniermodusRoutes } = await import("./turniermodus");
     const { ergebnisRoutes } = await import("./ergebnis");
+    const { oeffentlichRoutes } = await import("./oeffentlich");
     const { erstelleSession } = await import("../auth/session");
     const { findAllBySelector, findByIdUngeprueft, deleteDoc, insertDoc } = await import("../repository");
 
     const app = Fastify();
     await app.register(fastifyCookie);
     app.addHook("preHandler", authPreHandler);
-    for (const r of [turnierRoutes, mannschaftRoutes, spielplanRoutes, turniermodusRoutes, ergebnisRoutes]) {
+    for (const r of [turnierRoutes, mannschaftRoutes, spielplanRoutes, turniermodusRoutes, ergebnisRoutes, oeffentlichRoutes]) {
       await app.register(r);
     }
 
@@ -146,6 +147,24 @@ test(
       // --- Tabellen je Gruppe
       const tabelle = (await anfrage("GET", `/turniere/${turnierId}/tabelle`)).json() as { mannschaftId: string; gruppe?: string }[];
       assert.deepEqual(tabelle.map((z) => z.gruppe), ["A", "A", "A", "B", "B", "B"]);
+
+      // --- Oeffentliche Seite: weiterer Ablauf mit Platzhaltern; Namen erst, wenn die Ergebnisse freigegeben sind
+      await anfrage("PUT", `/turniere/${turnierId}`, { oeffentlichSpielplan: true });
+      type Oeffentlich = {
+        modus: { gruppen: number } | null;
+        spielplan: { ablauf: { planId: string; textA: string; textB: string }[] } | null;
+      };
+      let oeffentlich = (await anfrage("GET", `/oeffentlich/turniere/${turnierId}`)).json() as Oeffentlich;
+      assert.equal(oeffentlich.modus?.gruppen, 2);
+      const ohneNamen = oeffentlich.spielplan!.ablauf.find((a) => a.planId === "HF1")!;
+      assert.deepEqual([ohneNamen.textA, ohneNamen.textB], ["1. Gruppe A", "2. Gruppe B"], "ohne freigegebene Ergebnisse nur Platzhalter");
+      await anfrage("PUT", `/turniere/${turnierId}`, { oeffentlichErgebnisse: true });
+      oeffentlich = (await anfrage("GET", `/oeffentlich/turniere/${turnierId}`)).json() as Oeffentlich;
+      assert.deepEqual(
+        [oeffentlich.spielplan!.ablauf.find((a) => a.planId === "HF1")!.textA],
+        ["M1"],
+        "mit freigegebenen Ergebnissen die aufgeloesten Namen",
+      );
 
       // --- Erzeugen: das Halbfinale 1 mit anderer Paarung von Hand, die uebrigen automatisch
       const fremd = await anfrage("POST", `/turniere/${turnierId}/modus/erzeugen`, {
