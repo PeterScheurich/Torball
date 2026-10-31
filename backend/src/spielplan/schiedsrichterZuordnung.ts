@@ -1,3 +1,4 @@
+import { schiedsrichterKonflikt } from "@torball/shared";
 import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spiel } from "@torball/shared";
 
 /**
@@ -14,50 +15,17 @@ import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spiel } from "@torba
  *    zugelassen, aber vermieden - im UI zusaetzlich als Hinweis markiert.
  *
  * Vereins- statt Mannschafts-Bezug (2026-08-14 umgestellt): SchiedsrichterImTurnier.vereinId
- * wird ueber die Mannschaften des Turniers aufgeloest (vereinProMannschaftId), nicht direkt mit
- * einer Mannschafts-ID verglichen - erfasst dadurch automatisch auch mehrere Mannschaften
- * desselben Vereins im selben Turnier (z.B. I- und II-Mannschaft).
+ * wird ueber die Mannschaften des Turniers aufgeloest, nicht direkt mit einer Mannschafts-ID
+ * verglichen - erfasst dadurch automatisch auch mehrere Mannschaften desselben Vereins im selben
+ * Turnier (z.B. I- und II-Mannschaft). P1 und P2 bestimmt seit 2026-10 `schiedsrichterKonflikt`
+ * aus @torball/shared - dieselbe Funktion, die das Frontend fuer die Warnhinweise im Spielplan
+ * benutzt; hier kommen nur die Strafpunkte und die Doppelbelegung (kein Konflikt-Hinweis) hinzu.
  */
 const STRAFE_EIGENE_MANNSCHAFT = 10000;
 const STRAFE_DOPPELBELEGUNG = 1000;
 const STRAFE_GLEICHZEITIG = 100;
 /** Ab dieser Strafe wird bewusst KEIN Vorschlag gemacht (Feld bleibt leer, manuell zu fuellen). */
 const NICHT_ZUMUTBAR = STRAFE_DOPPELBELEGUNG;
-
-/** Mannschaften, die im selben Zeit-Slot (runde) spielen - je Slot ueber alle Felder. */
-function teamsProSlot(spiele: Spiel[]): Map<number, Set<string>> {
-  const map = new Map<number, Set<string>>();
-  for (const s of spiele) {
-    const slot = Number(s.runde);
-    const set = map.get(slot) ?? new Set<string>();
-    set.add(s.mannschaftAId);
-    set.add(s.mannschaftBId);
-    map.set(slot, set);
-  }
-  return map;
-}
-
-/** mannschaftId -> vereinId, nur fuer Mannschaften mit gesetztem Verein (Ad-hoc-Mannschaften
- *  ohne Stammdaten-Bezug bleiben unberuecksichtigt - fuer sie ist kein Konflikt erkennbar). */
-function vereinProMannschaft(mannschaften: MannschaftImTurnier[]): Map<string, string> {
-  const map = new Map<string, string>();
-  for (const m of mannschaften) {
-    if (m.vereinId) map.set(m._id, m.vereinId);
-  }
-  return map;
-}
-
-function eigenerVereinImSpiel(
-  sr: SchiedsrichterImTurnier,
-  spiel: Spiel,
-  vereinProMannschaftId: Map<string, string>,
-): boolean {
-  if (!sr.vereinId) return false;
-  return (
-    vereinProMannschaftId.get(spiel.mannschaftAId) === sr.vereinId ||
-    vereinProMannschaftId.get(spiel.mannschaftBId) === sr.vereinId
-  );
-}
 
 /**
  * Ordnet jedem Spiel einen vorgeschlagenen Schiedsrichter zu (oder `undefined`, wenn kein
@@ -70,8 +38,6 @@ export function schlageSchiedsrichterVor(
   mannschaften: MannschaftImTurnier[],
 ): Map<string, string | undefined> {
   const sortiert = [...spiele].sort((a, b) => Number(a.runde) - Number(b.runde));
-  const slotTeams = teamsProSlot(sortiert);
-  const vereinProMannschaftId = vereinProMannschaft(mannschaften);
   const zuordnung = new Map<string, string | undefined>();
   const einsaetze = new Map<string, number>();
   const belegtProSlot = new Map<number, Set<string>>();
@@ -81,22 +47,15 @@ export function schlageSchiedsrichterVor(
 
   for (const spiel of sortiert) {
     const slot = Number(spiel.runde);
-    const teamsImSlot = slotTeams.get(slot) ?? new Set<string>();
 
     let bester: string | undefined;
     let besteStrafe = Infinity;
     for (const sr of kandidaten) {
       let strafe = einsaetze.get(sr._id) ?? 0; // Lastausgleich (Feinsortierung)
-      const imEigenen = eigenerVereinImSpiel(sr, spiel, vereinProMannschaftId);
-      if (imEigenen) strafe += STRAFE_EIGENE_MANNSCHAFT;
+      const konflikt = schiedsrichterKonflikt(spiel, sr.vereinId, sortiert, mannschaften);
+      if (konflikt.eigeneMannschaft) strafe += STRAFE_EIGENE_MANNSCHAFT;
       if (belegtProSlot.get(slot)?.has(sr._id)) strafe += STRAFE_DOPPELBELEGUNG;
-      if (
-        sr.vereinId &&
-        !imEigenen &&
-        [...teamsImSlot].some((mid) => vereinProMannschaftId.get(mid) === sr.vereinId)
-      ) {
-        strafe += STRAFE_GLEICHZEITIG;
-      }
+      if (konflikt.gleichzeitig) strafe += STRAFE_GLEICHZEITIG;
       if (strafe < besteStrafe) {
         besteStrafe = strafe;
         bester = sr._id;

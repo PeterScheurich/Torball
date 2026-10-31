@@ -1,13 +1,14 @@
 import type { Event, Halbzeit, Mannschaftsseite } from "@torball/shared";
+import { annullierteIds, gegenseite, sortiertNachSequenz } from "@torball/shared";
 
 /**
  * Live-Zustand der digitalen Protokollierung, vollstaendig aus dem Event-Strom berechnet
  * (Spez. 22.1: "Der aktuelle Spielstand wird nicht gespeichert, sondern berechnet"). Laeuft
  * bewusst NUR im Frontend - alle Pruefungen aus Spez. 22.3 sind Warnungen, keine Blockaden,
  * der Server muss sie nicht durchsetzen (Konzept Abschnitt 4). Die Annullierungs-Logik
- * (annullierteIds/wirksame Events) ist ein bewusstes kleines Duplikat von
- * backend/src/protokoll/ereignisse.ts (CommonJS-Regel: shared kann dem Frontend keine
- * Laufzeit-Logik liefern) - bei Aenderungen BEIDE Seiten anpassen.
+ * (annullierteIds, sortiertNachSequenz, gegenseite) kommt seit 2026-10 aus @torball/shared
+ * (shared/src/logik/ereignisse.ts) und wird dort einmal gepflegt - sie wird auch vom Backend fuer
+ * das Ergebnis benutzt.
  */
 
 export interface WurfStand {
@@ -69,38 +70,7 @@ export interface StandKontext {
   tordifferenzLimit: number;
 }
 
-/** Tie-Break wie im Backend-Pendant (ereignisse.ts): gleiche Sequenz deterministisch ordnen. */
-function sortiertNachSequenz(events: Event[]): Event[] {
-  return [...events].sort(
-    (a, b) => a.sequenz - b.sequenz || a.zeitstempel.localeCompare(b.zeitstempel) || a._id.localeCompare(b._id),
-  );
-}
-
-/**
- * Annullierungs-Status aller Events (Korrektur-Semantik, Konzept Abschnitt 3.1) - inhaltlich
- * identisch zu backend/src/protokoll/ereignisse.ts::wirksameEvents (bewusstes Duplikat, s.o.).
- */
-export function annullierteIds(events: Event[]): Set<string> {
-  const sortiert = sortiertNachSequenz(events);
-  const proId = new Map(sortiert.map((e) => [e._id, e]));
-  const annulliert = new Set<string>();
-  for (let i = sortiert.length - 1; i >= 0; i--) {
-    const e = sortiert[i];
-    if (annulliert.has(e._id)) continue;
-    if (!e.istKorrektur || !e.korrigiertEventId) continue;
-    const ziel = proId.get(e.korrigiertEventId);
-    if (!ziel) continue;
-    if (ziel.eventTyp === "PROT" && e.eventTyp !== "ANNULLIERT") continue; // Ergaenzung
-    annulliert.add(ziel._id);
-  }
-  return annulliert;
-}
-
 const ABSCHNITTS_FOLGE: Halbzeit[] = ["1", "2", "V1", "V2", "FW"];
-
-function gegenseite(seite: Mannschaftsseite): Mannschaftsseite {
-  return seite === "A" ? "B" : "A";
-}
 
 function sekundenZwischen(vonIso: string, bisIso: string): number {
   return Math.max(0, Math.round((new Date(bisIso).getTime() - new Date(vonIso).getTime()) / 1000));

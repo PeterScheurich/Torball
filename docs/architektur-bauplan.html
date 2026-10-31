@@ -417,13 +417,13 @@
 <section id="module">
   <h2>Module: drei Workspaces und eine folgenreiche Grenze</h2>
   <div class="col">
-    <p>Das Repository ist ein Monorepo mit drei npm-Workspaces. <code>shared</code> hält die Typen, die Backend und Frontend gemeinsam benutzen — aber es wird als CommonJS kompiliert. Das Backend darf daraus echte Funktionen importieren, das Frontend <strong>nur Typen</strong>, die beim Kompilieren verschwinden.</p>
-    <p>Diese eine Grenze erklärt eine Eigenheit, über die sonst jeder stolpert: Drei Stück Geschäftslogik existieren <strong>absichtlich doppelt</strong> — als kleine, identische Kopie auf beiden Seiten. Wer eine davon ändert, muss die andere mitziehen.</p>
+    <p>Das Repository ist ein Monorepo mit drei npm-Workspaces. <code>shared</code> hält die Typen <strong>und die Geschäftslogik</strong>, die Backend und Frontend gemeinsam benutzen. Es wird als CommonJS nach <code>dist/</code> kompiliert, und das Backend importiert aus diesem Ergebnis. Der Browser kann dieses Format nicht laden — das Frontend bindet deshalb den TypeScript-Quelltext von <code>shared</code> direkt ein (ein Alias in der Vite-Konfiguration).</p>
+    <p>Bis Oktober 2026 galt hier eine andere Annahme: Das Frontend könne aus <code>shared</code> nur Typen beziehen, deshalb existierten vier Logikbausteine <strong>doppelt</strong> — als Kopie auf beiden Seiten, die bei jeder Änderung beide angefasst werden mussten. Ein Tester hat das als „Rezept für ein Desaster“ bezeichnet. Ein Versuch zeigte: Die Sperre war nie geprüft worden, <code>shared</code> enthielt bis dahin gar keine Laufzeitfunktion. Seitdem liegt jeder dieser Bausteine <strong>einmal</strong> in <code>shared/src/logik/</code>.</p>
   </div>
 
   <figure class="fig">
     <div class="fig-frame">
-      <svg class="dia" viewBox="0 0 1120 520" role="img" aria-label="Modul-Landkarte: Der shared-Workspace liefert dem Backend Typen und Laufzeit-Code, dem Frontend dagegen nur Typen. Backend und Frontend gliedern sich in je zwölf Modulgruppen. Weil das Frontend keine Laufzeit-Logik aus shared beziehen kann, existieren drei Logikbausteine bewusst als identische Kopie auf beiden Seiten.">
+      <svg class="dia" viewBox="0 0 1120 520" role="img" aria-label="Modul-Landkarte: Der shared-Workspace liefert Backend und Frontend Typen und gemeinsame Geschäftslogik, das Backend aus dem kompilierten Ergebnis, das Frontend direkt aus dem Quelltext. Backend und Frontend gliedern sich in je zwölf Modulgruppen. Vier Logikbausteine liegen einmal in shared und werden von beiden Seiten benutzt.">
         <defs>
           <marker id="f2a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker>
           <marker id="f2s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head-sig"/></marker>
@@ -432,12 +432,12 @@
         <rect x="395" y="16" width="330" height="74" rx="5" class="box-2"/>
         <text x="560" y="42" class="t-title" text-anchor="middle">shared/ · 24 Typdateien</text>
         <text x="560" y="60" class="t-sub" text-anchor="middle">TorballDokument · Turnierregeln · IDs</text>
-        <text x="560" y="78" class="t-sub" text-anchor="middle">kompiliert nach CommonJS</text>
+        <text x="560" y="78" class="t-sub" text-anchor="middle">+ logik/ · kompiliert nach CommonJS</text>
 
         <line x1="470" y1="90" x2="300" y2="146" class="ln" marker-end="url(#f2a)"/>
-        <text x="300" y="112" class="t-sub" text-anchor="middle">Typen + Laufzeit-Code</text>
-        <line x1="650" y1="90" x2="820" y2="146" class="ln-sig" marker-end="url(#f2s)"/>
-        <text x="828" y="112" class="t-sig" text-anchor="middle">nur Typen</text>
+        <text x="300" y="112" class="t-sub" text-anchor="middle">Typen + Logik (dist)</text>
+        <line x1="650" y1="90" x2="820" y2="146" class="ln" marker-end="url(#f2a)"/>
+        <text x="828" y="112" class="t-sub" text-anchor="middle">Typen + Logik (Quelltext)</text>
 
         <rect x="30" y="150" width="490" height="232" rx="6" class="group"/>
         <text x="46" y="172" class="lbl">BACKEND · FASTIFY + COUCHDB</text>
@@ -507,56 +507,47 @@
         <rect x="924" y="282" width="142" height="40" rx="4" class="box"/>
         <text x="995" y="299" class="t-title" text-anchor="middle">theme · dichte · breite</text>
         <text x="995" y="314" class="t-sub" text-anchor="middle">Darstellungs-Ebenen</text>
-        <rect x="616" y="330" width="142" height="40" rx="4" class="box-sig"/>
+        <rect x="616" y="330" width="142" height="40" rx="4" class="box"/>
         <text x="687" y="347" class="t-title" text-anchor="middle">zeitplanung.ts</text>
-        <text x="687" y="362" class="t-sub" text-anchor="middle">Kopie</text>
-        <rect x="770" y="330" width="142" height="40" rx="4" class="box-sig"/>
+        <text x="687" y="362" class="t-sub" text-anchor="middle">leitet an shared weiter</text>
+        <rect x="770" y="330" width="142" height="40" rx="4" class="box"/>
         <text x="841" y="347" class="t-tight" text-anchor="middle">schiedsrichterKonflikt</text>
-        <text x="841" y="362" class="t-sub" text-anchor="middle">Kopie</text>
-        <rect x="924" y="330" width="142" height="40" rx="4" class="box-sig"/>
+        <text x="841" y="362" class="t-sub" text-anchor="middle">leitet an shared weiter</text>
+        <rect x="924" y="330" width="142" height="40" rx="4" class="box"/>
         <text x="995" y="347" class="t-tight" text-anchor="middle">passwortAnforderungen</text>
-        <text x="995" y="362" class="t-sub" text-anchor="middle">Kopie</text>
+        <text x="995" y="362" class="t-sub" text-anchor="middle">Anzeige der Regeln</text>
 
-        <text x="20" y="416" class="lbl">BEWUSSTE DUPLIKATE — BEI EINER ÄNDERUNG IMMER BEIDE SEITEN ANFASSEN</text>
-        <rect x="20" y="436" width="140" height="46" rx="4" class="box-sig"/>
-        <text x="90" y="455" class="t-sub" text-anchor="middle">frontend/src/</text>
-        <text x="90" y="471" class="t-title" text-anchor="middle">zeitplanung</text>
-        <line x1="162" y1="459" x2="198" y2="459" class="ln-sig dash"/>
-        <rect x="200" y="436" width="140" height="46" rx="4" class="box-sig"/>
-        <text x="270" y="455" class="t-sub" text-anchor="middle">backend/spielplan/</text>
-        <text x="270" y="471" class="t-title" text-anchor="middle">zeitplanung</text>
+        <text x="20" y="416" class="lbl">GEMEINSAME LOGIK — EINMAL IN shared/src/logik/, VON BEIDEN SEITEN BENUTZT</text>
+        <rect x="20" y="436" width="250" height="46" rx="4" class="box-acc"/>
+        <text x="145" y="455" class="t-sub" text-anchor="middle">shared/src/logik/</text>
+        <text x="145" y="471" class="t-title" text-anchor="middle">zeitplanung</text>
+        <rect x="300" y="436" width="250" height="46" rx="4" class="box-acc"/>
+        <text x="425" y="455" class="t-sub" text-anchor="middle">shared/src/logik/</text>
+        <text x="425" y="471" class="t-title" text-anchor="middle">schiedsrichterKonflikt</text>
+        <rect x="580" y="436" width="250" height="46" rx="4" class="box-acc"/>
+        <text x="705" y="455" class="t-sub" text-anchor="middle">shared/src/logik/</text>
+        <text x="705" y="471" class="t-title" text-anchor="middle">passwortRegeln</text>
+        <rect x="860" y="436" width="240" height="46" rx="4" class="box-acc"/>
+        <text x="980" y="455" class="t-sub" text-anchor="middle">shared/src/logik/</text>
+        <text x="980" y="471" class="t-title" text-anchor="middle">ereignisse</text>
 
-        <rect x="395" y="436" width="140" height="46" rx="4" class="box-sig"/>
-        <text x="465" y="455" class="t-sub" text-anchor="middle">frontend/src/</text>
-        <text x="465" y="471" class="t-tight" text-anchor="middle">schiedsrichterKonflikt</text>
-        <line x1="537" y1="459" x2="573" y2="459" class="ln-sig dash"/>
-        <rect x="575" y="436" width="140" height="46" rx="4" class="box-sig"/>
-        <text x="645" y="455" class="t-sub" text-anchor="middle">backend/spielplan/</text>
-        <text x="645" y="471" class="t-tight" text-anchor="middle">schiedsrichterZuordnung</text>
-
-        <rect x="770" y="436" width="140" height="46" rx="4" class="box-sig"/>
-        <text x="840" y="455" class="t-sub" text-anchor="middle">frontend/src/</text>
-        <text x="840" y="471" class="t-tight" text-anchor="middle">passwortAnforderungen</text>
-        <line x1="912" y1="459" x2="948" y2="459" class="ln-sig dash"/>
-        <rect x="950" y="436" width="140" height="46" rx="4" class="box-sig"/>
-        <text x="1020" y="455" class="t-sub" text-anchor="middle">backend/auth/</text>
-        <text x="1020" y="471" class="t-title" text-anchor="middle">passwort</text>
-
-        <text x="560" y="504" class="t-sub" text-anchor="middle">Ein viertes Paar liegt in der digitalen Protokollierung: der Annullierungs-Filter in frontend/protokoll/stand.ts und backend/protokoll/ereignisse.ts</text>
+        <text x="560" y="504" class="t-sub" text-anchor="middle">Backend und Frontend importieren dieselben Funktionen aus @torball/shared — keine Kopien mehr. Neue geteilte Logik gehört hierher.</text>
       </svg>
     </div>
-    <figcaption><b>Abb. 2</b><span>Modul-Landkarte. Grün markiert sind die Stellen mit dem größten Codeanteil und die beiden Engpässe, durch die aller Datenverkehr läuft (<code>repository.ts</code>, <code>api.ts</code>). Rot markiert sind die vier absichtlichen Duplikate.</span></figcaption>
+    <figcaption><b>Abb. 2</b><span>Modul-Landkarte. Grün markiert sind die Stellen mit dem größten Codeanteil und die beiden Engpässe, durch die aller Datenverkehr läuft (<code>repository.ts</code>, <code>api.ts</code>). Unten stehen die vier Logikbausteine, die Backend und Frontend gemeinsam aus <code>shared</code> benutzen (früher: Kopien auf beiden Seiten).</span></figcaption>
     <details class="dia-text">
       <summary>Abbildung 2 als Text</summary>
       <p>Oben der gemeinsame Baustein, darunter nebeneinander Backend und Frontend, ganz unten die
-        bewussten Duplikate.</p>
-      <h3>shared/ — 24 Typdateien</h3>
+        gemeinsame Logik.</p>
+      <h3>shared/ — 24 Typdateien und die gemeinsame Logik</h3>
       <ul>
-        <li>Enthält <code>TorballDokument</code>, <code>Turnierregeln</code> und die ID-Typen;
+        <li>Enthält <code>TorballDokument</code>, <code>Turnierregeln</code> und die ID-Typen,
+          dazu im Ordner <code>logik/</code> die Geschäftslogik, die beide Seiten brauchen;
           kompiliert nach CommonJS.</li>
-        <li>Zwei Pfeile führen hinaus, und sie sind unterschiedlich: <strong>zum Backend gehen
-          Typen und Laufzeit-Code, zum Frontend nur Typen.</strong> Das ist die folgenreiche
-          Grenze — daraus entstehen die Duplikate weiter unten.</li>
+        <li>Zwei Pfeile führen hinaus, beide mit Typen <strong>und</strong> Logik, aber auf
+          unterschiedlichem Weg: <strong>das Backend bezieht sie aus dem kompilierten Ergebnis, das
+          Frontend direkt aus dem Quelltext</strong> (der Browser kann das kompilierte Format nicht
+          laden).</li>
       </ul>
       <h3>Backend — Fastify und CouchDB</h3>
       <ul>
@@ -580,13 +571,17 @@
           <code>theme</code>, <code>dichte</code>, <code>breite</code> als Darstellungs-Ebenen</li>
         <li><strong><code>api.ts</code> — der einzige API-Zugang</strong>, der zweite Engpass.</li>
       </ul>
-      <h3>Bewusste Duplikate — bei einer Änderung immer beide Seiten anfassen</h3>
+      <h3>Gemeinsame Logik — einmal in shared/src/logik/</h3>
       <ul>
-        <li><code>zeitplanung</code> — je eine Kopie in <code>frontend/src/</code> und in
-          <code>backend/spielplan/</code></li>
-        <li><code>schiedsrichterKonflikt</code> — je eine Kopie auf beiden Seiten</li>
-        <li><code>passwortAnforderungen</code> — je eine Kopie auf beiden Seiten</li>
+        <li><code>zeitplanung</code> — Spieldauer und Startzeiten</li>
+        <li><code>schiedsrichterKonflikt</code> — wird vom Frontend für die Warnhinweise und vom Backend
+          für den Einteilungsvorschlag benutzt</li>
+        <li><code>passwortRegeln</code> — die Regeln, die der Server durchsetzt und die Oberfläche anzeigt</li>
+        <li><code>ereignisse</code> — der Annullierungs-Filter des digitalen Protokolls und die
+          Ergebnisberechnung daraus</li>
       </ul>
+      <p>Die früheren Dateien an den alten Stellen im Frontend und Backend leiten nur noch weiter,
+        damit bestehende Importe unverändert blieben.</p>
     </details>
   </figure>
 </section>
@@ -1232,10 +1227,10 @@
 
   <ul class="rules">
     <li>
-      <span class="sig">Immer beide</span>
+      <span class="sig">Einmal</span>
       <div>
-        <h3>Vier Logikbausteine existieren doppelt</h3>
-        <p>Weil das Frontend aus <code>shared</code> keine Laufzeit-Funktionen beziehen kann, sind Spieldauer, Schiedsrichter-Konflikte, Passwortregeln und der Annullierungs-Filter des Protokolls als identische Kopien auf beiden Seiten abgelegt. Wer eine ändert, muss die andere mitziehen.</p>
+        <h3>Geteilte Logik gehört nach shared/src/logik/</h3>
+        <p>Spieldauer, Schiedsrichter-Konflikte, Passwortregeln und der Annullierungs-Filter des Protokolls liegen einmal in <code>shared</code> und werden von Backend und Frontend gemeinsam benutzt. Neue Logik, die beide Seiten brauchen, wird dort abgelegt — als reine Funktion ohne Node- oder Browser-Abhängigkeit — und in <code>index.ts</code> exportiert. Kopien auf beiden Seiten gibt es nicht mehr.</p>
       </div>
     </li>
     <li>

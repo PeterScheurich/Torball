@@ -1,8 +1,8 @@
 /**
- * Passwort-Anforderungen. Bewusst eine Kopie der Backend-Pruefung
- * (`backend/src/auth/passwort.ts`, `passwortRegelVerstoss`) - `shared` ist CommonJS, das
- * Frontend kann daraus keine Laufzeit-Funktionen importieren (siehe CLAUDE.md). Aendern sich
- * die Regeln, hier UND dort anpassen.
+ * Anzeige der Passwort-Anforderungen beim Tippen. Die Regeln selbst (Mindestlaenge, Sperrliste
+ * haeufiger Folgen, Pruefung auf den eigenen Namen) liegen seit 2026-10 in
+ * `@torball/shared` (shared/src/logik/passwortRegeln.ts) - der Server setzt dieselben durch, eine
+ * Aenderung braucht nur noch eine Stelle. Hier bleibt nur die Aufbereitung als Haken-Liste.
  *
  * Seit 2026-08-30 zaehlt die LAENGE statt der Zusammensetzung: Die frueheren Pflichten (je ein
  * Grossbuchstabe, eine Zahl, ein Sonderzeichen) erzeugten vorhersehbare Passwoerter, ohne die
@@ -10,22 +10,9 @@
  * einem Screenreader muehsam einzugeben und zu kontrollieren sind - eine Passphrase aus Woertern
  * ist fuer die Zielgruppe die deutlich bessere Wahl.
  */
-export const PASSWORT_MINDESTLAENGE = 12;
+import { HAEUFIGE_FOLGEN, PASSWORT_MINDESTLAENGE } from "@torball/shared";
 
-/** Muss inhaltlich mit HAEUFIGE_FOLGEN im Backend uebereinstimmen. */
-const HAEUFIGE_FOLGEN = [
-  "passwort",
-  "password",
-  "geheim",
-  "qwertz",
-  "qwerty",
-  "asdfgh",
-  "123456",
-  "letmein",
-  "willkommen",
-  "welcome",
-  "admin",
-];
+export { PASSWORT_MINDESTLAENGE };
 
 export interface PasswortRegel {
   label: string;

@@ -21,8 +21,9 @@ Monorepo mit drei npm-Workspaces: `shared`, `backend`, `frontend`.
 npm run build --workspace=shared   # IMMER zuerst nach Aenderungen in shared/src (siehe Architektur)
 npm run build                       # baut danach alle Workspaces
 ```
-`shared` wird als CommonJS nach `shared/dist` kompiliert; `backend`/`frontend`
-lösen `@torball/shared` gegen dieses `dist` auf, nicht gegen die Quellen. Der
+`shared` wird als CommonJS nach `shared/dist` kompiliert; das Backend und die Typprüfung des
+Frontends (`tsc`) lösen `@torball/shared` gegen dieses `dist` auf, nicht gegen die Quellen. (Zur
+LAUFZEIT bindet das Frontend den Quelltext von `shared` ein, siehe Architektur.) Der
 Root-Build (`npm run build --workspaces`) läuft in der Wurzel-`package.json` deklarierten
 Workspace-Reihenfolge (`frontend`, `backend`,
 `shared`) – **nicht** in Abhängigkeitsreihenfolge. Nach einer Typ-Änderung in
@@ -119,23 +120,27 @@ aufrufen: CouchDBs Mango-`_find` liefert ohne explizites `limit` nur die
 ersten 25 Treffer, `findAllByType`/`findAllBySelector` blättern das intern
 bereits korrekt per `bookmark` durch.
 
-**`shared` ist CommonJS – keine Laufzeit-Logik für das Frontend:**
-`shared/tsconfig.json` kompiliert nach `module: commonjs`. Das Backend (auch
-CommonJS) kann daraus problemlos Funktionen importieren, Vite/das Frontend
-(ESM/Bundler-Modus) dagegen nur **Typen** (die beim Kompilieren wegfallen).
-Ein Import einer echten Funktion aus `@torball/shared` im Frontend schlägt
-fehl bzw. wird zur Laufzeit zu `undefined`. Jede Geschäftslogik, die beide
-Seiten brauchen, wird deshalb bewusst dupliziert (kleine, identische Kopie
-statt Shared-Import) oder erfordert eine Umstellung von `shared` auf ESM.
-Bestehende Duplikate (Frontend-Kopie ↔ Backend-Original, bei Änderung **beide**
-anpassen):
-
-- Spieldauer/Startzeit: `frontend/src/zeitplanung.ts` ↔
-  `backend/src/spielplan/zeitplanung.ts`
-- Schiedsrichter-Konflikte: `frontend/src/schiedsrichterKonflikt.ts` ↔
-  `backend/src/spielplan/schiedsrichterZuordnung.ts`
-- Passwort-Regeln: `frontend/src/passwortAnforderungen.ts` ↔
-  `backend/src/auth/passwort.ts` (`passwortRegelVerstoss`)
+**`shared` liefert Typen UND gemeinsame Logik – auf zwei Wegen (2026-10, löst die früheren
+Kopien ab):** `shared/tsconfig.json` kompiliert nach `module: commonjs`; das Backend importiert
+daraus das kompilierte `dist`. Der Browser kann dieses Format nicht laden, deshalb zeigt in
+`frontend/vite.config.ts` ein Alias `@torball/shared` direkt auf `shared/src/index.ts` – Vite
+übersetzt den TypeScript-Quelltext selbst. Die Typprüfung (`tsc`) des Frontends läuft weiter gegen
+`shared/dist`, `shared` muss also VOR dem Frontend gebaut sein (alle drei Betriebswege tun das, siehe
+„Befehle“). **Bis Oktober 2026 galt die Annahme „das Frontend kann aus `shared` nur Typen beziehen“,
+und vier Logikbausteine existierten deshalb doppelt (bei jeder Änderung beide Stellen anfassen).** Ein
+Tester nannte das ein „Rezept für ein Desaster“; ein Versuch zeigte, dass die Sperre nie geprüft
+worden war – `shared` hatte bis dahin schlicht keine Laufzeitfunktion. **Geteilte Logik gehört seitdem
+nach `shared/src/logik/`** (Export über `shared/src/index.ts`). Dort gilt: nur reine, plattformneutrale
+Funktionen – kein Node, kein DOM, kein bcrypt –, und innerhalb von `shared` Typen aus `"../types"`
+importieren, nicht aus `"@torball/shared"`. Verlegt sind: `zeitplanung` (Spieldauer/Startzeit),
+`schiedsrichterKonflikt` (Frontend-Warnhinweise UND Backend-Vorschlag benutzen dieselbe Funktion),
+`passwortRegeln` (Durchsetzung im Backend, Anzeige im Frontend; Hashing bleibt in
+`backend/src/auth/passwort.ts`) und `ereignisse` (Annullierungs-Filter, Ergebnis aus Events). Die
+alten Dateien (`frontend/src/zeitplanung.ts`, `backend/src/spielplan/zeitplanung.ts` usw.) sind nur noch
+dünne Weiterleitungen (`export { … } from "@torball/shared"`), damit bestehende Importe unverändert
+blieben – **Änderungen gehören in `shared/src/logik/`, nicht in die Weiterleitung**. Die Tests liegen
+weiter im Backend und prüfen so die gemeinsame Version. Eine neue Datei in `logik/` ist erst nach dem
+Export in `index.ts` und einem `npm run build --workspace=shared` für das Backend sichtbar.
 
 **Auth: Server-seitige Sessions per Cookie, kein JWT.** Beim Login wird ein
 zufälliger Token erzeugt; nur der SHA-256-Hash davon wird als CouchDB-Doc-ID
@@ -465,8 +470,8 @@ bleibt wirksam. Die UI-Aktion „Tor" erzeugt ein W+G-Doppel-Event mit `zusatz.t
 so markierte Paare werden bei Undo/Streichen GEMEINSAM gestrichen (ein per `G` an einen echten
 separaten Wurf angehängtes Tor lässt den Wurf stehen). **Der volle Live-Reducer läuft NUR im
 Frontend** (`frontend/src/protokoll/stand.ts` – alle Spez.-Prüfungen sind Warnungen, keine
-Blockaden); das Backend hat nur `ergebnisAusEvents()` – der Annullierungs-Filter existiert dadurch
-bewusst doppelt (ereignisse.ts ↔ stand.ts, bei Änderung BEIDE anpassen). Integration in den
+Blockaden); das Backend hat nur `ergebnisAusEvents()` – der Annullierungs-Filter (`annullierteIds`)
+liegt seit 2026-10 EINMAL in `shared/src/logik/ereignisse.ts` und wird von beiden benutzt. Integration in den
 Bestand läuft komplett darüber, dass `routes/protokoll.ts` die vorhandenen `Spiel`-Felder pflegt
 (erstes GO → `laeuft`, Tore → Live-`ergebnisA/B`, `End` → `beendet`, `Fin`/Bestätigung →
 `abgeschlossen`) – Tabelle/öffentliche Seite/PDFs blieben unangetastet; das torlose 0:0 wird
@@ -878,8 +883,9 @@ Standardwerte pflegt der Admin über `/systemkonfiguration` (Route
 Turniere **kopieren** die aktuelle Version (`erstelltMitKonfigVersion`),
 bestehende bleiben unberührt. Wichtig: Die fest verdrahteten Standardregeln
 (`STANDARD_TURNIERREGELN`) und die Helfer liegen in `backend/src/konfiguration.ts`
-– **nicht in `shared`**, weil das Frontend aus `shared` (CommonJS) keine
-Laufzeit-Konstante ziehen könnte (siehe CommonJS-Regel oben). `turnierDefaults()`
+– bisher **nicht in `shared`** (damals galt die Annahme, das Frontend könne aus `shared` keine
+Laufzeit-Konstante ziehen; das stimmt seit 2026-10 nicht mehr, siehe oben – verlegt wurde sie nicht,
+es gab keinen Anlass). `turnierDefaults()`
 in `turnier.ts` liest die Regeln daraus. Bearbeitet werden die Regeln über das
 wiederverwendete `TurnierregelnFormular` (Reiter „Regeln" je Turnier via
 `updateTurnier`, Standardregeln-Seite via `updateSystemkonfiguration`, und der
@@ -894,7 +900,7 @@ Spezifikation erwähnt war (dort aber nie als eigenes Feld modelliert). Neues Fe
 `Turnierregeln.pauseZwischenSpielenMinuten` (Standardwert `10`, Nutzer-Einschätzung: realistisch,
 da im Torball nur Netto-Spielzeit gezählt wird und Spiele dadurch üblicherweise länger dauern als
 die angegebene Spielzeit) – fließt zusätzlich zur Halbzeitpause in `spieldauerMinuten()` ein
-(Backend **und** Frontend-Duplikat `frontend/src/zeitplanung.ts`, `?? 0`-Absicherung für Turniere
+(`shared/src/logik/zeitplanung.ts`, `?? 0`-Absicherung für Turniere
 ohne das Feld). Wegen des einen gemeinsamen `Turnierregeln`-Typs technisch harmlos, aber
 **mechanisch breit gestreut** – betroffen: `STANDARD_TURNIERREGELN`, `TurnierregelnFormular.tsx`
 (neues Eingabefeld, gesperrt über denselben `spielzeitGesperrt`-Mechanismus wie
@@ -950,7 +956,7 @@ Ueberschriften-Navigation), `<main>` und Sprungmarke ergaenzt.
 
 **Architektur-Bauplan (`docs/architektur-bauplan.html`, 2026-08-22):** eine eigenstaendige
 HTML-Seite mit sechs handgezeichneten SVG-Diagrammen (Schichten/Auslieferungsformen,
-Modul-Landkarte inkl. der bewussten Duplikate, Request-Pipeline + Berechtigungsmodell,
+Modul-Landkarte inkl. der gemeinsamen Logik in `shared/src/logik/`, Request-Pipeline + Berechtigungsmodell,
 Datenmodell, die zwei Ergebnis-Wege, Betriebsmodi + Instanz-Kopplung) plus dem Inventar aller
 docTypes und den tragenden Regeln. **Einzige Nicht-Markdown-Datei in `docs/`** – SVG laesst sich
 dort nicht sinnvoll abbilden; vom BookStack-Push (nur `.md`) daher nicht erfasst. Nutzt dieselben
@@ -1578,7 +1584,7 @@ Zielgruppe der wertvollste Test, den dieses Projekt machen kann.
   stillschweigend). **Die Sperrliste bewusst KURZ halten:** Ein erster Entwurf enthielt
   "sommer"/"winter"/"torball" und haette "Sommer-Fest-Muenchen-2026" abgelehnt - eine Sperre, die
   gute Passphrasen verhindert, schadet mehr als sie nuetzt (in `passwort.test.ts` festgehalten).
-  Geaendert an: `backend/src/auth/passwort.ts`, `frontend/src/passwortAnforderungen.ts` (Duplikat),
+  Geaendert an: `shared/src/logik/passwortRegeln.ts` (seit 2026-10 die EINE Stelle), `frontend/src/passwortAnforderungen.ts`,
   `ProfilPage.tsx`, `hilfe/inhalte.ts`, Spez. 21.4.
 - Sensible Felder (Passwort-Hash, 2FA-Secret, Einladungs-/Reset-Token-Hashes)
   dürfen nie über die API zurückgegeben werden - immer über

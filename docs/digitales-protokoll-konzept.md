@@ -173,10 +173,10 @@ Software warnt, blockiert nicht") – der Server muss sie also gar nicht durchse
 Das Backend braucht nur eine **kleine** Ableitung `ergebnisAusEvents(events)`
 (`backend/src/protokoll/ergebnis.ts`): annullierte Events herausfiltern, `G`-Events je Seite
 zählen (Eigentor → Gegner), fertig – ca. 20 Zeilen, per `node:test` getestet. Damit entfällt
-das Risiko eines großen Frontend↔Backend-Duplikats (CommonJS-Regel: `shared` kann dem Frontend
-keine Laufzeit-Logik liefern); dupliziert wird nur der winzige Annullierungs-Filter, der in
-beiden Dateien mit Verweis aufeinander kommentiert wird (bestehendes Muster, wie
-`zeitplanung.ts`).
+das Risiko eines großen Frontend↔Backend-Duplikats. *(Ursprünglich wurde der winzige
+Annullierungs-Filter bewusst doppelt gehalten, mit Verweis aufeinander – wegen der damaligen
+Annahme „`shared` kann dem Frontend keine Laufzeit-Logik liefern“. Seit 2026-10 liegt er einmal in
+`shared/src/logik/ereignisse.ts` und wird von beiden benutzt; die Annahme war nie geprüft worden.)*
 
 Die Uhr: `GO`/`STOP`-Events tragen den Server-Zeitstempel; der Client berechnet die laufende
 Spielzeit aus „Summe der abgeschlossenen Laufphasen + (jetzt − letztes GO)". Events tragen die
