@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Protokollierungsart, Spielmodus, Turnier, Turnierart, TurniermodusVorlage } from "@torball/shared";
+import { TurniermodusSelect } from "../components/TurniermodusSelect";
 import { createTurnier, getTurniere, getTurniermodi, setzeTurniermodus, turnierAbleiten } from "../api";
 import { formatiereDatum } from "../format";
 
@@ -173,33 +174,38 @@ export function TurnierAnlegenPage() {
               </p>
             </div>
             <div className="feld">
-              <label htmlFor="spielplanModus">Spielmodus</label>
-              <select
-                id="spielplanModus"
-                value={spielplanModus}
-                onChange={(e) => setSpielplanModus(e.target.value === "doppelt" ? "doppelt" : "einfach")}
-              >
-                <option value="einfach">Jeder gegen Jeden (einfach)</option>
-                <option value="doppelt">Jeder zweimal gegen Jeden (doppelt)</option>
-              </select>
+              {turniermodi.length > 0 ? (
+                <>
+                  <label htmlFor="turniermodus">Turniermodus</label>
+                  <TurniermodusSelect
+                    id="turniermodus"
+                    vorlagen={turniermodi}
+                    vorlageId={turniermodusId}
+                    spielmodus={spielplanModus}
+                    onChange={(vorlageId, modus) => {
+                      setTurniermodusId(vorlageId);
+                      setSpielplanModus(modus);
+                    }}
+                  />
+                  <p className="feld-hinweis">
+                    Größe der Endrunde, Spiel um Platz 3 und Platzierungsspiele stellst du später in der Übersicht ein; die
+                    Mannschaften teilst du bei zwei Gruppen im Schritt „Mannschaften“ auf die Gruppen auf.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <label htmlFor="spielplanModus">Spielmodus</label>
+                  <select
+                    id="spielplanModus"
+                    value={spielplanModus}
+                    onChange={(e) => setSpielplanModus(e.target.value === "doppelt" ? "doppelt" : "einfach")}
+                  >
+                    <option value="einfach">Jeder gegen Jeden (einfach)</option>
+                    <option value="doppelt">Jeder zweimal gegen Jeden (doppelt)</option>
+                  </select>
+                </>
+              )}
             </div>
-            {turniermodi.length > 1 && (
-              <div className="feld">
-                <label htmlFor="turniermodus">Turniermodus</label>
-                <select id="turniermodus" value={turniermodusId} onChange={(e) => setTurniermodusId(e.target.value)}>
-                  {turniermodi.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="feld-hinweis">
-                  {turniermodi.find((v) => v.id === turniermodusId)?.beschreibung} Größe der Endrunde, Spiel um Platz 3 und
-                  Platzierungsspiele stellst du später in der Übersicht ein; die Mannschaften teilst du bei zwei Gruppen im
-                  Schritt „Mannschaften“ auf die Gruppen auf. Der „Spielmodus“ oben gilt für die Vorrunde.
-                </p>
-              </div>
-            )}
             <div className="feld">
               <label htmlFor="protokollierungsart">Protokollierung</label>
               <select

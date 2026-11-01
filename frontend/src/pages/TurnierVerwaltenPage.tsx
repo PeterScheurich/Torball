@@ -281,7 +281,7 @@ export function TurnierVerwaltenPage() {
     }
   }
 
-  async function spielplanModusAendern(modus: Spielmodus) {
+  async function spielplanModusAendern(modus: Spielmodus): Promise<boolean> {
     // Warnung, wenn bereits ein Spielplan existiert: eine Modus-Aenderung macht ihn inkonsistent.
     // Bei Abbruch bleibt das (controlled) Auswahlfeld auf dem bisherigen Wert.
     if (
@@ -292,13 +292,16 @@ export function TurnierVerwaltenPage() {
           "du müsstest den Spielplan anschließend neu erzeugen. Modus trotzdem ändern?",
       )
     ) {
-      return;
+      return false;
     }
     try {
       setTurnier(await updateTurnier(turnierId, { spielplanModus: modus }));
       setFehler(undefined);
+      meldeGespeichert(modus === "doppelt" ? "Vorrunde mit Hin- und Rückspiel gespeichert." : "Vorrunde mit einfacher Runde gespeichert.");
+      return true;
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern des Spielmodus");
+      return false;
     }
   }
 
@@ -680,23 +683,6 @@ export function TurnierVerwaltenPage() {
               </tr>
               <tr>
                 <th scope="row">
-                  <label htmlFor="spielplanModus">Spielmodus</label>
-                </th>
-                <td>
-                  <select
-                    id="spielplanModus"
-                    disabled={eingabeGesperrt || spielplanGesperrt}
-                    value={turnier.spielplanModus}
-                    onChange={(e) => spielplanModusAendern(e.target.value === "doppelt" ? "doppelt" : "einfach")}
-                  >
-                    <option value="einfach">Jeder gegen Jeden (einfach)</option>
-                    <option value="doppelt">Jeder zweimal gegen Jeden (doppelt)</option>
-                  </select>
-                  <p className="feld-hinweis">Gilt für die Vorrunde (bei zwei Gruppen innerhalb jeder Gruppe).</p>
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">
                   <label htmlFor="turniermodus">Turniermodus</label>
                 </th>
                 <td>
@@ -707,6 +693,8 @@ export function TurnierVerwaltenPage() {
                     spielplanBegonnen={spielplanGesperrt}
                     onGespeichert={meldeGespeichert}
                     onFehler={setFehler}
+                    spielmodus={turnier.spielplanModus ?? "einfach"}
+                    onSpielmodusAendern={spielplanModusAendern}
                     onModusGeaendert={() => {
                       turnierNeuLaden();
                       setModusAktualisierung((n) => n + 1);

@@ -7,6 +7,11 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Spielmodus und Turniermodus sind jetzt eine Auswahl.** Bisher gab es zwei Felder, die sich überschnitten
+  („Spielmodus“ einfach/doppelt und „Turniermodus“). Jetzt wählst du den Turniermodus und dazu gleich, ob die
+  Vorrunde einfach oder als Hin- und Rückspiel gespielt wird; bei zwei Gruppen gilt das in jeder Gruppe, die
+  Endrunde wird immer einfach gespielt. Gespeicherte Turniere bleiben unverändert.
+
 - **Verein schon beim Einladen wählen, Land beim Verein.** Beim Einladen einer Person kann die Administration
   jetzt gleich den Verein auswählen (oder „keiner“ – nicht jede Person gehört zu einem Verein). Ein Manager lädt
   weiterhin für seinen eigenen Verein ein; das Formular zeigt ihm, welcher das ist. Außerdem hat jeder Verein

@@ -129,7 +129,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Welche Grunddaten trage ich im ersten Schritt ein?",
         text: [
-          "Pflicht sind Name, Datum und Startzeit. Dazu wählst du die Turnierart, die Anzahl der Spielfelder, den Spielmodus und die Protokollierung.",
+          "Pflicht sind Name, Datum und Startzeit. Dazu wählst du die Turnierart, die Anzahl der Spielfelder, den Turniermodus und die Protokollierung.",
           {
             hinweis:
               "Die Startzeit lässt sich nach dem Anlegen nirgends mehr ändern – trage sie deshalb gleich korrekt ein.",
@@ -154,9 +154,9 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
-        frage: "Was bedeutet der Spielmodus?",
+        frage: "Was bedeutet „einfach“ und „doppelt“ beim Turniermodus?",
         text: [
-          "Er legt fest, wie oft jede Mannschaft gegen jede andere spielt: „Jeder gegen Jeden (einfach)“ – ein Spiel je Paarung – oder „Jeder zweimal gegen Jeden (doppelt)“ – Hin- und Rückspiel an einem Spieltag.",
+          "Bei jedem Turniermodus wählst du mit, wie die Vorrunde gespielt wird: „einfach“ – ein Spiel je Paarung – oder „doppelt“ – Hin- und Rückspiel an einem Spieltag. Bei zwei Gruppen gilt das innerhalb jeder Gruppe. Die Spiele der Endrunde (Halbfinale, Finale, Platzierungsspiele) werden immer nur einmal gespielt. In der Tabelle zählen alle Spiele der Vorrunde.",
         ],
       },
       {

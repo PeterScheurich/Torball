@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { HinweisStufe, ModusEinstellungen, TurniermodusVorlage } from "@torball/shared";
+import type { HinweisStufe, ModusEinstellungen, Spielmodus, TurniermodusVorlage } from "@torball/shared";
 import {
   getModusPlan,
   getTurniermodi,
@@ -8,6 +8,7 @@ import {
   type ModusAnsicht,
   type ModusAntwort,
 } from "../api";
+import { TurniermodusSelect } from "./TurniermodusSelect";
 
 /**
  * Auswahl des Turniermodus in der Turnier-Übersicht (Auftraggeber-Konzept 31.10.2026): die Vorlage legt
@@ -52,6 +53,10 @@ interface Props {
   onFehler: (text: string | undefined) => void;
   /** Nach jedem erfolgreichen Speichern (die Seite laedt dann das Turnier neu, z. B. fuer die Gruppen-Spalte). */
   onModusGeaendert?: () => void;
+  /** Aktueller Spielmodus (einfach/doppelt) - er gehoert zur selben Auswahl wie die Vorlage. */
+  spielmodus: Spielmodus;
+  /** Aendert den Spielmodus am Turnier; liefert false, wenn die Aenderung abgebrochen wurde. */
+  onSpielmodusAendern: (modus: Spielmodus) => Promise<boolean>;
   /** Wird hochgezaehlt, wenn sich etwas ausserhalb geaendert hat (z. B. die Gruppenzuordnung) - laedt neu. */
   aktualisierung?: number;
 }
@@ -64,6 +69,8 @@ export function TurniermodusAuswahl({
   onGespeichert,
   onFehler,
   onModusGeaendert,
+  spielmodus,
+  onSpielmodusAendern,
   aktualisierung = 0,
 }: Props) {
   const [vorlagen, setVorlagen] = useState<TurniermodusVorlage[]>([]);
@@ -95,21 +102,35 @@ export function TurniermodusAuswahl({
   const endrundeErzeugt = ansicht?.plan.some((p) => p.spielId) ?? false;
   const gesperrtGrund = gesperrt || endrundeErzeugt;
 
-  async function speichern(vorlageId: string, neu?: ModusEinstellungen, meldung = "Turniermodus gespeichert.") {
+  async function speichern(
+    vorlageId: string,
+    neu?: ModusEinstellungen,
+    meldung = "Turniermodus gespeichert.",
+  ): Promise<boolean> {
     onFehler(undefined);
     try {
       setAntwort(await setzeTurniermodus(turnierId, vorlageId, neu));
       onGespeichert(meldung);
       onModusGeaendert?.();
+      return true;
     } catch (err) {
       onFehler(err instanceof Error ? err.message : "Der Turniermodus konnte nicht gespeichert werden.");
       void laden();
+      return false;
     }
   }
 
-  function vorlageWechseln(id: string) {
+  /** Eine Auswahl, zwei Werte: die Vorlage (Gruppen/Endrunde) und der Spielmodus der Vorrunde. */
+  async function modusWaehlen(vorlageId: string, neuerSpielmodus: Spielmodus) {
+    if (vorlageId !== vorlage.id) {
+      if (!(await vorlageWechseln(vorlageId))) return;
+    }
+    if (neuerSpielmodus !== spielmodus) await onSpielmodusAendern(neuerSpielmodus);
+  }
+
+  async function vorlageWechseln(id: string): Promise<boolean> {
     const ziel = vorlagen.find((v) => v.id === id);
-    if (!ziel || id === vorlage.id) return;
+    if (!ziel || id === vorlage.id) return false;
     if (
       spielplanVorhanden &&
       ziel.gruppen !== vorlage.gruppen &&
@@ -118,9 +139,9 @@ export function TurniermodusAuswahl({
           "der Spielplan muss danach neu erzeugt werden. Trotzdem wechseln?",
       )
     ) {
-      return;
+      return false;
     }
-    void speichern(id, undefined, `Turniermodus „${ziel.name}“ gewählt.`);
+    return speichern(id, undefined, `Turniermodus „${ziel.name}“ gewählt.`);
   }
 
   const gruppenText =
@@ -130,22 +151,14 @@ export function TurniermodusAuswahl({
 
   return (
     <>
-      <select
+      <TurniermodusSelect
         id="turniermodus"
+        vorlagen={vorlagen}
+        vorlageId={vorlage.id}
+        spielmodus={spielmodus}
         disabled={gesperrtGrund || spielplanBegonnen}
-        value={vorlage.id}
-        onChange={(e) => vorlageWechseln(e.target.value)}
-        aria-describedby="turniermodus-beschreibung"
-      >
-        {vorlagen.map((v) => (
-          <option key={v.id} value={v.id}>
-            {v.name}
-          </option>
-        ))}
-      </select>
-      <p id="turniermodus-beschreibung" className="feld-hinweis">
-        {vorlage.beschreibung}
-      </p>
+        onChange={(v, m) => void modusWaehlen(v, m)}
+      />
 
       {vorlage.endrundeGroessen.length > 1 && (
         <p>
