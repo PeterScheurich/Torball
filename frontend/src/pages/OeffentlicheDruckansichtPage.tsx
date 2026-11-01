@@ -114,9 +114,9 @@ export function OeffentlicheDruckansichtPage() {
         punkte: z.punkte,
       }));
       const ergebnisSpiele = [...(daten.ergebnisse?.spiele ?? [])]
-        .sort((a, b) => Number(a.runde) - Number(b.runde))
+        .sort((a, b) => (a.spielNr ?? Number(a.runde)) - (b.spielNr ?? Number(b.runde)))
         .map((s, i) => ({
-          nr: i + 1,
+          nr: s.spielNr ?? i + 1,
           zeit: formatiereUhrzeit(s.startzeitGeplant),
           feld: feldName(s.feldId),
           teamA: nameVon(s.mannschaftAId),
@@ -135,9 +135,9 @@ export function OeffentlicheDruckansichtPage() {
 
     if (dokTyp === "spielplan") {
       const zeilen: SpielZeile[] = [...(daten.spielplan?.spiele ?? [])]
-        .sort((a: OeffentlichesSpiel, b: OeffentlichesSpiel) => Number(a.runde) - Number(b.runde))
+        .sort((a: OeffentlichesSpiel, b: OeffentlichesSpiel) => (a.spielNr ?? Number(a.runde)) - (b.spielNr ?? Number(b.runde)))
         .map((s, i) => ({
-          nr: i + 1,
+          nr: s.spielNr ?? i + 1,
           zeit: formatiereUhrzeit(s.startzeitGeplant),
           feld: feldName(s.feldId),
           teamA: nameVon(s.mannschaftAId),

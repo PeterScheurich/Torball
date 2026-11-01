@@ -4,6 +4,7 @@ import { quelleText } from "@torball/shared";
 import { findAllBySelector, findAllByType, findById } from "../repository";
 import { berechneGesamttabelle, berechneTabelle, berechneTabellen, type TabellenZeile } from "../ergebnisse/tabelle";
 import { baueModusAnsicht } from "../spielplan/modus";
+import { mitSpielNr } from "../spielplan/spielNr";
 
 /** Nie an die oeffentliche Seite ausliefern (Abschnitt 13: "Spielplan ... ohne
  * Schiedsrichter"; Abschnitt 24.3: Schiedsrichter grundsaetzlich nicht genannt). */
@@ -11,6 +12,8 @@ function oeffentlichesSpiel(s: Spiel, mitErgebnis = true) {
   return {
     _id: s._id,
     runde: s.runde,
+    // Fortlaufende Spielnummer ueber das ganze Turnier (abgeleitet, siehe spielNr.ts).
+    spielNr: s.spielNr,
     // Turniermodus: Gruppe der Vorrunde bzw. Name der Endrundenrunde ("Halbfinale 1").
     gruppe: s.gruppe,
     bezeichnung: s.bezeichnung,
@@ -40,6 +43,7 @@ function ablaufFuerOeffentlichkeit(turnier: Turnier, mannschaften: MannschaftImT
     .map((p) => ({
       planId: p.planId,
       bezeichnung: p.bezeichnung,
+      spielNr: p.spielNr,
       textA: mitNamen ? p.textA : quelleText(p.quelleA, plan),
       textB: mitNamen ? p.textB : quelleText(p.quelleB, plan),
       feldId: p.feldId,
@@ -106,7 +110,7 @@ async function ladeWettbewerb(
       spieltagNummer: p.turnier.spieltagNummer ?? 1,
       name: p.turnier.name,
       tabelle: berechneTabelle(p.turnier, p.mannschaften, p.spiele),
-      spiele: p.spiele.map((x) => oeffentlichesSpiel(x)),
+      spiele: mitSpielNr(p.spiele, p.turnier.felder).map((x) => oeffentlichesSpiel(x)),
       mannschaften: p.mannschaften.map((m) => ({ _id: m._id, name: m.name, bundesland: m.bundesland })),
       felder: p.turnier.felder,
     })),
@@ -147,10 +151,11 @@ export async function oeffentlichRoutes(app: FastifyInstance): Promise<void> {
     const turnier = await findById<Turnier>(req.params.id, "turnier");
     if (!turnier) return reply.code(404).send({ error: "Turnier nicht gefunden" });
 
-    const [mannschaften, spiele] = await Promise.all([
+    const [mannschaften, gespeicherteSpiele] = await Promise.all([
       findAllBySelector<MannschaftImTurnier>({ docType: "mannschaftImTurnier", turnierId: turnier._id }),
       findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id }),
     ]);
+    const spiele = mitSpielNr(gespeicherteSpiele, turnier.felder);
 
     // Datenimport (Stufe 4): Gehoert das Turnier zu einem Wettbewerb (mehrere Spieltage), bekommt die
     // oeffentliche Ergebnis-Ansicht eine Unter-Navigation "Gesamt | Spieltag 1 | Spieltag 2". Aggregiert

@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import type { ErgebnisAenderung, ErgebnisToken, MannschaftImTurnier, Spiel, Turnier } from "@torball/shared";
+import { mitSpielNr } from "../spielplan/spielNr";
 import { findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireZugriff } from "../auth/plugin";
 import { hatMindestens, turnierAusgecheckt, TURNIER_AUSGECHECKT_FEHLER, zuschreibung } from "../auth/turnierZugriff";
@@ -104,9 +105,10 @@ export async function ergebnisTokenRoutes(app: FastifyInstance): Promise<void> {
     return {
       turnierName: turnier.name,
       mannschaften: mannschaften.map((m) => ({ _id: m._id, name: m.name })),
-      spiele: spiele.map((s) => ({
+      spiele: mitSpielNr(spiele, turnier.felder).map((s) => ({
         _id: s._id,
         runde: s.runde,
+        spielNr: s.spielNr,
         feldId: s.feldId,
         mannschaftAId: s.mannschaftAId,
         mannschaftBId: s.mannschaftBId,

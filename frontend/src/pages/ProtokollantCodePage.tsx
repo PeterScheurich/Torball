@@ -38,7 +38,7 @@ export function ProtokollantCodePage() {
   if (!turnier) return <p>Lädt…</p>;
 
   const nameVon = (mannschaftId: string) => mannschaften.find((m) => m._id === mannschaftId)?.name ?? mannschaftId;
-  const spieleSortiert = [...spiele].sort((a, b) => Number(a.runde) - Number(b.runde));
+  const spieleSortiert = [...spiele].sort((a, b) => (a.spielNr ?? Number(a.runde)) - (b.spielNr ?? Number(b.runde)));
 
   return (
     <>
@@ -68,7 +68,7 @@ export function ProtokollantCodePage() {
             <tbody>
               {spieleSortiert.map((spiel, index) => (
                 <tr key={spiel._id}>
-                  <td>{spiel.runde ?? index + 1}</td>
+                  <td>{spiel.spielNr ?? spiel.runde ?? index + 1}</td>
                   <td>
                     {nameVon(spiel.mannschaftAId)} – {nameVon(spiel.mannschaftBId)}
                   </td>

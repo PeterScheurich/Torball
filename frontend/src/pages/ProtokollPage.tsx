@@ -414,7 +414,7 @@ export function ProtokollPage() {
           turnierId: turnier._id,
           feldId: spiel.feldId,
           spielId: spiel._id,
-          runde: spiel.runde,
+          runde: spiel.spielNr != null ? String(spiel.spielNr) : spiel.runde,
           teamA: nameVon(spiel.mannschaftAId),
           teamB: nameVon(spiel.mannschaftBId),
           seiteAVertauscht: protokoll.seiteAVertauscht ?? false,
@@ -1083,7 +1083,7 @@ export function ProtokollPage() {
         <h1>Spielprotokoll</h1>
         <p>
           {nameVon(spiel.mannschaftAId)} – {nameVon(spiel.mannschaftBId)}
-          {spiel.runde ? ` (Spiel ${spiel.runde})` : ""}
+          {spiel.spielNr ?? spiel.runde ? ` (Spiel ${spiel.spielNr ?? spiel.runde})` : ""}
         </p>
         {fehler && <p role="alert">{fehler}</p>}
         <p>Für dieses Spiel wurde noch kein Protokoll begonnen.</p>
@@ -1155,10 +1155,10 @@ export function ProtokollPage() {
                   {nameVon(spiel.mannschaftAId)} – {nameVon(spiel.mannschaftBId)}
                 </td>
               </tr>
-              {spiel.runde && (
+              {(spiel.spielNr ?? spiel.runde) && (
                 <tr>
                   <th scope="row">Spiel</th>
-                  <td>Nr. {spiel.runde}</td>
+                  <td>Nr. {spiel.spielNr ?? spiel.runde}</td>
                 </tr>
               )}
               {feldName && (
@@ -1351,7 +1351,7 @@ export function ProtokollPage() {
         {fehlerBlitz > 0 && <div key={fehlerBlitz} className="protokoll-fehler-blitz" aria-hidden="true" />}
         <div className="protokoll-vb-kopf">
           <span>
-            {spiel.runde ? `Spiel ${spiel.runde}` : "Spiel"}
+            {spiel.spielNr ?? spiel.runde ? `Spiel ${spiel.spielNr ?? spiel.runde}` : "Spiel"}
             {aktuellerProtokollant && <> · Protokoll: {aktuellerProtokollant}</>}
           </span>
           <span className="protokoll-vb-kopf-aktionen">
@@ -1661,7 +1661,7 @@ export function ProtokollPage() {
   return (
     <div className="protokoll-seite">
       <h1>
-        Spielprotokoll{spiel.runde ? ` – Spiel ${spiel.runde}` : ""}
+        Spielprotokoll{spiel.spielNr ?? spiel.runde ? ` – Spiel ${spiel.spielNr ?? spiel.runde}` : ""}
       </h1>
       {fehler && <p role="alert">{fehler}</p>}
       <p>

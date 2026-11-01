@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { MannschaftImTurnier, SchiedsrichterImTurnier, Spiel, Turnier } from "@torball/shared";
+import { spielNummern } from "@torball/shared";
 import {
   erzeugeSpielplan,
   getMannschaften,
@@ -259,7 +260,19 @@ export function SpielplanVerwaltung({
   const mehrereFelder = (turnier?.felder.length ?? 0) > 1;
   const wiederholungen: 1 | 2 = turnier?.spielplanModus === "doppelt" ? 2 : 1;
 
-  const spieleSortiert = [...spiele].sort((a, b) => Number(a.runde) - Number(b.runde));
+  // Eine Spielnummer ueber das ganze Turnier (Zeit-Slot, dann Feldreihenfolge) - nicht mehr je Halle neu gezaehlt.
+  const felderListe = turnier?.felder ?? [];
+  const nrVonSpiel = spielNummern(
+    spiele.map((s) => ({ id: s._id, slot: Number(s.runde), feldId: s.feldId })),
+    felderListe,
+  );
+  const spieleSortiert = [...spiele].sort(
+    (a, b) => (nrVonSpiel.get(a._id) ?? 0) - (nrVonSpiel.get(b._id) ?? 0),
+  );
+  // Gruppe/Runde bekommt eine eigene Spalte, sobald das Turnier Gruppen oder Endrunden-Spiele hat.
+  const zeigeGruppe = spiele.some((s) => s.gruppe || s.bezeichnung);
+  const gruppeText = (s: { gruppe?: string; bezeichnung?: string }) =>
+    s.bezeichnung ?? (s.gruppe ? `Gruppe ${s.gruppe}` : "");
   const spielWarnungen = slotWarnungen(spieleSortiert.map((s) => ({ ...s, slot: Number(s.runde) })));
   // Sobald irgendein Spiel bereits laeuft/ein Ergebnis hat ODER irgendein Spielprotokoll
   // existiert, darf kein neuer Spielplan (auch kein Vorschlag) mehr erzeugt werden - sonst
@@ -272,6 +285,13 @@ export function SpielplanVerwaltung({
     : "Es gibt bereits begonnene Spielprotokolle";
 
   const vorschlagSortiert = vorschlag ? [...vorschlag].sort((a, b) => a.slot - b.slot) : undefined;
+  const nrVonVorschau = vorschlagSortiert
+    ? spielNummern(
+        vorschlagSortiert.map((e, i) => ({ id: String(i), slot: e.slot, feldId: e.feldId })),
+        felderListe,
+      )
+    : undefined;
+  const zeigeVorschauGruppe = Boolean(vorschlagSortiert?.some((e) => e.gruppe));
 
   const angezeigteSpiele: FeldZeile<Spiel>[] = mehrereFelder
     ? aktuellesFeld
@@ -556,6 +576,7 @@ export function SpielplanVerwaltung({
                     <span className="sr-only">Reihenfolge</span>
                   </th>
                   <th scope="col" className="spalte-spiel">Nr.</th>
+                  {zeigeVorschauGruppe && <th scope="col">Gruppe</th>}
                   <th scope="col" className="spalte-startzeit">Startzeit</th>
                   <th scope="col">Mannschaft A</th>
                   <th scope="col">Mannschaft B</th>
@@ -571,13 +592,14 @@ export function SpielplanVerwaltung({
                       return (
                         <tr key={`platzhalter-${zeilenIndex}`} className="platzhalter-zeile">
                           <td className="reihenfolge-zelle">–</td>
-                          <td colSpan={5}>Spielpause (anderes Feld spielt)</td>
+                          <td colSpan={zeigeVorschauGruppe ? 6 : 5}>Spielpause (anderes Feld spielt)</td>
                         </tr>
                       );
                     }
                     const eintrag = zeile.eintrag;
                     const anzeigeIndex = anzeigeZaehler++;
                     const vollIndex = vorschlagSortiert.indexOf(eintrag);
+                    const nr = nrVonVorschau?.get(String(vollIndex)) ?? anzeigeIndex + 1;
                     return (
                       <tr
                         key={vollIndex}
@@ -614,7 +636,7 @@ export function SpielplanVerwaltung({
                             className="symbol-button"
                             onClick={() => vorschlagVerschieben(vollIndex, -1)}
                             disabled={anzeigeIndex === 0}
-                            aria-label={`Spiel ${anzeigeIndex + 1} nach vorne verschieben`}
+                            aria-label={`Spiel ${nr} nach vorne verschieben`}
                           >
                             ▲
                           </button>
@@ -623,15 +645,16 @@ export function SpielplanVerwaltung({
                             className="symbol-button"
                             onClick={() => vorschlagVerschieben(vollIndex, 1)}
                             disabled={anzeigeIndex === echteAnzahl - 1}
-                            aria-label={`Spiel ${anzeigeIndex + 1} nach hinten verschieben`}
+                            aria-label={`Spiel ${nr} nach hinten verschieben`}
                           >
                             ▼
                           </button>
                         </td>
-                        <td>{anzeigeIndex + 1}</td>
+                        <td>{nr}</td>
+                        {zeigeVorschauGruppe && <td>{eintrag.gruppe ? `Gruppe ${eintrag.gruppe}` : ""}</td>}
                         <td>
                           <label className="sr-only" htmlFor={`vorschau-zeit-${vollIndex}`}>
-                            Startzeit von Spiel {anzeigeIndex + 1}
+                            Startzeit von Spiel {nr}
                           </label>
                           {eintrag.startzeitGeplant ? (
                             <input
@@ -707,6 +730,7 @@ export function SpielplanVerwaltung({
                         <span className="sr-only">Reihenfolge</span>
                       </th>
                       <th scope="col" className="spalte-spiel">Nr.</th>
+                      {zeigeGruppe && <th scope="col">Gruppe / Runde</th>}
                       <th scope="col" className="spalte-startzeit">Startzeit</th>
                       <th scope="col">Mannschaft A</th>
                       <th scope="col">Mannschaft B</th>
@@ -723,13 +747,14 @@ export function SpielplanVerwaltung({
                           return (
                             <tr key={`platzhalter-${zeilenIndex}`} className="platzhalter-zeile">
                               <td className="reihenfolge-zelle">–</td>
-                              <td colSpan={6}>Spielpause (anderes Feld spielt)</td>
+                              <td colSpan={zeigeGruppe ? 7 : 6}>Spielpause (anderes Feld spielt)</td>
                             </tr>
                           );
                         }
                         const s = zeile.eintrag;
                         const anzeigeIndex = anzeigeZaehler++;
                         const vollIndex = spieleSortiert.indexOf(s);
+                        const nr = nrVonSpiel.get(s._id) ?? anzeigeIndex + 1;
                         return (
                           <tr
                             key={s._id}
@@ -766,7 +791,7 @@ export function SpielplanVerwaltung({
                                 className="symbol-button"
                                 onClick={() => anNeuePositionVerschieben(vollIndex, -1)}
                                 disabled={anzeigeIndex === 0 || s.status !== "geplant" || gesperrt}
-                                aria-label={`Spiel ${anzeigeIndex + 1} nach vorne verschieben`}
+                                aria-label={`Spiel ${nr} nach vorne verschieben`}
                               >
                                 ▲
                               </button>
@@ -775,23 +800,16 @@ export function SpielplanVerwaltung({
                                 className="symbol-button"
                                 onClick={() => anNeuePositionVerschieben(vollIndex, 1)}
                                 disabled={anzeigeIndex === echteAnzahl - 1 || s.status !== "geplant" || gesperrt}
-                                aria-label={`Spiel ${anzeigeIndex + 1} nach hinten verschieben`}
+                                aria-label={`Spiel ${nr} nach hinten verschieben`}
                               >
                                 ▼
                               </button>
                             </td>
-                            <td>
-                              {anzeigeIndex + 1}
-                              {(s.bezeichnung || s.gruppe) && (
-                                <>
-                                  <br />
-                                  <small>{s.bezeichnung ?? `Gruppe ${s.gruppe}`}</small>
-                                </>
-                              )}
-                            </td>
+                            <td>{nr}</td>
+                            {zeigeGruppe && <td>{gruppeText(s)}</td>}
                             <td>
                               <label className="sr-only" htmlFor={`spiel-zeit-${s._id}`}>
-                                Startzeit von Spiel {anzeigeIndex + 1}
+                                Startzeit von Spiel {nr}
                               </label>
                               {s.startzeitGeplant ? (
                                 <input
@@ -847,6 +865,7 @@ export function SpielplanVerwaltung({
                   <thead>
                     <tr>
                       <th scope="col" className="spalte-spiel">Nr.</th>
+                      {zeigeGruppe && <th scope="col">Gruppe / Runde</th>}
                       <th scope="col" className="spalte-startzeit">Startzeit</th>
                       <th scope="col">Mannschaft A</th>
                       <th scope="col">Mannschaft B</th>
@@ -860,12 +879,13 @@ export function SpielplanVerwaltung({
                         if ("platzhalter" in zeile) {
                           return (
                             <tr key={`platzhalter-${zeilenIndex}`} className="platzhalter-zeile">
-                              <td colSpan={5}>Spielpause (anderes Feld spielt)</td>
+                              <td colSpan={zeigeGruppe ? 6 : 5}>Spielpause (anderes Feld spielt)</td>
                             </tr>
                           );
                         }
                         const s = zeile.eintrag;
                         const anzeigeIndex = anzeigeZaehler++;
+                        const nr = nrVonSpiel.get(s._id) ?? anzeigeIndex + 1;
                         const konflikt = schiedsrichterKonflikt(
                           s,
                           schiedsrichterNach(s.schiedsrichterId)?.vereinId,
@@ -874,13 +894,14 @@ export function SpielplanVerwaltung({
                         );
                         return (
                           <tr key={s._id}>
-                            <td>{anzeigeIndex + 1}</td>
+                            <td>{nr}</td>
+                            {zeigeGruppe && <td>{gruppeText(s)}</td>}
                             <td>{formatiereUhrzeit(s.startzeitGeplant)}</td>
                             <td>{nameVon(s.mannschaftAId)}</td>
                             <td>{nameVon(s.mannschaftBId)}</td>
                             <td>
                               <label className="sr-only" htmlFor={`spiel-sr-${s._id}`}>
-                                Schiedsrichter für Spiel {anzeigeIndex + 1}
+                                Schiedsrichter für Spiel {nr}
                               </label>
                               <select
                                 id={`spiel-sr-${s._id}`}

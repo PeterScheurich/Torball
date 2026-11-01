@@ -15,6 +15,7 @@ import {
   planeZeiten,
   quelleText,
   siegerVerlierer,
+  spielNummern,
   berechneStartzeit,
   spieldauerMinuten,
 } from "@torball/shared";
@@ -42,6 +43,12 @@ export interface PlanSpielAnsicht extends PlanSpiel {
   ergebnisB?: number;
   ergebnisAbgeschlossen?: boolean;
   unentschieden?: boolean;
+  /**
+   * Spielnummer ueber das ganze Turnier. Bei erzeugten Spielen die echte Nummer; bei noch nicht erzeugten
+   * eine VORLAEUFIGE, die hinter allen vorhandenen (bzw. geschaetzten) Vorrundenspielen nach Zeit und Feld
+   * weiterzaehlt - sie wird endgueltig, wenn das Spiel erzeugt wird.
+   */
+  spielNr?: number;
 }
 
 export interface GleichstandAnsicht {
@@ -181,9 +188,11 @@ export function baueModusAnsicht(
   // Noch keine Vorrunde erzeugt: Das Ende aus der Zahl der Spiele schaetzen (Untergrenze - die Planung
   // kann einzelne Pausen einlegen), damit die Vorschau schon bei der Planung eine Zeit nennt.
   let zeitenGeschaetzt = false;
+  let geschaetzteVorrundenSpiele = 0;
   if (vorrundeAlle.length === 0 && turnier.felder.length > 0) {
     const durchgaenge = turnier.spielplanModus === "doppelt" ? 2 : 1;
     const anzahlSpiele = groessen.reduce((summe, g) => summe + (g * (g - 1)) / 2, 0) * durchgaenge;
+    geschaetzteVorrundenSpiele = anzahlSpiele;
     if (anzahlSpiele > 0) {
       const ende = berechneStartzeit(turnier, Math.ceil(anzahlSpiele / turnier.felder.length));
       if (ende) {
@@ -193,6 +202,24 @@ export function baueModusAnsicht(
     }
   }
   const mitZeiten = planeZeiten(mitZustand, turnier.felder, vorrundeEnde, dauer);
+
+  // Spielnummern: erzeugte Spiele tragen ihre echte Nummer, die uebrigen zaehlen dahinter weiter (nach Zeit, Feld, Plan-Reihenfolge).
+  const echteNummern = spielNummern(
+    spiele.map((x) => ({ id: x._id, slot: Number(x.runde), feldId: x.feldId })),
+    turnier.felder,
+  );
+  const feldPosition = new Map(turnier.felder.map((fd, i) => [fd.feldId, i]));
+  const vorlaeufigeNummern = new Map<string, number>();
+  mitZeiten
+    .map((s, i) => ({ s, i }))
+    .filter(({ s }) => !s.spielId || !spiele.some((x) => x._id === s.spielId))
+    .sort(
+      (a, b) =>
+        (a.s.startzeitGeplant ?? "").localeCompare(b.s.startzeitGeplant ?? "") ||
+        (feldPosition.get(a.s.feldId ?? "") ?? 99) - (feldPosition.get(b.s.feldId ?? "") ?? 99) ||
+        a.i - b.i,
+    )
+    .forEach(({ s }, n) => vorlaeufigeNummern.set(s.planId, (vorrundeAlle.length > 0 ? spiele.length : geschaetzteVorrundenSpiele) + n + 1));
 
   const plan: PlanSpielAnsicht[] = mitZeiten.map((s) => {
     const a = loeseQuelleAuf(s.quelleA, ctx);
@@ -213,6 +240,7 @@ export function baueModusAnsicht(
       textA: mannschaftAId ? (namen.get(mannschaftAId) ?? mannschaftAId) : quelleText(s.quelleA, mitZeiten),
       textB: mannschaftBId ? (namen.get(mannschaftBId) ?? mannschaftBId) : quelleText(s.quelleB, mitZeiten),
       erzeugbar: erzeugbar.has(s.planId),
+      spielNr: spiel ? echteNummern.get(spiel._id) : vorlaeufigeNummern.get(s.planId),
       ...(spiel ? { ergebnisA: spiel.ergebnisA, ergebnisB: spiel.ergebnisB, ergebnisAbgeschlossen: abgeschlossen } : {}),
       ...(unentschieden ? { unentschieden: true } : {}),
     };

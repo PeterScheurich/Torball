@@ -955,6 +955,8 @@ export function widerrufeErgebnisToken(turnierId: string): Promise<void> {
 export interface ErgebnisErfassungSpiel {
   _id: string;
   runde?: string;
+  /** Fortlaufende Spielnummer ueber das ganze Turnier. */
+  spielNr?: number;
   feldId?: string;
   mannschaftAId: string;
   mannschaftBId: string;
@@ -990,6 +992,8 @@ export function ergebnisPerTokenSetzen(
 export interface OeffentlichesSpiel {
   _id: string;
   runde?: string;
+  /** Fortlaufende Spielnummer ueber das ganze Turnier. */
+  spielNr?: number;
   gruppe?: string;
   bezeichnung?: string;
   feldId?: string;
@@ -1325,6 +1329,8 @@ export function getMailBerichte(): Promise<MailBericht[]> {
 
 /** Ein Plan-Spiel samt Aufloesung - siehe backend/src/spielplan/modus.ts. */
 export interface PlanSpielAnsicht extends PlanSpiel {
+  /** Spielnummer ueber das ganze Turnier; bei noch nicht erzeugten Spielen vorlaeufig. */
+  spielNr?: number;
   mannschaftAId?: string;
   mannschaftBId?: string;
   textA: string;

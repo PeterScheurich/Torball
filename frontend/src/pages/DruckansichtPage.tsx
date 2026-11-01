@@ -124,11 +124,11 @@ export function DruckansichtPage() {
     const mehrereFelder = turnier.felder.length > 1;
     const nameVon = (mId: string) => mannschaften.find((m) => m._id === mId)?.name ?? mId;
     const feldName = (feldId?: string) => turnier.felder.find((f) => f.feldId === feldId)?.name ?? feldId ?? "";
-    const nachRunde = (a: Spiel, b: Spiel) => Number(a.runde) - Number(b.runde);
+    const nachRunde = (a: Spiel, b: Spiel) => (a.spielNr ?? Number(a.runde)) - (b.spielNr ?? Number(b.runde));
     // Spielnummer ueber den GESAMTEN sortierten Spielplan vergeben - das Schiedsrichter-Blatt
     // filtert pro Person, seine Nummern muessen aber zum ausgehaengten Spielplan passen.
     const spieleSortiert = [...spiele].sort(nachRunde);
-    const nrVon = new Map(spieleSortiert.map((s, i) => [s._id, i + 1]));
+    const nrVon = new Map(spieleSortiert.map((s, i) => [s._id, s.spielNr ?? i + 1]));
     const alsZeile = (s: Spiel): SpielZeile => ({
       nr: nrVon.get(s._id) ?? 0,
       zeit: formatiereUhrzeit(s.startzeitGeplant),

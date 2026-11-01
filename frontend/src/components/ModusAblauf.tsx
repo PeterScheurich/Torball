@@ -252,7 +252,7 @@ export function ModusAblauf({ turnierId, felder, mannschaften, gesperrt, signatu
                   const wahl = handwahl[p.planId] ?? { a: "", b: "" };
                   return (
                     <tr key={p.planId}>
-                      <td>{i + 1}</td>
+                      <td>{p.spielNr ?? i + 1}</td>
                       <td>{p.bezeichnung}</td>
                       <td>
                         {p.textA} – {p.textB}

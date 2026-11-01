@@ -47,7 +47,7 @@ export interface StandPaket {
   /** Feld des laufenden Spiels - kann fehlen, wenn dem Spiel keines zugeordnet ist. */
   feldId?: string;
   spielId: string;
-  /** Spiel.runde, also die Spielnummer im Plan. */
+  /** Die Spielnummer im Plan (turnierweit; als Text, wie Spiel.runde). */
   runde?: string;
   teamA: string;
   teamB: string;

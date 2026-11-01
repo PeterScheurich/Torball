@@ -163,7 +163,7 @@ export function SchiedsrichterSichtPage() {
           turnierId: laufendesSpiel.turnierId,
           feldId: laufendesSpiel.feldId,
           spielId: laufendesSpiel._id,
-          runde: laufendesSpiel.runde,
+          runde: laufendesSpiel.spielNr != null ? String(laufendesSpiel.spielNr) : laufendesSpiel.runde,
           teamA: mannschaftName(laufendesSpiel.mannschaftAId),
           teamB: mannschaftName(laufendesSpiel.mannschaftBId),
           seiteAVertauscht: protokoll.seiteAVertauscht ?? false,
@@ -311,7 +311,7 @@ export function SchiedsrichterSichtPage() {
             {zuletzt && (
               <div className="sr-warte-zeile">
                 <div className="sr-warte-label">
-                  Zuletzt{zuletzt.runde ? ` · Spiel ${zuletzt.runde}` : ""}
+                  Zuletzt{zuletzt.spielNr ?? zuletzt.runde ? ` · Spiel ${zuletzt.spielNr ?? zuletzt.runde}` : ""}
                 </div>
                 <div className="sr-warte-wert">
                   {mannschaftName(zuletzt.mannschaftAId)}{" "}
@@ -325,7 +325,7 @@ export function SchiedsrichterSichtPage() {
             {naechstes ? (
               <div className="sr-warte-zeile">
                 <div className="sr-warte-label">
-                  Als Nächstes{naechstes.runde ? ` · Spiel ${naechstes.runde}` : ""}
+                  Als Nächstes{naechstes.spielNr ?? naechstes.runde ? ` · Spiel ${naechstes.spielNr ?? naechstes.runde}` : ""}
                 </div>
                 <div className="sr-warte-wert sr-warte-gross">
                   {mannschaftName(naechstes.mannschaftAId)} – {mannschaftName(naechstes.mannschaftBId)}

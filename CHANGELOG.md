@@ -7,6 +7,13 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Eine Spielnummer über das ganze Turnier.** Bisher zählte jede Halle für sich, sodass dieselbe Nummer zweimal
+  vorkam. Jetzt sind die Spiele über das gesamte Turnier fortlaufend nummeriert (erst nach Anpfiffzeit, bei gleicher
+  Zeit Halle A vor Halle B) – im Spielplan, bei den Ergebnissen, im Protokoll, auf der Schiedsrichter-Anzeige, auf der
+  öffentlichen Seite und in den Ausdrucken. Die Gruppe (bzw. der Name der Endrunden-Runde, z. B. „Halbfinale 1“)
+  steht dafür in einer eigenen Spalte neben der Nummer. Im „Weiteren Ablauf“ zählen die noch nicht erzeugten Spiele
+  vorläufig hinter der Vorrunde weiter.
+
 - **Spielmodus und Turniermodus sind jetzt eine Auswahl.** Bisher gab es zwei Felder, die sich überschnitten
   („Spielmodus“ einfach/doppelt und „Turniermodus“). Jetzt wählst du den Turniermodus und dazu gleich, ob die
   Vorrunde einfach oder als Hin- und Rückspiel gespielt wird; bei zwei Gruppen gilt das in jeder Gruppe, die

@@ -80,7 +80,11 @@ function SpieleTabelle({ spiele, mannschaften, felder, zeigeErgebnis }: SpieleTa
   const mehrereFelder = felder.length > 1;
   const nameVonMannschaft = (id: string) => mannschaften.find((m) => m._id === id)?.name ?? id;
   const nameVonFeld = (feldId: string | undefined) => felder.find((f) => f.feldId === feldId)?.name ?? feldId ?? "";
-  const spieleSortiert = [...spiele].sort((a, b) => Number(a.runde) - Number(b.runde));
+  const spieleSortiert = [...spiele].sort(
+    (a, b) => (a.spielNr ?? Number(a.runde)) - (b.spielNr ?? Number(b.runde)),
+  );
+  // Gruppe bzw. Name der Endrunden-Runde in einer eigenen Spalte, getrennt von der Spielnummer.
+  const zeigeGruppe = spieleSortiert.some((s) => s.gruppe || s.bezeichnung);
 
   if (spieleSortiert.length === 0) {
     return <p>Noch kein Spielplan veröffentlicht.</p>;
@@ -93,6 +97,7 @@ function SpieleTabelle({ spiele, mannschaften, felder, zeigeErgebnis }: SpieleTa
         <thead>
           <tr>
             <th scope="col">Spiel</th>
+            {zeigeGruppe && <th scope="col">Gruppe / Runde</th>}
             {mehrereFelder && <th scope="col">Feld</th>}
             <th scope="col">Startzeit</th>
             <th scope="col">Mannschaft A</th>
@@ -104,15 +109,8 @@ function SpieleTabelle({ spiele, mannschaften, felder, zeigeErgebnis }: SpieleTa
         <tbody>
           {spieleSortiert.map((s, index) => (
             <tr key={s._id}>
-              <td>
-                {index + 1}
-                {(s.bezeichnung || s.gruppe) && (
-                  <>
-                    <br />
-                    <small>{s.bezeichnung ?? `Gruppe ${s.gruppe}`}</small>
-                  </>
-                )}
-              </td>
+              <td>{s.spielNr ?? index + 1}</td>
+              {zeigeGruppe && <td>{s.bezeichnung ?? (s.gruppe ? `Gruppe ${s.gruppe}` : "")}</td>}
               {mehrereFelder && <td>{nameVonFeld(s.feldId)}</td>}
               <td>{formatiereUhrzeit(s.startzeitGeplant)}</td>
               <td>{nameVonMannschaft(s.mannschaftAId)}</td>

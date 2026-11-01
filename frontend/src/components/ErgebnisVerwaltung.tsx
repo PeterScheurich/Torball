@@ -121,7 +121,7 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
   }, [aktualisieren]);
 
   const nameVon = (mannschaftId: string) => mannschaften.find((m) => m._id === mannschaftId)?.name ?? mannschaftId;
-  const spieleSortiert = [...spiele].sort((a, b) => Number(a.runde) - Number(b.runde));
+  const spieleSortiert = [...spiele].sort((a, b) => (a.spielNr ?? Number(a.runde)) - (b.spielNr ?? Number(b.runde)));
 
   async function ergebnisSpeichern(spiel: Spiel, istForfait = false) {
     const eingabe = eingaben[spiel._id];
@@ -287,7 +287,7 @@ export function ErgebnisVerwaltung({ turnierId, onGeaendert }: Props) {
                   const eingabe = eingaben[spiel._id] ?? { a: "", b: "" };
                   return (
                     <tr key={spiel._id}>
-                      <td>{index + 1}</td>
+                      <td>{spiel.spielNr ?? index + 1}</td>
                       <td>{nameVon(spiel.mannschaftAId)}</td>
                       <td>
                         {digital ? (

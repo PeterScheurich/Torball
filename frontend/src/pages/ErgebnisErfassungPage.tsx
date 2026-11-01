@@ -154,7 +154,7 @@ export function ErgebnisErfassungPage() {
   }
 
   const nameVon = (mannschaftId: string) => daten.mannschaften.find((m) => m._id === mannschaftId)?.name ?? mannschaftId;
-  const spieleSortiert = [...daten.spiele].sort((a, b) => Number(a.runde ?? 0) - Number(b.runde ?? 0));
+  const spieleSortiert = [...daten.spiele].sort((a, b) => (a.spielNr ?? Number(a.runde ?? 0)) - (b.spielNr ?? Number(b.runde ?? 0)));
 
   return (
     <>
@@ -191,7 +191,7 @@ export function ErgebnisErfassungPage() {
               const eingabe = eingaben[spiel._id] ?? { a: "", b: "" };
               return (
                 <tr key={spiel._id}>
-                  <td>{index + 1}</td>
+                  <td>{spiel.spielNr ?? index + 1}</td>
                   <td>{nameVon(spiel.mannschaftAId)}</td>
                   <td>
                     <label className="sr-only" htmlFor={`a-${spiel._id}`}>

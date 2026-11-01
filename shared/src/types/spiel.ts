@@ -43,4 +43,9 @@ export interface Spiel extends CouchMeta {
   gruppe?: GruppenKennung;
   planId?: string;
   bezeichnung?: string;
+  /**
+   * Fortlaufende Spielnummer ueber das ganze Turnier. Nur ABGELEITET: der Server haengt sie an Antworten an
+   * (aus Zeit-Slot und Feldreihenfolge, siehe shared/logik/spielNummern.ts), gespeichert wird sie nie.
+   */
+  spielNr?: number;
 }

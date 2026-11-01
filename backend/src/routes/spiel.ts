@@ -13,13 +13,14 @@ import {
   zuschreibung,
   type Zugriffsstufe,
 } from "../auth/turnierZugriff";
+import { mitSpielNr } from "../spielplan/spielNr";
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 import { IDENTITAETS_FELDER, ohneFelder } from "../eingabe";
 
 // Nie aus dem Body uebernehmen (siehe eingabe.ts): Identitaet + denormalisierte spielId + turnierId.
 // Ergebnis-/Status-Felder bleiben den dedizierten Ergebnis-Routen vorbehalten - der Spielplan-PUT
 // aendert bewusst nur runde/feldId/startzeitGeplant/schiedsrichterId (siehe Schema).
-const NUR_SERVER_PUT = [...IDENTITAETS_FELDER, "spielId", "turnierId"] as const;
+const NUR_SERVER_PUT = [...IDENTITAETS_FELDER, "spielId", "turnierId", "spielNr"] as const;
 
 /** Nur diese Felder darf die Turnierleitung nachtraeglich anpassen (Abschnitt 8: "Reihenfolge,
  * Spielfeld und Startzeiten") sowie die Schiedsrichter-Zuordnung (Abschnitt 5.4, manuell aenderbar). */
@@ -103,7 +104,7 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
     if (!(await hatMindestens(turnier, req, "lesen"))) {
       return reply.code(403).send({ error: "Kein Zugriff auf dieses Turnier" });
     }
-    return findAllBySelector<Spiel>({ docType: "spiel", turnierId: req.params.turnierId });
+    return mitSpielNr(await findAllBySelector<Spiel>({ docType: "spiel", turnierId: req.params.turnierId }), turnier.felder);
   });
 
   app.get<{ Params: { id: string } }>("/spiele/:id", async (req, reply) => {
@@ -111,7 +112,12 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
     const spiel = await findById<Spiel>(req.params.id, "spiel");
     if (!spiel) return reply.code(404).send({ error: "Spiel nicht gefunden" });
     if (!(await pruefeSpielZugriff(spiel, req, reply, "lesen"))) return;
-    return spiel;
+    // Die turnierweite Spielnummer braucht alle Spiele und die Feldreihenfolge des Turniers.
+    const [turnier, alle] = await Promise.all([
+      findById<Turnier>(spiel.turnierId, "turnier"),
+      findAllBySelector<Spiel>({ docType: "spiel", turnierId: spiel.turnierId }),
+    ]);
+    return mitSpielNr(alle, turnier?.felder ?? []).find((s) => s._id === spiel._id) ?? spiel;
   });
 
   app.put<{ Params: { id: string }; Body: SpielAnpassungBody }>(
