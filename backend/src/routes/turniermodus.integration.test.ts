@@ -142,6 +142,16 @@ test(
       assert.ok(gespeicherteSpiele.every((s) => s.gruppe === "A" || s.gruppe === "B"), "die Gruppe steht am Spiel");
       // Derselbe Plan noch einmal vom Server berechnet: inhaltlich gleich -> keine neue Version (200 statt 201).
       assert.ok([200, 201].includes((await anfrage("POST", `/turniere/${turnierId}/spielplan`)).statusCode));
+      // Aendert sich die Gesamtzeit pro Spiel, liefert "Spielplan neu erzeugen" dieselben Paarungen mit ANDEREN
+      // Zeiten - das ist eine Aenderung (frueher: "unveraendert", der alte Plan blieb stehen).
+      const zeitenVorher = (await findAllBySelector<Spiel>({ docType: "spiel", turnierId })).map((s) => s.startzeitGeplant).sort();
+      const alterPuffer = ((await findByIdUngeprueft(turnierId)) as Turnier).pauseZwischenSpielenMinuten ?? 0;
+      await anfrage("PUT", `/turniere/${turnierId}`, { pauseZwischenSpielenMinuten: alterPuffer + 12 });
+      assert.equal((await anfrage("POST", `/turniere/${turnierId}/spielplan`)).statusCode, 201, "neue Zeiten = neue Version");
+      const zeitenNachher = (await findAllBySelector<Spiel>({ docType: "spiel", turnierId })).map((s) => s.startzeitGeplant).sort();
+      assert.notDeepEqual(zeitenNachher, zeitenVorher, "die Startzeiten richten sich nach der neuen Gesamtzeit");
+      await anfrage("PUT", `/turniere/${turnierId}`, { pauseZwischenSpielenMinuten: alterPuffer });
+      assert.equal((await anfrage("POST", `/turniere/${turnierId}/spielplan`)).statusCode, 201);
       assert.equal(
         ((await anfrage("GET", `/turniere/${turnierId}/modus-plan`)).json() as ModusAnsicht).zeitenGeschaetzt,
         false,

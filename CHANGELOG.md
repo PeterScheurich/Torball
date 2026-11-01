@@ -7,6 +7,15 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Regeln eines Turniers speichern jetzt von selbst.** Beim Verlassen eines Feldes im Reiter „Regeln“ wird
+  gespeichert und angesagt („Regeln gespeichert.“); den Knopf „Regeln speichern“ gibt es dort nicht mehr. Eine
+  geänderte, aber nicht gespeicherte Spielzeit blieb sonst unbemerkt. Die Standardregeln (Admin) behalten den
+  Speichern-Knopf, weil jede Speicherung dort eine neue Version anlegt.
+- **Spielplan neu erzeugen übernimmt jetzt geänderte Zeiten.** Wurde die Spielzeit oder die Gesamtzeit pro Spiel
+  geändert und der Spielplan mit denselben Paarungen neu erzeugt, blieb der alte Plan mit den alten Zeiten stehen
+  (und die Endrunde rechnete trotzdem mit den neuen). Jetzt zählen die Startzeiten als Änderung.
+- **Schmalere Spalte „Gruppe“ im Spielplan** – die Zelle nennt nur noch den Wert („A“) statt „Gruppe A“.
+
 - **Eine Spielnummer über das ganze Turnier.** Bisher zählte jede Halle für sich, sodass dieselbe Nummer zweimal
   vorkam. Jetzt sind die Spiele über das gesamte Turnier fortlaufend nummeriert (erst nach Anpfiffzeit, bei gleicher
   Zeit Halle A vor Halle B) – im Spielplan, bei den Ergebnissen, im Protokoll, auf der Schiedsrichter-Anzeige, auf der

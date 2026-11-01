@@ -44,11 +44,16 @@ function kanonischerSchluessel(s: {
 /** Vergleicht als Multiset (Reihenfolge egal), damit z.B. zwei zeitgleiche Spiele auf verschiedenen Feldern nicht faelschlich als "unterschiedlich" gelten. */
 function inhaltlichGleich(
   bestehende: Spiel[],
-  neu: { runde?: string; feldId?: string; mannschaftAId: string; mannschaftBId: string }[],
+  neu: { runde?: string; feldId?: string; mannschaftAId: string; mannschaftBId: string; startzeitGeplant?: string }[],
 ): boolean {
   if (bestehende.length !== neu.length) return false;
-  const bestehendeSchluessel = bestehende.map(kanonischerSchluessel).sort();
-  const neueSchluessel = neu.map(kanonischerSchluessel).sort();
+  // Die Startzeit gehoert dazu: Wer die Spielzeit oder die Gesamtzeit pro Spiel aendert und den Spielplan
+  // neu erzeugt, bekommt dieselben Paarungen mit ANDEREN Zeiten - das darf nicht als "unveraendert" durchgehen
+  // (sonst bliebe der alte Plan stehen, obwohl "neu erzeugt" gemeldet wird).
+  const mitZeit = (s: { startzeitGeplant?: string } & Parameters<typeof kanonischerSchluessel>[0]) =>
+    `${kanonischerSchluessel(s)}@${s.startzeitGeplant ?? ""}`;
+  const bestehendeSchluessel = bestehende.map(mitZeit).sort();
+  const neueSchluessel = neu.map(mitZeit).sort();
   return bestehendeSchluessel.every((k, i) => k === neueSchluessel[i]);
 }
 
@@ -292,7 +297,10 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
       // Keine neue Version anlegen, wenn sich inhaltlich nichts geaendert hat (z.B. mehrfaches
       // Klicken auf "Spielplan neu erzeugen" ohne zwischenzeitliche Aenderung an Mannschaften
       // oder Reihenfolge) - sonst waechst die Versionsnummer ohne echten Grund.
-      if (bestehende.length > 0 && inhaltlichGleich(bestehende, vorschlag.map((e) => ({ ...e, runde: String(e.slot + 1) })))) {
+      if (bestehende.length > 0 && inhaltlichGleich(
+          bestehende,
+          vorschlag.map((e) => ({ ...e, runde: String(e.slot + 1), startzeitGeplant: berechneStartzeit(turnier, e.slot) })),
+        )) {
         return reply.code(200).send({
           turnierId: turnier._id,
           spielplanVersion: turnier.spielplanVersion,

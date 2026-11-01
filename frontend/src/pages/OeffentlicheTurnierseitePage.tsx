@@ -85,6 +85,7 @@ function SpieleTabelle({ spiele, mannschaften, felder, zeigeErgebnis }: SpieleTa
   );
   // Gruppe bzw. Name der Endrunden-Runde in einer eigenen Spalte, getrennt von der Spielnummer.
   const zeigeGruppe = spieleSortiert.some((s) => s.gruppe || s.bezeichnung);
+  const gruppeKopf = spieleSortiert.some((s) => s.bezeichnung) ? "Gruppe / Runde" : "Gruppe";
 
   if (spieleSortiert.length === 0) {
     return <p>Noch kein Spielplan veröffentlicht.</p>;
@@ -97,7 +98,7 @@ function SpieleTabelle({ spiele, mannschaften, felder, zeigeErgebnis }: SpieleTa
         <thead>
           <tr>
             <th scope="col">Spiel</th>
-            {zeigeGruppe && <th scope="col">Gruppe / Runde</th>}
+            {zeigeGruppe && <th scope="col">{gruppeKopf}</th>}
             {mehrereFelder && <th scope="col">Feld</th>}
             <th scope="col">Startzeit</th>
             <th scope="col">Mannschaft A</th>
@@ -110,7 +111,7 @@ function SpieleTabelle({ spiele, mannschaften, felder, zeigeErgebnis }: SpieleTa
           {spieleSortiert.map((s, index) => (
             <tr key={s._id}>
               <td>{s.spielNr ?? index + 1}</td>
-              {zeigeGruppe && <td>{s.bezeichnung ?? (s.gruppe ? `Gruppe ${s.gruppe}` : "")}</td>}
+              {zeigeGruppe && <td>{s.bezeichnung ?? s.gruppe ?? ""}</td>}
               {mehrereFelder && <td>{nameVonFeld(s.feldId)}</td>}
               <td>{formatiereUhrzeit(s.startzeitGeplant)}</td>
               <td>{nameVonMannschaft(s.mannschaftAId)}</td>

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { TabellenKriterium, Turnierregeln } from "@torball/shared";
+import { SpeicherHinweis, useSpeicherHinweis } from "./SpeicherHinweis";
 
 const KRITERIUM_LABEL: Record<TabellenKriterium, string> = {
   punkte: "Punkte",
@@ -33,6 +34,12 @@ interface Props {
   spielzeitGesperrt?: boolean;
   /** Internationales Turnier: die Spielplan-Regel nach Bundesland heisst dann "Land" (nur Beschriftung). */
   land?: boolean;
+  /**
+   * Speichert beim Verlassen eines Feldes - wie der Rest der Anwendung (Auftraggeber 01.11.2026: eine geaenderte,
+   * aber nicht gespeicherte Spielzeit blieb unbemerkt). Ohne Speichern-Knopf; die Standardregeln-Seite laesst
+   * das bewusst aus, weil dort jede Speicherung eine neue Version anlegt.
+   */
+  autoSpeichern?: boolean;
 }
 
 /**
@@ -46,8 +53,19 @@ function mitFeldDefaults(w: Turnierregeln): Turnierregeln {
   return { ...w, forfaitErgebnis: w.forfaitErgebnis || "3:0" };
 }
 
-export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWerte, spielzeitGesperrt, land }: Props) {
+export function TurnierregelnFormular({
+  werte,
+  onSpeichern,
+  hinweis,
+  standardWerte,
+  spielzeitGesperrt,
+  land,
+  autoSpeichern = false,
+}: Props) {
   const [r, setR] = useState<Turnierregeln>(() => mitFeldDefaults(werte));
+  const formRef = useRef<HTMLFormElement>(null);
+  const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
+  const [ungueltig, setUngueltig] = useState(false);
   const [gespeichert, setGespeichert] = useState(false);
   const [speichert, setSpeichert] = useState(false);
   const [resetFehler, setResetFehler] = useState<string | undefined>();
@@ -104,8 +122,10 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
     if (!standardWerte) return;
     if (
       !window.confirm(
-        "Wirklich auf die Standardwerte zurücksetzen? Deine aktuellen Eingaben im Formular werden dabei überschrieben " +
-          "(gespeichert wird erst danach über den Speichern-Knopf).",
+        autoSpeichern
+          ? "Wirklich auf die Standardwerte zurücksetzen? Deine aktuellen Regeln dieses Turniers werden dabei überschrieben und sofort gespeichert."
+          : "Wirklich auf die Standardwerte zurücksetzen? Deine aktuellen Eingaben im Formular werden dabei überschrieben " +
+            "(gespeichert wird erst danach über den Speichern-Knopf).",
       )
     ) {
       return;
@@ -115,8 +135,27 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
       const standard = await standardWerte();
       setR(standard);
       setGespeichert(false);
+      // Mit automatischem Speichern gibt es keinen zweiten Schritt: die Rueckfrage oben war die Bestaetigung.
+      if (autoSpeichern) await speichernAutomatisch(standard);
     } catch (err) {
       setResetFehler(err instanceof Error ? err.message : "Standardwerte konnten nicht geladen werden.");
+    }
+  }
+
+  /** Speichert, sobald ein Feld verlassen wird und sich etwas geaendert hat. Ungueltige Eingaben (z. B. eine
+   *  Gesamtzeit unter der Mindestdauer) werden nicht gespeichert - das wird angesagt statt still zu bleiben. */
+  async function speichernAutomatisch(neu: Turnierregeln = r) {
+    if (JSON.stringify(neu) === JSON.stringify(mitFeldDefaults(werte))) return;
+    if (formRef.current && !formRef.current.checkValidity()) {
+      setUngueltig(true);
+      return;
+    }
+    setUngueltig(false);
+    try {
+      await onSpeichern(neu);
+      meldeGespeichert("Regeln gespeichert.");
+    } catch {
+      /* Die Seite zeigt den Fehler bereits (role="alert"). */
     }
   }
 
@@ -135,7 +174,12 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
   const kriterien = r.tabellenKriterien?.length ? r.tabellenKriterien : ALLE_KRITERIEN;
 
   return (
-    <form onSubmit={speichern} className="regeln-formular">
+    <form
+      ref={formRef}
+      onSubmit={autoSpeichern ? (e) => { e.preventDefault(); void speichernAutomatisch(); } : speichern}
+      onBlur={autoSpeichern ? () => void speichernAutomatisch() : undefined}
+      className="regeln-formular"
+    >
       <h3>Spielzeit</h3>
       <div className="tabellen-wrapper">
         <table className="uebersicht-tabelle regeln-tabelle">
@@ -368,14 +412,18 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
 
       {hinweis && <p className="feld-hinweis">{hinweis}</p>}
       {resetFehler && <p role="alert">{resetFehler}</p>}
+      {ungueltig && (
+        <p role="alert">Nicht gespeichert: Bitte die Eingaben prüfen (ein Wert ist zu klein oder fehlt).</p>
+      )}
+      {autoSpeichern && <SpeicherHinweis hinweis={speicherHinweis} />}
       <p className="regeln-knoepfe">
-        <button type="submit" disabled={speichert}>Regeln speichern</button>
+        {!autoSpeichern && <button type="submit" disabled={speichert}>Regeln speichern</button>}
         {standardWerte && (
           <button type="button" className="button-sekundaer" onClick={zuruecksetzen}>
             Auf Standardwerte zurücksetzen
           </button>
         )}
-        {gespeichert && (
+        {!autoSpeichern && gespeichert && (
           <span className="gespeichert-hinweis" role="status">
             {" "}
             ✓ gespeichert
@@ -385,7 +433,7 @@ export function TurnierregelnFormular({ werte, onSpeichern, hinweis, standardWer
       {standardWerte && (
         <p className="feld-hinweis">
           „Zurücksetzen" übernimmt die aktuellen Standardregeln (bei Serververbindung aus den zentralen Standardwerten).
-          Danach noch speichern.
+          {autoSpeichern ? "" : " Danach noch speichern."}
         </p>
       )}
     </form>

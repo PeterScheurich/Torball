@@ -457,6 +457,9 @@ table {
 .spielplan-tabelle .spalte-spiel {
   width: 3em;
 }
+.spielplan-tabelle .spalte-gruppe {
+  width: 5.5em;
+}
 .spielplan-tabelle .spalte-startzeit {
   width: 6.5em;
 }

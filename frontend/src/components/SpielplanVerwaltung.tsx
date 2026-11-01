@@ -271,8 +271,11 @@ export function SpielplanVerwaltung({
   );
   // Gruppe/Runde bekommt eine eigene Spalte, sobald das Turnier Gruppen oder Endrunden-Spiele hat.
   const zeigeGruppe = spiele.some((s) => s.gruppe || s.bezeichnung);
-  const gruppeText = (s: { gruppe?: string; bezeichnung?: string }) =>
-    s.bezeichnung ?? (s.gruppe ? `Gruppe ${s.gruppe}` : "");
+  // Die Spaltenueberschrift sagt "Gruppe" - die Zelle nennt nur den Wert ("A"), bei Endrundenspielen den
+  // Namen der Runde ("Halbfinale 1"). Erst dann heisst die Ueberschrift "Gruppe / Runde".
+  const zeigeRunde = spiele.some((s) => s.bezeichnung);
+  const gruppeKopf = zeigeRunde ? "Gruppe / Runde" : "Gruppe";
+  const gruppeText = (s: { gruppe?: string; bezeichnung?: string }) => s.bezeichnung ?? s.gruppe ?? "";
   const spielWarnungen = slotWarnungen(spieleSortiert.map((s) => ({ ...s, slot: Number(s.runde) })));
   // Sobald irgendein Spiel bereits laeuft/ein Ergebnis hat ODER irgendein Spielprotokoll
   // existiert, darf kein neuer Spielplan (auch kein Vorschlag) mehr erzeugt werden - sonst
@@ -576,7 +579,7 @@ export function SpielplanVerwaltung({
                     <span className="sr-only">Reihenfolge</span>
                   </th>
                   <th scope="col" className="spalte-spiel">Nr.</th>
-                  {zeigeVorschauGruppe && <th scope="col">Gruppe</th>}
+                  {zeigeVorschauGruppe && <th scope="col" className="spalte-gruppe">Gruppe</th>}
                   <th scope="col" className="spalte-startzeit">Startzeit</th>
                   <th scope="col">Mannschaft A</th>
                   <th scope="col">Mannschaft B</th>
@@ -651,7 +654,7 @@ export function SpielplanVerwaltung({
                           </button>
                         </td>
                         <td>{nr}</td>
-                        {zeigeVorschauGruppe && <td>{eintrag.gruppe ? `Gruppe ${eintrag.gruppe}` : ""}</td>}
+                        {zeigeVorschauGruppe && <td>{eintrag.gruppe ?? ""}</td>}
                         <td>
                           <label className="sr-only" htmlFor={`vorschau-zeit-${vollIndex}`}>
                             Startzeit von Spiel {nr}
@@ -730,7 +733,7 @@ export function SpielplanVerwaltung({
                         <span className="sr-only">Reihenfolge</span>
                       </th>
                       <th scope="col" className="spalte-spiel">Nr.</th>
-                      {zeigeGruppe && <th scope="col">Gruppe / Runde</th>}
+                      {zeigeGruppe && <th scope="col" className="spalte-gruppe">{gruppeKopf}</th>}
                       <th scope="col" className="spalte-startzeit">Startzeit</th>
                       <th scope="col">Mannschaft A</th>
                       <th scope="col">Mannschaft B</th>
@@ -865,7 +868,7 @@ export function SpielplanVerwaltung({
                   <thead>
                     <tr>
                       <th scope="col" className="spalte-spiel">Nr.</th>
-                      {zeigeGruppe && <th scope="col">Gruppe / Runde</th>}
+                      {zeigeGruppe && <th scope="col" className="spalte-gruppe">{gruppeKopf}</th>}
                       <th scope="col" className="spalte-startzeit">Startzeit</th>
                       <th scope="col">Mannschaft A</th>
                       <th scope="col">Mannschaft B</th>

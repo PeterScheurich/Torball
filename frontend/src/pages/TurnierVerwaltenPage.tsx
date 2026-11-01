@@ -986,7 +986,8 @@ export function TurnierVerwaltenPage() {
             werte={turnier}
             onSpeichern={regelnSpeichern}
             standardWerte={getSystemkonfiguration}
-            hinweis="Diese Regeln gelten nur für dieses Turnier. Die Standardwerte für neue Turniere legst du unter Stammdaten → Standardregeln fest."
+            autoSpeichern
+            hinweis="Diese Regeln gelten nur für dieses Turnier. Änderungen werden gespeichert, sobald du ein Feld verlässt. Die Standardwerte für neue Turniere legst du unter Stammdaten → Standardregeln fest."
             spielzeitGesperrt={spielplanGesperrt}
             land={turnier.turnierart === "international"}
           />

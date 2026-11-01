@@ -690,8 +690,9 @@ erzeugte pro Tastendruck eine Version; Systemeinstellungen + Mail-Postfach – P
 mit „leer = unveraendert"-Semantik, zusammengehoerige Verbindungsdaten und „Verbindung testen"
 prueft den Formularstand; E-Mail/Passwort/2FA – brauchen Passwort-Bestaetigung bzw. Wiederholung;
 Wartungsmodus – die Sperre trifft sofort alle Nutzer, das soll ein bewusster zweiter Schritt
-bleiben; Turnierregeln am Turnier – „Auf Standardwerte zuruecksetzen" fuellt das ganze Formular
-und lebt davon, dass man vor dem Speichern prueft; Turnier-Codes und Kanban-Kartendialog –
+bleiben; Turnierregeln am Turnier – (UMGESTELLT 2026-11-01, Auftraggeber: eine nicht gespeicherte
+Spielzeit blieb unbemerkt; `autoSpeichern` an `TurnierregelnFormular` speichert beim Verlassen eines Feldes, die
+Standardregeln-Seite behaelt den Knopf wegen der Versionierung); Turnier-Codes und Kanban-Kartendialog –
 bewusste Einzelaktion bzw. Dialog-Semantik (Schliessen verwirft).
 
 **Optionale Textfelder leeren: `null` senden, nicht `undefined`.**
