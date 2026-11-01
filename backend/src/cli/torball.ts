@@ -12,7 +12,7 @@
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import type { Benutzer } from "@torball/shared";
+import type { Benutzer, Verein } from "@torball/shared";
 import { findAllByType, insertDoc } from "../repository";
 import { erzeugeBeispieldaten } from "../demo/beispieldaten";
 import { erstelleSnapshot, stelleSnapshotWiederher } from "../demo/snapshot";
@@ -51,6 +51,12 @@ const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
   "benutzer:entsperren": {
     beschreibung: 'Entsperrt einen Benutzer. Optionen: --email="<E-Mail>"',
     ausfuehren: benutzerEntsperren,
+  },
+  "vereine:land-setzen": {
+    beschreibung:
+      'Traegt bei allen Vereinen OHNE Land das angegebene Land ein (Vereine mit Land bleiben unveraendert). ' +
+      'Optionen: --land="Deutschland". Gedacht fuer die einmalige Nachpflege, als das Feld "Land" neu dazukam.',
+    ausfuehren: vereineLandSetzen,
   },
   "konfiguration:anzeigen": {
     beschreibung: "Zeigt die aktuelle backend/.env (Passwoerter maskiert).",
@@ -266,6 +272,22 @@ async function mailBerichtErstellen(): Promise<void> {
   const bericht = await erstelleMailBericht("manuell");
   console.log(
     `Bericht erstellt: ${bericht.anzahlMails} Mail(s) beruecksichtigt, ${bericht.erstellteKartenIds.length} Kanban-Karte(n) angelegt.`,
+  );
+}
+
+async function vereineLandSetzen(optionen: Optionen): Promise<void> {
+  const land = optionen.land?.trim();
+  if (!land) {
+    console.error('Bitte --land="<Land>" angeben, z. B. --land="Deutschland".');
+    process.exitCode = 1;
+    return;
+  }
+  const vereine = await findAllByType<Verein>("verein");
+  const ohneLand = vereine.filter((v) => !v.land?.trim());
+  for (const v of ohneLand) await insertDoc<Verein>({ ...v, land });
+  console.log(
+    `${ohneLand.length} von ${vereine.length} Verein(en) ohne Land auf "${land}" gesetzt; ` +
+      `${vereine.length - ohneLand.length} hatten bereits ein Land und blieben unveraendert.`,
   );
 }
 

@@ -1378,6 +1378,8 @@ dort plus ein Test - kein Datenmodell.** Im Frontend ändert sich nur die BESCHR
 `TurnierregelnFormular`); das gespeicherte Feld heißt weiter `bundesland`. Test:
 `turnierart.integration.test.ts`.
 
+**Land am Verein und die Länderliste (2026-11-01, Auftraggeber):** `Verein.land` (optional) wird bei einem internationalen Turnier als Land der Mannschaft vorgeschlagen (national: `Verein.bundesland`); gespeichert bleibt es im Mannschaftsfeld `bundesland`. Die Vorschlagsliste steht in den Systemeinstellungen (`laender`, Standard `STANDARD_LAENDER` = Deutschland, Frankreich, Belgien, Schweiz, Österreich, Italien), gepflegt unter Admin → Länder (`GET /laender` für jede Anmeldung, `PUT /laender` nur Admin, `useLaender` im Frontend). Bewusst nur eine Vorschlagsliste (`<datalist>`), keine Sperre - ein fehlendes Land bleibt eintragbar; eine Auswahlliste mit Pflicht wäre die strengere Variante. Für Bestandsdaten: `torball vereine:land-setzen --land="Deutschland"` (setzt nur Vereine ohne Land). Beim Einladen wählt ein Admin den Verein (optional), ein Manager erbt seinen. Test: `laender.integration.test.ts`.
+
 **Tokens nie im Log (2026-10-31):** Fastify loggt die volle URL, mehrere URLs tragen ein Klartext-Token
 im Pfad (`/benutzer/passwort-reset/…`, `/benutzer/einladung/…`, `/ergebnis-erfassung/…`).
 `logSchutz.ts::schwaerzeTokens` wird im Request-Serializer (`index.ts`) und im Diagnose-Bericht

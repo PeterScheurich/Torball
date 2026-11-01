@@ -12,7 +12,7 @@ import {
   verteileGruppen,
 } from "../api";
 import { BUNDESLAENDER } from "../bundeslaender";
-import { LAENDER } from "../laender";
+import { useLaender } from "../useLaender";
 import { SpielerKader } from "./SpielerKader";
 import { SpeicherHinweis, useSpeicherHinweis } from "./SpeicherHinweis";
 
@@ -87,6 +87,7 @@ export function MannschaftenListe({
   gruppenGesperrt = false,
   onGruppenGeaendert,
 }: Props) {
+  const laender = useLaender();
   const landWort = international ? "Land" : "Bundesland";
   // Bei einem internationalen Turnier schlaegt die Eingabe Laender vor, sonst die deutschen Bundeslaender.
   const vorschlagsliste = international ? "laender-liste" : "bundeslaender-liste";
@@ -604,7 +605,7 @@ export function MannschaftenListe({
       )}
 
       <datalist id={vorschlagsliste}>
-        {(international ? LAENDER : BUNDESLAENDER).map((b) => (
+        {(international ? laender : BUNDESLAENDER).map((b) => (
           <option key={b} value={b} />
         ))}
       </datalist>

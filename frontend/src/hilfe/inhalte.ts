@@ -301,7 +301,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
         frage: "Wie hängen Vereine und Teams zusammen?",
         text: [
           "Ein Team gehört immer zu einem Verein. Lege also zuerst den Verein an, danach seine Teams.",
-          "Beim Verein kannst du Bundesland und Land eintragen. Das Land wird bei einem internationalen Turnier als Land der Mannschaft vorgeschlagen, das Bundesland bei einem nationalen.",
+          "Beim Verein kannst du Bundesland und Land eintragen. Das Land wird bei einem internationalen Turnier als Land der Mannschaft vorgeschlagen, das Bundesland bei einem nationalen. Welche Länder zur Auswahl stehen, pflegt die Administration unter „Admin → Länder“; ein Land, das dort fehlt, kannst du trotzdem von Hand eintragen.",
           {
             vertiefung: {
               titel: "Und wenn es eine Spielgemeinschaft ohne eigenen Verein ist?",

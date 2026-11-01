@@ -245,6 +245,16 @@ export function updateSystemeinstellungen(
   return anfrage("/systemeinstellungen", { method: "PUT", body: JSON.stringify(daten) });
 }
 
+/** Vorschlagsliste der Laender (Vereine, Mannschaften internationaler Turniere) - fuer jede Anmeldung lesbar. */
+export function getLaender(): Promise<string[]> {
+  return anfrage("/laender");
+}
+
+/** Ersetzt die Laenderliste (nur Admin); der Server bereinigt und sortiert und liefert das Ergebnis zurueck. */
+export function setLaender(laender: string[]): Promise<string[]> {
+  return anfrage("/laender", { method: "PUT", body: JSON.stringify({ laender }) });
+}
+
 /** Oeffentlich (kein Login) - nur die konfigurierten Video-URLs, fuer Einbindungsstellen auf
  *  oeffentlichen Seiten (z.B. das Einfuehrungsvideo auf der Gaeste-Startseite). */
 export function getOeffentlicheVideos(): Promise<VideoEintrag[]> {

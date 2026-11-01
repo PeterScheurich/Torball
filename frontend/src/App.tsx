@@ -29,6 +29,7 @@ import { StammdatenPage } from "./pages/StammdatenPage";
 import { SchiedsrichterStammdatenPage } from "./pages/SchiedsrichterStammdatenPage";
 import { StandardregelnPage } from "./pages/StandardregelnPage";
 import { SystemeinstellungenPage } from "./pages/SystemeinstellungenPage";
+import { LaenderPage } from "./pages/LaenderPage";
 import { TurniermodiPage } from "./pages/TurniermodiPage";
 import { WartungVerwaltenPage } from "./pages/WartungVerwaltenPage";
 import { WartungPage } from "./pages/WartungPage";
@@ -275,6 +276,7 @@ function Kopfzeile() {
                 pathname.startsWith("/systemeinstellungen") ||
                 pathname.startsWith("/wartung") ||
                 pathname.startsWith("/turniermodi") ||
+                pathname.startsWith("/laender") ||
                 pathname.startsWith("/entwicklungs-board") ||
                 pathname.startsWith("/mail-postfach")
               }
@@ -284,6 +286,9 @@ function Kopfzeile() {
               </Link>
               <Link to="/turniermodi" className="kopfzeile-menue-eintrag" role="menuitem">
                 Turniermodi
+              </Link>
+              <Link to="/laender" className="kopfzeile-menue-eintrag" role="menuitem">
+                Länder
               </Link>
               <Link to="/wartung" className="kopfzeile-menue-eintrag" role="menuitem">
                 Wartungsmodus
@@ -463,6 +468,7 @@ function App() {
               <Route path="/systemeinstellungen" element={<SystemeinstellungenPage />} />
               <Route path="/wartung" element={<WartungVerwaltenPage />} />
               <Route path="/turniermodi" element={<TurniermodiPage />} />
+              <Route path="/laender" element={<LaenderPage />} />
               <Route path="/entwicklungs-board" element={<KanbanBoardPage />} />
               <Route path="/mail-postfach" element={<MailPostfachPage />} />
               <Route path="/turniere/neu" element={<TurnierAnlegenPage />} />

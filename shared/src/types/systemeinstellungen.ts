@@ -45,6 +45,10 @@ export interface Systemeinstellungen extends CouchMeta {
    *  das Backend keine Benachrichtigung. */
   benachrichtigungEmpfaenger?: string;
   videos?: VideoEintrag[];
+  /** Laender, die bei Vereinen und Mannschaften zur Auswahl vorgeschlagen werden (Admin -> Laender).
+   *  Nur eine Vorschlagsliste: ein anderes Land bleibt frei eintragbar. Fehlt das Feld, gilt
+   *  STANDARD_LAENDER (backend/src/systemeinstellungen.ts). */
+  laender?: string[];
   geaendertVon?: BenutzerId;
   geaendertAm?: Zeitstempel;
 }

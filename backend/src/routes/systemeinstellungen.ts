@@ -1,9 +1,10 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { Systemeinstellungen, VideoEintrag } from "@torball/shared";
 import { insertDoc } from "../repository";
-import { requireRolle } from "../auth/plugin";
+import { requireAuth, requireRolle } from "../auth/plugin";
 import { testeSmtpVerbindung } from "../mail/transport";
 import {
+  aktuelleLaender,
   aktuelleSystemeinstellungen,
   oeffentlicheSystemeinstellungen,
   SYSTEMEINSTELLUNGEN_ID,
@@ -69,6 +70,47 @@ export async function systemeinstellungenRoutes(app: FastifyInstance): Promise<v
   app.get("/systemeinstellungen/videos", async () => {
     return (await aktuelleSystemeinstellungen()).videos ?? [];
   });
+
+  // Vorschlagsliste der Laender: lesen darf jede Anmeldung (Vereine/Mannschaften erfassen),
+  // pflegen nur ein Admin. Gespeichert wird sortiert, ohne Leerzeilen und ohne Doppelte (Gross-/
+  // Kleinschreibung zaehlt nicht) - so bleibt die Auswahl sauber, egal wie eingegeben wurde.
+  app.get("/laender", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    return aktuelleLaender();
+  });
+
+  app.put<{ Body: { laender: string[] } }>(
+    "/laender",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["laender"],
+          properties: { laender: { type: "array", maxItems: 300, items: { type: "string", maxLength: 80 } } },
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!nurAdmin(req, reply)) return;
+      const gesehen = new Set<string>();
+      const bereinigt: string[] = [];
+      for (const roh of req.body.laender) {
+        const land = roh.trim();
+        if (!land || gesehen.has(land.toLocaleLowerCase("de"))) continue;
+        gesehen.add(land.toLocaleLowerCase("de"));
+        bereinigt.push(land);
+      }
+      bereinigt.sort((a, b) => a.localeCompare(b, "de"));
+      const bisherige = await aktuelleSystemeinstellungen();
+      await insertDoc<Systemeinstellungen>({
+        ...bisherige,
+        laender: bereinigt,
+        geaendertVon: req.benutzer!._id,
+        geaendertAm: new Date().toISOString(),
+      });
+      return bereinigt;
+    },
+  );
 
   app.get("/systemeinstellungen", async (req, reply) => {
     if (!nurAdmin(req, reply)) return;

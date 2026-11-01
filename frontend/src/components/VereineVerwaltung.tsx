@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Verein } from "@torball/shared";
 import { createVerein, deleteVerein, getVereine, updateVerein, type VereinAktualisierung } from "../api";
 import { BUNDESLAENDER } from "../bundeslaender";
-import { LAENDER } from "../laender";
+import { useLaender } from "../useLaender";
 import { SpeicherHinweis, useSpeicherHinweis } from "./SpeicherHinweis";
 
 const LEERES_FORMULAR: VereinAktualisierung = {
@@ -29,6 +29,7 @@ interface Props {
  * loeschen, wenn kein Team mehr auf ihn verweist (das Backend antwortet sonst mit 409).
  */
 export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
+  const laender = useLaender();
   const [vereine, setVereine] = useState<Verein[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
   const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
@@ -344,7 +345,7 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
         ))}
       </datalist>
       <datalist id="laender-liste">
-        {LAENDER.map((l) => (
+        {laender.map((l) => (
           <option key={l} value={l} />
         ))}
       </datalist>

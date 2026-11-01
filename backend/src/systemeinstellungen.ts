@@ -21,6 +21,15 @@ export async function aktuelleSystemeinstellungen(): Promise<Systemeinstellungen
   return doc ?? STANDARD_SYSTEMEINSTELLUNGEN;
 }
 
+/** Vorschlagsliste der Laender, solange die Administration keine eigene gepflegt hat: die Laender,
+ *  aus denen aktuell Mannschaften kommen (Auftraggeber, 01.11.2026). */
+export const STANDARD_LAENDER = ["Deutschland", "Frankreich", "Belgien", "Schweiz", "Österreich", "Italien"];
+
+/** Die aktuell gueltige Laenderliste (gepflegt oder Standard). */
+export async function aktuelleLaender(): Promise<string[]> {
+  return (await aktuelleSystemeinstellungen()).laender ?? STANDARD_LAENDER;
+}
+
 /** Filtert das SMTP-Passwort heraus, bevor die Einstellungen an die Oberflaeche gehen - gleiches
  *  Muster wie oeffentlichesProfil()/oeffentlicheMailPostfachEinstellungen(). */
 export function oeffentlicheSystemeinstellungen(einstellungen: Systemeinstellungen): SystemeinstellungenOeffentlich {
