@@ -433,6 +433,8 @@ export interface SpielplanVorschlagEintrag {
   mannschaftBId: string;
   feldId: string;
   slot: number;
+  /** Gruppe der Vorrundenspiele (A/B) bei einem Turniermodus mit zwei Gruppen. */
+  gruppe?: string;
   warnung?: string;
   startzeitGeplant?: string;
 }

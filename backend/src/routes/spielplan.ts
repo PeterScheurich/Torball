@@ -77,7 +77,7 @@ function pruefeSpielplanEintraege(
     }
     // Turniermodus mit Gruppen: Vorrundenspiele finden nur INNERHALB einer Gruppe statt.
     if (mitGruppen && (e.gruppe !== gruppeVon.get(e.mannschaftAId) || e.gruppe !== gruppeVon.get(e.mannschaftBId))) {
-      return "Ein Vorrundenspiel darf nur Mannschaften derselben Gruppe enthalten.";
+      return "In diesem Turniermodus spielen in der Vorrunde nur Mannschaften derselben Gruppe gegeneinander (Gruppe A oder Gruppe B). Ein Spiel mit Mannschaften aus beiden Gruppen ist nicht möglich.";
     }
     const belegt = belegtProSlot.get(e.slot) ?? new Set<string>();
     if (belegt.has(e.mannschaftAId) || belegt.has(e.mannschaftBId)) {
@@ -270,6 +270,17 @@ export async function spielplanRoutes(app: FastifyInstance): Promise<void> {
         docType: "mannschaftImTurnier",
         turnierId: turnier._id,
       });
+      // Bei zwei Gruppen kennt jedes Vorrundenspiel seine Gruppe. Fehlt die Angabe im uebergebenen Eintrag
+      // (aeltere Clients), ergibt sie sich aus den beiden Mannschaften - sonst wuerde ein voellig
+      // korrekter Spielplan mit einer unverstaendlichen Gruppen-Meldung abgelehnt.
+      if (turnier.modus?.vorlage.gruppen === 2) {
+        const gruppeVon = new Map(mannschaftenFuerPruefung.map((m) => [m._id, m.gruppe]));
+        vorschlag = vorschlag.map((e) => {
+          if (e.gruppe) return e;
+          const a = gruppeVon.get(e.mannschaftAId);
+          return a && a === gruppeVon.get(e.mannschaftBId) ? { ...e, gruppe: a } : e;
+        });
+      }
       const eintragFehler = pruefeSpielplanEintraege(
         vorschlag,
         new Set(mannschaftenFuerPruefung.map((m) => m._id)),

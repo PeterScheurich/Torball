@@ -464,11 +464,12 @@ export function SpielplanVerwaltung({
 
   async function spielplanErzeugen() {
     try {
-      const eintraege = vorschlagSortiert?.map(({ mannschaftAId, mannschaftBId, feldId, slot, warnung }) => ({
+      const eintraege = vorschlagSortiert?.map(({ mannschaftAId, mannschaftBId, feldId, slot, gruppe, warnung }) => ({
         mannschaftAId,
         mannschaftBId,
         feldId,
         slot,
+        gruppe,
         warnung,
       }));
       await erzeugeSpielplan(turnierId, wiederholungen, eintraege);

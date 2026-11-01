@@ -118,7 +118,30 @@ test(
       const vorVorrunde = (await anfrage("GET", `/turniere/${turnierId}/modus-plan`)).json() as ModusAnsicht;
       assert.equal(vorVorrunde.zeitenGeschaetzt, true);
       assert.ok(vorVorrunde.plan.every((p) => p.startzeitGeplant), "jedes geplante Spiel hat eine geschaetzte Zeit");
-      assert.equal((await anfrage("POST", `/turniere/${turnierId}/spielplan`)).statusCode, 201);
+      // Die Oberflaeche schickt die (ggf. umsortierte) Vorschau zurueck. Frueher fiel dabei die Gruppe weg und
+      // der Spielplan wurde mit einer unverstaendlichen Meldung abgelehnt - der Server leitet sie jetzt ab.
+      const ohneGruppe = vorschlag.spiele.map(({ mannschaftAId, mannschaftBId }, i) => ({
+        mannschaftAId,
+        mannschaftBId,
+        feldId: "feld:1",
+        slot: i,
+      }));
+      // Ein Spiel ueber die Gruppen hinweg ist und bleibt abgewiesen - mit einer verstaendlichen Meldung.
+      const ueberKreuz = ohneGruppe.map((e, i) =>
+        i === 0 ? { ...e, mannschaftAId: ids[0], mannschaftBId: ids[1] } : e,
+      );
+      const abgelehnt = await anfrage("POST", `/turniere/${turnierId}/spielplan`, { eintraege: ueberKreuz });
+      assert.equal(abgelehnt.statusCode, 400);
+      assert.match((abgelehnt.json() as { error: string }).error, /Gruppe A oder Gruppe B/);
+      assert.equal(
+        (await anfrage("POST", `/turniere/${turnierId}/spielplan`, { eintraege: ohneGruppe })).statusCode,
+        201,
+        "Eintraege ohne Gruppenangabe werden akzeptiert",
+      );
+      const gespeicherteSpiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId });
+      assert.ok(gespeicherteSpiele.every((s) => s.gruppe === "A" || s.gruppe === "B"), "die Gruppe steht am Spiel");
+      // Derselbe Plan noch einmal vom Server berechnet: inhaltlich gleich -> keine neue Version (200 statt 201).
+      assert.ok([200, 201].includes((await anfrage("POST", `/turniere/${turnierId}/spielplan`)).statusCode));
       assert.equal(
         ((await anfrage("GET", `/turniere/${turnierId}/modus-plan`)).json() as ModusAnsicht).zeitenGeschaetzt,
         false,
