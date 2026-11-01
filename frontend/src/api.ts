@@ -502,6 +502,7 @@ export interface VereinAktualisierung {
   name: string;
   logo?: string | null;
   bundesland?: string | null;
+  land?: string | null;
   ansprechpartnerName?: string | null;
   ansprechpartnerTelefon?: string | null;
   ansprechpartnerEmail?: string | null;
@@ -629,6 +630,8 @@ export interface NeuerBenutzer {
   name: string;
   vorname?: string;
   globaleRolle: GlobaleRolle;
+  /** Nur ein Admin darf einen Verein vorgeben; bei einem Manager gilt automatisch dessen Verein. */
+  vereinId?: string;
 }
 
 /** Ist E-Mail-Versand konfiguriert, geht der Einladungslink direkt an die neue Adresse und einladungsToken fehlt in der Antwort; andernfalls kommt der Klartext-Link direkt zurueck. */

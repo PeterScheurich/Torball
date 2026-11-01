@@ -7,6 +7,12 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Verein schon beim Einladen wählen, Land beim Verein.** Beim Einladen einer Person kann die Administration
+  jetzt gleich den Verein auswählen (oder „keiner“ – nicht jede Person gehört zu einem Verein). Ein Manager lädt
+  weiterhin für seinen eigenen Verein ein; das Formular zeigt ihm, welcher das ist. Außerdem hat jeder Verein
+  jetzt ein Feld „Land“: Bei einem internationalen Turnier wird es als Land der Mannschaft vorgeschlagen (bei
+  einem nationalen Turnier weiter das Bundesland), und die Eingabe bietet eine Länderliste zur Auswahl an.
+
 - **Neu: Turniermodi mit Gruppen, Endrunde und Platzierungsspielen.** Neben „Jeder gegen Jeden“ gibt es jetzt
   Turniere mit zwei Gruppen und einer Endrunde mit 2, 4, 6 oder 8 Mannschaften (Halbfinale, Finale, Spiel um Platz 3,
   Platzierungsspiele, auch als Kreuzvergleich mit Viertelfinale). Die Gruppen dürfen unterschiedlich groß sein. Im

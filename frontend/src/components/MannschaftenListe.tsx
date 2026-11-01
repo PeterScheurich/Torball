@@ -12,6 +12,7 @@ import {
   verteileGruppen,
 } from "../api";
 import { BUNDESLAENDER } from "../bundeslaender";
+import { LAENDER } from "../laender";
 import { SpielerKader } from "./SpielerKader";
 import { SpeicherHinweis, useSpeicherHinweis } from "./SpeicherHinweis";
 
@@ -87,8 +88,8 @@ export function MannschaftenListe({
   onGruppenGeaendert,
 }: Props) {
   const landWort = international ? "Land" : "Bundesland";
-  // Die Vorschlagsliste enthaelt die deutschen Bundeslaender - fuer ein Land nicht passend.
-  const vorschlagsliste = international ? undefined : "bundeslaender-liste";
+  // Bei einem internationalen Turnier schlaegt die Eingabe Laender vor, sonst die deutschen Bundeslaender.
+  const vorschlagsliste = international ? "laender-liste" : "bundeslaender-liste";
   const [mannschaften, setMannschaften] = useState<MannschaftImTurnier[]>([]);
   const [fehler, setFehler] = useState<string | undefined>();
   const { hinweis: speicherHinweis, melde: meldeGespeichert } = useSpeicherHinweis();
@@ -193,7 +194,7 @@ export function MannschaftenListe({
       return vereinA.localeCompare(vereinB) || a.name.localeCompare(b.name);
     });
 
-  /** Team aus den Stammdaten ausgewaehlt: Name+Bundesland als Vorschlag uebernehmen (kopiert,
+  /** Team aus den Stammdaten ausgewaehlt: Name+Bundesland (bzw. Land) als Vorschlag uebernehmen (kopiert,
    * nicht verknuepft - siehe Gesamtspezifikation Abschnitt 15), danach frei weiter bearbeitbar.
    * Mannschaftsname wird NUR aus dem Teamnamen uebernommen, ohne Vereinsnamen-Praefix
    * (der Vereinsname dient in der Auswahlliste selbst nur zur Unterscheidung gleichnamiger
@@ -206,7 +207,8 @@ export function MannschaftenListe({
     if (!team) return;
     const verein = vereine.find((v) => v._id === team.vereinId);
     setNeueMannschaft(team.name);
-    setNeuesBundesland(verein?.bundesland ?? "");
+    // Bei einem internationalen Turnier zaehlt das Land des Vereins, sonst sein Bundesland.
+    setNeuesBundesland((international ? verein?.land : verein?.bundesland) ?? "");
   }
 
   const spielplanExistiert = spielplanVersion > 0;
@@ -601,8 +603,8 @@ export function MannschaftenListe({
         </div>
       )}
 
-      <datalist id="bundeslaender-liste">
-        {BUNDESLAENDER.map((b) => (
+      <datalist id={vorschlagsliste}>
+        {(international ? LAENDER : BUNDESLAENDER).map((b) => (
           <option key={b} value={b} />
         ))}
       </datalist>

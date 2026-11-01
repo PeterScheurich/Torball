@@ -165,6 +165,56 @@ test(
 );
 
 test(
+  "Verein: Land wird gespeichert und lässt sich per null wieder leeren",
+  { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
+  async () => {
+    const Fastify = (await import("fastify")).default;
+    const fastifyCookie = (await import("@fastify/cookie")).default;
+    const { authPreHandler } = await import("../auth/plugin");
+    const { vereinRoutes } = await import("./verein");
+    const { erstelleSession } = await import("../auth/session");
+
+    const app = Fastify();
+    await app.register(fastifyCookie);
+    app.addHook("preHandler", authPreHandler);
+    await app.register(vereinRoutes);
+
+    const adminId = await neuerAdmin();
+    const { token } = await erstelleSession(adminId);
+    const cookie = `torball_session=${token}`;
+    let vereinId: string | undefined;
+
+    try {
+      const angelegt = await app.inject({
+        method: "POST",
+        url: "/vereine",
+        headers: { cookie },
+        payload: { name: "Verein mit Land", bundesland: "Bayern", land: "Deutschland" },
+      });
+      assert.equal(angelegt.statusCode, 201);
+      const v = angelegt.json() as Verein;
+      vereinId = v._id;
+      assert.equal(v.land, "Deutschland");
+
+      const geleert = await app.inject({
+        method: "PUT",
+        url: `/vereine/${v._id}`,
+        headers: { cookie },
+        payload: { name: "Verein mit Land", land: null },
+      });
+      assert.equal(geleert.statusCode, 200);
+      const nachher = await app.inject({ method: "GET", url: `/vereine/${v._id}`, headers: { cookie } });
+      const gelesen = nachher.json() as Verein;
+      assert.ok(!gelesen.land, "das Land muss nach null leer sein");
+      assert.equal(gelesen.bundesland, "Bayern", "das Bundesland bleibt davon unberührt");
+    } finally {
+      await aufraeumen([vereinId, adminId].filter(Boolean) as string[]);
+      await app.close();
+    }
+  },
+);
+
+test(
   "PUT /benutzer/:id: injizierter passwortHash wird nicht übernommen",
   { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
   async () => {

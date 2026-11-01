@@ -2,12 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Verein } from "@torball/shared";
 import { createVerein, deleteVerein, getVereine, updateVerein, type VereinAktualisierung } from "../api";
 import { BUNDESLAENDER } from "../bundeslaender";
+import { LAENDER } from "../laender";
 import { SpeicherHinweis, useSpeicherHinweis } from "./SpeicherHinweis";
 
 const LEERES_FORMULAR: VereinAktualisierung = {
   name: "",
   logo: "",
   bundesland: "",
+  land: "",
   ansprechpartnerName: "",
   ansprechpartnerTelefon: "",
   ansprechpartnerEmail: "",
@@ -68,6 +70,7 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
           name: v.name,
           logo: v.logo ?? "",
           bundesland: v.bundesland ?? "",
+          land: v.land ?? "",
           ansprechpartnerName: v.ansprechpartnerName ?? "",
           ansprechpartnerTelefon: v.ansprechpartnerTelefon ?? "",
           ansprechpartnerEmail: v.ansprechpartnerEmail ?? "",
@@ -99,6 +102,7 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
       name: daten.name.trim(),
       logo: daten.logo?.trim() || null,
       bundesland: daten.bundesland?.trim() || null,
+      land: daten.land?.trim() || null,
       ansprechpartnerName: daten.ansprechpartnerName?.trim() || null,
       ansprechpartnerTelefon: daten.ansprechpartnerTelefon?.trim() || null,
       ansprechpartnerEmail: daten.ansprechpartnerEmail?.trim() || null,
@@ -142,6 +146,7 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
       name: v.name,
       logo: v.logo,
       bundesland: v.bundesland,
+      land: v.land,
       ansprechpartnerName: v.ansprechpartnerName,
       ansprechpartnerTelefon: v.ansprechpartnerTelefon,
       ansprechpartnerEmail: v.ansprechpartnerEmail,
@@ -178,6 +183,7 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
                   Name <span className="pflicht-stern" title="Pflichtfeld">*</span>
                 </th>
                 <th scope="col">Bundesland</th>
+                <th scope="col">Land</th>
                 <th scope="col">Ansprechpartner</th>
                 <th scope="col">Telefon</th>
                 <th scope="col">E-Mail</th>
@@ -214,6 +220,23 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
                       value={bearbeitung[v._id]?.bundesland ?? ""}
                       onChange={(e) =>
                         setBearbeitung((b) => ({ ...b, [v._id]: { ...b[v._id], bundesland: e.target.value } }))
+                      }
+                      onBlur={() => feldVerlassen(v)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") e.currentTarget.blur();
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <label className="sr-only" htmlFor={`verein-land-${v._id}`}>
+                      Land von {v.name}
+                    </label>
+                    <input
+                      id={`verein-land-${v._id}`}
+                      list="laender-liste"
+                      value={bearbeitung[v._id]?.land ?? ""}
+                      onChange={(e) =>
+                        setBearbeitung((b) => ({ ...b, [v._id]: { ...b[v._id], land: e.target.value } }))
                       }
                       onBlur={() => feldVerlassen(v)}
                       onKeyDown={(e) => {
@@ -320,6 +343,11 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
           <option key={b} value={b} />
         ))}
       </datalist>
+      <datalist id="laender-liste">
+        {LAENDER.map((l) => (
+          <option key={l} value={l} />
+        ))}
+      </datalist>
 
       <p>
         <button
@@ -363,6 +391,22 @@ export function VereineVerwaltung({ onGeaendert, darfBearbeiten }: Props) {
                     value={neu.bundesland ?? ""}
                     onChange={(e) => setNeu((n) => ({ ...n, bundesland: e.target.value }))}
                   />
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <label htmlFor="vereinLand">Land</label>
+                </th>
+                <td>
+                  <input
+                    id="vereinLand"
+                    list="laender-liste"
+                    value={neu.land ?? ""}
+                    onChange={(e) => setNeu((n) => ({ ...n, land: e.target.value }))}
+                  />
+                  <p className="feld-hinweis">
+                    Wird bei einem internationalen Turnier als Land der Mannschaft vorgeschlagen.
+                  </p>
                 </td>
               </tr>
               <tr>

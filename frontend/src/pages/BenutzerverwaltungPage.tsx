@@ -35,6 +35,8 @@ export function BenutzerverwaltungPage() {
   const [vorname, setVorname] = useState("");
   const [email, setEmail] = useState("");
   const [rolle, setRolle] = useState<GlobaleRolle>("benutzer");
+  // Verein des neuen Kontos (nur ein Admin waehlt; leer = keinem Verein zugeordnet, das ist zulaessig).
+  const [einladungVerein, setEinladungVerein] = useState("");
   const [einladungslink, setEinladungslink] = useState<string | undefined>();
   const [einladungPerMail, setEinladungPerMail] = useState(false);
   const [resetHinweis, setResetHinweis] = useState<{ email: string; link?: string } | undefined>();
@@ -77,6 +79,7 @@ export function BenutzerverwaltungPage() {
         vorname: vorname.trim() || undefined,
         email,
         globaleRolle: rolle,
+        vereinId: angemeldeter?.globaleRolle === "admin" && einladungVerein ? einladungVerein : undefined,
       });
       if (einladungsToken) {
         setEinladungslink(`${window.location.origin}/einladung/${einladungsToken}`);
@@ -87,6 +90,7 @@ export function BenutzerverwaltungPage() {
       setVorname("");
       setEmail("");
       setRolle("benutzer");
+      setEinladungVerein("");
       await laden();
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Einladen");
@@ -340,6 +344,46 @@ export function BenutzerverwaltungPage() {
                       </option>
                     ))}
                   </select>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  {angemeldeter?.globaleRolle === "admin" ? (
+                    <label htmlFor="einladung-verein">Verein</label>
+                  ) : (
+                    "Verein"
+                  )}
+                </th>
+                <td>
+                  {angemeldeter?.globaleRolle === "admin" ? (
+                    <>
+                      <select
+                        id="einladung-verein"
+                        value={einladungVerein}
+                        onChange={(e) => setEinladungVerein(e.target.value)}
+                        aria-describedby="einladung-verein-hinweis"
+                      >
+                        <option value="">— keiner —</option>
+                        {[...vereine]
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((v) => (
+                            <option key={v._id} value={v._id}>
+                              {v.name}
+                            </option>
+                          ))}
+                      </select>
+                      <p id="einladung-verein-hinweis" className="feld-hinweis">
+                        Optional – nicht jede Person gehört zu einem Verein.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      {vereine.find((v) => v._id === angemeldeter?.vereinId)?.name ?? "— keiner —"}
+                      <p className="feld-hinweis">
+                        Die Einladung übernimmt deinen Verein; ändern kann das nur ein Administrator.
+                      </p>
+                    </>
+                  )}
                 </td>
               </tr>
             </tbody>

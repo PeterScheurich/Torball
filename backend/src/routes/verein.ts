@@ -17,6 +17,7 @@ interface VereinBody {
   name: string;
   logo?: string;
   bundesland?: string;
+  land?: string;
   ansprechpartnerName?: string;
   ansprechpartnerTelefon?: string;
   ansprechpartnerEmail?: string;
@@ -33,6 +34,7 @@ const vereinBodySchema = {
     name: { type: "string", minLength: 1 },
     logo: { type: ["string", "null"] },
     bundesland: { type: ["string", "null"] },
+    land: { type: ["string", "null"] },
     ansprechpartnerName: { type: ["string", "null"] },
     ansprechpartnerTelefon: { type: ["string", "null"] },
     ansprechpartnerEmail: { type: ["string", "null"] },

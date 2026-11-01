@@ -420,7 +420,7 @@ Das Token-Verfahren existiert **ausschließlich** bei `protokollierungsart = man
 
 Wiederverwendbare Stammdaten werden zentral in der Cloud gepflegt (analog zu Spielorten, die ebenfalls wiederverwendbar sein sollen).
 
-**Verein:** Name, Logo (optional – nicht jeder Verein/jede Spielgemeinschaft hat eines), Ansprechpartner/Kontakt, Bundesland.
+**Verein:** Name, Logo (optional – nicht jeder Verein/jede Spielgemeinschaft hat eines), Ansprechpartner/Kontakt, Bundesland, Land (optional; bei einem internationalen Turnier wird es als Land der Mannschaft vorgeschlagen).
 
 **Team:** Gehört zu einem Verein (ein Verein kann mehrere Teams stellen, z. B. „I" und „II"), erbt das Logo des Vereins, führt **keine Spielerdaten**. Zweck: stabile Identität einer Mannschaft über mehrere Spieltage eines Wettbewerbs hinweg, damit die Gesamttabelle zuverlässig aggregieren kann – unabhängig von der Namensschreibweise im jeweiligen Turnier.
 

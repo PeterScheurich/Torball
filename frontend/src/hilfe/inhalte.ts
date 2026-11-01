@@ -301,6 +301,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
         frage: "Wie hängen Vereine und Teams zusammen?",
         text: [
           "Ein Team gehört immer zu einem Verein. Lege also zuerst den Verein an, danach seine Teams.",
+          "Beim Verein kannst du Bundesland und Land eintragen. Das Land wird bei einem internationalen Turnier als Land der Mannschaft vorgeschlagen, das Bundesland bei einem nationalen.",
           {
             vertiefung: {
               titel: "Und wenn es eine Spielgemeinschaft ohne eigenen Verein ist?",
@@ -612,7 +613,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
         frage: "Warum sehe ich als Manager nicht alle Konten?",
         text: [
           "Aus Datenschutzgründen sieht ein Manager nur sein eigenes Konto, die Personen, die er selbst eingeladen hat, und die Konten seines Vereins. Administratoren sehen alle Konten. Auch bei den Konten, die du siehst, bekommst du nur das Nötige angezeigt – Telefonnummer und Adresse gehören nicht dazu.",
-          "Die Vereinszugehörigkeit eines Kontos vergibt ein Administrator in der Benutzerverwaltung (Spalte „Verein“); die Person selbst kann sie nicht ändern. Lädst du als Manager jemanden ein, gehört die Person automatisch zu deinem Verein. Ist dir selbst noch kein Verein zugeordnet, sprich einen Administrator an.",
+          "Die Vereinszugehörigkeit eines Kontos vergibt ein Administrator – gleich beim Einladen im Feld „Verein“ oder später in der Spalte „Verein“ der Benutzerverwaltung; die Person selbst kann sie nicht ändern. Der Verein ist freiwillig: Wer zu keinem Verein gehört, bleibt auf „keiner“. Lädst du als Manager jemanden ein, gehört die Person automatisch zu deinem Verein. Ist dir selbst noch kein Verein zugeordnet, sprich einen Administrator an.",
           {
             hinweis:
               "Ein Turnier für jemanden aus einem anderen Verein freizugeben geht trotzdem: Du gibst im Freigabe-Dialog die E-Mail-Adresse der Person ein – eine Liste aller Konten gibt es nicht.",

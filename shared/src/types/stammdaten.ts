@@ -7,6 +7,9 @@ export interface Verein extends CouchMeta {
   name: string;
   logo?: string;
   bundesland?: string;
+  /** Land (Staat), aus dem der Verein kommt - Vorbelegung des Landes einer Mannschaft bei einem
+   *  internationalen Turnier (dort zaehlt das Land statt des Bundeslands). Optional. */
+  land?: string;
   ansprechpartnerName?: string;
   ansprechpartnerTelefon?: string;
   ansprechpartnerEmail?: string;
