@@ -4,9 +4,10 @@ Für einen **eigenen Rechner**, der die Turniere verwaltet – allein oder zusam
 Netzwerk. (Für einen Server im Internet gibt es einen anderen Weg, siehe `docs/installation-konfiguration.md`.)
 
 > **Stand:** Der Linux-Installer wurde am 01.11.2026 auf einem Debian 13 und einem Ubuntu 26.04 (beide ohne Oberfläche)
-> durchgespielt: Installation, Neustart, Aktualisieren, Deinstallieren, Firewall mit `ufw`. **Noch nicht erprobt** sind
-> Desktop-Systeme (Anwendungsmenü, Browser), Linux Mint und andere Firewalls. Bitte zuerst auf einem Testrechner
-> ausprobieren und Auffälligkeiten melden.
+> durchgespielt: Installation, Neustart, Aktualisieren, Deinstallieren, Firewall mit `ufw`. Auf Ubuntu 26.04 mit Desktop
+> (GNOME) lief außerdem der Start über die Verknüpfung auf dem Schreibtisch bis zur Einrichtung des ersten Benutzers.
+> **Noch nicht erprobt** sind Linux Mint und andere Desktop-Umgebungen, andere Firewalls (`firewalld`) und ARM-Rechner.
+> Bitte zuerst auf einem Testrechner ausprobieren und Auffälligkeiten melden.
 
 ## Voraussetzungen
 

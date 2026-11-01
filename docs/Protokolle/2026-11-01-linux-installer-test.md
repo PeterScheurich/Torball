@@ -60,9 +60,9 @@ Gefunden und behoben:
 Geprüft und in Ordnung: Menü-Eintrag gültig (`desktop-file-validate`), Symbol für normale Benutzer lesbar, Standardbrowser in der
 Sitzung ist Firefox, Verknüpfung liegt auf dem Schreibtisch.
 
-**Nicht von hier aus prüfbar:** Das Starten über den Menü-Eintrag. `xdg-open` und `gio open` melden aus einer SSH-Sitzung Erfolg, starten
+**Von hier aus nicht prüfbar, von Peter am Bildschirm bestätigt:** Das Starten über den Menü-Eintrag. `xdg-open` und `gio open` melden aus einer SSH-Sitzung Erfolg, starten
 den Snap-Firefox aber nicht (GNOME weist den Start von außerhalb der Sitzung ab, Journal: „Failed to get app ID for snap 'firefox'“); ein
-direkter Start von `firefox` klappt. Ob ein echter Klick den Browser mit der App öffnet, muss am Bildschirm geprüft werden. Ein Foto
+direkter Start von `firefox` klappt. Ob ein echter Klick den Browser mit der App öffnet, wurde deshalb am Bildschirm geprüft: Der Klick auf das Symbol startete die Anwendung, der erste Benutzer ließ sich anlegen. Ein Foto
 des Bildschirms von hier aus ist nicht möglich (GNOME verbietet es). Der erste Start von Firefox dauert auf dieser VM rund 30 Sekunden.
 
 ## Kleinigkeiten, nicht geändert
@@ -73,8 +73,8 @@ des Bildschirms von hier aus ist nicht möglich (GNOME verbietet es). Der erste 
 
 ## Nicht geprüft
 
-- Bedienung der Anwendung im Browser (Ersteinrichtung des ersten Kontos, Turnier anlegen, Erfassungslink) – die Anwendung ist
-  dieselbe wie unter Windows, aber der Ablauf auf Linux wurde nur über HTTP-Aufrufe geprüft, nicht im Browser.
-- **Desktop-Systeme** (Anwendungsmenü-Eintrag, Browser öffnen), Linux Mint, andere Firewalls (`firewalld`), ARM-Rechner.
+- Weitere Bedienung der Anwendung im Browser über die Ersteinrichtung des ersten Benutzers hinaus (Turnier anlegen, Erfassungslink) – die
+  Anwendung ist dieselbe wie unter Windows.
+- Linux Mint (Cinnamon: Codename der Paketquelle, Verknüpfung ohne Markierung), andere Desktop-Umgebungen, andere Firewalls (`firewalld`), ARM-Rechner.
 - Aktualisieren per Git-Checkout (`torball-turniere-aktualisieren`); getestet wurde nur der ZIP-Weg.
 - Tastaturbedienung des Installers mit Rückfragen (alles lief im unbeaufsichtigten Modus mit den Standardantworten).

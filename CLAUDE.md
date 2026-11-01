@@ -1953,7 +1953,7 @@ Zielgruppe der wertvollste Test, den dieses Projekt machen kann.
   ist noch offen. Details: `docs/Protokolle/2026-08-12-windows-installer-option-a.md`,
   Bugfix-Hintergrund: „Nebenbefunde" in `docs/Protokolle/2026-08-13-turnier-sync-grundlage.md`.
 
-**Lokale Linux-Installation (2026-10-31 geschrieben, 2026-11-01 auf Debian 13 und Ubuntu 26.04 OHNE Oberfläche durchgespielt - Protokoll `docs/Protokolle/2026-11-01-linux-installer-test.md`; Desktop-Systeme, Mint und `firewalld` noch nicht erprobt):**
+**Lokale Linux-Installation (2026-10-31 geschrieben, 2026-11-01 auf Debian 13 und Ubuntu 26.04 OHNE Oberfläche durchgespielt - Protokoll `docs/Protokolle/2026-11-01-linux-installer-test.md`; Ubuntu 26.04 mit Desktop (GNOME) inklusive Klick auf die Schreibtisch-Verknüpfung; Linux Mint und `firewalld` noch nicht erprobt):**
 `Setup-Linux.sh` (Wurzel, Weiterleiter wie `Setup.cmd`) -> `deploy/installieren-linux.sh`; dazu
 `deploy/aktualisieren-linux.sh` und `deploy/deinstallieren-linux.sh`, Anleitung `INSTALLATION-LINUX.md`.
 Unterstuetzt Debian/Ubuntu-Familie (`ID`/`ID_LIKE`; bei Mint/Pop! zaehlt `UBUNTU_CODENAME` fuer die

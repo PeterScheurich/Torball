@@ -67,7 +67,7 @@ Je nach Zweck gibt es drei Wege – ausführlich beschrieben in
 |---|---|---|
 | Entwickeln/Beitragen (jede Plattform) | Abschnitt „Schnellstart" unten | `docs/installation-konfiguration.md` |
 | Lokal auf einem Windows-Rechner nutzen (z. B. offline am Spielort) | `Setup.cmd` doppelklicken | Abschnitt „Lokale Installation unter Windows" |
-| Lokal auf einem Linux-Rechner nutzen (Debian/Ubuntu; **auf Debian 13 und Ubuntu 26.04 ohne Oberfläche erprobt, Desktop-Systeme noch nicht**) | `bash Setup-Linux.sh` | [`INSTALLATION-LINUX.md`](INSTALLATION-LINUX.md) |
+| Lokal auf einem Linux-Rechner nutzen (Debian/Ubuntu; **auf Debian 13 und Ubuntu 26.04 (auch mit Desktop) erprobt, Linux Mint noch nicht**) | `bash Setup-Linux.sh` | [`INSTALLATION-LINUX.md`](INSTALLATION-LINUX.md) |
 | Produktiv auf einem Linux-Server betreiben | `deploy/provision.sh` + `deploy/deploy-instanz.sh` | Abschnitt „Produktive Installation (Debian-LXC/VM)" |
 
 Für die lokale Windows-Installation wird der Quellcode benötigt: mit Zugriff
