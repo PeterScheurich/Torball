@@ -290,7 +290,7 @@ export function ModusAblauf({ turnierId, felder, mannschaften, gesperrt, signatu
           </p>
           {felder.length > 1 && endrundeOffen && (
             <p>
-              <label htmlFor="endrunde-halle">Viertelfinale bis Finale nacheinander in </label>
+              <label htmlFor="endrunde-halle">Optional: Viertelfinale bis Finale nacheinander in </label>
               <select
                 id="endrunde-halle"
                 disabled={gesperrt}

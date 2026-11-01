@@ -455,13 +455,23 @@ table {
    die langen Namen tragen. Nur an den <th> noetig: im fixed-Layout bestimmt allein die
    erste (Kopf-)Zeile die Spaltenbreiten. */
 .spielplan-tabelle .spalte-spiel {
-  width: 3em;
+  width: 1.6em;
 }
 .spielplan-tabelle .spalte-gruppe {
-  width: 5.5em;
+  width: 3em;
+}
+/* Mit Endrunden-Spielen steht dort der Name der Runde ("Halbfinale 1"). */
+.spielplan-tabelle .spalte-gruppe-breit {
+  width: 7em;
+}
+.zelle-zentriert {
+  text-align: center;
+}
+.spielplan-tabelle .halle-select {
+  width: 100%;
 }
 .spielplan-tabelle .spalte-halle {
-  width: 7.5em;
+  width: 4.6em;
 }
 .spielplan-tabelle .spalte-startzeit {
   width: 6.5em;

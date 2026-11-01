@@ -592,7 +592,7 @@ export function SpielplanVerwaltung({
                     <span className="sr-only">Reihenfolge</span>
                   </th>
                   <th scope="col" className="spalte-spiel">Nr.</th>
-                  {zeigeVorschauGruppe && <th scope="col" className="spalte-gruppe">Gruppe</th>}
+                  {zeigeVorschauGruppe && <th scope="col" className="spalte-gruppe zelle-zentriert">Gruppe</th>}
                   <th scope="col" className="spalte-startzeit">Startzeit</th>
                   <th scope="col">Mannschaft A</th>
                   <th scope="col">Mannschaft B</th>
@@ -667,7 +667,7 @@ export function SpielplanVerwaltung({
                           </button>
                         </td>
                         <td>{nr}</td>
-                        {zeigeVorschauGruppe && <td>{eintrag.gruppe ?? ""}</td>}
+                        {zeigeVorschauGruppe && <td className="zelle-zentriert">{eintrag.gruppe ?? ""}</td>}
                         <td>
                           <label className="sr-only" htmlFor={`vorschau-zeit-${vollIndex}`}>
                             Startzeit von Spiel {nr}
@@ -746,7 +746,11 @@ export function SpielplanVerwaltung({
                         <span className="sr-only">Reihenfolge</span>
                       </th>
                       <th scope="col" className="spalte-spiel">Nr.</th>
-                      {zeigeGruppe && <th scope="col" className="spalte-gruppe">{gruppeKopf}</th>}
+                      {zeigeGruppe && (
+                        <th scope="col" className={`${zeigeRunde ? "spalte-gruppe-breit" : "spalte-gruppe"} zelle-zentriert`}>
+                          {gruppeKopf}
+                        </th>
+                      )}
                       {mehrereFelder && <th scope="col" className="spalte-halle">Halle</th>}
                       <th scope="col" className="spalte-startzeit">Startzeit</th>
                       <th scope="col">Mannschaft A</th>
@@ -823,7 +827,7 @@ export function SpielplanVerwaltung({
                               </button>
                             </td>
                             <td>{nr}</td>
-                            {zeigeGruppe && <td>{gruppeText(s)}</td>}
+                            {zeigeGruppe && <td className="zelle-zentriert">{gruppeText(s)}</td>}
                             {mehrereFelder && (
                               <td>
                                 <label className="sr-only" htmlFor={`spiel-halle-${s._id}`}>
@@ -831,6 +835,7 @@ export function SpielplanVerwaltung({
                                 </label>
                                 <select
                                   id={`spiel-halle-${s._id}`}
+                                  className="halle-select"
                                   disabled={s.status !== "geplant" || s.ergebnisAbgeschlossen || gesperrt}
                                   value={s.feldId ?? ""}
                                   onChange={(e) => void halleWechseln(s, e.target.value)}
@@ -901,7 +906,11 @@ export function SpielplanVerwaltung({
                   <thead>
                     <tr>
                       <th scope="col" className="spalte-spiel">Nr.</th>
-                      {zeigeGruppe && <th scope="col" className="spalte-gruppe">{gruppeKopf}</th>}
+                      {zeigeGruppe && (
+                        <th scope="col" className={`${zeigeRunde ? "spalte-gruppe-breit" : "spalte-gruppe"} zelle-zentriert`}>
+                          {gruppeKopf}
+                        </th>
+                      )}
                       <th scope="col" className="spalte-startzeit">Startzeit</th>
                       <th scope="col">Mannschaft A</th>
                       <th scope="col">Mannschaft B</th>
@@ -931,7 +940,7 @@ export function SpielplanVerwaltung({
                         return (
                           <tr key={s._id}>
                             <td>{nr}</td>
-                            {zeigeGruppe && <td>{gruppeText(s)}</td>}
+                            {zeigeGruppe && <td className="zelle-zentriert">{gruppeText(s)}</td>}
                             <td>{formatiereUhrzeit(s.startzeitGeplant)}</td>
                             <td>{nameVon(s.mannschaftAId)}</td>
                             <td>{nameVon(s.mannschaftBId)}</td>

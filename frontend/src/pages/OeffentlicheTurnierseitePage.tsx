@@ -98,7 +98,7 @@ function SpieleTabelle({ spiele, mannschaften, felder, zeigeErgebnis }: SpieleTa
         <thead>
           <tr>
             <th scope="col">Spiel</th>
-            {zeigeGruppe && <th scope="col">{gruppeKopf}</th>}
+            {zeigeGruppe && <th scope="col" className="zelle-zentriert">{gruppeKopf}</th>}
             {mehrereFelder && <th scope="col">Feld</th>}
             <th scope="col">Startzeit</th>
             <th scope="col">Mannschaft A</th>
@@ -111,7 +111,7 @@ function SpieleTabelle({ spiele, mannschaften, felder, zeigeErgebnis }: SpieleTa
           {spieleSortiert.map((s, index) => (
             <tr key={s._id}>
               <td>{s.spielNr ?? index + 1}</td>
-              {zeigeGruppe && <td>{s.bezeichnung ?? s.gruppe ?? ""}</td>}
+              {zeigeGruppe && <td className="zelle-zentriert">{s.bezeichnung ?? s.gruppe ?? ""}</td>}
               {mehrereFelder && <td>{nameVonFeld(s.feldId)}</td>}
               <td>{formatiereUhrzeit(s.startzeitGeplant)}</td>
               <td>{nameVonMannschaft(s.mannschaftAId)}</td>
