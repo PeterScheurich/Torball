@@ -6,11 +6,13 @@ import {
   getModusPlan,
   istModusAnsicht,
   setzeModusVorrang,
+  spielAnpassen,
+  spielStartzeitAendern,
   type ModusAnsicht,
   type ModusAntwort,
   type PlanSpielAnsicht,
 } from "../api";
-import { formatiereUhrzeit } from "../format";
+import { mitNeuerUhrzeit, zeitEingabeWert } from "../format";
 import { SpeicherHinweis, useSpeicherHinweis } from "./SpeicherHinweis";
 
 /**
@@ -80,7 +82,6 @@ export function ModusAblauf({ turnierId, felder, mannschaften, gesperrt, signatu
   const ansicht: ModusAnsicht = antwort;
   if (ansicht.plan.length === 0 && ansicht.hinweise.length === 0) return null;
 
-  const feldName = (id: string | undefined) => felder.find((f) => f.feldId === id)?.name ?? "–";
   const erzeugbar = ansicht.plan.filter((p) => p.erzeugbar && !p.spielId);
 
   async function ausfuehren<T>(arbeit: () => Promise<T>, meldung: string): Promise<T | undefined> {
@@ -121,10 +122,48 @@ export function ModusAblauf({ turnierId, felder, mannschaften, gesperrt, signatu
     }
   }
 
-  async function verschieben(p: PlanSpielAnsicht, minuten: number) {
+  // Halle und Startzeit lassen sich fuer jedes Spiel aendern. Ein noch nicht erzeugtes Spiel ist nur ein Plan-Eintrag
+  // (Halle wird gemerkt, die Zeit als Verschiebung gespeichert); ein erzeugtes Spiel aendert man direkt am Spiel.
+  async function halleAendern(p: PlanSpielAnsicht, feldId: string) {
+    if (p.spielId) {
+      const spielId = p.spielId;
+      const ok = await ausfuehren(() => spielAnpassen(spielId, { feldId }), `${p.bezeichnung}: Halle gespeichert.`);
+      if (ok) {
+        onSpieleGeaendert();
+        void laden();
+      }
+      return;
+    }
     const r = await ausfuehren(
-      () => aendereModusPlanSpiel(turnierId, p.planId, { versatzMinuten: minuten || null }),
-      `${p.bezeichnung}: Verschiebung gespeichert.`,
+      () => aendereModusPlanSpiel(turnierId, p.planId, { feldId: feldId || null }),
+      `${p.bezeichnung}: Halle gespeichert.`,
+    );
+    if (r) setAntwort(r);
+  }
+
+  async function startzeitAendern(p: PlanSpielAnsicht, hhmm: string) {
+    if (!p.startzeitGeplant) return;
+    const neu = mitNeuerUhrzeit(p.startzeitGeplant, hhmm);
+    if (p.spielId) {
+      const spielId = p.spielId;
+      const ok = await ausfuehren(() => spielStartzeitAendern(spielId, neu), `${p.bezeichnung}: Startzeit gespeichert.`);
+      if (ok) {
+        onSpieleGeaendert();
+        void laden();
+      }
+      return;
+    }
+    const r = await ausfuehren(
+      () => aendereModusPlanSpiel(turnierId, p.planId, { startzeitGeplant: neu }),
+      `${p.bezeichnung}: Startzeit gespeichert.`,
+    );
+    if (r) setAntwort(r);
+  }
+
+  async function automatisch(p: PlanSpielAnsicht) {
+    const r = await ausfuehren(
+      () => aendereModusPlanSpiel(turnierId, p.planId, { feldId: null, versatzMinuten: null }),
+      `${p.bezeichnung}: Halle und Zeit wieder automatisch.`,
     );
     if (r) setAntwort(r);
   }
@@ -286,28 +325,62 @@ export function ModusAblauf({ turnierId, felder, mannschaften, gesperrt, signatu
                           </>
                         )}
                       </td>
-                      <td>{p.startzeitGeplant ? formatiereUhrzeit(p.startzeitGeplant) : "–"}</td>
-                      <td>{feldName(p.feldId)}</td>
+                      <td>
+                        {p.startzeitGeplant ? (
+                          <>
+                            <label className="sr-only" htmlFor={`start-${p.planId}`}>
+                              Startzeit von {p.bezeichnung}
+                            </label>
+                            <input
+                              id={`start-${p.planId}`}
+                              type="time"
+                              disabled={gesperrt || p.ergebnisAbgeschlossen}
+                              // onBlur statt onChange: ein Server-Rundlauf je Tastendruck waere unnoetig.
+                              defaultValue={zeitEingabeWert(p.startzeitGeplant)}
+                              key={`${p.planId}-${p.startzeitGeplant}`}
+                              onBlur={(e) => {
+                                if (e.target.value && e.target.value !== zeitEingabeWert(p.startzeitGeplant)) {
+                                  void startzeitAendern(p, e.target.value);
+                                }
+                              }}
+                            />
+                          </>
+                        ) : (
+                          "–"
+                        )}
+                      </td>
+                      <td>
+                        {felder.length > 1 ? (
+                          <>
+                            <label className="sr-only" htmlFor={`halle-${p.planId}`}>
+                              Halle von {p.bezeichnung}
+                            </label>
+                            <select
+                              id={`halle-${p.planId}`}
+                              disabled={gesperrt || p.ergebnisAbgeschlossen}
+                              value={p.feldId ?? ""}
+                              onChange={(e) => void halleAendern(p, e.target.value)}
+                            >
+                              {felder.map((f) => (
+                                <option key={f.feldId} value={f.feldId}>
+                                  {f.name}
+                                </option>
+                              ))}
+                            </select>
+                          </>
+                        ) : (
+                          (felder.find((f) => f.feldId === p.feldId)?.name ?? "–")
+                        )}
+                      </td>
                       <td>{status(p)}</td>
                       <td>
                         {!p.spielId && (
                           <>
-                            <label htmlFor={`versatz-${p.planId}`}>Verschieben um (Min.) </label>
-                            <input
-                              id={`versatz-${p.planId}`}
-                              type="number"
-                              min={-600}
-                              max={600}
-                              step={5}
-                              disabled={gesperrt}
-                              // onBlur statt onChange: ein Server-Rundlauf je Tastendruck wäre unnötig.
-                              defaultValue={p.versatzMinuten ?? 0}
-                              key={`${p.planId}-${p.versatzMinuten ?? 0}`}
-                              onBlur={(e) => {
-                                const wert = Number(e.target.value) || 0;
-                                if (wert !== (p.versatzMinuten ?? 0)) void verschieben(p, wert);
-                              }}
-                            />
+                            {(p.versatzMinuten || p.feldManuell) && (
+                              <button type="button" disabled={gesperrt} onClick={() => void automatisch(p)}>
+                                Halle und Zeit automatisch
+                              </button>
+                            )}
                             <details>
                               <summary>Paarung von Hand wählen</summary>
                               <label htmlFor={`hand-a-${p.planId}`}>Mannschaft A </label>

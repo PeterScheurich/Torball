@@ -378,10 +378,12 @@ export function planeZeiten(
       if (q.typ === "gruppenplatz") fruehestens = Math.max(fruehestens, vorrundeEnde.getTime());
       else fruehestens = Math.max(fruehestens, ende.get(q.planId) ?? 0);
     }
-    // Das Feld, auf dem das Spiel am fruehesten beginnen kann (bei Gleichstand das zuerst genannte).
+    // Das Feld, auf dem das Spiel am fruehesten beginnen kann (bei Gleichstand das zuerst genannte) - es sei
+    // denn, die Turnierleitung hat eine Halle gewaehlt: dann nur diese (spaetere Spiele dort ruecken nach).
     let bestesFeld = felder[0].feldId;
     let besterStart = Infinity;
-    for (const f of felder) {
+    const gewaehlt = spiel.feldManuell && felder.some((f) => f.feldId === spiel.feldManuell) ? spiel.feldManuell : undefined;
+    for (const f of gewaehlt ? felder.filter((x) => x.feldId === gewaehlt) : felder) {
       const start = Math.max(fruehestens, feldFrei.get(f.feldId) ?? 0);
       if (start < besterStart) {
         besterStart = start;

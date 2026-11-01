@@ -203,6 +203,29 @@ test("Verschiebung wirkt auf abhaengige Spiele und das eigene Feld, nicht auf pa
   assert.notEqual(zeit(verschoben, "F"), zeit(normal, "F"), "das abhaengige Finale rueckt mit");
 });
 
+test("Gewaehlte Halle: beide Halbfinale in Halle A laufen hintereinander, das Finale folgt", () => {
+  const plan = baueModusPlan(gruppen, einst(4, true, false), [4, 4]).spiele;
+  const felder = [{ feldId: "f1", name: "1" }, { feldId: "f2", name: "2" }];
+  const ende = new Date("2026-11-01T14:00:00.000Z");
+  const inHalleA = planeZeiten(
+    plan.map((s) => (["HF1", "HF2", "F", "P3"].includes(s.planId) ? { ...s, feldManuell: "f1" } : s)),
+    felder,
+    ende,
+    25,
+  );
+  const spiel = (id: string) => inHalleA.find((s) => s.planId === id)!;
+  assert.equal(spiel("HF1").feldId, "f1");
+  assert.equal(spiel("HF2").feldId, "f1");
+  assert.equal(spiel("HF1").startzeitGeplant, "2026-11-01T14:00:00.000Z");
+  assert.equal(spiel("HF2").startzeitGeplant, "2026-11-01T14:25:00.000Z", "auf derselben Halle nacheinander, nicht parallel");
+  assert.equal(spiel("F").feldId, "f1");
+  assert.ok(new Date(spiel("F").startzeitGeplant!) >= new Date("2026-11-01T14:50:00.000Z"), "das Finale kommt nach beiden Halbfinalen");
+
+  // Eine Halle, die es nicht (mehr) gibt, wird ignoriert statt das Spiel zu verlieren.
+  const unbekannt = planeZeiten(plan.map((s) => ({ ...s, feldManuell: "weg" })), felder, ende, 25);
+  assert.ok(unbekannt.every((s) => s.feldId === "f1" || s.feldId === "f2"));
+});
+
 test("Aufloesung: Tabellenplaetze sofort, Sieger erst nach dem Ergebnis; Unentschieden braucht eine Entscheidung", () => {
   const plan = baueModusPlan(gruppen, einst(6, false, false), [4, 4]).spiele;
   const ctx = {

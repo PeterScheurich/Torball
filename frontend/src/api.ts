@@ -1413,7 +1413,14 @@ export function setzeModusVorrang(turnierId: string, gruppe: string, reihenfolge
 export function aendereModusPlanSpiel(
   turnierId: string,
   planId: string,
-  daten: { versatzMinuten?: number | null; entscheidung?: string | null },
+  daten: {
+    versatzMinuten?: number | null;
+    entscheidung?: string | null;
+    /** Halle statt der automatisch freiesten; null stellt die Automatik wieder her. */
+    feldId?: string | null;
+    /** Neue Startzeit - der Server speichert sie als Verschiebung gegenueber der berechneten Zeit. */
+    startzeitGeplant?: string;
+  },
 ): Promise<ModusAntwort> {
   return anfrage(`/turniere/${segment(turnierId)}/modus/plan/${segment(planId)}`, {
     method: "PUT",

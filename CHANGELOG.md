@@ -7,6 +7,12 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Halle und Startzeit der Endrunde selbst wählen.** Im „Weiteren Ablauf“ (Reiter „Spielplan“) lässt sich für
+  jedes Spiel die Halle auswählen und die Startzeit eintragen. Legt man mehrere Spiele in dieselbe Halle, laufen sie
+  hintereinander – zum Beispiel beide Halbfinale, dann Spiel um Platz 3 und Finale in Halle A. Abhängige Spiele rücken
+  mit; „Halle und Zeit automatisch“ stellt die Berechnung wieder her. Bereits erzeugte Spiele ändert man direkt am
+  Spiel (die Auswahl dort funktioniert genauso). Das frühere Feld „Verschieben um (Min.)“ ist dafür entfallen.
+
 - **Regeln eines Turniers speichern jetzt von selbst.** Beim Verlassen eines Feldes im Reiter „Regeln“ wird
   gespeichert und angesagt („Regeln gespeichert.“); den Knopf „Regeln speichern“ gibt es dort nicht mehr. Eine
   geänderte, aber nicht gespeicherte Spielzeit blieb sonst unbemerkt. Die Standardregeln (Admin) behalten den

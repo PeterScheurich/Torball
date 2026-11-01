@@ -69,6 +69,8 @@ export interface PlanSpiel {
   startzeitGeplant?: string;
   /** Von der Turnierleitung eingetragene Verschiebung (Minuten), wirkt auf abhaengige Spiele mit. */
   versatzMinuten?: number;
+  /** Von der Turnierleitung gewaehlte Halle statt der automatisch freiesten; spaetere Spiele auf dieser Halle ruecken nach. */
+  feldManuell?: string;
   /** Gesetzt, sobald das echte Spiel erzeugt wurde. */
   spielId?: string;
   /** Bei Unentschieden: die von der Turnierleitung festgelegte Siegermannschaft (Mannschafts-ID). */
@@ -79,6 +81,7 @@ export interface PlanSpiel {
 export interface PlanSpielZustand {
   spielId?: string;
   versatzMinuten?: number;
+  feldManuell?: string;
   entscheidung?: string;
 }
 

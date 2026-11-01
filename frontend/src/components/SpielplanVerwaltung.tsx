@@ -15,7 +15,7 @@ import {
   spielStartzeitAendern,
   type SpielplanVorschlagEintrag,
 } from "../api";
-import { formatiereUhrzeit } from "../format";
+import { formatiereUhrzeit, mitNeuerUhrzeit, zeitEingabeWert } from "../format";
 import { TabListe } from "./TabListe";
 import { ModusAblauf } from "./ModusAblauf";
 import { schiedsrichterKonflikt } from "../schiedsrichterKonflikt";
@@ -45,20 +45,6 @@ function verschobeneListe<T>(liste: T[], vonIndex: number, nachIndex: number): T
   const [element] = kopie.splice(vonIndex, 1);
   kopie.splice(nachIndex, 0, element);
   return kopie;
-}
-
-/** HH:mm im lokalen Zeitanteil des ISO-Zeitstempels - passend zum Wert eines <input type="time">. */
-function zeitEingabeWert(iso: string | undefined): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-function mitNeuerUhrzeit(iso: string, hhmm: string): string {
-  const [stunden, minuten] = hhmm.split(":").map(Number);
-  const datum = new Date(iso);
-  datum.setHours(stunden, minuten, 0, 0);
-  return datum.toISOString();
 }
 
 interface WarnbarerEintrag {

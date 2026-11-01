@@ -32,3 +32,18 @@ export function formatiereZeitstempel(zeitstempelIso: string): string {
     minute: "2-digit",
   });
 }
+
+/** HH:mm im lokalen Zeitanteil des ISO-Zeitstempels - passend zum Wert eines <input type="time">. */
+export function zeitEingabeWert(iso: string | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/** Derselbe Tag wie `iso`, aber mit der Uhrzeit HH:mm (lokal) - als ISO-Zeitstempel. */
+export function mitNeuerUhrzeit(iso: string, hhmm: string): string {
+  const [stunden, minuten] = hhmm.split(":").map(Number);
+  const datum = new Date(iso);
+  datum.setHours(stunden, minuten, 0, 0);
+  return datum.toISOString();
+}

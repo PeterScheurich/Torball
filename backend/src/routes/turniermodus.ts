@@ -301,10 +301,14 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  /** Verschiebung (Minuten) und - bei Unentschieden - die Siegerentscheidung fuer ein Plan-Spiel. */
+  /**
+   * Halle, Startzeit (als Verschiebung gegenueber der automatischen Zeit), Verschiebung in Minuten und - bei
+   * Unentschieden - die Siegerentscheidung fuer ein Plan-Spiel. `feldId: null` und `versatzMinuten: null` stellen
+   * die Automatik wieder her.
+   */
   app.put<{
     Params: { id: string; planId: string };
-    Body: { versatzMinuten?: number | null; entscheidung?: string | null };
+    Body: { versatzMinuten?: number | null; entscheidung?: string | null; feldId?: string | null; startzeitGeplant?: string };
   }>(
     "/turniere/:id/modus/plan/:planId",
     {
@@ -314,6 +318,8 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
           properties: {
             versatzMinuten: { type: ["integer", "null"], minimum: -600, maximum: 600 },
             entscheidung: { type: ["string", "null"] },
+            feldId: { type: ["string", "null"] },
+            startzeitGeplant: { type: "string", format: "date-time" },
           },
         },
       },
@@ -334,6 +340,41 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
           return reply.code(409).send({ error: "Das Spiel gibt es schon – die Startzeit bitte direkt am Spiel ändern." });
         }
         if (req.body.versatzMinuten) neu.versatzMinuten = req.body.versatzMinuten;
+        else delete neu.versatzMinuten;
+      }
+      if ("feldId" in req.body) {
+        if (eintrag.spielId) {
+          return reply.code(409).send({ error: "Das Spiel gibt es schon – die Halle bitte direkt am Spiel ändern." });
+        }
+        if (req.body.feldId) {
+          if (!turnier.felder.some((f) => f.feldId === req.body.feldId)) {
+            return reply.code(400).send({ error: "Diese Halle gehört nicht zu diesem Turnier." });
+          }
+          neu.feldManuell = req.body.feldId;
+        } else {
+          delete neu.feldManuell;
+        }
+      }
+      if (req.body.startzeitGeplant) {
+        if (eintrag.spielId) {
+          return reply.code(409).send({ error: "Das Spiel gibt es schon – die Startzeit bitte direkt am Spiel ändern." });
+        }
+        // Die Startzeit wird als Verschiebung gegenueber der AUTOMATISCHEN Zeit gespeichert (mit der gerade
+        // gewaehlten Halle): So rueckt das Spiel mit, wenn sich davor etwas aendert, und abhaengige Spiele
+        // folgen wie bei jeder Verschiebung.
+        const ohneVersatz: PlanSpielZustand = { ...neu };
+        delete ohneVersatz.versatzMinuten;
+        const basis = await ladeAnsicht({
+          ...turnier,
+          modus: { ...turnier.modus, planZustand: { ...turnier.modus.planZustand, [eintrag.planId]: ohneVersatz } },
+        });
+        const basisStart = basis?.plan.find((p) => p.planId === eintrag.planId)?.startzeitGeplant;
+        if (!basisStart) return reply.code(409).send({ error: "Die Startzeit lässt sich erst ändern, wenn die Zeiten berechnet sind." });
+        const versatz = Math.round((new Date(req.body.startzeitGeplant).getTime() - new Date(basisStart).getTime()) / 60_000);
+        if (Math.abs(versatz) > 600) {
+          return reply.code(400).send({ error: "Die Startzeit liegt mehr als zehn Stunden neben der berechneten Zeit." });
+        }
+        if (versatz) neu.versatzMinuten = versatz;
         else delete neu.versatzMinuten;
       }
       if ("entscheidung" in req.body) {

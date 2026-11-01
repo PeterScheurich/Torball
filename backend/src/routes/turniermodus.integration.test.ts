@@ -266,6 +266,23 @@ test(
         "das Finale rueckt um die eingetragene Zeit nach hinten",
       );
 
+      // --- Halle und Startzeit eines noch nicht erzeugten Spiels waehlen (zwei Hallen)
+      await anfrage("PUT", `/turniere/${turnierId}`, {
+        felder: [{ feldId: "feld:1", name: "Feld 1" }, { feldId: "feld:2", name: "Feld 2" }],
+      });
+      const finalePlan = (a: ModusAnsicht) => a.plan.find((p) => p.planId === "F")!;
+      assert.equal((await anfrage("PUT", `/turniere/${turnierId}/modus/plan/F`, { feldId: "feld:99" })).statusCode, 400, "fremde Halle");
+      assert.equal((await anfrage("PUT", `/turniere/${turnierId}/modus/plan/HF1`, { feldId: "feld:2" })).statusCode, 409, "erzeugte Spiele aendert man am Spiel");
+      const inHalle2 = (await anfrage("PUT", `/turniere/${turnierId}/modus/plan/F`, { feldId: "feld:2" })).json() as ModusAnsicht;
+      assert.equal(finalePlan(inHalle2).feldId, "feld:2");
+      const wunsch = new Date(new Date(finalePlan(inHalle2).startzeitGeplant!).getTime() + 40 * 60_000).toISOString();
+      const mitZeit = (await anfrage("PUT", `/turniere/${turnierId}/modus/plan/F`, { startzeitGeplant: wunsch })).json() as ModusAnsicht;
+      assert.equal(finalePlan(mitZeit).startzeitGeplant, wunsch, "die gewuenschte Startzeit gilt genau so");
+      assert.equal(finalePlan(mitZeit).feldId, "feld:2", "die Halle bleibt");
+      const automatisch = (await anfrage("PUT", `/turniere/${turnierId}/modus/plan/F`, { feldId: null, versatzMinuten: null })).json() as ModusAnsicht;
+      assert.equal(finalePlan(automatisch).feldManuell, undefined, "wieder automatisch");
+      assert.equal(finalePlan(automatisch).versatzMinuten, undefined);
+
       // --- Abschliessen erst, wenn alle Spiele der Endrunde erzeugt sind
       assert.equal((await anfrage("POST", `/turniere/${turnierId}/abschliessen`)).statusCode, 409);
       assert.equal((await anfrage("POST", `/turniere/${turnierId}/modus/erzeugen`, {})).statusCode, 201);
