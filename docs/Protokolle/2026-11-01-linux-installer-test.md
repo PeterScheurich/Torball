@@ -86,6 +86,9 @@ Gefunden und behoben:
    kämen nicht an die App. Auf Ubuntu (englisch) war es nicht aufgefallen. Jetzt `LC_ALL=C ufw status`. Geprüft auf dem deutschen Mint:
    Regel `3000/tcp ALLOW 10.10.20.0/24` wird angelegt und beim Deinstallieren wieder entfernt.
 
+Von Peter am Bildschirm bestätigt: Klick auf die Schreibtisch-Verknüpfung in der Sitzung von `claudetest` startet die Anwendung, ein
+neuer Benutzer ließ sich anlegen.
+
 Geprüft und in Ordnung: Schreibtisch-Ordner heißt hier `Schreibtisch` (der Installer kennt beide Namen), Verknüpfung gehört dem
 Benutzer mit eigener Gruppe, Menü-Eintrag ohne Hinweise gültig (`Categories=Office;`), vollständiges Deinstallieren räumt Dienst, Benutzer,
 Dateien, Firewall-Regel, Menü-Eintrag und Verknüpfung weg, `apt update` danach ohne Warnung.
