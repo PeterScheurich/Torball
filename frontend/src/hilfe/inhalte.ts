@@ -154,6 +154,17 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
+        frage: "Wo stelle ich die Spielregeln ein – Spielzeit, Pausen, Punkte?",
+        text: [
+          "Im Reiter „Regeln“ des Turniers. Jede Änderung wird beim Verlassen eines Feldes automatisch gespeichert – einen Speichern-Knopf gibt es dort nicht; eine kurze Meldung bestätigt jedes Speichern. Ein ungültiger Wert wird nicht gespeichert, das wird angezeigt.",
+          "Die „Gesamtzeit pro Spiel im Spielplan“ setzt sich aus Spielzeit mal Halbzeiten, der Halbzeitpause und der Pause bis zum nächsten Spiel zusammen. Im Standard sind das 25 Minuten (2 × 5 Minuten Spielzeit, 2 Minuten Halbzeitpause, 13 Minuten Puffer). Du kannst die Gesamtzeit auch direkt eingeben; der Puffer wird dann daraus berechnet. Der Spielplan übernimmt geänderte Zeiten erst, wenn du ihn neu erzeugst.",
+          {
+            hinweis:
+              "Spielzeit, Halbzeiten und Pausen lassen sich nur ändern, solange noch kein Spiel begonnen hat. Neue Turniere starten mit den Standardregeln der Administration; ein bestehendes Turnier bleibt davon unberührt.",
+          },
+        ],
+      },
+      {
         frage: "Was bedeutet „einfach“ und „doppelt“ beim Turniermodus?",
         text: [
           "Bei jedem Turniermodus wählst du mit, wie die Vorrunde gespielt wird: „einfach“ – ein Spiel je Paarung – oder „doppelt“ – Hin- und Rückspiel an einem Spieltag. Bei zwei Gruppen gilt das innerhalb jeder Gruppe. Die Spiele der Endrunde (Halbfinale, Finale, Platzierungsspiele) werden immer nur einmal gespielt. In der Tabelle zählen alle Spiele der Vorrunde.",
@@ -173,11 +184,12 @@ export const HILFE_THEMEN: HilfeThema[] = [
             ],
           },
           "Gewählt wird der Modus beim Anlegen oder später im Reiter „Übersicht“. Die Mannschaften teilst du im Reiter „Mannschaften“ den Gruppen zu – von Hand oder mit „Nach Reihenfolge auf Gruppen verteilen“. Im Reiter „Spielplan“ steht unter „Weiterer Ablauf“, welches Spiel wann und wo stattfindet, auch wenn die Mannschaften noch nicht feststehen („Sieger Halbfinale 1“). Die Zeiten richten sich nach der Spielzeit und sind vorläufig, solange die Vorrunde noch nicht erzeugt ist.",
+          "Administratoren können unter „Admin → Turniermodi“ jede Vorlage kopieren und die Kopie anpassen (Name, mögliche Endrunden, Standardwerte). Die Zahl der Gruppen bleibt die der Quelle. Ein laufendes Turnier behält seinen Ablauf, auch wenn die Vorlage später geändert oder gelöscht wird.",
           {
             vertiefung: {
               titel: "Wie entstehen die Spiele der Endrunde?",
               text: [
-                "Erst wenn die Ergebnisse feststehen, entstehen die Spiele: Sind alle Vorrundenspiele abgeschlossen, erzeugst du mit „Erzeugbare Spiele erzeugen“ die Platzierungsspiele und die erste K.-o.-Runde. Nach den Viertelfinalspielen folgen die Halbfinale, danach Finale und Spiel um Platz 3. Vorher kannst du die Zeit eines Spiels verschieben (das wirkt nur auf davon abhängige Spiele und das eigene Feld, nicht auf Spiele auf einem anderen Feld) oder die Paarung von Hand wählen.",
+                "Erst wenn die Ergebnisse feststehen, entstehen die Spiele: Sind alle Vorrundenspiele abgeschlossen, erzeugst du mit „Erzeugbare Spiele erzeugen“ die Platzierungsspiele und die erste K.-o.-Runde. Nach den Viertelfinalspielen folgen die Halbfinale, danach Finale und Spiel um Platz 3. Vorher kannst du bei jedem noch nicht erzeugten Spiel Halle und Startzeit wählen (siehe Thema „Spielplan erstellen & anpassen“) oder die Paarung von Hand wählen.",
                 "Wer die Spiele nicht jedes Mal selbst erzeugen möchte, setzt in der Übersicht den Haken „Spiele der Endrunde automatisch erzeugen, sobald die Paarung feststeht“. Dann entstehen sie von allein, sobald das letzte nötige Ergebnis abgeschlossen ist – auch die nächste Stufe (Halbfinale, Finale). Halle und Startzeit der noch nicht erzeugten Spiele stellst du vorher im „Weiteren Ablauf“ ein. Bei einem Unentschieden oder einem Gleichstand in der Tabelle wartet die Automatik, bis du entschieden hast.",
                 "Liegen Mannschaften nach allen Tabellenkriterien gleichauf, legst du die Reihenfolge selbst fest; endet ein K.-o.-Spiel unentschieden, bestimmst du den Sieger. Die Software warnt und schlägt vor – sie entscheidet nicht für dich.",
                 "Sobald Spiele der Endrunde erzeugt wurden, lassen sich Modus, Gruppen und Spielplan nicht mehr ändern, und das Turnier lässt sich erst abschließen, wenn alle Spiele der Endrunde erzeugt sind.",
@@ -352,6 +364,13 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
+        frage: "Kann ich eine Mannschaft wieder entfernen?",
+        text: [
+          "Ja, solange sie noch nicht gespielt hat – mit dem Löschen-Knopf in ihrer Zeile. Gibt es schon einen Spielplan, musst du ihn danach neu erzeugen, weil er die Mannschaft noch enthält.",
+          "Hat die Mannschaft schon ein Ergebnis, lässt sie sich nicht mehr entfernen: ihre Ergebnisse zählen in der Tabelle der anderen. Tritt sie nicht mehr an, wertest du ihre übrigen Spiele über „n. a.“ (nicht angetreten).",
+        ],
+      },
+      {
         frage: "Wie pflege ich den Kader einer Mannschaft?",
         text: [
           "Jede Mannschaft lässt sich aufklappen; darunter erfasst du die Spieler (Nummer, Name, ggf. Klassifizierung). Die kleine Zahl am Umschalter zeigt schon zugeklappt, wie viele Spieler bereits erfasst sind. Bei digitaler Protokollierung ist der Kader Pflicht: Ohne Spieler mit Trikotnummern lassen sich Würfe und Tore niemandem zuordnen.",
@@ -402,6 +421,23 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
+        frage: "Was bedeutet die Nummer eines Spiels?",
+        text: [
+          "Jedes Spiel hat eine Nummer, die über das ganze Turnier fortlaufend zählt – auch wenn zwei Hallen gleichzeitig spielen. Sie folgt der Reihenfolge nach Zeit und Halle und ist überall dieselbe: im Spielplan, bei den Ergebnissen, auf der öffentlichen Seite und in den PDFs. Tauschen zwei Spiele ihren Platz oder ihre Halle, tauschen sie auch die Nummern.",
+        ],
+      },
+      {
+        frage: "Wie ändere ich die Halle oder die Startzeit eines Spiels?",
+        text: [
+          "Bei mehreren Hallen hat jedes Spiel im Spielplan eine Spalte „Halle“. Spielt in der gewählten Halle zur selben Zeit schon ein anderes Spiel, tauschen die beiden die Halle – „Rückgängig“ nimmt die Änderung zurück. Die Startzeit trägst du im Zeitfeld ein; spätere, noch nicht begonnene Spiele rücken mit.",
+          "Für Spiele der Endrunde, die es noch nicht gibt, wählst du Halle und Startzeit unter „Weiterer Ablauf“. Legst du mehrere Spiele in dieselbe Halle, laufen sie hintereinander. Mit „Optional: Viertelfinale bis Finale nacheinander in [Halle] spielen“ gelingt das für die ganze Endrunde mit einem Klick; die Platzierungsspiele bleiben automatisch. „Halle und Zeit automatisch“ stellt die Berechnung wieder her.",
+          {
+            hinweis:
+              "Halle und Startzeit lassen sich nur ändern, solange das Spiel nicht begonnen hat.",
+          },
+        ],
+      },
+      {
         frage: "Wie ordne ich Schiedsrichter den Spielen zu?",
         text: [
           "Der Spielplan-Reiter bietet die Sicht „Schiedsrichter-Einteilung“. Ein Klick erzeugt einen Vorschlag je Spiel, den du danach pro Spiel über ein Auswahlfeld ändern kannst. Dieser kann auch nach Spielende noch angepasst werden, falls ein anderer Schiedsrichter einspringen musste.",
@@ -427,7 +463,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie trage ich Ergebnisse direkt ein?",
         text: [
-          "Im Reiter „Ergebnisse“ trägst du pro Spiel die Tore beider Mannschaften ein. Die Ansicht aktualisiert sich automatisch, solange sie sichtbar ist – Eingaben von anderen Geräten erscheinen also von selbst.",
+          "Im Reiter „Ergebnisse“ trägst du pro Spiel die Tore beider Mannschaften ein (ganze Zahlen von 0 bis 999). Die Ansicht aktualisiert sich automatisch, solange sie sichtbar ist – Eingaben von anderen Geräten erscheinen also von selbst.",
         ],
       },
       {
@@ -491,7 +527,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
           {
             liste: [
               "Die Erfassungs-Ansicht füllt den ganzen Bildschirm (App-Menüs sind ausgeblendet); „Vollbild an/aus“ blendet zusätzlich die Browserleisten aus.",
-              "Sobald irgendein Protokoll begonnen wurde, gilt das Turnier als gestartet: Spielzeit, Spielmodus und Protokollierungsart sind dann gesperrt – wie beim ersten manuell erfassten Ergebnis.",
+              "Sobald irgendein Protokoll begonnen wurde, gilt das Turnier als gestartet: Spielzeit, Turniermodus (einschließlich „einfach“ oder „doppelt“) und Protokollierungsart sind dann gesperrt – wie beim ersten manuell erfassten Ergebnis.",
               "Auch ohne Konto möglich: Über „Teilen“ lässt sich ein eigener Protokollant-Code vergeben (Link/QR-Code) – die Person sieht dann nur den Spielplan und kann protokollieren, sonst nichts.",
             ],
           },
