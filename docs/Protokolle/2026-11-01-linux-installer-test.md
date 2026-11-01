@@ -65,6 +65,14 @@ den Snap-Firefox aber nicht (GNOME weist den Start von außerhalb der Sitzung ab
 direkter Start von `firefox` klappt. Ob ein echter Klick den Browser mit der App öffnet, wurde deshalb am Bildschirm geprüft: Der Klick auf das Symbol startete die Anwendung, der erste Benutzer ließ sich anlegen. Ein Foto
 des Bildschirms von hier aus ist nicht möglich (GNOME verbietet es). Der erste Start von Firefox dauert auf dieser VM rund 30 Sekunden.
 
+## Vorprüfung für nicht unterstützte Systeme (nachgetragen)
+
+Die Paketquelle von CouchDB hat für Debian 13, Debian 12 und Ubuntu `amd64` und `arm64`, aber **kein `armhf`** (32-Bit-ARM, etwa das
+ältere Raspberry Pi OS). Dort wäre der Installer erst beim CouchDB-Schritt mit einer Paketmeldung gescheitert. Neu: `pruefe_architektur`
+in der Vorprüfung nennt 32-Bit-Systeme und unbekannte Architekturen verständlich beim Namen; die Meldung für Nicht-Debian-Systeme sagt, dass
+es dafür keinen Installer gibt. Die Funktion wurde einzeln mit `amd64`, `arm64`, `armhf`, `armel`, `i386`, `riscv64` und `ppc64el`
+geprüft; der Durchlauf im vollständigen Installer auf einem echten System steht noch aus (bei einem der nächsten Tests mit prüfen).
+
 ## Kleinigkeiten, nicht geändert
 
 - Der Diagnose-Bericht landet im Programmordner (`/opt/torball-turniere/app/backend/…`), wo ihn ein Laie nicht sucht. Der Pfad wird

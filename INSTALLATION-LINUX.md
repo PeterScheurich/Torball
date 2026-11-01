@@ -12,6 +12,9 @@ Netzwerk. (Für einen Server im Internet gibt es einen anderen Weg, siehe `docs/
 ## Voraussetzungen
 
 - Debian, Ubuntu oder ein davon abgeleitetes System (z. B. Linux Mint), jeweils eine aktuelle Version.
+- Ein **64-Bit-System** (Intel/AMD oder ARM). Die Datenbank CouchDB gibt es nicht für 32 Bit; auf einem Raspberry Pi also die
+  64-Bit-Fassung von Raspberry Pi OS nehmen. Andere Linux-Familien (Fedora, openSUSE, Arch …) werden nicht unterstützt – der Installer
+  sagt das gleich zu Beginn.
 - Internetzugang während der Installation (Pakete werden geladen).
 - Ein Benutzer mit `sudo`-Recht. Auf einem Debian ohne `sudo`: mit `su -` zum Administrator werden.
 - Etwa 2 GB freier Platz und 2 GB Arbeitsspeicher.

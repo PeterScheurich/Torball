@@ -69,6 +69,19 @@ bestaetige_aenderung() {   # $1 = Titel, $2 = worum geht es, $3 = was bedeutet d
     || fehler "Ohne diesen Schritt kann Torball-Turniere nicht laufen - die Installation wurde abgebrochen. Es wurde nichts weiter veraendert."
 }
 
+# Die Datenbank (CouchDB) gibt es in den Paketquellen fuer Debian/Ubuntu nur fuer 64-Bit-Intel/AMD (amd64) und 64-Bit-ARM
+# (arm64) - NICHT fuer 32-Bit-ARM (armhf, z. B. das aeltere Raspberry Pi OS in der 32-Bit-Fassung) oder 32-Bit-Intel (i386).
+# Ohne diese Pruefung scheiterte die Installation erst beim CouchDB-Schritt mit einer unverstaendlichen Paketmeldung.
+pruefe_architektur() {   # $1 = Ausgabe von "dpkg --print-architecture"
+  case "$1" in
+    amd64|arm64) return 0 ;;
+    armhf|armel|i386)
+      fehler "Dieses System arbeitet mit ${1} (32 Bit). Die Datenbank CouchDB gibt es dafuer nicht. Bitte ein 64-Bit-System installieren (bei einem Raspberry Pi: die 64-Bit-Fassung von Raspberry Pi OS; bei einem PC: die 64-Bit-Fassung der Distribution)." ;;
+    *)
+      fehler "Die Rechner-Architektur '${1}' wird nicht unterstuetzt. Die Datenbank CouchDB gibt es fuer Debian/Ubuntu nur fuer 64-Bit-Intel/AMD (amd64) und 64-Bit-ARM (arm64)." ;;
+  esac
+}
+
 # ---------------------------------------------------------------------------------- Vorpruefung
 echo "== Torball-Turniere - lokale Installation (Linux) =="
 [[ -r /etc/os-release ]] || fehler "Das Betriebssystem konnte nicht erkannt werden (/etc/os-release fehlt)."
@@ -76,12 +89,13 @@ echo "== Torball-Turniere - lokale Installation (Linux) =="
 . /etc/os-release
 FAMILIE="${ID:-} ${ID_LIKE:-}"
 if [[ "$FAMILIE" != *debian* && "$FAMILIE" != *ubuntu* ]]; then
-  fehler "Dieses Skript unterstuetzt Debian, Ubuntu und davon abgeleitete Systeme (z. B. Linux Mint). Erkannt: ${PRETTY_NAME:-unbekannt}."
+  fehler "Dieses Skript unterstuetzt nur Debian, Ubuntu und davon abgeleitete Systeme (z. B. Linux Mint, Raspberry Pi OS). Erkannt: ${PRETTY_NAME:-unbekannt}. Fuer andere Systeme (Fedora, openSUSE, Arch ...) gibt es bisher keinen Installer."
 fi
 # Abgeleitete Systeme (Mint, Pop!_OS ...) haben eigene Codenamen - die Paketquellen kennen nur den der Basis.
 CODENAME="${UBUNTU_CODENAME:-${VERSION_CODENAME:-}}"
 [[ -n "$CODENAME" ]] || fehler "Der Codename der Distribution konnte nicht ermittelt werden."
 ARCH="$(dpkg --print-architecture)"
+pruefe_architektur "$ARCH"
 echo "System: ${PRETTY_NAME:-?} (${CODENAME}, ${ARCH})"
 command -v systemctl >/dev/null 2>&1 || fehler "Dieses System nutzt kein systemd - das wird nicht unterstuetzt."
 [[ -d "${QUELLE}/backend" && -d "${QUELLE}/frontend" && -d "${QUELLE}/shared" ]] \
