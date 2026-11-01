@@ -7,6 +7,11 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Turniermodi kopieren und anpassen.** Unter Admin → Turniermodi lässt sich jede Vorlage mit „Kopie anlegen“ als
+  eigene Vorlage kopieren. Die Kopie hat einen eigenen Namen und eigene Standardwerte (mögliche Endrunden, Standard-
+  Endrunde, Spiel um Platz 3, Platzierungsspiele, Hin- und Rückspiel) und steht dann bei jedem Turnier zur Auswahl. Die
+  Zahl der Gruppen bleibt die der Quelle. Die mitgelieferten Vorlagen bleiben schreibgeschützt. Ändert oder löscht man
+  eine Vorlage, bleiben laufende Turniere unberührt: Jedes Turnier trägt eine Kopie seines Ablaufs.
 - **Endrunde automatisch erzeugen.** In der Übersicht gibt es unter dem Turniermodus den Haken „Spiele der Endrunde
   automatisch erzeugen, sobald die Paarung feststeht“. Ist er gesetzt, entstehen die Spiele von allein, sobald das
   letzte nötige Ergebnis abgeschlossen ist – auch die jeweils nächste Stufe (Halbfinale, dann Finale und Spiel um

@@ -1374,6 +1374,29 @@ export function getTurniermodi(): Promise<TurniermodusVorlage[]> {
   return anfrage("/turniermodi");
 }
 
+/** Die änderbaren Felder einer eigenen Vorlage (Gruppenzahl und Gerade-Regel bleiben fest). */
+export interface VorlagenAenderung {
+  name: string;
+  beschreibung: string;
+  doppeltWaehlbar: boolean;
+  endrundeGroessen: number[];
+  standardEndrunde: number;
+  platz3Standard: boolean;
+  platzierungsspieleStandard: boolean;
+}
+
+export function kopiereTurniermodus(id: string, name?: string): Promise<TurniermodusVorlage> {
+  return anfrage(`/turniermodi/${segment(id)}/kopie`, { method: "POST", body: JSON.stringify(name ? { name } : {}) });
+}
+
+export function aendereTurniermodus(id: string, daten: VorlagenAenderung): Promise<TurniermodusVorlage> {
+  return anfrage(`/turniermodi/${segment(id)}`, { method: "PUT", body: JSON.stringify(daten) });
+}
+
+export function loescheTurniermodus(id: string): Promise<void> {
+  return anfrage(`/turniermodi/${segment(id)}`, { method: "DELETE" });
+}
+
 export function getModusPlan(turnierId: string): Promise<ModusAntwort> {
   return anfrage(`/turniere/${segment(turnierId)}/modus-plan`);
 }

@@ -35,6 +35,21 @@ export interface TurniermodusVorlage {
   endrundeTeilnehmerGerade: boolean;
 }
 
+/**
+ * Eine vom Admin angelegte Vorlage (Kopie einer mitgelieferten oder eigenen). `id` ist die Dokument-ID. Ein Turnier
+ * traegt eine KOPIE seiner Vorlage - aendert oder loescht man diese Vorlage, bleibt jedes laufende Turnier unberuehrt.
+ * Lokale Vorlagen werden nicht mit der Internet-Instanz synchronisiert (Auftraggeber 31.10.2026).
+ */
+export interface TurniermodusDokument extends TurniermodusVorlage {
+  _id: string;
+  _rev?: string;
+  docType: "turniermodus";
+  erstelltAm: string;
+  erstelltVonName?: string;
+  /** Kennung der Vorlage, aus der diese kopiert wurde (reine Herkunft). */
+  kopieVon?: string;
+}
+
 /** Die je Turnier einstellbaren Zahlen und Haken. */
 export interface ModusEinstellungen {
   /** Teilnehmer der Endrunde (0 = keine). Bei zwei Gruppen steigen je Gruppe die Haelfte auf. */

@@ -1,13 +1,22 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { MannschaftImTurnier, ModusEinstellungen, PlanSpielZustand, Spiel, Turnier } from "@torball/shared";
+import type {
+  MannschaftImTurnier,
+  ModusEinstellungen,
+  PlanSpielZustand,
+  Spiel,
+  Turnier,
+  TurniermodusDokument,
+  TurniermodusVorlage,
+} from "@torball/shared";
 import {
   EINGEBAUTE_TURNIERMODI,
   findeEingebautenTurniermodus,
   pruefeModusEinstellungen,
+  pruefeVorlagenAenderung,
   standardModusEinstellungen,
 } from "@torball/shared";
-import { findAllBySelector, findById, insertDoc, newId } from "../repository";
-import { requireZugriff } from "../auth/plugin";
+import { deleteDoc, findAllByType, findAllBySelector, findById, insertDoc, newId } from "../repository";
+import { requireRolle, requireZugriff } from "../auth/plugin";
 import {
   hatMindestens,
   turnierAusgecheckt,
@@ -31,6 +40,32 @@ import { erzeugePlanSpiele, pruefeAutomatischeErzeugung } from "../spielplan/mod
 
 const MODUS_GESPERRT_FEHLER =
   "Es wurden bereits Spiele der Endrunde erzeugt - Modus, Gruppen und Reihenfolge lassen sich nicht mehr ändern.";
+
+/** Eine eigene Vorlage in der Form, in der Oberflaeche und Turnier sie kennen (`id` = Dokument-ID, nie schreibgeschuetzt). */
+function alsVorlage(d: TurniermodusDokument): TurniermodusVorlage {
+  return {
+    id: d._id,
+    name: d.name,
+    beschreibung: d.beschreibung,
+    version: d.version,
+    eingebaut: false,
+    gruppen: d.gruppen,
+    doppeltWaehlbar: d.doppeltWaehlbar,
+    endrundeGroessen: d.endrundeGroessen,
+    standardEndrunde: d.standardEndrunde,
+    platz3Standard: d.platz3Standard,
+    platzierungsspieleStandard: d.platzierungsspieleStandard,
+    endrundeTeilnehmerGerade: d.endrundeTeilnehmerGerade,
+  };
+}
+
+/** Mitgelieferte ODER eigene Vorlage zu einer Kennung. */
+async function ladeVorlage(id: string): Promise<TurniermodusVorlage | undefined> {
+  const eingebaut = findeEingebautenTurniermodus(id);
+  if (eingebaut) return eingebaut;
+  const eigene = await findById<TurniermodusDokument>(id, "turniermodus");
+  return eigene ? alsVorlage(eigene) : undefined;
+}
 
 async function ladeAnsicht(turnier: Turnier): Promise<ModusAnsicht | undefined> {
   const [mannschaften, spiele] = await Promise.all([
@@ -75,10 +110,63 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
     return turnier;
   }
 
-  /** Die eingebauten Vorlagen (Stufe 1). Jede Anmeldung bzw. jeder Turnier-Code darf sie sehen. */
+  /** Mitgelieferte und eigene Vorlagen. Jede Anmeldung bzw. jeder Turnier-Code darf sie sehen. */
   app.get("/turniermodi", async (req, reply) => {
     if (!requireZugriff(req, reply)) return;
-    return EINGEBAUTE_TURNIERMODI;
+    const eigene = (await findAllByType<TurniermodusDokument>("turniermodus"))
+      .sort((a, b) => a.name.localeCompare(b.name, "de"))
+      .map(alsVorlage);
+    return [...EINGEBAUTE_TURNIERMODI, ...eigene];
+  });
+
+  /** Kopie einer Vorlage anlegen (Administration). Die Kopie ist eine eigene Vorlage und frei anpassbar. */
+  app.post<{ Params: { id: string }; Body: { name?: string } | undefined }>("/turniermodi/:id/kopie", async (req, reply) => {
+    if (!requireRolle(req, reply, ["admin"])) return;
+    const quelle = await ladeVorlage(req.params.id);
+    if (!quelle) return reply.code(404).send({ error: "Diesen Turniermodus gibt es nicht." });
+    const wunsch = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    const name = (wunsch || `${quelle.name} (Kopie)`).slice(0, 80);
+    const id = newId("turniermodus");
+    const kopie = await insertDoc<TurniermodusDokument>({
+      ...quelle,
+      _id: id,
+      docType: "turniermodus",
+      id,
+      name,
+      version: 1,
+      eingebaut: false,
+      kopieVon: quelle.id,
+      erstelltAm: new Date().toISOString(),
+      erstelltVonName: req.benutzer?.name,
+    });
+    return reply.code(201).send(alsVorlage(kopie));
+  });
+
+  /** Eine EIGENE Vorlage aendern. Mitgelieferte sind schreibgeschuetzt; Gruppenzahl und Gerade-Regel bleiben fest. */
+  app.put<{ Params: { id: string }; Body: unknown }>("/turniermodi/:id", async (req, reply) => {
+    if (!requireRolle(req, reply, ["admin"])) return;
+    if (findeEingebautenTurniermodus(req.params.id)) {
+      return reply.code(400).send({ error: "Mitgelieferte Vorlagen sind schreibgeschützt – bitte zuerst eine Kopie anlegen." });
+    }
+    const bestehend = await findById<TurniermodusDokument>(req.params.id, "turniermodus");
+    if (!bestehend) return reply.code(404).send({ error: "Diesen Turniermodus gibt es nicht." });
+    const geprueft = pruefeVorlagenAenderung(req.body);
+    if ("fehler" in geprueft) return reply.code(400).send({ error: geprueft.fehler });
+    // Nur die geprueften Felder uebernehmen (kein Spread des Bodys: Identitaet und Bausteine bleiben, wie sie sind).
+    const gespeichert = await insertDoc<TurniermodusDokument>({ ...bestehend, ...geprueft.werte, version: bestehend.version + 1 });
+    return alsVorlage(gespeichert);
+  });
+
+  /** Eine eigene Vorlage loeschen. Turniere tragen eine Kopie und laufen unveraendert weiter. */
+  app.delete<{ Params: { id: string } }>("/turniermodi/:id", async (req, reply) => {
+    if (!requireRolle(req, reply, ["admin"])) return;
+    if (findeEingebautenTurniermodus(req.params.id)) {
+      return reply.code(400).send({ error: "Mitgelieferte Vorlagen lassen sich nicht löschen." });
+    }
+    const bestehend = await findById<TurniermodusDokument>(req.params.id, "turniermodus");
+    if (!bestehend) return reply.code(404).send({ error: "Diesen Turniermodus gibt es nicht." });
+    await deleteDoc(bestehend._id, bestehend._rev!);
+    return reply.code(204).send();
   });
 
   /** Ablauf mit Platzhaltern, Zeiten und Rueckmeldungen - leer, wenn das Turnier keinen Modus hat. */
@@ -103,7 +191,7 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
     async (req, reply) => {
       const turnier = await laden(req, reply, "schreiben_voll", true);
       if (!turnier) return;
-      const vorlage = findeEingebautenTurniermodus(req.body.turniermodusId);
+      const vorlage = await ladeVorlage(req.body.turniermodusId);
       if (!vorlage) return reply.code(400).send({ error: "Diesen Turniermodus gibt es nicht." });
       const einstellungen =
         req.body.einstellungen ??

@@ -102,6 +102,51 @@ export const EINGEBAUTE_TURNIERMODI: TurniermodusVorlage[] = [
   },
 ];
 
+/** Die Felder einer eigenen Vorlage, die sich aendern lassen. Gruppenzahl und Gerade-Regel sind Bausteine mit Code und bleiben fest. */
+export interface VorlagenAenderung {
+  name: string;
+  beschreibung: string;
+  doppeltWaehlbar: boolean;
+  endrundeGroessen: number[];
+  standardEndrunde: number;
+  platz3Standard: boolean;
+  platzierungsspieleStandard: boolean;
+}
+
+export const MOEGLICHE_ENDRUNDEN_GROESSEN: readonly number[] = ENDRUNDEN_GROESSEN;
+
+/** Prueft die Eingabe fuer eine eigene Vorlage. Liefert `{ fehler }` (fuer 400) oder die bereinigten `{ werte }`. */
+export function pruefeVorlagenAenderung(e: unknown): { fehler: string } | { werte: VorlagenAenderung } {
+  if (typeof e !== "object" || e === null || Array.isArray(e)) return { fehler: "Die Angaben zur Vorlage müssen ein Objekt sein." };
+  const w = e as Record<string, unknown>;
+  const name = typeof w.name === "string" ? w.name.trim() : "";
+  if (name.length < 1 || name.length > 80) return { fehler: "Der Name der Vorlage muss 1 bis 80 Zeichen lang sein." };
+  const beschreibung = typeof w.beschreibung === "string" ? w.beschreibung.trim() : "";
+  if (typeof w.beschreibung !== "string" || beschreibung.length > 600) return { fehler: "Die Beschreibung darf höchstens 600 Zeichen lang sein." };
+  if (typeof w.doppeltWaehlbar !== "boolean" || typeof w.platz3Standard !== "boolean" || typeof w.platzierungsspieleStandard !== "boolean") {
+    return { fehler: "„Hin- und Rückspiel“, „Spiel um Platz 3“ und „Platzierungsspiele“ müssen Wahrheitswerte sein." };
+  }
+  const groessen = w.endrundeGroessen;
+  if (!Array.isArray(groessen) || groessen.length === 0 || groessen.some((g) => typeof g !== "number" || !ENDRUNDEN_GROESSEN.includes(g))) {
+    return { fehler: `Mögliche Endrunden sind nur: ${ENDRUNDEN_GROESSEN.map((g) => (g === 0 ? "keine" : g)).join(", ")}.` };
+  }
+  const endrundeGroessen = [...new Set(groessen as number[])].sort((a, b) => a - b);
+  if (typeof w.standardEndrunde !== "number" || !endrundeGroessen.includes(w.standardEndrunde)) {
+    return { fehler: "Die Standard-Endrunde muss eine der möglichen Endrunden sein." };
+  }
+  return {
+    werte: {
+      name,
+      beschreibung,
+      doppeltWaehlbar: w.doppeltWaehlbar,
+      endrundeGroessen,
+      standardEndrunde: w.standardEndrunde,
+      platz3Standard: w.platz3Standard,
+      platzierungsspieleStandard: w.platzierungsspieleStandard,
+    },
+  };
+}
+
 export function findeEingebautenTurniermodus(id: string): TurniermodusVorlage | undefined {
   return EINGEBAUTE_TURNIERMODI.find((v) => v.id === id);
 }

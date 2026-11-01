@@ -33,6 +33,7 @@ import type { Verein, Team } from "./stammdaten";
 import type { Wettbewerb } from "./wettbewerb";
 import type { Turnier } from "./turnier";
 import type { Turnierpause } from "./turnierpause";
+import type { TurniermodusDokument } from "./turniermodus";
 import type { MannschaftImTurnier } from "./mannschaft";
 import type { Spieler } from "./spieler";
 import type { Schiedsrichter, SchiedsrichterImTurnier } from "./schiedsrichter";
@@ -81,4 +82,5 @@ export type TorballDokument =
   | MailNachricht
   | MailBericht
   | MailPostfachEinstellungen
-  | Wartung;
+  | Wartung
+  | TurniermodusDokument;
