@@ -7,6 +7,10 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Linux-Installer erprobt und verbessert.** Er wurde auf einem Debian 13 und einem Ubuntu 26.04 durchgespielt (Installation,
+  Neustart, Aktualisieren, Deinstallieren, Firewall). Dabei behoben: Der Deinstaller ließ eine Paketquelle von Node.js zurück, die
+  danach bei jedem `apt update` eine Warnung auslöste; der Installer legt keine Compiler-Pakete mehr an (rund 250 MB weniger).
+  Noch nicht erprobt sind Desktop-Systeme, Linux Mint und andere Firewalls.
 - **Turniermodi kopieren und anpassen.** Unter Admin → Turniermodi lässt sich jede Vorlage mit „Kopie anlegen“ als
   eigene Vorlage kopieren. Die Kopie hat einen eigenen Namen und eigene Standardwerte (mögliche Endrunden, Standard-
   Endrunde, Spiel um Platz 3, Platzierungsspiele, Hin- und Rückspiel) und steht dann bei jedem Turnier zur Auswahl. Die

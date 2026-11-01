@@ -92,10 +92,10 @@ echo
 echo "== [1/9] Grundpakete =="
 bestaetige_aenderung \
   "Grundpakete installieren" \
-  "Kleine Hilfsprogramme (curl, gnupg, Compiler-Werkzeuge), die die weiteren Schritte und der Bau der App brauchen." \
+  "Kleine Hilfsprogramme (curl, gnupg, openssl), die die weiteren Schritte brauchen." \
   "Es werden nur Pakete aus den normalen Paketquellen deines Systems nachinstalliert. Bereits Vorhandenes bleibt unveraendert."
 apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg openssl build-essential python3 iproute2
+DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg openssl iproute2
 
 # ---------------------------------------------------------------------------------- 2. Node.js
 echo

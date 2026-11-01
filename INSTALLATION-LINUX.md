@@ -3,8 +3,10 @@
 Für einen **eigenen Rechner**, der die Turniere verwaltet – allein oder zusammen mit Helfern im selben
 Netzwerk. (Für einen Server im Internet gibt es einen anderen Weg, siehe `docs/installation-konfiguration.md`.)
 
-> **Stand:** Der Linux-Installer ist geschrieben, aber noch nicht auf einem echten System erprobt. Bitte
-> zuerst auf einem Testrechner ausprobieren und Auffälligkeiten melden.
+> **Stand:** Der Linux-Installer wurde am 01.11.2026 auf einem Debian 13 und einem Ubuntu 26.04 (beide ohne Oberfläche)
+> durchgespielt: Installation, Neustart, Aktualisieren, Deinstallieren, Firewall mit `ufw`. **Noch nicht erprobt** sind
+> Desktop-Systeme (Anwendungsmenü, Browser), Linux Mint und andere Firewalls. Bitte zuerst auf einem Testrechner
+> ausprobieren und Auffälligkeiten melden.
 
 ## Voraussetzungen
 
@@ -12,6 +14,7 @@ Netzwerk. (Für einen Server im Internet gibt es einen anderen Weg, siehe `docs/
 - Internetzugang während der Installation (Pakete werden geladen).
 - Ein Benutzer mit `sudo`-Recht. Auf einem Debian ohne `sudo`: mit `su -` zum Administrator werden.
 - Etwa 2 GB freier Platz und 2 GB Arbeitsspeicher.
+- Zum Entpacken des ZIP das Programm `unzip` (auf einem Server ohne Oberfläche: `sudo apt-get install unzip`).
 
 ## Installieren
 

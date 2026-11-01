@@ -89,7 +89,11 @@ schritt "5. Node.js entfernen" \
   "Node.js wird deinstalliert. ACHTUNG: Andere Programme auf diesem Rechner koennten es ebenfalls brauchen." n
 if frage "Entfernen?" n; then
   DEBIAN_FRONTEND=noninteractive apt-get purge -y nodejs >/dev/null 2>&1 || true
-  rm -f /etc/apt/sources.list.d/nodesource.list /etc/apt/keyrings/nodesource.gpg /usr/share/keyrings/nodesource.gpg
+  # NodeSource legt seine Quelle heute als nodesource.sources (deb822) ab, aeltere Setups als nodesource.list; dazu
+  # kommen Pin-Dateien. Bliebe die Quelle ohne Schluessel stehen, meldete jedes spaetere 'apt update' einen Signaturfehler.
+  rm -f /etc/apt/sources.list.d/nodesource.list /etc/apt/sources.list.d/nodesource.sources \
+    /etc/apt/preferences.d/nodejs /etc/apt/preferences.d/nsolid \
+    /etc/apt/keyrings/nodesource.gpg /usr/share/keyrings/nodesource.gpg
   echo "Erledigt."
 fi
 
