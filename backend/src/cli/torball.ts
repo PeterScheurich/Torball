@@ -22,7 +22,7 @@ import { letzteLogZeilen } from "../logDatei";
 import { schwaerzeTokens } from "../logSchutz";
 import { db } from "../db";
 
-type Optionen = Record<string, string>;
+import { parseOptionen, type Optionen } from "./optionen";
 type Befehl = (optionen: Optionen) => Promise<void>;
 
 /** Nur diese Schluessel duerfen ueber die CLI geaendert werden - bewusst ohne COUCHDB_*
@@ -469,16 +469,6 @@ function zeigeHilfe(): void {
   for (const [name, { beschreibung }] of Object.entries(BEFEHLE)) {
     console.log(`  ${name}\n    ${beschreibung}`);
   }
-}
-
-/** Nur das simple Muster --schluessel=wert wird unterstuetzt - reicht fuer die bisherigen Befehle, keine Bibliothek noetig. */
-function parseOptionen(argv: string[]): Optionen {
-  const optionen: Optionen = {};
-  for (const arg of argv) {
-    const treffer = /^--([^=]+)=(.*)$/.exec(arg);
-    if (treffer) optionen[treffer[1]] = treffer[2];
-  }
-  return optionen;
 }
 
 async function main(): Promise<void> {
