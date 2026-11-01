@@ -1,41 +1,55 @@
 import { randomUUID } from "node:crypto";
+import Fastify, { type FastifyInstance } from "fastify";
+import fastifyCookie from "@fastify/cookie";
 import type {
   Benutzer,
   Klassifizierung,
   MannschaftImTurnier,
+  ModusEinstellungen,
   Schiedsrichter,
   SchiedsrichterImTurnier,
   Spiel,
   Spieler,
   Spielfeld,
-  SpielplanBasis,
   Team,
   Turnier,
   Verein,
-  Wettbewerb,
 } from "@torball/shared";
-import { findAllByType, findAllBySelector, insertDoc, newId } from "../repository";
-import { aktuelleTurnierregeln } from "../konfiguration";
-import { erzeugePaarungen } from "../spielplan/paarungen";
-import { erstelleSpielplanVorschlag } from "../spielplan/planung";
-import { berechneStartzeit } from "../spielplan/zeitplanung";
+import { findAllByType, insertDoc, newId } from "../repository";
+import { authPreHandler } from "../auth/plugin";
+import { erstelleSession } from "../auth/session";
+import { turnierRoutes } from "../routes/turnier";
+import { mannschaftRoutes } from "../routes/mannschaft";
+import { spielplanRoutes } from "../routes/spielplan";
+import { spielRoutes } from "../routes/spiel";
+import { turniermodusRoutes } from "../routes/turniermodus";
+import { ergebnisRoutes } from "../routes/ergebnis";
+import type { ModusAnsicht } from "../spielplan/modus";
 import { pruefeDemoErlaubt } from "./schutz";
+import { loescheUngeschuetzteDokumente } from "./snapshot";
 
 /**
- * Baut einen festen Satz Demo-Stammdaten und -Turniere auf (Vereine/Teams, ein abgeschlossenes
- * Turnier, eine zweigleisige Bundesliga-Saison mit je zwei Spieltagen, zwei geplante Turniere,
- * ein laufendes Turnier) - gedacht als einmaliger Aufbau vor einem `demo:snapshot:erstellen`
- * (siehe snapshot.ts), nicht als taeglich neu zu generierender Datensatz. Alle Inhalte gehoeren
- * einem eigenen "Demo-Datenpflege"-Konto (siehe demoKonto unten), nicht dem echten Admin-Konto
- * des Betreibers - dessen Konto bleibt beim Snapshot-Restore unangetastet (siehe schutz.ts/
- * snapshot.ts, die nur Turnier-/Stammdaten-Dokumente ersetzen, keine Benutzer).
+ * Baut den festen Demo-Datenstand auf: Vereine/Teams (auch aus anderen Laendern), Schiedsrichter-Stammdaten und
+ * sieben Turniere, die die Turniermodi in unterschiedlichen Zustaenden zeigen (siehe TURNIERE unten). Alle
+ * Inhalte gehoeren einem eigenen "Demo-Datenpflege"-Konto (siehe demoKonto), nicht dem echten Admin-Konto.
  *
- * Mehrfacher Aufruf legt weitere, zusaetzliche Vereine/Turniere an (keine Idempotenz) - das ist
- * fuer den vorgesehenen Anwendungsfall (einmaliger Aufbau, danach direkt ein Snapshot) bewusst
- * kein Problem.
+ * Die Turniere werden NICHT von Hand zusammengesetzt, sondern ueber die echten Routen angelegt und bespielt
+ * (im Prozess, ohne Netzwerk): Modus waehlen, Gruppen verteilen, Spielplan erzeugen, Ergebnisse erfassen,
+ * Endrunde erzeugen. Dadurch bleibt der Demo-Stand automatisch mit der Programmlogik konsistent - frueher
+ * baute dieses Skript Dokumente direkt und musste bei jeder Aenderung am Datenmodell nachgezogen werden.
+ *
+ * `ersetzen`: entfernt vorher alle Inhalte, die ein Reset ohnehin zuruecksetzen wuerde (Turniere, Stammdaten,
+ * nicht-Admin-Konten). Ohne die Option legt ein Aufruf weitere Vereine/Turniere dazu (keine Idempotenz).
+ *
+ * WICHTIG: Der naechtliche Reset spielt den Stand der "_golden"-Datenbank ein. Neue Beispieldaten gelten
+ * erst, wenn danach `demo:snapshot:erstellen` ausgefuehrt wird.
  */
-export async function erzeugeBeispieldaten(): Promise<void> {
+export async function erzeugeBeispieldaten(optionen: { ersetzen?: boolean } = {}): Promise<void> {
   pruefeDemoErlaubt();
+  if (optionen.ersetzen) {
+    const { anzahlDokumente } = await loescheUngeschuetzteDokumente();
+    console.log(`${anzahlDokumente} bisherige Demo-Dokumente entfernt.`);
+  }
 
   const ersteller = await demoKonto();
   const teams = await erzeugeVereineUndTeams();
@@ -46,155 +60,272 @@ export async function erzeugeBeispieldaten(): Promise<void> {
     return treffer;
   };
 
-  // Ein Team je Verein (die drei "II"-Zweitteams bleiben hier aussen vor) - fuer das normale
-  // Turnier und das 10er-Freundschaftsturnier.
-  const erstteams = teams.filter((t) => !t.team.name.endsWith(" II"));
+  const { app, anfrage } = await baueApp(ersteller);
+  try {
+    for (const t of turnierDefinitionen(team)) {
+      await erzeugeTurnier(anfrage, t);
+      console.log(`  Turnier angelegt: ${t.name}`);
+    }
+  } finally {
+    await app.close();
+  }
+}
 
-  // ---- Normales abgeschlossenes Turnier: 10 Mannschaften, jeder gegen jeden, volle Ergebnisse. ----
-  await erzeugeEinzelTurnier({
-    name: "Torball-Cup Musterstadt",
-    datum: samstagInVergangenheit(4),
-    startzeit: "10:00",
-    status: "abgeschlossen",
-    ersteller,
-    teams: erstteams,
-    wiederholungen: 1,
-    ergebnisAnteil: 1,
-    ergebnisseAbschliessen: true,
-    mitSpieler: true,
-    oeffentlich: true,
-  });
+// ---------------------------------------------------------------- Die Demo-Turniere
 
-  // ---- Bundesliga-Saison: 1. Liga (7 Mannschaften) + 2. Liga (6 Mannschaften), je zwei
-  // Spieltage (Hin-/Rueckspieltag). Die zweite und dritte Mannschaft der Vereine mit Zweitteam
-  // spielt jeweils in der 2. Liga - die erste in der 1. Liga. ----
-  const ersteBundesliga = [
-    team("BSV München I"),
-    team("TSG Unterliederbach I"),
-    team("SV Hoffeld I"),
-    team("BVB Dortmund"),
-    team("FC St. Pauli"),
-    team("SV Reha Augsburg"),
-    team("Magdeburger SV 90"),
-  ];
-  const zweiteBundesliga = [
-    team("BSV München II"),
-    team("TSG Unterliederbach II"),
-    team("SV Hoffeld II"),
-    team("BSG Langenhagen"),
-    team("FSV Forst Borgsdorf"),
-    team("Landshut"),
-  ];
+/** Wie weit ein Demo-Turnier gespielt ist. */
+type Stand =
+  /** Spielplan steht, noch kein Ergebnis. */
+  | "geplant"
+  /** Ein Teil der Vorrunde ist gespielt. */
+  | "vorrunde-teil"
+  /** Vorrunde komplett, Endrunde noch nicht erzeugt (die Turnierleitung kann sie jetzt erzeugen). */
+  | "vorrunde-fertig"
+  /** Erste Stufe der Endrunde gespielt, die naechste (Finale, Platz 3) ist erzeugbar. */
+  | "endrunde-teil"
+  /** Alles gespielt, aber das Turnier ist nicht abgeschlossen. */
+  | "gespielt"
+  /** Alles gespielt und abgeschlossen. */
+  | "abgeschlossen";
 
-  for (const [ligaName, mannschaftenListe] of [
-    ["1. Bundesliga", ersteBundesliga] as const,
-    ["2. Bundesliga", zweiteBundesliga] as const,
-  ]) {
-    const spieltag1 = await erzeugeEinzelTurnier({
-      name: `${ligaName} – 1. Spieltag`,
+interface TurnierDefinition {
+  name: string;
+  datum: string;
+  startzeit: string;
+  hallen: number;
+  teams: TeamMitVerein[];
+  modus: string;
+  einstellungen?: ModusEinstellungen;
+  doppelt?: boolean;
+  international?: boolean;
+  stand: Stand;
+  /** Anteil der Vorrundenspiele, der bei `vorrunde-teil` gespielt ist. */
+  vorrundeAnteil?: number;
+  /** Alle Endrundenspiele (ohne Platzierungsspiele) in Halle A legen - zeigt die Hallenwahl. */
+  endrundeInHalleA?: boolean;
+}
+
+function turnierDefinitionen(team: (name: string) => TeamMitVerein): TurnierDefinition[] {
+  const deutsch = [
+    "BSV München I", "TSG Unterliederbach I", "SV Hoffeld I", "BVB Dortmund", "FC St. Pauli", "SV Reha Augsburg",
+    "Magdeburger SV 90", "BSG Langenhagen", "FSV Forst Borgsdorf", "Landshut", "BSV München II", "TSG Unterliederbach II",
+    "SV Hoffeld II",
+  ].map(team);
+  const ausland = ["Lyoner Torball Club", "Brüsseler Torball Club", "Zürcher Torball Club", "Wiener Torball Club", "Mailänder Torball Club"].map(team);
+
+  return [
+    {
+      name: "Torball-Cup Musterstadt",
+      datum: samstagInVergangenheit(4),
+      startzeit: "10:00",
+      hallen: 1,
+      teams: deutsch.slice(0, 6),
+      modus: "jeder-gegen-jeden",
+      stand: "abgeschlossen",
+    },
+    {
+      name: "Stadtpokal Musterstadt",
+      datum: samstagInVergangenheit(2),
+      startzeit: "09:00",
+      hallen: 2,
+      teams: deutsch.slice(0, 8),
+      modus: "gruppen-endrunde",
+      einstellungen: { endrundeGroesse: 4, platz3: true, platzierungsspiele: true },
+      stand: "abgeschlossen",
+      endrundeInHalleA: true,
+    },
+    {
+      name: "Internationaler Pokal Musterstadt",
+      datum: samstagInVergangenheit(1),
+      startzeit: "09:00",
+      hallen: 2,
+      teams: [...ausland, ...deutsch.slice(0, 7)],
+      modus: "gruppen-endrunde",
+      einstellungen: { endrundeGroesse: 6, platz3: true, platzierungsspiele: true },
+      international: true,
+      stand: "abgeschlossen",
+    },
+    {
+      name: "Sommerturnier Musterstadt",
+      datum: heute(),
+      startzeit: "09:00",
+      hallen: 2,
+      teams: deutsch.slice(2, 10),
+      modus: "gruppen-endrunde",
+      einstellungen: { endrundeGroesse: 4, platz3: true, platzierungsspiele: true },
+      stand: "endrunde-teil",
+    },
+    {
+      name: "Winterpokal",
+      datum: heute(),
+      startzeit: "10:00",
+      hallen: 1,
+      teams: deutsch.slice(4, 10),
+      modus: "jeder-gegen-jeden-endrunde",
+      einstellungen: { endrundeGroesse: 4, platz3: true, platzierungsspiele: false },
+      stand: "vorrunde-teil",
+      vorrundeAnteil: 0.5,
+    },
+    {
+      name: "Europa-Pokal",
+      datum: heute(),
+      startzeit: "09:30",
+      hallen: 2,
+      teams: [...ausland.slice(0, 4), ...deutsch.slice(0, 4)],
+      modus: "jeder-gegen-jeden-endrunde",
+      einstellungen: { endrundeGroesse: 4, platz3: true, platzierungsspiele: false },
+      international: true,
+      stand: "vorrunde-fertig",
+    },
+    {
+      name: "Frühjahrsturnier",
       datum: samstagInZukunft(3),
-      startzeit: "11:00",
-      status: "aktiv",
-      ersteller,
-      teams: mannschaftenListe,
-      wiederholungen: 1,
-      // Bundesliga ist genau der Wettbewerbstyp mit festem Regionalbezug, fuer den die
-      // Bundesland-Regel gedacht ist (Standard sonst "nein") - zeigt die Prioritaet im
-      // Demo-Spielplan sichtbar.
-      bundeslandBeruecksichtigen: true,
-      ergebnisAnteil: 0,
-      ergebnisseAbschliessen: false,
-      mitSpieler: true,
-      oeffentlich: true,
-    });
+      startzeit: "09:30",
+      hallen: 1,
+      teams: deutsch.slice(5, 10),
+      modus: "jeder-gegen-jeden",
+      stand: "geplant",
+    },
+  ];
+}
 
-    const wettbewerbId = newId("wettbewerb");
-    await insertDoc<Wettbewerb>({
-      _id: wettbewerbId,
-      docType: "wettbewerb",
-      wettbewerbId,
-      name: `${ligaName} – Demo-Saison`,
-      anzahlSpieltage: 2,
-      erstelltVon: ersteller._id,
-      erstelltAm: new Date().toISOString(),
-    });
+// ---------------------------------------------------------------- Ablauf ueber die echten Routen
 
-    await erzeugeSpieltag2(spieltag1, wettbewerbId, `${ligaName} – 2. Spieltag`, samstagInZukunft(7), "11:00");
+/** Fastify-Instanz mit den Turnier-Routen, angemeldet als Demo-Konto. Kein Netzwerk: nur `inject`. */
+async function baueApp(ersteller: Benutzer): Promise<{ app: FastifyInstance; anfrage: Anfrage }> {
+  const app = Fastify();
+  await app.register(fastifyCookie);
+  app.addHook("preHandler", authPreHandler);
+  for (const r of [turnierRoutes, mannschaftRoutes, spielplanRoutes, spielRoutes, turniermodusRoutes, ergebnisRoutes]) {
+    await app.register(r);
+  }
+  const cookie = `torball_session=${(await erstelleSession(ersteller._id)).token}`;
+  const anfrage: Anfrage = async <T>(method: "GET" | "POST" | "PUT", url: string, payload?: object) => {
+    const antwort = await app.inject({ method, url, headers: { cookie }, ...(payload ? { payload } : {}) });
+    const text = antwort.body;
+    if (antwort.statusCode >= 400) {
+      throw new Error(`Demo-Daten: ${method} ${url} -> ${antwort.statusCode} ${text.slice(0, 300)}`);
+    }
+    return (text ? JSON.parse(text) : undefined) as T;
+  };
+  return { app, anfrage };
+}
+
+type Anfrage = <T = unknown>(method: "GET" | "POST" | "PUT", url: string, payload?: object) => Promise<T>;
+
+/** Zufallsergebnis; `entschieden`: kein Unentschieden (Endrunde - dort entscheidet sonst die Turnierleitung). */
+function zufallsErgebnis(entschieden: boolean): [number, number] {
+  const a = Math.floor(Math.random() * 6);
+  let b = Math.floor(Math.random() * 6);
+  if (entschieden && a === b) b = a + 1 + Math.floor(Math.random() * 2);
+  return [a, b];
+}
+
+async function erzeugeTurnier(anfrage: Anfrage, t: TurnierDefinition): Promise<void> {
+  const felder: Spielfeld[] = Array.from({ length: t.hallen }, (_, i) => ({
+    feldId: randomUUID(),
+    name: `Halle ${String.fromCharCode(65 + i)}`,
+  }));
+  const zweiGruppen = /gruppen/.test(t.modus);
+
+  const turnier = await anfrage<Turnier>("POST", "/turniere", {
+    name: t.name,
+    datum: t.datum,
+    startzeit: t.startzeit,
+    status: "aktiv",
+    felder,
+    protokollierungsart: "manuell",
+    spielplanModus: t.doppelt ? "doppelt" : "einfach",
+    turnierart: t.international ? "international" : "national",
+    spielernamenOeffentlich: true,
+    oeffentlichTurnierinfos: true,
+    oeffentlichAnfahrtDokumente: false,
+    oeffentlichSpielplan: true,
+    oeffentlichErgebnisse: true,
+    oeffentlichRegeln: true,
+    // Alle angemeldeten Benutzer duerfen die Demo-Turniere lesen UND bearbeiten (Nutzer-Vorgabe).
+    zugriffFuerAlleBenutzer: "schreiben",
+    spielortName: "Sporthalle Musterstadt",
+    spielortAdresse: "Musterstraße 1, 12345 Musterstadt",
+    zusatzinfo: "Demo-Daten der Testinstanz - werden regelmäßig zurückgesetzt.",
+  });
+  const id = turnier._id;
+
+  await anfrage("PUT", `/turniere/${id}/modus`, { turniermodusId: t.modus, ...(t.einstellungen ? { einstellungen: t.einstellungen } : {}) });
+
+  for (const { team, verein } of t.teams) {
+    const m = await anfrage<MannschaftImTurnier>("POST", "/mannschaften", {
+      turnierId: id,
+      name: team.name,
+      teamId: team.teamId,
+      vereinId: verein.vereinId,
+      // Bei internationalen Turnieren steht das Land im Feld (national: das Bundesland).
+      ...(t.international ? { bundesland: verein.land } : verein.bundesland ? { bundesland: verein.bundesland } : {}),
+    });
+    await erzeugeSpieler(m._id);
+  }
+  await erzeugeSchiedsrichter(id, t.teams[0]?.verein.vereinId);
+
+  if (zweiGruppen) await anfrage("POST", `/turniere/${id}/gruppen-verteilen`);
+  await anfrage("POST", `/turniere/${id}/spielplan?wiederholungen=${t.doppelt ? 2 : 1}`);
+
+  const spieleSortiert = async () =>
+    (await anfrage<Spiel[]>("GET", `/turniere/${id}/spiele`)).sort((a, b) => (a.spielNr ?? 0) - (b.spielNr ?? 0));
+  const spiele = async (vorrunde: boolean, gespieltAnteil = 1, entschieden = false) => {
+    const liste = (await spieleSortiert()).filter((s) => (vorrunde ? !s.planId : Boolean(s.planId)) && s.ergebnisA == null);
+    const anzahl = Math.round(liste.length * gespieltAnteil);
+    for (const [i, s] of liste.slice(0, anzahl).entries()) {
+      const [a, b] = zufallsErgebnis(entschieden);
+      await anfrage("PUT", `/spiele/${s._id}/ergebnis`, { ergebnisA: a, ergebnisB: b });
+      // Bei einer nur teilweise gespielten Vorrunde bleibt das letzte Ergebnis "beendet", noch nicht abgeschlossen.
+      const letztes = gespieltAnteil < 1 && i === anzahl - 1;
+      if (!letztes) await anfrage("PUT", `/spiele/${s._id}/abschliessen`);
+    }
+  };
+
+  if (t.stand === "geplant") return;
+
+  if (t.stand === "vorrunde-teil") {
+    await spiele(true, t.vorrundeAnteil ?? 0.5);
+    return;
   }
 
-  // ---- Zwei geplante Turniere, ganz ohne Ergebnisse (Datum in der Zukunft). ----
-  await erzeugeEinzelTurnier({
-    name: "Freundschaftsturnier Herbstpokal",
-    datum: samstagInZukunft(2),
-    startzeit: "09:30",
-    status: "aktiv",
-    ersteller,
-    teams: erstteams,
-    wiederholungen: 1,
-    ergebnisAnteil: 0,
-    ergebnisseAbschliessen: false,
-    mitSpieler: true,
-    oeffentlich: true,
-  });
+  await spiele(true);
+  const plan = async () => anfrage<ModusAnsicht>("GET", `/turniere/${id}/modus-plan`);
 
-  await erzeugeEinzelTurnier({
-    name: "Vierer-Pokal",
-    datum: samstagInZukunft(5),
-    startzeit: "09:30",
-    status: "aktiv",
-    ersteller,
-    teams: [team("BSV München I"), team("BVB Dortmund"), team("FC St. Pauli"), team("SV Hoffeld I")],
-    wiederholungen: 2,
-    ergebnisAnteil: 0,
-    ergebnisseAbschliessen: false,
-    mitSpieler: true,
-    oeffentlich: true,
-  });
+  // Gleichstaende entscheidet die Turnierleitung - hier in Reihenfolge der Mannschafts-ID.
+  let ansicht = await plan();
+  for (const gs of ansicht.gleichstaende ?? []) {
+    await anfrage("PUT", `/turniere/${id}/modus/vorrang`, { gruppe: gs.gruppe, reihenfolge: gs.mannschaften.map((m) => m.id).sort() });
+  }
 
-  // ---- Offenes Frauen-Turnier: 5 Mannschaften, jeder gegen jeden, noch ohne Ergebnisse. ----
-  await erzeugeEinzelTurnier({
-    name: "Frauen-Turnier Frühjahrspokal",
-    datum: samstagInZukunft(4),
-    startzeit: "09:30",
-    status: "aktiv",
-    ersteller,
-    teams: [
-      team("SV Reha Augsburg"),
-      team("BSG Langenhagen"),
-      team("Magdeburger SV 90"),
-      team("FSV Forst Borgsdorf"),
-      team("Landshut"),
-    ],
-    wiederholungen: 1,
-    ergebnisAnteil: 0,
-    ergebnisseAbschliessen: false,
-    mitSpieler: true,
-    oeffentlich: true,
-  });
+  if (t.stand === "vorrunde-fertig") return;
+  ansicht = await plan();
 
-  // ---- Laufendes Turnier: 6 Mannschaften, heutiges Datum, mit Spielern und einem Teil bereits
-  // erfasster Ergebnisse (die fruehen Zeit-Slots gelten als "schon gespielt"). ----
-  await erzeugeEinzelTurnier({
-    name: "Demo-Turnier (laufend)",
-    datum: heute(),
-    startzeit: "10:00",
-    status: "aktiv",
-    ersteller,
-    teams: [
-      team("BSV München I"),
-      team("SV Reha Augsburg"),
-      team("BVB Dortmund"),
-      team("FC St. Pauli"),
-      team("TSG Unterliederbach I"),
-      team("Magdeburger SV 90"),
-    ],
-    wiederholungen: 1,
-    ergebnisAnteil: 0.4,
-    ergebnisseAbschliessen: false,
-    mitSpieler: true,
-    oeffentlich: true,
-  });
+  if (t.endrundeInHalleA && felder.length > 1) {
+    for (const p of ansicht.plan.filter((x) => !x.spielId && x.phase !== "platzierung")) {
+      await anfrage("PUT", `/turniere/${id}/modus/plan/${p.planId}`, { feldId: felder[0].feldId });
+    }
+  }
+
+  // Endrunde stufenweise erzeugen und spielen.
+  for (let runde = 0; runde < 8; runde++) {
+    ansicht = await plan();
+    if (ansicht.plan.every((p) => p.spielId)) break;
+    if (ansicht.plan.some((p) => p.erzeugbar && !p.spielId)) {
+      await anfrage("POST", `/turniere/${id}/modus/erzeugen`, {});
+      await spiele(false, 1, true);
+      if (t.stand === "endrunde-teil") break;
+    } else {
+      // Nichts erzeugbar: ein Unentschieden muesste entschieden werden (kommt nicht vor, weil entschieden gespielt wird).
+      break;
+    }
+  }
+
+  if (t.stand === "abgeschlossen") await anfrage("POST", `/turniere/${id}/abschliessen`);
 }
+
+// ---------------------------------------------------------------- Stammdaten und Konto
 
 const DEMO_KONTO_EMAIL = "demo-datenpflege@blindentorball.de";
 
@@ -227,21 +358,26 @@ interface TeamMitVerein {
   verein: Verein;
 }
 
-const VEREINE_DATEN: { name: string; bundesland: string }[] = [
-  { name: "BSV München", bundesland: "Bayern" },
-  { name: "SV Reha Augsburg", bundesland: "Bayern" },
-  { name: "TSG Unterliederbach", bundesland: "Hessen" },
-  { name: "BVB Dortmund", bundesland: "Nordrhein-Westfalen" },
-  { name: "BSG Langenhagen", bundesland: "Niedersachsen" },
-  { name: "Magdeburger SV 90", bundesland: "Sachsen-Anhalt" },
-  { name: "FSV Forst Borgsdorf", bundesland: "Brandenburg" },
-  { name: "SV Hoffeld", bundesland: "Baden-Württemberg" },
-  { name: "Landshut", bundesland: "Bayern" },
-  { name: "FC St. Pauli", bundesland: "Hamburg" },
+const VEREINE_DATEN: { name: string; bundesland?: string; land: string }[] = [
+  { name: "BSV München", bundesland: "Bayern", land: "Deutschland" },
+  { name: "SV Reha Augsburg", bundesland: "Bayern", land: "Deutschland" },
+  { name: "TSG Unterliederbach", bundesland: "Hessen", land: "Deutschland" },
+  { name: "BVB Dortmund", bundesland: "Nordrhein-Westfalen", land: "Deutschland" },
+  { name: "BSG Langenhagen", bundesland: "Niedersachsen", land: "Deutschland" },
+  { name: "Magdeburger SV 90", bundesland: "Sachsen-Anhalt", land: "Deutschland" },
+  { name: "FSV Forst Borgsdorf", bundesland: "Brandenburg", land: "Deutschland" },
+  { name: "SV Hoffeld", bundesland: "Baden-Württemberg", land: "Deutschland" },
+  { name: "Landshut", bundesland: "Bayern", land: "Deutschland" },
+  { name: "FC St. Pauli", bundesland: "Hamburg", land: "Deutschland" },
+  // Erfundene Vereine aus dem Ausland - fuer die internationalen Demo-Turniere (kein Bundesland).
+  { name: "Lyoner Torball Club", land: "Frankreich" },
+  { name: "Brüsseler Torball Club", land: "Belgien" },
+  { name: "Zürcher Torball Club", land: "Schweiz" },
+  { name: "Wiener Torball Club", land: "Österreich" },
+  { name: "Mailänder Torball Club", land: "Italien" },
 ];
 
-/** Diese Vereine bekommen zwei Teams (Nutzer-Vorgabe) - die zweite Mannschaft spielt jeweils in
- *  der 2. statt der 1. Bundesliga (siehe erzeugeBeispieldaten). */
+/** Diese Vereine bekommen zwei Teams (Nutzer-Vorgabe). */
 const VEREINE_MIT_ZWEITTEAM = new Set(["BSV München", "TSG Unterliederbach", "SV Hoffeld"]);
 
 async function erzeugeVereineUndTeams(): Promise<TeamMitVerein[]> {
@@ -254,7 +390,8 @@ async function erzeugeVereineUndTeams(): Promise<TeamMitVerein[]> {
       docType: "verein",
       vereinId,
       name: daten.name,
-      bundesland: daten.bundesland,
+      ...(daten.bundesland ? { bundesland: daten.bundesland } : {}),
+      land: daten.land,
     });
 
     const anzahlTeams = VEREINE_MIT_ZWEITTEAM.has(daten.name) ? 2 : 1;
@@ -338,24 +475,11 @@ async function erzeugeSchiedsrichterStammdaten(teams: TeamMitVerein[]): Promise<
   }
 }
 
-/** Legt Turnierleitung + eine weitere pfeifende Person fuer EIN Turnier an (Demo-Namen, kein
- *  Bezug zu echten Personen). Die pfeifende Person bekommt - falls uebergeben - den Verein der
- *  ersten teilnehmenden Mannschaft zugeordnet, damit die vereinsbasierte Konflikterkennung
- *  (P1/P2, siehe CLAUDE.md) in der Demo tatsaechlich etwas zu zeigen hat: bei der automatischen
- *  Schiedsrichter-Zuordnung wird "Schiedsrichter Beispiel" dann sichtbar nie fuer Spiele dieses
- *  Vereins vorgeschlagen. */
+/** Legt eine pfeifende Person fuer EIN Turnier an (Demo-Name, kein Bezug zu echten Personen). Sie
+ *  bekommt - falls uebergeben - den Verein der ersten teilnehmenden Mannschaft, damit die
+ *  vereinsbasierte Konflikterkennung (siehe CLAUDE.md) in der Demo etwas zu zeigen hat. Die
+ *  Turnierleitung legt `POST /turniere` selbst aus dem Profil der anlegenden Person an. */
 async function erzeugeSchiedsrichter(turnierId: string, ersteVereinId?: string): Promise<void> {
-  const tlId = newId("schiedsrichterImTurnier");
-  await insertDoc<SchiedsrichterImTurnier>({
-    _id: tlId,
-    docType: "schiedsrichterImTurnier",
-    schiedsrichterId: tlId,
-    turnierId,
-    name: "Turnierleitung Beispiel",
-    lizenzVorhanden: true,
-    istTurnierleitung: true,
-  });
-
   const srId = newId("schiedsrichterImTurnier");
   await insertDoc<SchiedsrichterImTurnier>({
     _id: srId,
@@ -367,262 +491,6 @@ async function erzeugeSchiedsrichter(turnierId: string, ersteVereinId?: string):
     istTurnierleitung: false,
     vereinId: ersteVereinId,
   });
-}
-
-interface TurnierBauOptionen {
-  name: string;
-  datum: string;
-  startzeit?: string;
-  status: Turnier["status"];
-  ersteller: Benutzer;
-  teams: TeamMitVerein[];
-  wiederholungen: 1 | 2;
-  /** Ueberschreibt die aktuellen Standardregeln fuer dieses Demo-Turnier gezielt (z.B. die
-   *  Bundesliga-Spieltage, um die Bundesland-Regel im Spielplan sichtbar zu demonstrieren) -
-   *  ohne Angabe gilt der Wert aus den Standardregeln. */
-  bundeslandBeruecksichtigen?: boolean;
-  /** Anteil der Spiele (0..1, in Zeit-Slot-Reihenfolge von vorne), die ein Ergebnis bekommen. */
-  ergebnisAnteil: number;
-  /** true: die Spiele mit Ergebnis gelten als endgueltig abgeschlossen (status "abgeschlossen"),
-   *  false: nur "beendet" (Ergebnis erfasst, aber nicht final) - fuer ein noch laufendes Turnier. */
-  ergebnisseAbschliessen: boolean;
-  mitSpieler: boolean;
-  oeffentlich: boolean;
-}
-
-/** Baut ein vollstaendiges Turnier (Mannschaften, optional Kader, Spielplan, optional Ergebnisse). */
-async function erzeugeEinzelTurnier(opts: TurnierBauOptionen): Promise<Turnier> {
-  const { regeln, version } = await aktuelleTurnierregeln();
-  const feld: Spielfeld = { feldId: randomUUID(), name: "Feld 1" };
-  const turnierId = newId("turnier");
-  const jetzt = new Date().toISOString();
-
-  let turnier: Turnier = {
-    _id: turnierId,
-    docType: "turnier",
-    turnierId,
-    name: opts.name,
-    datum: opts.datum,
-    startzeit: opts.startzeit,
-    status: opts.status,
-    felder: [feld],
-    protokollierungsart: "manuell",
-    spielplanModus: opts.wiederholungen === 2 ? "doppelt" : "einfach",
-    spielernamenOeffentlich: true,
-    spielplanVersion: 1,
-    oeffentlichTurnierinfos: opts.oeffentlich,
-    oeffentlichAnfahrtDokumente: false,
-    oeffentlichSpielplan: opts.oeffentlich,
-    oeffentlichErgebnisse: opts.oeffentlich,
-    oeffentlichRegeln: opts.oeffentlich,
-    // Alle angemeldeten Benutzer duerfen die Demo-Turniere lesen UND bearbeiten (Nutzer-Vorgabe),
-    // nicht nur das erstellende Demo-Konto/Admin - siehe zugriffFuerAlleBenutzer in
-    // shared/src/types/turnier.ts und backend/src/auth/turnierZugriff.ts.
-    zugriffFuerAlleBenutzer: "schreiben",
-    spielortName: "Sporthalle Musterstadt",
-    spielortAdresse: "Musterstraße 1, 12345 Musterstadt",
-    zusatzinfo: "Demo-Daten der Testinstanz - werden regelmäßig zurückgesetzt.",
-    erstelltVon: opts.ersteller._id,
-    erstelltVonName: opts.ersteller.name,
-    erstelltMitKonfigVersion: version,
-    erstelltAm: jetzt,
-    ...regeln,
-    bundeslandBeruecksichtigen: opts.bundeslandBeruecksichtigen ?? regeln.bundeslandBeruecksichtigen,
-  };
-  turnier = await insertDoc(turnier);
-
-  await erzeugeSchiedsrichter(turnier._id, opts.teams[0]?.verein.vereinId);
-
-  const mannschaften: MannschaftImTurnier[] = [];
-  for (const [i, { team, verein }] of opts.teams.entries()) {
-    const mannschaftId = newId("mannschaftImTurnier");
-    const mannschaft = await insertDoc<MannschaftImTurnier>({
-      _id: mannschaftId,
-      docType: "mannschaftImTurnier",
-      mannschaftId,
-      turnierId: turnier._id,
-      teamId: team.teamId,
-      vereinId: verein.vereinId,
-      name: team.name,
-      bundesland: verein.bundesland,
-      reihenfolge: i,
-    });
-    mannschaften.push(mannschaft);
-    if (opts.mitSpieler) await erzeugeSpieler(mannschaft._id);
-  }
-
-  const paarungen = erzeugePaarungen(mannschaften, opts.wiederholungen, turnier.bundeslandBeruecksichtigen);
-  const vorschlag = erstelleSpielplanVorschlag(paarungen, turnier.felder);
-
-  const spiele: Spiel[] = vorschlag.map((eintrag) => {
-    const id = newId("spiel");
-    return {
-      _id: id,
-      docType: "spiel",
-      spielId: id,
-      turnierId: turnier._id,
-      runde: String(eintrag.slot + 1),
-      feldId: eintrag.feldId,
-      startzeitGeplant: berechneStartzeit(turnier, eintrag.slot),
-      mannschaftAId: eintrag.mannschaftAId,
-      mannschaftBId: eintrag.mannschaftBId,
-      status: "geplant",
-      istForfait: false,
-      ergebnisAbgeschlossen: false,
-    };
-  });
-
-  const anzahlMitErgebnis = Math.round(spiele.length * opts.ergebnisAnteil);
-  for (const [i, spiel] of spiele.entries()) {
-    if (i < anzahlMitErgebnis) {
-      spiel.ergebnisA = Math.floor(Math.random() * 6);
-      spiel.ergebnisB = Math.floor(Math.random() * 6);
-      spiel.status = opts.ergebnisseAbschliessen ? "abgeschlossen" : "beendet";
-      spiel.ergebnisAbgeschlossen = opts.ergebnisseAbschliessen;
-    }
-    await insertDoc(spiel);
-  }
-
-  if (opts.ergebnisseAbschliessen && anzahlMitErgebnis === spiele.length) {
-    turnier = await insertDoc({
-      ...turnier,
-      abgeschlossenVon: opts.ersteller._id,
-      abgeschlossenVonName: opts.ersteller.name,
-      abgeschlossenAm: jetzt,
-    });
-  }
-
-  return turnier;
-}
-
-/**
- * Leitet einen zweiten Spieltag aus einem (Demo-)Vorgaenger-Turnier ab - fachlich identisch zum
- * echten Endpunkt `POST /turniere/:id/ableiten` (backend/src/routes/turnier.ts): Mannschaften +
- * Kader werden mit Herkunftsverweis kopiert, der Spielplan wird gespiegelt (Heim/Auswaerts
- * getauscht), die Regeln gelten als uebernommen und gesperrt. Direkt ueber das Repository statt
- * ueber die HTTP-Route, weil die Route eine bereits ABGESCHLOSSENE Vorgaenger-Instanz verlangt -
- * die Demo-Bundesliga-Spieltage sollen aber beide (noch ergebnislos) in der Zukunft liegen
- * (Nutzer-Vorgabe), was der echte Ablauf so nicht zulaesst.
- */
-async function erzeugeSpieltag2(
-  basis: Turnier,
-  wettbewerbId: string,
-  name: string,
-  datum: string,
-  startzeit: string | undefined,
-): Promise<Turnier> {
-  const basisMitWettbewerb = await insertDoc<Turnier>({ ...basis, wettbewerbId, spieltagNummer: 1 });
-
-  const jetzt = new Date().toISOString();
-  const neuId = newId("turnier");
-  let neuesTurnier: Turnier = {
-    ...basisMitWettbewerb,
-    _id: neuId,
-    _rev: undefined,
-    turnierId: neuId,
-    name,
-    datum,
-    startzeit,
-    status: "aktiv",
-    wettbewerbId,
-    basisTurnierId: basisMitWettbewerb._id,
-    spieltagNummer: 2,
-    regelnGesperrt: true,
-    spielplanVersion: 1,
-    spielplanGeaendertAm: jetzt,
-    spielplanBasis: undefined,
-    erstelltVon: basis.erstelltVon,
-    erstelltVonName: basis.erstelltVonName,
-    erstelltAm: jetzt,
-    geaendertAm: undefined,
-    geaendertVon: undefined,
-    zuletztBearbeitetVon: undefined,
-    zuletztBearbeitetVonName: undefined,
-    abgeschlossenVon: undefined,
-    abgeschlossenVonName: undefined,
-    abgeschlossenAm: undefined,
-  };
-
-  const basisMannschaften = await findAllBySelector<MannschaftImTurnier>({
-    docType: "mannschaftImTurnier",
-    turnierId: basisMitWettbewerb._id,
-  });
-  // Gleicher Verein wie am ersten Spieltag (Vereinszugehoerigkeit aendert sich zwischen
-  // Spieltagen nicht) - sonst identisch zur Erst-Erzeugung in erzeugeEinzelTurnier. Nach
-  // reihenfolge sortieren: findAllBySelector liefert keine garantierte Reihenfolge, "erste
-  // Mannschaft" muss aber deterministisch dieselbe sein wie am ersten Spieltag.
-  const ersteMannschaft = [...basisMannschaften].sort((a, b) => (a.reihenfolge ?? 0) - (b.reihenfolge ?? 0))[0];
-  await erzeugeSchiedsrichter(neuId, ersteMannschaft?.vereinId);
-
-  const mannschaftMap = new Map<string, string>();
-  for (const m of basisMannschaften) {
-    const neueMannschaftId = newId("mannschaftImTurnier");
-    mannschaftMap.set(m._id, neueMannschaftId);
-    await insertDoc<MannschaftImTurnier>({
-      ...m,
-      _id: neueMannschaftId,
-      _rev: undefined,
-      mannschaftId: neueMannschaftId,
-      turnierId: neuId,
-      importiertAusTurnierId: basisMitWettbewerb._id,
-      importiertAusMannschaftId: m._id,
-    });
-
-    const kader = await findAllBySelector<Spieler>({ docType: "spieler", mannschaftId: m._id });
-    for (const s of kader) {
-      const neueSpielerId = newId("spieler");
-      await insertDoc<Spieler>({
-        ...s,
-        _id: neueSpielerId,
-        _rev: undefined,
-        spielerId: neueSpielerId,
-        mannschaftId: neueMannschaftId,
-        importiertAusTurnierId: basisMitWettbewerb._id,
-        importiertAusSpielerId: s._id,
-      });
-    }
-  }
-
-  const basisSpiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: basisMitWettbewerb._id });
-  for (const sp of basisSpiele) {
-    // Heim/Auswaerts getauscht (Rueckspieltag).
-    const neuA = mannschaftMap.get(sp.mannschaftBId);
-    const neuB = mannschaftMap.get(sp.mannschaftAId);
-    if (!neuA || !neuB) continue;
-    const slot = Number(sp.runde);
-    const id = newId("spiel");
-    await insertDoc<Spiel>({
-      _id: id,
-      docType: "spiel",
-      spielId: id,
-      turnierId: neuId,
-      runde: sp.runde,
-      feldId: sp.feldId,
-      startzeitGeplant: Number.isFinite(slot) ? berechneStartzeit(neuesTurnier, slot - 1) : sp.startzeitGeplant,
-      mannschaftAId: neuA,
-      mannschaftBId: neuB,
-      status: "geplant",
-      istForfait: false,
-      ergebnisAbgeschlossen: false,
-    });
-  }
-
-  const spielplanBasis: SpielplanBasis = {
-    spielplanModus: neuesTurnier.spielplanModus,
-    felder: neuesTurnier.felder,
-    mannschaften: [...mannschaftMap.values()].map((id) => ({
-      id,
-      name: basisMannschaften.find((m) => mannschaftMap.get(m._id) === id)?.name ?? "",
-    })),
-    spielzeitMinuten: neuesTurnier.spielzeitMinuten,
-    pauseMinuten: neuesTurnier.pauseMinuten,
-    pauseZwischenSpielenMinuten: neuesTurnier.pauseZwischenSpielenMinuten,
-    anzahlHalbzeiten: neuesTurnier.anzahlHalbzeiten,
-    startzeit: neuesTurnier.startzeit,
-    bundeslandBeruecksichtigen: neuesTurnier.bundeslandBeruecksichtigen,
-  };
-  neuesTurnier = await insertDoc({ ...neuesTurnier, spielplanBasis });
-  return neuesTurnier;
 }
 
 function heute(): string {

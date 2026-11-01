@@ -1157,9 +1157,9 @@ Inhalte; Testdatenbank danach wieder geleert).
 
 **Demo-Snapshot/Reset (`backend/src/demo/`, CLI-Befehle `demo:*`):** die Demo-Instanz bekommt einen
 nächtlichen Reset auf CouchDB-Ebene statt eines App-seitigen Löschens. `beispieldaten.ts` erzeugt
-einmalig einen festen Satz Demo-Stammdaten (Vereine/Teams, mehrere Turniere inkl. einer
-zweigleisigen Bundesliga-Saison mit echter Spieltag-Spiegelung wie bei `/ableiten`, siehe
-Datenimport oben) im Besitz eines eigenen **„Demo-Datenpflege"-Kontos** (`docType: "benutzer"`,
+einmalig einen festen Satz Demo-Stammdaten (Vereine/Teams auch aus dem Ausland, sieben Turniere, die alle
+Turniermodi in verschiedenen Zuständen zeigen: abgeschlossen, mitten in der Vorrunde, Vorrunde fertig,
+mitten in der Endrunde, geplant, zwei davon international) im Besitz eines eigenen **„Demo-Datenpflege"-Kontos** (`docType: "benutzer"`,
 Rolle `manager`, bewusst **ohne** `passwortHash` – kann sich nie einloggen, dient nur als
 `erstelltVon`-Referenz). `snapshot.ts` (`erstelleSnapshot`/`stelleSnapshotWiederher`) gleicht den
 Inhalt der Live-Datenbank mit einer zweiten CouchDB-Datenbank `<COUCHDB_DB>_golden` ab (per-Dokument
@@ -1180,12 +1180,16 @@ Demo-Datenpflege-Konto also aus der `_golden`-Datenbank neu erzeugt, sofern es v
 `demo:snapshot:erstellen` bereits existierte). `NIE_ZURUECKSETZEN` bewusst als **Ausschluss**- statt
 Einschluss-Liste für die Instanz-Einstellungen: ein künftig neuer Inhalts-`docType` landet
 automatisch im Reset, ohne diese Liste pflegen zu müssen – nur echte Instanz-Einstellungen müssen
-hier bewusst ergänzt werden. **Bei
-Änderungen am Datenmodell (`shared/src/types/*`) oder an Business-Logik, die `beispieldaten.ts`
-mitnutzt (Spielplan-Erzeugung, `aktuelleTurnierregeln()`, `turnierZugriffsstufe()`), prüfen, ob das
-Seed-Skript mitgezogen werden muss** – es baut Dokumente direkt über das Repository auf (nicht über
-die HTTP-Routen) und bekommt Typ-/Schema-Änderungen daher nicht automatisch mit, nur über
-`tsc`-Fehler beim nächsten Build.
+hier bewusst ergänzt werden. **Die Turniere werden seit 2026-11-01 über die ECHTEN Routen aufgebaut** (im Prozess per `inject`, angemeldet als
+Demo-Konto: Modus wählen, Gruppen verteilen, Spielplan erzeugen, Ergebnisse erfassen, Endrunde erzeugen) – eine Änderung
+an Datenmodell oder Spielplan-Logik wirkt dadurch automatisch auch im Demo-Stand; bricht eine Route den Aufbau, merkt es
+`demo/beispieldaten.integration.test.ts` (Dauer rund eine Minute). Nur Stammdaten, Kader und die Beispiel-Schiedsrichter
+legt das Skript noch direkt an. **Neuer Demo-Datenstand = drei Schritte auf der Demo-Instanz:** `demo:beispieldaten
+--ersetzen` (entfernt vorher alle bisherigen Demo-Inhalte: Turniere, Stammdaten, Nicht-Admin-Konten; Einstellungen und
+Admin-Konten bleiben), danach `demo:snapshot:erstellen` – **ohne diesen zweiten Schritt spielt der nächtliche Reset den
+alten Stand aus der `_golden`-Datenbank wieder ein**. Die Daten sind beim Aufbau relativ zu „heute“ gewählt (vergangene
+Samstage, „heute“, kommende Samstage) und dann FEST gespeichert: je länger der Snapshot zurückliegt, desto weiter
+rutschen sie in die Vergangenheit – der Datenstand gehört gelegentlich neu aufgebaut.
 
 **Entwicklungs-Kanban-Board (admin-only, kein Turnier-Bezug, nur Entwicklungsinstanz):**
 eigenständiges Werkzeug zur Organisation der Weiterentwicklung, `docType: "kanbanKarte"` in

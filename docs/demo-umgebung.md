@@ -36,21 +36,30 @@ o. g. Instanz-Einstellungen überstehen den Reset. Das gilt bewusst auch für da
 „Demo-Datenpflege"-Konto, aus dessen Besitz die Beispieldaten stammen (kann sich selbst nie
 einloggen, kein `passwortHash`).
 
-Die Beispieldaten (Vereine, Teams, mehrere Beispiel-Turniere inkl. einer zweigleisigen
-Bundesliga-Saison mit echter Spieltag-Spiegelung) erzeugt `backend/src/demo/beispieldaten.ts`
-einmalig über das Konsolen-Tool:
+Die Beispieldaten (Vereine und Teams auch aus dem Ausland, sieben Beispiel-Turniere: alle Turniermodi in
+verschiedenen Zuständen, zwei davon international) erzeugt `backend/src/demo/beispieldaten.ts` über das
+Konsolen-Tool. Die Turniere werden dabei über die echten Routen angelegt und bespielt, nicht von Hand zusammengesetzt.
+
+**Neuen Datenstand aufbauen** (auf der Demo-Instanz, im Ordner `backend`):
 
 ```bash
-npm run torball --workspace=backend -- demo:beispieldaten
-npm run torball --workspace=backend -- demo:snapshot:erstellen
+npm run torball -- demo:beispieldaten --ersetzen
+npm run torball -- demo:snapshot:erstellen
 ```
+
+`--ersetzen` entfernt vorher alle bisherigen Demo-Inhalte (Turniere, Stammdaten, Nicht-Admin-Konten; Einstellungen
+und Admin-Konten bleiben). **Der zweite Befehl ist Pflicht:** Der nächtliche Reset spielt den Stand der
+`_golden`-Datenbank ein – ohne `demo:snapshot:erstellen` kehrt nach der nächsten Nacht der alte Stand zurück.
+Die Datumsangaben der Turniere werden beim Aufbau relativ zu „heute“ gewählt und dann fest gespeichert; der Stand
+sollte deshalb gelegentlich neu aufgebaut werden.
 
 Alle `demo:*`-Befehle sind zusätzlich hinter `DEMO_SNAPSHOT_ERLAUBT=true` (`backend/.env`)
 gesperrt – bewusst nie auf Prod aktiv, da sie ganze Datenbestände ersetzen/überschreiben.
 
 > **Status (2026-08-14):** Der systemd-Timer läuft auf der echten Demo-Instanz – der nächtliche
 > Reset ist dort **aktiv**. Die Beispieldaten wurden zuletzt am 20.08.2026 aktualisiert
-> (`demo:beispieldaten` + `demo:snapshot:erstellen` erneut ausgeführt).
+> (`demo:beispieldaten` + `demo:snapshot:erstellen` erneut ausgeführt); der Stand mit den sieben Modus-Turnieren
+> ist im Code seit 01.11.2026 vorbereitet, aber noch nicht auf der Demo-Instanz aufgebaut.
 
 ## Was bewusst NICHT auf der Demo-Instanz aktiv ist
 

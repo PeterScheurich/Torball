@@ -129,3 +129,18 @@ export async function stelleSnapshotWiederher(): Promise<{ anzahlDokumente: numb
   await ersetzeInhalt(db, snapshot);
   return { anzahlDokumente: snapshot.length };
 }
+
+/**
+ * Entfernt alle Inhalte der Live-Datenbank, die ein Reset ohnehin zuruecksetzen wuerde (Turniere, Stammdaten,
+ * nicht-Admin-Konten ...) - NICHT die Instanz-Einstellungen und die Admin-Konten (siehe istGeschuetzt).
+ * Gedacht als Vorbereitung eines komplett neuen Demo-Datenstands (`demo:beispieldaten --ersetzen`); danach
+ * `demo:snapshot:erstellen`, sonst spielt der naechtliche Reset den alten Stand wieder ein.
+ */
+export async function loescheUngeschuetzteDokumente(): Promise<{ anzahlDokumente: number }> {
+  pruefeDemoErlaubt();
+  const zuLoeschen = await alleDokumente(db);
+  if (zuLoeschen.length > 0) {
+    await db.bulk({ docs: zuLoeschen.map((doc) => ({ _id: doc._id, _rev: doc._rev!, _deleted: true })) as never });
+  }
+  return { anzahlDokumente: zuLoeschen.length };
+}

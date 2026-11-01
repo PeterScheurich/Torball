@@ -77,10 +77,12 @@ const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
   },
   "demo:beispieldaten": {
     beschreibung:
-      "Legt Demo-Stammdaten (Vereine/Teams) und mehrere Beispiel-Turniere an, im Besitz eines " +
-      'eigenen "Demo-Datenpflege"-Kontos (kein Login möglich). Nur bei DEMO_SNAPSHOT_ERLAUBT=true ' +
-      "(siehe konfiguration:setzen). Gedacht als einmaliger Aufbau vor demo:snapshot:erstellen - " +
-      "mehrfacher Aufruf legt weitere, zusätzliche Beispieldaten an statt vorhandene zu ersetzen.",
+      "Legt Demo-Stammdaten (Vereine/Teams) und sieben Beispiel-Turniere an (alle Turniermodi, in " +
+      'verschiedenen Zuständen), im Besitz eines eigenen "Demo-Datenpflege"-Kontos (kein Login möglich). ' +
+      "Nur bei DEMO_SNAPSHOT_ERLAUBT=true (siehe konfiguration:setzen). Ohne Option legt ein Aufruf " +
+      "weitere Beispieldaten dazu; --ersetzen entfernt vorher alle bisherigen Demo-Inhalte (Turniere, " +
+      "Stammdaten, Nicht-Admin-Konten; Einstellungen und Admin-Konten bleiben). Danach IMMER " +
+      "demo:snapshot:erstellen, sonst spielt der nächtliche Reset den alten Stand wieder ein.",
     ausfuehren: demoBeispieldaten,
   },
   "demo:snapshot:erstellen": {
@@ -125,8 +127,8 @@ const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
   },
 };
 
-async function demoBeispieldaten(): Promise<void> {
-  await erzeugeBeispieldaten();
+async function demoBeispieldaten(optionen: Optionen): Promise<void> {
+  await erzeugeBeispieldaten({ ersetzen: "ersetzen" in optionen });
   console.log("Demo-Stammdaten und Beispiel-Turniere angelegt.");
 }
 
