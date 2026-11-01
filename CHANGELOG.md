@@ -7,6 +7,12 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Halle eines Vorrundenspiels ändern, Endrunde mit einem Klick in eine Halle legen.** Im Spielplan hat jedes
+  Spiel bei mehreren Hallen eine Spalte „Halle“. Spielt in der gewählten Halle zur selben Zeit schon ein anderes
+  Spiel, tauschen die beiden die Halle (mit „Rückgängig“). Die Spielnummern folgen der Position, also tauschen dabei
+  auch die Nummern. Im „Weiteren Ablauf“ legt „Viertelfinale bis Finale nacheinander in [Halle] spielen“ alle
+  Spiele der Endrunde in eine Halle – die Platzierungsspiele bleiben automatisch.
+
 - **Halle und Startzeit der Endrunde selbst wählen.** Im „Weiteren Ablauf“ (Reiter „Spielplan“) lässt sich für
   jedes Spiel die Halle auswählen und die Startzeit eintragen. Legt man mehrere Spiele in dieselbe Halle, laufen sie
   hintereinander – zum Beispiel beide Halbfinale, dann Spiel um Platz 3 und Finale in Halle A. Abhängige Spiele rücken

@@ -51,6 +51,8 @@ export function ModusAblauf({ turnierId, felder, mannschaften, gesperrt, signatu
   const [reihenfolgen, setReihenfolgen] = useState<Record<string, string[]>>({});
   // Paarung von Hand je Plan-Spiel.
   const [handwahl, setHandwahl] = useState<Record<string, { a: string; b: string }>>({});
+  // Halle fuer "Endrunde in einer Halle" - bis zur ersten Auswahl die erste Halle.
+  const [gewaehlteEndrundeHalle, setGewaehlteEndrundeHalle] = useState("");
 
   const laden = useCallback(async () => {
     try {
@@ -83,6 +85,8 @@ export function ModusAblauf({ turnierId, felder, mannschaften, gesperrt, signatu
   if (ansicht.plan.length === 0 && ansicht.hinweise.length === 0) return null;
 
   const erzeugbar = ansicht.plan.filter((p) => p.erzeugbar && !p.spielId);
+  const endrundeHalle = gewaehlteEndrundeHalle || felder[0]?.feldId || "";
+  const endrundeOffen = ansicht.plan.some((p) => !p.spielId && p.phase !== "platzierung");
 
   async function ausfuehren<T>(arbeit: () => Promise<T>, meldung: string): Promise<T | undefined> {
     setFehler(undefined);
@@ -158,6 +162,20 @@ export function ModusAblauf({ turnierId, felder, mannschaften, gesperrt, signatu
       `${p.bezeichnung}: Startzeit gespeichert.`,
     );
     if (r) setAntwort(r);
+  }
+
+  // Alle Spiele ab dem Viertelfinale (Viertel-, Halbfinale, Spiel um Platz 3, Finale) in EINE Halle legen: sie laufen
+  // dann nacheinander. Platzierungsspiele bleiben automatisch (dafuer ist die zweite Halle da). Spiele, die es
+  // schon gibt, bleiben unberuehrt - die aendert man am Spiel.
+  async function endrundeInHalle() {
+    const ziele = ansicht.plan.filter((p) => !p.spielId && p.phase !== "platzierung");
+    if (!endrundeHalle || ziele.length === 0) return;
+    let letzte: ModusAntwort | undefined;
+    const ok = await ausfuehren(async () => {
+      for (const p of ziele) letzte = await aendereModusPlanSpiel(turnierId, p.planId, { feldId: endrundeHalle });
+      return letzte;
+    }, "Die Endrunde liegt jetzt in einer Halle und läuft nacheinander.");
+    if (ok) setAntwort(ok);
   }
 
   async function automatisch(p: PlanSpielAnsicht) {
@@ -270,6 +288,26 @@ export function ModusAblauf({ turnierId, felder, mannschaften, gesperrt, signatu
               Erzeugbare Spiele erzeugen ({erzeugbar.length})
             </button>
           </p>
+          {felder.length > 1 && endrundeOffen && (
+            <p>
+              <label htmlFor="endrunde-halle">Viertelfinale bis Finale nacheinander in </label>
+              <select
+                id="endrunde-halle"
+                disabled={gesperrt}
+                value={endrundeHalle}
+                onChange={(e) => setGewaehlteEndrundeHalle(e.target.value)}
+              >
+                {felder.map((f) => (
+                  <option key={f.feldId} value={f.feldId}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>{" "}
+              <button type="button" disabled={gesperrt} onClick={() => void endrundeInHalle()}>
+                spielen
+              </button>
+            </p>
+          )}
           <div className="tabellen-wrapper">
             <table className="spielplan-tabelle">
               <caption className="sr-only">

@@ -372,6 +372,33 @@ export function SpielplanVerwaltung({
     }
   }
 
+  /**
+   * Legt ein Spiel in eine andere Halle. Spielt dort zur selben Zeit schon ein anderes Spiel, tauschen die beiden
+   * die Halle (sonst stuenden zwei Spiele gleichzeitig in einer Halle). Rueckgaengig machbar wie die uebrigen Aenderungen.
+   */
+  async function halleWechseln(spiel: Spiel, zielFeldId: string) {
+    if (zielFeldId === spiel.feldId) return;
+    const tausch = spiele.find((x) => x._id !== spiel._id && x.runde === spiel.runde && x.feldId === zielFeldId);
+    const hallenName = (id: string | undefined) => felderListe.find((f) => f.feldId === id)?.name ?? id ?? "";
+    verlaufSichern();
+    try {
+      await Promise.all([
+        spielAnpassen(spiel._id, { feldId: zielFeldId }),
+        ...(tausch && spiel.feldId ? [spielAnpassen(tausch._id, { feldId: spiel.feldId })] : []),
+      ]);
+      await laden();
+      const nr = nrVonSpiel.get(spiel._id);
+      meldeGespeichert(
+        tausch
+          ? `Spiel ${nr} und Spiel ${nrVonSpiel.get(tausch._id)} haben die Halle getauscht.`
+          : `Spiel ${nr} liegt jetzt in ${hallenName(zielFeldId)}.`,
+      );
+    } catch (err) {
+      verlaufVerwerfen();
+      setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Ändern der Halle");
+    }
+  }
+
   async function startzeitPersistiertAendern(spiel: Spiel, hhmm: string) {
     if (!spiel.startzeitGeplant) return;
     verlaufSichern();
@@ -720,6 +747,7 @@ export function SpielplanVerwaltung({
                       </th>
                       <th scope="col" className="spalte-spiel">Nr.</th>
                       {zeigeGruppe && <th scope="col" className="spalte-gruppe">{gruppeKopf}</th>}
+                      {mehrereFelder && <th scope="col" className="spalte-halle">Halle</th>}
                       <th scope="col" className="spalte-startzeit">Startzeit</th>
                       <th scope="col">Mannschaft A</th>
                       <th scope="col">Mannschaft B</th>
@@ -736,7 +764,7 @@ export function SpielplanVerwaltung({
                           return (
                             <tr key={`platzhalter-${zeilenIndex}`} className="platzhalter-zeile">
                               <td className="reihenfolge-zelle">–</td>
-                              <td colSpan={zeigeGruppe ? 7 : 6}>Spielpause (anderes Feld spielt)</td>
+                              <td colSpan={6 + (zeigeGruppe ? 1 : 0) + (mehrereFelder ? 1 : 0)}>Spielpause (anderes Feld spielt)</td>
                             </tr>
                           );
                         }
@@ -796,6 +824,25 @@ export function SpielplanVerwaltung({
                             </td>
                             <td>{nr}</td>
                             {zeigeGruppe && <td>{gruppeText(s)}</td>}
+                            {mehrereFelder && (
+                              <td>
+                                <label className="sr-only" htmlFor={`spiel-halle-${s._id}`}>
+                                  Halle von Spiel {nr}
+                                </label>
+                                <select
+                                  id={`spiel-halle-${s._id}`}
+                                  disabled={s.status !== "geplant" || s.ergebnisAbgeschlossen || gesperrt}
+                                  value={s.feldId ?? ""}
+                                  onChange={(e) => void halleWechseln(s, e.target.value)}
+                                >
+                                  {felderListe.map((f) => (
+                                    <option key={f.feldId} value={f.feldId}>
+                                      {f.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                            )}
                             <td>
                               <label className="sr-only" htmlFor={`spiel-zeit-${s._id}`}>
                                 Startzeit von Spiel {nr}
