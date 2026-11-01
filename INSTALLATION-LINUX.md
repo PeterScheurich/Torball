@@ -6,7 +6,8 @@ Netzwerk. (Für einen Server im Internet gibt es einen anderen Weg, siehe `docs/
 > **Stand:** Der Linux-Installer wurde am 01.11.2026 auf einem Debian 13 und einem Ubuntu 26.04 (beide ohne Oberfläche)
 > durchgespielt: Installation, Neustart, Aktualisieren, Deinstallieren, Firewall mit `ufw`. Auf Ubuntu 26.04 mit Desktop
 > (GNOME) lief außerdem der Start über die Verknüpfung auf dem Schreibtisch bis zur Einrichtung des ersten Benutzers.
-> **Noch nicht erprobt** sind Linux Mint und andere Desktop-Umgebungen, andere Firewalls (`firewalld`) und ARM-Rechner.
+> Ebenso auf Linux Mint 22.3 (Cinnamon, deutsch). **Noch nicht erprobt** sind andere Desktop-Umgebungen (z. B. XFCE, KDE), andere Firewalls
+> (`firewalld`) und ARM-Rechner.
 > Bitte zuerst auf einem Testrechner ausprobieren und Auffälligkeiten melden.
 
 ## Voraussetzungen

@@ -335,7 +335,7 @@ if [[ "$HOST_WERT" != "0.0.0.0" ]]; then
 else
   NETZE="$(ip -4 route show default 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')"
   [[ -n "$NETZE" ]] && NETZE="$(ip -4 route show dev "$NETZE" scope link 2>/dev/null | awk '$1 ~ /\// {print $1}')"
-  if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
+  if command -v ufw >/dev/null 2>&1 && LC_ALL=C ufw status 2>/dev/null | grep -q "Status: active"; then   # LC_ALL=C: auf einem deutschen System heisst es "Status: Aktiv"
     [[ -n "$NETZE" ]] || fehler "Die Firewall ist aktiv, aber das eigene Netz wurde nicht erkannt. Bitte die Freigabe von Hand einrichten: siehe INSTALLATION-LINUX.md."
     bestaetige_aenderung \
       "Firewall-Freigabe (ufw)" \

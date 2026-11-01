@@ -73,6 +73,23 @@ in der Vorprüfung nennt 32-Bit-Systeme und unbekannte Architekturen verständli
 es dafür keinen Installer gibt. Die Funktion wurde einzeln mit `amd64`, `arm64`, `armhf`, `armel`, `i386`, `riscv64` und `ppc64el`
 geprüft; der Durchlauf im vollständigen Installer auf einem echten System steht noch aus (bei einem der nächsten Tests mit prüfen).
 
+## Dritter Durchgang: Linux Mint 22.3 (Cinnamon, deutschsprachig)
+
+Proxmox-VM, 4 GB RAM, 32 GB Platte, Anmeldemanager `lightdm`, X11-Sitzung, automatische Anmeldung für `claudetest`, `ufw` eingeschaltet.
+System meldet `ID=linuxmint`, `ID_LIKE="ubuntu debian"`, `UBUNTU_CODENAME=noble`; der Installer erkennt `noble`, die CouchDB-Quelle
+zeigt auf `noble`, die neue Architekturprüfung lässt `amd64` durch.
+
+Gefunden und behoben:
+
+7. **Firewall-Erkennung hing an der englischen Ausgabe.** Der Installer erkannte ein aktives `ufw` am Text `Status: active`; auf einem
+   deutschen System heißt es `Status: Aktiv`. Folge: „keine Firewall aktiv“, **keine Freigabe für Port 3000** – andere Geräte im Netz
+   kämen nicht an die App. Auf Ubuntu (englisch) war es nicht aufgefallen. Jetzt `LC_ALL=C ufw status`. Geprüft auf dem deutschen Mint:
+   Regel `3000/tcp ALLOW 10.10.20.0/24` wird angelegt und beim Deinstallieren wieder entfernt.
+
+Geprüft und in Ordnung: Schreibtisch-Ordner heißt hier `Schreibtisch` (der Installer kennt beide Namen), Verknüpfung gehört dem
+Benutzer mit eigener Gruppe, Menü-Eintrag ohne Hinweise gültig (`Categories=Office;`), vollständiges Deinstallieren räumt Dienst, Benutzer,
+Dateien, Firewall-Regel, Menü-Eintrag und Verknüpfung weg, `apt update` danach ohne Warnung.
+
 ## Kleinigkeiten, nicht geändert
 
 - Der Diagnose-Bericht landet im Programmordner (`/opt/torball-turniere/app/backend/…`), wo ihn ein Laie nicht sucht. Der Pfad wird

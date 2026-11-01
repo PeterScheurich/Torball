@@ -12,7 +12,8 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
   danach bei jedem `apt update` eine Warnung auslöste; der Installer legt keine Compiler-Pakete mehr an (rund 250 MB weniger).
   Auf einem Ubuntu-Desktop wird die Schreibtisch-Verknüpfung jetzt gleich als startbar markiert; der Start per Klick bis zur
   Einrichtung des ersten Benutzers wurde geprüft. Der Installer prüft jetzt gleich zu Beginn, ob das System 64 Bit hat (CouchDB gibt es nicht für 32 Bit, etwa das ältere
-  Raspberry Pi OS) und meldet es verständlich. Noch nicht erprobt sind Linux Mint und andere Firewalls.
+  Raspberry Pi OS) und meldet es verständlich. Auch auf Linux Mint 22.3 (deutsch) durchgespielt; dabei behoben: Auf einem deutschsprachigen System erkannte der Installer die
+  aktive Firewall nicht und gab Port 3000 nicht frei. Noch nicht erprobt sind andere Firewalls (`firewalld`).
 - **Turniermodi kopieren und anpassen.** Unter Admin → Turniermodi lässt sich jede Vorlage mit „Kopie anlegen“ als
   eigene Vorlage kopieren. Die Kopie hat einen eigenen Namen und eigene Standardwerte (mögliche Endrunden, Standard-
   Endrunde, Spiel um Platz 3, Platzierungsspiele, Hin- und Rückspiel) und steht dann bei jedem Turnier zur Auswahl. Die
