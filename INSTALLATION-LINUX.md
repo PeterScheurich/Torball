@@ -30,7 +30,8 @@ Der Installer erklärt **vor jeder Änderung an deinem Rechner**, worum es geht 
 um Zustimmung. Wer eine Frage ablehnt, bricht die Installation ab – es wird nichts halb gemacht. Er fragt außerdem
 nach der Portnummer (Vorschlag: 3000) und danach, ob auch **andere Geräte im Netzwerk** zugreifen dürfen.
 
-Danach läuft die App als Dienst `torball-turniere` und startet mit dem Rechner. Aufruf im Browser:
+Danach läuft die App als Dienst `torball-turniere` und startet mit dem Rechner. Auf einem Rechner mit Oberfläche gibt es außerdem einen
+Eintrag im Anwendungsmenü und eine Verknüpfung auf dem Schreibtisch; erscheint sie dort nur als Textdatei, hilft Rechtsklick → „Start erlauben“. Aufruf im Browser:
 `http://localhost:3000`. Beim ersten Öffnen führt die Anmeldeseite durch die Einrichtung des ersten
 Administrator-Kontos – das ist ein **eigenes Konto auf diesem Rechner**, unabhängig von einem Konto auf dem
 Online-Server.

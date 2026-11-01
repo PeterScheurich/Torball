@@ -372,15 +372,27 @@ Comment=Torball-Turniere planen und protokollieren
 Exec=xdg-open ${START_URL}
 Icon=${ICON}
 Terminal=false
-Categories=Office;Utility;
+Categories=Office;
 DESKTOP
 # Zusaetzlich eine Verknuepfung auf dem Schreibtisch der Person, die die Installation gestartet hat.
 if [[ -n "${SUDO_USER:-}" && "${SUDO_USER}" != "root" ]]; then
   BENUTZER_HEIM="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
   for desktop in "${BENUTZER_HEIM}/Desktop" "${BENUTZER_HEIM}/Schreibtisch"; do
     if [[ -d "$desktop" ]]; then
-      cp /usr/share/applications/torball-turniere.desktop "${desktop}/Torball-Turniere.desktop"
-      chown "${SUDO_USER}:" "${desktop}/Torball-Turniere.desktop"; chmod 755 "${desktop}/Torball-Turniere.desktop"
+      ziel="${desktop}/Torball-Turniere.desktop"
+      cp /usr/share/applications/torball-turniere.desktop "$ziel"
+      # Gruppe ausdruecklich nennen: Ubuntu 26.04 nutzt ein anderes chown (uutils), bei dem "benutzer:" die Gruppe nicht mehr
+      # auf die Login-Gruppe setzt.
+      chown "${SUDO_USER}:$(id -gn "$SUDO_USER")" "$ziel"; chmod 755 "$ziel"
+      # GNOME (Ubuntu) zeigt eine Verknuepfung auf dem Schreibtisch erst dann als Programm, wenn sie als vertrauenswuerdig
+      # markiert ist (sonst "Start erlauben" per Rechtsklick). Das geht nur, solange die Person angemeldet ist (Sitzungs-Bus);
+      # sonst bleibt es beim Rechtsklick - auf Linux Mint (Cinnamon) ist keine Markierung noetig.
+      if command -v gio >/dev/null 2>&1; then
+        benutzer_uid="$(id -u "$SUDO_USER")"
+        runuser -u "$SUDO_USER" -- env XDG_RUNTIME_DIR="/run/user/${benutzer_uid}" \
+          DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${benutzer_uid}/bus" \
+          gio set "$ziel" metadata::trusted true >/dev/null 2>&1 || true
+      fi
       break
     fi
   done

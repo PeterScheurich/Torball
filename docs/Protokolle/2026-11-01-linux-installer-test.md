@@ -42,6 +42,29 @@ Quelle war das **echte Quellcode-ZIP** von der Prod-Instanz (`/download/torball-
    Installation läuft auf Debian nach ausdrücklichem Entfernen der Compiler (`gcc`, `g++`, `make` fehlen) sauber durch.
 3. **Voraussetzung `unzip` fehlte in der Anleitung** (auf einem Server ohne Oberfläche ist es nicht vorhanden). Ergänzt.
 
+## Zweiter Durchgang: Ubuntu 26.04 mit Desktop (GNOME)
+
+Die Ubuntu-VM wurde per `apt install ubuntu-desktop-minimal` zum Desktop-System gemacht (grafische Sitzung von `claudetest` per
+automatischer Anmeldung, Wayland, Firefox als Snap). Der Installer lief dort noch einmal als Aktualisierung.
+
+Gefunden und behoben:
+
+4. **Schreibtisch-Verknüpfung ohne „Start erlauben“.** GNOME zeigt eine `.desktop`-Datei auf dem Schreibtisch erst dann als Programm,
+   wenn sie als vertrauenswürdig markiert ist (`metadata::trusted`), sonst muss man per Rechtsklick „Start erlauben“ wählen. Der
+   Installer setzt die Markierung jetzt, soweit die Person angemeldet ist (Sitzungs-Bus); sonst bleibt es beim Rechtsklick. Geprüft:
+   `gio info` zeigt `metadata::trusted: true`.
+5. **Gruppe der Verknüpfung blieb `root`.** Ubuntu 26.04 nutzt ein anderes `chown` (uutils): `benutzer:` setzt die Gruppe nicht mehr auf die
+   Login-Gruppe. Die Gruppe wird jetzt ausdrücklich genannt.
+6. **Menü-Eintrag mit zwei Hauptkategorien** (`Office;Utility;`): konnte doppelt im Menü erscheinen. Jetzt `Office;`.
+
+Geprüft und in Ordnung: Menü-Eintrag gültig (`desktop-file-validate`), Symbol für normale Benutzer lesbar, Standardbrowser in der
+Sitzung ist Firefox, Verknüpfung liegt auf dem Schreibtisch.
+
+**Nicht von hier aus prüfbar:** Das Starten über den Menü-Eintrag. `xdg-open` und `gio open` melden aus einer SSH-Sitzung Erfolg, starten
+den Snap-Firefox aber nicht (GNOME weist den Start von außerhalb der Sitzung ab, Journal: „Failed to get app ID for snap 'firefox'“); ein
+direkter Start von `firefox` klappt. Ob ein echter Klick den Browser mit der App öffnet, muss am Bildschirm geprüft werden. Ein Foto
+des Bildschirms von hier aus ist nicht möglich (GNOME verbietet es). Der erste Start von Firefox dauert auf dieser VM rund 30 Sekunden.
+
 ## Kleinigkeiten, nicht geändert
 
 - Der Diagnose-Bericht landet im Programmordner (`/opt/torball-turniere/app/backend/…`), wo ihn ein Laie nicht sucht. Der Pfad wird
