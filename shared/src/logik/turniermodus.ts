@@ -131,7 +131,12 @@ export function pruefeModusEinstellungen(vorlage: TurniermodusVorlage, e: unknow
   if (typeof w.platz3 !== "boolean" || typeof w.platzierungsspiele !== "boolean") {
     return "„Spiel um Platz 3“ und „Platzierungsspiele“ müssen Wahrheitswerte sein.";
   }
-  const unbekannt = Object.keys(w).filter((k) => !["endrundeGroesse", "platz3", "platzierungsspiele"].includes(k));
+  if (w.endrundeAutomatisch !== undefined && typeof w.endrundeAutomatisch !== "boolean") {
+    return "„Endrunde automatisch erzeugen“ muss ein Wahrheitswert sein.";
+  }
+  const unbekannt = Object.keys(w).filter(
+    (k) => !["endrundeGroesse", "platz3", "platzierungsspiele", "endrundeAutomatisch"].includes(k),
+  );
   if (unbekannt.length > 0) return `Unbekannte Einstellung: ${unbekannt.join(", ")}.`;
   return undefined;
 }

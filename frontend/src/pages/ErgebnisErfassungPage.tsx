@@ -179,7 +179,7 @@ export function ErgebnisErfassungPage() {
           <caption className="sr-only">Ergebniserfassung</caption>
           <thead>
             <tr>
-              <th scope="col">Spiel</th>
+              <th scope="col">Nr.</th>
               <th scope="col">Mannschaft A</th>
               <th scope="col">Ergebnis</th>
               <th scope="col">Mannschaft B</th>

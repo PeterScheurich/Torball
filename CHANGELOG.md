@@ -7,6 +7,16 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Endrunde automatisch erzeugen.** In der Übersicht gibt es unter dem Turniermodus den Haken „Spiele der Endrunde
+  automatisch erzeugen, sobald die Paarung feststeht“. Ist er gesetzt, entstehen die Spiele von allein, sobald das
+  letzte nötige Ergebnis abgeschlossen ist – auch die jeweils nächste Stufe (Halbfinale, dann Finale und Spiel um
+  Platz 3). Bei einem Unentschieden oder einem Gleichstand in der Tabelle wartet die Automatik, bis die
+  Turnierleitung entschieden hat. Halle und Startzeit lassen sich vorher im „Weiteren Ablauf“ einstellen. Ohne den
+  Haken bleibt alles wie bisher (Knopf im Reiter „Spielplan“). Der Haken lässt sich auch nach dem Beginn der
+  Endrunde noch umschalten.
+
+- **Spaltenüberschrift „Nr.“ statt „Spiel“** in der Ergebniserfassung, der öffentlichen Spielplan-Tabelle und der
+  Spielliste des Protokollanten – die Spalte mit der Spielnummer wird dadurch schmaler.
 - **Neue Turniere hatten keine Pause zwischen den Spielen.** Wer die Standardregeln vor Einführung dieses Feldes
   gespeichert hatte, bekam bei jedem neuen Turnier „keine Pause“ – die Spiele lagen nur 12 statt 25 Minuten auseinander,
   ohne dass es jemand bemerkt hätte. Fehlende Regelwerte kommen jetzt aus den Standardwerten. Bereits angelegte

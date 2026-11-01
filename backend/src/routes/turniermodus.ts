@@ -19,6 +19,7 @@ import {
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 import { aendereTurnierAtomar } from "../turnier/aenderung";
 import { baueModusAnsicht, mannschaftenDerGruppe, type ModusAnsicht } from "../spielplan/modus";
+import { erzeugePlanSpiele, pruefeAutomatischeErzeugung } from "../spielplan/modusErzeugen";
 
 /**
  * Turniermodi (Gruppen, Endrunde, Platzierungsspiele) - Konzept: Kanban-Karte "Turniermodi als
@@ -102,7 +103,6 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
     async (req, reply) => {
       const turnier = await laden(req, reply, "schreiben_voll", true);
       if (!turnier) return;
-      if (endrundeErzeugt(turnier)) return reply.code(409).send({ error: MODUS_GESPERRT_FEHLER });
       const vorlage = findeEingebautenTurniermodus(req.body.turniermodusId);
       if (!vorlage) return reply.code(400).send({ error: "Diesen Turniermodus gibt es nicht." });
       const einstellungen =
@@ -110,6 +110,16 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
         (turnier.modus?.vorlage.id === vorlage.id ? turnier.modus.einstellungen : standardModusEinstellungen(vorlage));
       const fehler = pruefeModusEinstellungen(vorlage, einstellungen);
       if (fehler) return reply.code(400).send({ error: fehler });
+      // Sind schon Spiele der Endrunde erzeugt, ist alles fest - bis auf die Automatik: sie betrifft nur die noch
+      // nicht erzeugten Spiele (die naechste Stufe) und muss sich deshalb weiter ein- und ausschalten lassen.
+      if (endrundeErzeugt(turnier)) {
+        const bisher = turnier.modus?.einstellungen;
+        const nurAutomatik =
+          turnier.modus?.vorlage.id === vorlage.id &&
+          bisher !== undefined &&
+          bisher.endrundeGroesse === einstellungen.endrundeGroesse && bisher.platz3 === einstellungen.platz3 && bisher.platzierungsspiele === einstellungen.platzierungsspiele;
+        if (!nurAutomatik) return reply.code(409).send({ error: MODUS_GESPERRT_FEHLER });
+      }
       // Ein anderer Modus (andere Gruppen) passt nicht mehr zu bereits begonnenen Vorrundenspielen.
       if ((turnier.modus?.vorlage.id ?? "jeder-gegen-jeden") !== vorlage.id) {
         const spiele = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id });
@@ -131,7 +141,8 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
       }));
       if (!aktualisiert) return reply.code(404).send({ error: "Turnier nicht gefunden" });
       await markiereTurnierBearbeitet(turnier._id, req.benutzer);
-      return (await ladeAnsicht(aktualisiert)) ?? { vorlage: null };
+      await pruefeAutomatischeErzeugung(turnier._id, req.log);
+      return (await ladeAnsicht((await findById<Turnier>(turnier._id, "turnier")) ?? aktualisiert)) ?? { vorlage: null };
     },
   );
 
@@ -193,56 +204,18 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(409).send({ error: "Im Moment gibt es nichts zu erzeugen – die Paarungen stehen noch nicht fest." });
     }
 
-    // `runde` ist die Nummer des Zeit-Slots (Sortierung, Verschieben und Pruefungen rechnen damit) - bei Spielen
-    // der Endrunde die fortlaufende Nummer nach der Startzeit, hinter dem letzten Vorrunden-Slot. Spiele mit gleicher
-    // Startzeit (zwei Felder) bekommen dieselbe Nummer. Der Name steht in `bezeichnung`.
-    const vorhandene = await findAllBySelector<Spiel>({ docType: "spiel", turnierId: turnier._id });
-    const letzterVorrundenSlot = Math.max(
-      0,
-      ...vorhandene.filter((s) => !s.planId).map((s) => Number(s.runde)).filter((n) => Number.isFinite(n)),
-    );
-    const startzeiten = [...new Set(ansicht.plan.map((p) => p.startzeitGeplant).filter((z): z is string => Boolean(z)))].sort();
-    const slotVon = (p: (typeof ansicht.plan)[number]) =>
-      letzterVorrundenSlot +
-      1 +
-      (p.startzeitGeplant ? startzeiten.indexOf(p.startzeitGeplant) : ansicht.plan.indexOf(p));
-
-    const neueSpiele: Spiel[] = [];
-    for (const p of ziele) {
-      const o = overrides[p.planId];
-      const a = o?.mannschaftAId ?? p.mannschaftAId;
-      const b = o?.mannschaftBId ?? p.mannschaftBId;
-      if (!a || !b) return reply.code(409).send({ error: `Die Paarung „${p.bezeichnung}“ steht noch nicht fest.` });
-      const id = newId("spiel");
-      neueSpiele.push({
-        _id: id,
-        docType: "spiel",
-        spielId: id,
-        turnierId: turnier._id,
-        runde: String(slotVon(p)),
-        bezeichnung: p.bezeichnung,
-        planId: p.planId,
-        feldId: p.feldId,
-        startzeitGeplant: p.startzeitGeplant,
-        mannschaftAId: a,
-        mannschaftBId: b,
-        status: "geplant",
-        istForfait: false,
-        ergebnisAbgeschlossen: false,
-      });
+    const ergebnis = await erzeugePlanSpiele(turnier, ansicht, ziele, overrides);
+    if (ergebnis.art === "offen") {
+      return reply.code(409).send({ error: `Die Paarung „${ergebnis.bezeichnung}“ steht noch nicht fest.` });
     }
-    for (const s of neueSpiele) await insertDoc(s);
-
-    const aktualisiert = await aendereTurnierAtomar(turnier._id, (t) => {
-      if (!t.modus) return undefined;
-      const zustand: Record<string, PlanSpielZustand> = { ...t.modus.planZustand };
-      for (const s of neueSpiele) zustand[s.planId!] = { ...zustand[s.planId!], spielId: s._id };
-      return { ...t, modus: { ...t.modus, planZustand: zustand } };
-    });
+    if (ergebnis.art === "bereits-erzeugt") {
+      return reply.code(409).send({ error: "Diese Spiele wurden gerade schon erzeugt – bitte die Seite neu laden." });
+    }
     await markiereTurnierBearbeitet(turnier._id, req.benutzer);
+    const aktuell = await findById<Turnier>(turnier._id, "turnier");
     return reply.code(201).send({
-      erzeugt: neueSpiele.map((s) => ({ spielId: s._id, bezeichnung: s.bezeichnung })),
-      ansicht: aktualisiert ? await ladeAnsicht(aktualisiert) : undefined,
+      erzeugt: ergebnis.spiele.map((s) => ({ spielId: s._id, bezeichnung: s.bezeichnung })),
+      ansicht: aktuell ? await ladeAnsicht(aktuell) : undefined,
     });
   });
 
@@ -297,7 +270,9 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
           : undefined,
       );
       await markiereTurnierBearbeitet(turnier._id, req.benutzer);
-      return aktualisiert ? ((await ladeAnsicht(aktualisiert)) ?? { vorlage: null }) : { vorlage: null };
+      await pruefeAutomatischeErzeugung(turnier._id, req.log);
+      const frisch = await findById<Turnier>(turnier._id, "turnier");
+      return frisch ? ((await ladeAnsicht(frisch)) ?? { vorlage: null }) : { vorlage: null };
     },
   );
 
@@ -391,7 +366,9 @@ export async function turniermodusRoutes(app: FastifyInstance): Promise<void> {
         t.modus ? { ...t, modus: { ...t.modus, planZustand: { ...t.modus.planZustand, [eintrag.planId]: neu } } } : undefined,
       );
       await markiereTurnierBearbeitet(turnier._id, req.benutzer);
-      return aktualisiert ? ((await ladeAnsicht(aktualisiert)) ?? { vorlage: null }) : { vorlage: null };
+      if ("entscheidung" in req.body) await pruefeAutomatischeErzeugung(turnier._id, req.log);
+      const frisch = await findById<Turnier>(turnier._id, "turnier");
+      return aktualisiert && frisch ? ((await ladeAnsicht(frisch)) ?? { vorlage: null }) : { vorlage: null };
     },
   );
 }

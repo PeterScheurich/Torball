@@ -12,6 +12,7 @@ import {
   zuschreibung,
 } from "../auth/turnierZugriff";
 import { ergebnisAusEvents, sortiertNachSequenz } from "../protokoll/ereignisse";
+import { pruefeAutomatischeErzeugung } from "../spielplan/modusErzeugen";
 
 /**
  * Digitale Protokollierung (Abschnitt 22, Design: docs/digitales-protokoll-konzept.md): je Spiel
@@ -355,6 +356,7 @@ export async function protokollRoutes(app: FastifyInstance): Promise<void> {
         patch.status = "abgeschlossen";
       }
       const aktuellesSpiel = Object.keys(patch).length > 0 ? await insertDoc({ ...spiel, ...patch }) : spiel;
+      if (patch.ergebnisAbgeschlossen) await pruefeAutomatischeErzeugung(spiel.turnierId, req.log);
 
       return { event: gespeichert, protokoll: aktuellesProtokoll, spiel: aktuellesSpiel };
     },
@@ -418,6 +420,7 @@ export async function protokollRoutes(app: FastifyInstance): Promise<void> {
       ergebnisAbgeschlossen: true,
       status: "abgeschlossen",
     });
+    await pruefeAutomatischeErzeugung(spiel.turnierId, req.log);
     return { protokoll: bestaetigt, spiel: aktuellesSpiel };
   });
 

@@ -214,6 +214,31 @@ export function TurniermodusAuswahl({
         </>
       )}
 
+      {ansicht && ansicht.plan.length > 0 && (
+        <p>
+          <label>
+            <input
+              type="checkbox"
+              disabled={gesperrt}
+              checked={einstellungen.endrundeAutomatisch ?? false}
+              onChange={(e) =>
+                void speichern(
+                  vorlage.id,
+                  { ...einstellungen, endrundeAutomatisch: e.target.checked },
+                  e.target.checked ? "Automatisches Erzeugen der Endrunde eingeschaltet." : "Automatisches Erzeugen der Endrunde ausgeschaltet.",
+                )
+              }
+            />{" "}
+            Spiele der Endrunde automatisch erzeugen, sobald die Paarung feststeht
+          </label>
+          <br />
+          <span className="feld-hinweis">
+            Sonst erzeugt die Turnierleitung sie im Reiter „Spielplan“ per Knopf. Halle und Startzeit der noch nicht
+            erzeugten Spiele lassen sich vorher im „Weiteren Ablauf“ einstellen. Bei einem Unentschieden wartet die
+            nächste Stufe auf die Entscheidung der Turnierleitung.
+          </span>
+        </p>
+      )}
       {gruppenText && <p>{gruppenText} Die Zuordnung geschieht im Reiter „Mannschaften“.</p>}
       {endrundeErzeugt && (
         <p>Spiele der Endrunde wurden bereits erzeugt – Modus, Gruppen und Endrunde lassen sich nicht mehr ändern.</p>

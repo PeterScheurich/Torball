@@ -97,7 +97,7 @@ function SpieleTabelle({ spiele, mannschaften, felder, zeigeErgebnis }: SpieleTa
         <caption className="sr-only">Spielplan</caption>
         <thead>
           <tr>
-            <th scope="col">Spiel</th>
+            <th scope="col">Nr.</th>
             {zeigeGruppe && <th scope="col" className="zelle-zentriert">{gruppeKopf}</th>}
             {mehrereFelder && <th scope="col">Feld</th>}
             <th scope="col">Startzeit</th>

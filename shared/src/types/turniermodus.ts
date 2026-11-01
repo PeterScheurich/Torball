@@ -43,6 +43,11 @@ export interface ModusEinstellungen {
   platz3: boolean;
   /** Platzierungsspiele fuer die Mannschaften ausserhalb der Endrunde. */
   platzierungsspiele: boolean;
+  /**
+   * Spiele der Endrunde automatisch erzeugen, sobald ihre Paarung feststeht (nach dem letzten Ergebnis der Vorrunde
+   * bzw. der vorigen Stufe). Fehlt = aus: dann erzeugt die Turnierleitung die Spiele per Knopf.
+   */
+  endrundeAutomatisch?: boolean;
 }
 
 /** Wer in einer Paarung steht - ein Tabellenplatz der Vorrunde oder Sieger/Verlierer eines Plan-Spiels. */

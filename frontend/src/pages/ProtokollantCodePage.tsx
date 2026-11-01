@@ -58,7 +58,7 @@ export function ProtokollantCodePage() {
             <caption className="sr-only">Spiele dieses Turniers</caption>
             <thead>
               <tr>
-                <th scope="col">Spiel</th>
+                <th scope="col">Nr.</th>
                 <th scope="col">Begegnung</th>
                 <th scope="col">Ergebnis</th>
                 <th scope="col">Status</th>

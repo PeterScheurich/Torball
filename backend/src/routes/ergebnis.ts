@@ -11,6 +11,7 @@ import {
 } from "../auth/turnierZugriff";
 import { berechneGesamttabelle, berechneTabellen } from "../ergebnisse/tabelle";
 import { pruefeSpielZugriff } from "./spiel";
+import { pruefeAutomatischeErzeugung } from "../spielplan/modusErzeugen";
 
 interface ErgebnisBody {
   ergebnisA: number;
@@ -53,7 +54,9 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
         istForfait: req.body.istForfait ?? spiel.istForfait,
         status: spiel.status === "geplant" ? "beendet" : spiel.status,
       };
-      return insertDoc(aktualisiert);
+      const gespeichert = await insertDoc(aktualisiert);
+      await pruefeAutomatischeErzeugung(spiel.turnierId, req.log);
+      return gespeichert;
     },
   );
 
@@ -66,7 +69,9 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
     if (spiel.ergebnisA == null || spiel.ergebnisB == null) {
       return reply.code(400).send({ error: "Spiel hat noch kein erfasstes Ergebnis." });
     }
-    return insertDoc({ ...spiel, ergebnisAbgeschlossen: true, status: "abgeschlossen" });
+    const gespeichert = await insertDoc({ ...spiel, ergebnisAbgeschlossen: true, status: "abgeschlossen" });
+    await pruefeAutomatischeErzeugung(spiel.turnierId, req.log);
+    return gespeichert;
   });
 
   /** Alle Spiele mit erfasstem Ergebnis auf einmal abschliessen (Abschnitt 14: "... oder gesammelt (Turnier)"). */
@@ -91,6 +96,7 @@ export async function ergebnisRoutes(app: FastifyInstance): Promise<void> {
     for (const s of abzuschliessen) {
       aktualisiert.push(await insertDoc({ ...s, ergebnisAbgeschlossen: true, status: "abgeschlossen" }));
     }
+    await pruefeAutomatischeErzeugung(turnier._id, req.log);
     return aktualisiert;
   });
 

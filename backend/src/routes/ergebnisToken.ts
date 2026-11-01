@@ -4,6 +4,7 @@ import type { ErgebnisAenderung, ErgebnisToken, MannschaftImTurnier, Spiel, Turn
 import { mitSpielNr } from "../spielplan/spielNr";
 import { findAllBySelector, findById, insertDoc, newId } from "../repository";
 import { requireZugriff } from "../auth/plugin";
+import { pruefeAutomatischeErzeugung } from "../spielplan/modusErzeugen";
 import { hatMindestens, turnierAusgecheckt, TURNIER_AUSGECHECKT_FEHLER, zuschreibung } from "../auth/turnierZugriff";
 
 /**
@@ -188,6 +189,8 @@ export async function ergebnisTokenRoutes(app: FastifyInstance): Promise<void> {
         istForfait: req.body.istForfait ?? spiel.istForfait,
         status: spiel.status === "geplant" ? "beendet" : spiel.status,
       });
+
+      await pruefeAutomatischeErzeugung(spiel.turnierId, req.log);
 
       return {
         _id: aktualisiert._id,
