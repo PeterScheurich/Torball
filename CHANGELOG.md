@@ -7,6 +7,18 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Neue Turniere hatten keine Pause zwischen den Spielen.** Wer die Standardregeln vor Einführung dieses Feldes
+  gespeichert hatte, bekam bei jedem neuen Turnier „keine Pause“ – die Spiele lagen nur 12 statt 25 Minuten auseinander,
+  ohne dass es jemand bemerkt hätte. Fehlende Regelwerte kommen jetzt aus den Standardwerten. Bereits angelegte
+  Turniere behalten ihre Werte: dort bitte unter „Regeln“ die Gesamtzeit prüfen.
+
+- **Strengere Eingabeprüfung.** Tore müssen ganze Zahlen sein (kein 1,5, höchstens 999). Ein Spiel lässt sich nur in
+  eine Halle legen, die das Turnier kennt. Spielzeit, Halbzeiten, Pausen und Punkte werden auf sinnvolle Werte geprüft
+  (vorher ließen sich „−5 Minuten“ oder „viele Punkte“ speichern). Mannschaftsnamen sind auf 200 Zeichen begrenzt.
+
+- **Eine Mannschaft, die schon gespielt hat, lässt sich nicht mehr entfernen.** Sonst blieben Spiele ohne Gegner stehen
+  und die Tabelle der anderen stimmte nicht mehr. Wer nicht mehr antritt, wird über „n. a.“ (Nichtantreten) gewertet.
+
 - **Halle eines Vorrundenspiels ändern, Endrunde mit einem Klick in eine Halle legen.** Im Spielplan hat jedes
   Spiel bei mehreren Hallen eine Spalte „Halle“. Spielt in der gewählten Halle zur selben Zeit schon ein anderes
   Spiel, tauschen die beiden die Halle (mit „Rückgängig“). Die Spielnummern folgen der Position, also tauschen dabei

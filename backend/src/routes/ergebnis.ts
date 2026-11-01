@@ -22,8 +22,9 @@ const ergebnisSchema = {
   type: "object",
   required: ["ergebnisA", "ergebnisB"],
   properties: {
-    ergebnisA: { type: "number", minimum: 0 },
-    ergebnisB: { type: "number", minimum: 0 },
+    // Ganze Tore: 1.5 oder 99999 sind Tippfehler, keine Ergebnisse.
+    ergebnisA: { type: "integer", minimum: 0, maximum: 999 },
+    ergebnisB: { type: "integer", minimum: 0, maximum: 999 },
     istForfait: { type: "boolean" },
   },
 } as const;

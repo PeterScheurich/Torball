@@ -1,5 +1,6 @@
 import type { Systemkonfiguration, TabellenKriterium, Turnierart, Turnierregeln } from "@torball/shared";
 import { findAllBySelector } from "./repository";
+import { fuelleFehlendeAuf } from "./regelnPruefung";
 
 /**
  * Fest verdrahtete Ausgangs-Standardregeln (Gesamtspezifikation Abschnitt 20.5). Dienen als
@@ -67,8 +68,10 @@ export async function aktuelleSystemkonfiguration(): Promise<Systemkonfiguration
 export async function aktuelleTurnierregeln(): Promise<{ regeln: Turnierregeln; version?: number }> {
   const konfig = await aktuelleSystemkonfiguration();
   if (!konfig) return { regeln: STANDARD_TURNIERREGELN };
-  return { regeln: nurRegeln(konfig), version: konfig.version };
+  return { regeln: fuelleFehlendeAuf(nurRegeln(konfig), STANDARD_TURNIERREGELN), version: konfig.version };
 }
+
+
 
 /**
  * Regelprofil je Turnierart: Voreinstellungen, die beim Anlegen ueber die Standardregeln gelegt werden

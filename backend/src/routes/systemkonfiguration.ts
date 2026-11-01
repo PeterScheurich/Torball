@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { Systemkonfiguration, Turnierregeln } from "@torball/shared";
 import { findAllBySelector, insertDoc, newId } from "../repository";
 import { requireAuth, requireRolle } from "../auth/plugin";
+import { pruefeRegelWerte } from "../regelnPruefung";
 import { aktuelleSystemkonfiguration, nurRegeln, STANDARD_TURNIERREGELN } from "../konfiguration";
 
 const STANDARD_PASSWORTLAENGE = 8;
@@ -42,6 +43,8 @@ export async function systemkonfigurationRoutes(app: FastifyInstance): Promise<v
     { schema: { body: { type: "object", additionalProperties: true } } },
     async (req, reply) => {
       if (!requireRolle(req, reply, ["admin"])) return;
+      const regelFehler = pruefeRegelWerte(req.body);
+      if (regelFehler) return reply.code(400).send({ error: regelFehler });
 
       const bisherige = await findAllBySelector<Systemkonfiguration>({
         docType: "systemkonfiguration",

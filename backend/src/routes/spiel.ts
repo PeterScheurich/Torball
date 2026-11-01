@@ -128,6 +128,12 @@ export async function spielRoutes(app: FastifyInstance): Promise<void> {
       const bestehend = await findById<Spiel>(req.params.id, "spiel");
       if (!bestehend) return reply.code(404).send({ error: "Spiel nicht gefunden" });
       if (!(await pruefeSpielZugriff(bestehend, req, reply, "schreiben_spielbetrieb"))) return;
+      if (req.body.feldId !== undefined) {
+        const turnier = await findById<Turnier>(bestehend.turnierId, "turnier");
+        if (!turnier?.felder.some((f) => f.feldId === req.body.feldId)) {
+          return reply.code(400).send({ error: "Diese Halle gibt es in diesem Turnier nicht." });
+        }
+      }
       const aktualisiert: Spiel = { ...bestehend, ...ohneFelder(req.body, NUR_SERVER_PUT) };
       const gespeichert = await insertDoc(aktualisiert);
       await markiereTurnierBearbeitet(bestehend.turnierId, req.benutzer);

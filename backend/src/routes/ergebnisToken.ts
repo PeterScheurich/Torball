@@ -133,8 +133,8 @@ export async function ergebnisTokenRoutes(app: FastifyInstance): Promise<void> {
           properties: {
             erfasserName: { type: "string", minLength: 1 },
             geraetKennung: { type: "string" },
-            ergebnisA: { type: "number", minimum: 0 },
-            ergebnisB: { type: "number", minimum: 0 },
+            ergebnisA: { type: "integer", minimum: 0, maximum: 999 },
+            ergebnisB: { type: "integer", minimum: 0, maximum: 999 },
             istForfait: { type: "boolean" },
           },
         },

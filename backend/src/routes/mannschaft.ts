@@ -47,7 +47,7 @@ const mannschaftBodySchema = {
     turnierId: { type: "string", minLength: 1 },
     teamId: { type: "string" },
     vereinId: { type: "string" },
-    name: { type: "string", minLength: 1 },
+    name: { type: "string", minLength: 1, maxLength: 200 },
     logo: { type: "string" },
     bundesland: { type: "string" },
     ansprechpartnerName: { type: "string" },
@@ -91,7 +91,7 @@ const mannschaftAktualisierungSchema = {
   properties: {
     teamId: { type: ["string", "null"] },
     vereinId: { type: ["string", "null"] },
-    name: { type: "string", minLength: 1 },
+    name: { type: "string", minLength: 1, maxLength: 200 },
     logo: { type: ["string", "null"] },
     bundesland: { type: ["string", "null"] },
     ansprechpartnerName: { type: ["string", "null"] },
@@ -342,6 +342,24 @@ export async function mannschaftRoutes(app: FastifyInstance): Promise<void> {
   app.delete<{ Params: { id: string } }>("/mannschaften/:id", async (req, reply) => {
     const bestehend = await ladeMitSchreibzugriff(req.params.id, req, reply);
     if (!bestehend) return;
+
+    // Hat die Mannschaft schon gespielt, zaehlen ihre Ergebnisse in der Tabelle - ohne sie liefe die Tabelle
+    // der Anderen ins Leere und es blieben Spiele ohne Gegner zurueck (Simulationslauf 2026-11-01). Wer nicht
+    // mehr antritt, wird ueber das Nichtantreten (Forfait) gewertet. Noch ungespielte Spiele bleiben als
+    // Hinweis "Spielplan neu erzeugen" stehen, wie bisher.
+    const gespielt = (
+      await findAllBySelector<Spiel>({ docType: "spiel", turnierId: bestehend.turnierId })
+    ).some(
+      (s) =>
+        (s.mannschaftAId === bestehend._id || s.mannschaftBId === bestehend._id) &&
+        (s.status !== "geplant" || s.ergebnisA != null || s.ergebnisAbgeschlossen),
+    );
+    if (gespielt) {
+      return reply.code(409).send({
+        error:
+          "Diese Mannschaft hat bereits gespielt und kann nicht mehr entfernt werden. Tritt sie nicht mehr an, bitte ihre Spiele als Nichtantreten (n. a.) werten.",
+      });
+    }
 
     // Kader haengt am mannschaftId und hat keine Existenz ausserhalb der Mannschaft
     // (ON DELETE CASCADE) - vor der Mannschaft mitloeschen, sonst blieben verwaiste

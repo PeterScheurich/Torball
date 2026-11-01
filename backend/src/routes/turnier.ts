@@ -30,6 +30,7 @@ import {
   zuschreibung,
 } from "../auth/turnierZugriff";
 import { aktuelleTurnierregeln, regelprofil } from "../konfiguration";
+import { pruefeRegelWerte } from "../regelnPruefung";
 import { markiereTurnierBearbeitet } from "../turnier/bearbeitet";
 import { berechneStartzeit } from "../spielplan/zeitplanung";
 
@@ -224,7 +225,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
     { schema: { body: turnierBodySchema } },
     async (req, reply) => {
       if (!requireRolle(req, reply, ["admin", "manager"])) return;
-      const anzeigeFehler = pruefeAnzeigeEinstellung(req.body);
+      const anzeigeFehler = pruefeAnzeigeEinstellung(req.body) ?? pruefeRegelWerte(req.body);
       if (anzeigeFehler) return reply.code(400).send({ error: anzeigeFehler });
       const id = newId("turnier");
       const { regeln, version } = await aktuelleTurnierregeln();
@@ -324,7 +325,7 @@ export async function turnierRoutes(app: FastifyInstance): Promise<void> {
       if (logo !== undefined && logo !== null && (typeof logo !== "string" || !logo.startsWith("data:image/"))) {
         return reply.code(400).send({ error: "Das Turnier-Logo muss eine Bild-Data-URL (data:image/…) sein." });
       }
-      const anzeigeFehler = pruefeAnzeigeEinstellung(req.body);
+      const anzeigeFehler = pruefeAnzeigeEinstellung(req.body) ?? pruefeRegelWerte(req.body);
       if (anzeigeFehler) return reply.code(400).send({ error: anzeigeFehler });
       // Turnierart: nur die zwei bekannten Werte. Beim WECHSEL werden die vom Profil vorbelegten Regeln
       // nachgezogen - aber nur, solange sie noch dem Profil der bisherigen Art entsprechen. Wer das
