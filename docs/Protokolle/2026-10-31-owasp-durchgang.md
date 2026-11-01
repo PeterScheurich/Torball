@@ -46,19 +46,16 @@ Zusätzlich aus dem **Datenschutz-Hinweis** desselben Testers (kein Teil des Dur
 Kategorie A01): Die Freigabe eines Turniers erfolgt nicht mehr aus einer Liste aller Benutzer, sondern
 über die genaue E-Mail-Adresse (`0462d4b`).
 
-## Offen (als Karten im Board)
+## Stand der übrigen Funde (aktualisiert am 01.11.2026)
 
-Siehe Entwicklungs-Board, Titel beginnen mit „Sicherheit:“. Kurzfassung:
+Seit dem Durchgang zusätzlich **behoben**: das Zählen falscher 2FA-Codes samt Schutz vor Wiederverwendung, die
+Bestätigung durch Passwort bzw. Code bei sensiblen Konto-Aktionen und die eingeschränkte Benutzersicht für
+Manager.
 
-* 2FA-Fehlversuche werden nicht gezählt, kein Replay-Schutz, Zähler-Race beim Login (hoch).
-* Sensible Konto-Aktionen (2FA einrichten, Kopplungscode) ohne Passwort/Code-Bestätigung.
-* Passwort-Reset durch Manager liefert den Token an die auslösende Person (Entscheidung nötig).
-* Ersteinrichtung (`bootstrap-admin`) offen und nicht atomar.
-* Windows-Installer: Firewall ohne Quelleinschränkung, Transport im Hallen-WLAN unverschlüsselt.
-* Instanz-Kopplung: Neuanlage ohne Rollenprüfung, `http://` erlaubt, keine Zeitlimits.
-* Kein Audit-Log (A09).
-* Gebündelte Kleinigkeiten (E-Mail-Format, SMTP-TLS, Whitelists, Konto-Enumeration, CSP u. a.).
-* `GET /benutzer` liefert Managern das volle Profil aller Konten (eigene Karte, Priorität hoch).
+Die **übrigen Punkte** sind als Karten im Entwicklungs-Board geführt (Titel beginnen mit „Sicherheit:“). Dort stehen
+auch die Einzelheiten; sie sind hier bewusst nicht ausgeführt, solange keine Lösung ausgerollt ist. Betroffen sind
+die Wiederherstellung von Konten durch Manager, die Ersteinrichtung, die Netzwerkfreigabe der lokalen Installation,
+die Kopplung von Instanzen, ein Audit-Log und gebündelte kleinere Härtungen.
 
 ## War in Ordnung (Auszug)
 

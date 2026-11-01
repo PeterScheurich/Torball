@@ -1720,7 +1720,7 @@ Zielgruppe der wertvollste Test, den dieses Projekt machen kann.
   **Das erste Admin-Konto hat eine FESTE ID** (`benutzer:ersteinrichtung`, `auth/ersteinrichtung.ts`): Die Ersteinrichtung
   prueft "gibt es schon einen Benutzer?" und legt danach an - dazwischen liegt ein Fenster, in dem zwei gleichzeitige
   Anfragen zwei Admins erzeugten. CouchDB lehnt eine zweite Anlage mit derselben ID atomar ab (409), ohne eigenes Sperr-
-  Dokument. Offen bleibt der Einmal-Setup-Token (WER darf die Ersteinrichtung ausfuehren) - Entscheidung steht aus.
+  Dokument. Weitere Härtung der Ersteinrichtung: Entscheidung steht aus (Karte im Entwicklungs-Board).
 - **Login-Antwortzeit gleich halten** (Sicherheitsdurchsicht 2026-08-20): `/auth/login` ruft an den
   Pfaden, die sonst ohne bcrypt sofort zurückkehren würden (Konto existiert nicht / Konto in
   Abkühlzeit), `verbrenneLoginZeit()` (`backend/src/auth/passwort.ts`, bcrypt-Vergleich gegen einen
