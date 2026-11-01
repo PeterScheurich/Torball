@@ -79,6 +79,9 @@ test(
       const winter = await ansicht(nach("Winterpokal"));
       const gespielt = winter.sp.filter((s) => s.ergebnisA != null).length;
       assert.ok(gespielt > 0 && gespielt < winter.sp.length, "Vorrunde teilweise gespielt");
+      assert.equal(nach("Winterpokal").modus?.einstellungen.endrundeAutomatisch, true, "Winterpokal: Endrunde automatisch");
+      assert.ok(!nach("Sommerturnier Musterstadt").modus?.einstellungen.endrundeAutomatisch, "Sommerturnier: Knopf statt Automatik");
+      assert.ok(!nach("Europa-Pokal").modus?.einstellungen.endrundeAutomatisch, "Europa-Pokal: Knopf statt Automatik");
 
       // Europa-Pokal: Vorrunde fertig, Halbfinale koennen erzeugt werden
       const europa = await ansicht(nach("Europa-Pokal"));

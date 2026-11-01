@@ -38,7 +38,9 @@ einloggen, kein `passwortHash`).
 
 Die Beispieldaten (Vereine und Teams auch aus dem Ausland, sieben Beispiel-Turniere: alle Turniermodi in
 verschiedenen Zuständen, zwei davon international) erzeugt `backend/src/demo/beispieldaten.ts` über das
-Konsolen-Tool. Die Turniere werden dabei über die echten Routen angelegt und bespielt, nicht von Hand zusammengesetzt.
+Konsolen-Tool. Die Turniere werden dabei über die echten Routen angelegt und bespielt, nicht von Hand zusammengesetzt. Der „Winterpokal“ hat
+den Haken „Endrunde automatisch erzeugen“ (die Halbfinale entstehen, sobald die Vorrunde zu Ende gespielt ist), „Sommerturnier“
+und „Europa-Pokal“ nutzen den Knopf – so zeigt die Demo beide Wege.
 
 **Neuen Datenstand aufbauen** (auf der Demo-Instanz, im Ordner `backend`):
 

@@ -162,7 +162,11 @@ function turnierDefinitionen(team: (name: string) => TeamMitVerein): TurnierDefi
       hallen: 1,
       teams: deutsch.slice(4, 10),
       modus: "jeder-gegen-jeden-endrunde",
-      einstellungen: { endrundeGroesse: 4, platz3: true, platzierungsspiele: false },
+      // Mit Haken "Endrunde automatisch erzeugen": wer die Vorrunde zu Ende spielt, sieht die Halbfinale von allein
+      // entstehen. Sommerturnier und Europa-Pokal behalten den Knopf, damit beide Wege in der Demo zu sehen sind.
+      // (Der Haken darf nur bei einem Turnier von Anfang an gesetzt sein, dessen naechste Stufe noch nicht feststeht -
+      // sonst erzeugte die Automatik die Spiele schon beim Aufbau.)
+      einstellungen: { endrundeGroesse: 4, platz3: true, platzierungsspiele: false, endrundeAutomatisch: true },
       stand: "vorrunde-teil",
       vorrundeAnteil: 0.5,
     },
