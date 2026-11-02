@@ -58,6 +58,17 @@ if zeitleiste is None:
 projekt.SetCurrentTimeline(zeitleiste)
 start = zeitleiste.GetStartFrame()
 
+# Untertitel ZUERST: Resolve haengt eine Untertitelspur ans Ende der bereits belegten Zeitleiste an und ignoriert recordFrame.
+# Nur auf der noch leeren Zeitleiste landen sie am Anfang. Bild und Ton danach beachten recordFrame.
+if srt:
+    mp.SetCurrentFolder(video_ordner)
+    t = mp.ImportMedia([srt])
+    print("SRT importiert:", bool(t))
+    if t:
+        zeitleiste.AddTrack("subtitle")
+        r = mp.AppendToTimeline([{"mediaPoolItem": t[0], "trackIndex": 1, "recordFrame": start}])
+        print("SRT auf Zeitleiste:", bool(r))
+
 # Bild: nur die Bildspur (mediaType 1), ab Frame 0 der Aufnahme
 ok = mp.AppendToTimeline([{"mediaPoolItem": bild, "mediaType": 1, "trackIndex": 1, "recordFrame": start}])
 print("Bild gelegt:", bool(ok))
@@ -79,17 +90,6 @@ print("Saetze gelegt:", len(ergebnis) if ergebnis else ergebnis, "von", len(auft
 
 for s in plan["saetze"]:
     zeitleiste.AddMarker(int(round(s["sprechStart"] * FPS)), "Blue" if s["art"] == "satz" else "Green", s["id"], s["text"], 1)
-
-# Untertitel: SRT importieren und auf eine Untertitelspur legen
-if srt:
-    mp.SetCurrentFolder(video_ordner)
-    t = mp.ImportMedia([srt])
-    print("SRT importiert:", bool(t))
-    if t:
-        zeitleiste.AddTrack("subtitle")
-        print("Untertitelspuren:", zeitleiste.GetTrackCount("subtitle"))
-        r = mp.AppendToTimeline([{"mediaPoolItem": t[0], "trackIndex": 1, "recordFrame": start}])
-        print("SRT auf Zeitleiste:", r)
 
 print("Spuren: Video", zeitleiste.GetTrackCount("video"), "Audio", zeitleiste.GetTrackCount("audio"), "Untertitel", zeitleiste.GetTrackCount("subtitle"))
 for art in ("video", "audio", "subtitle"):
