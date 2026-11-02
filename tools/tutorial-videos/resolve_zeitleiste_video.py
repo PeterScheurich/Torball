@@ -99,7 +99,7 @@ ergebnis = mp.AppendToTimeline(auftraege)
 print("Saetze gelegt:", len(ergebnis) if ergebnis else ergebnis, "von", len(auftraege))
 
 for s in plan["saetze"]:
-    zeitleiste.AddMarker(int(round(s["sprechStart"] * FPS)), "Blue" if s["art"] == "satz" else "Green", s["id"], s["text"], 1)
+    zeitleiste.AddMarker(int(round(s["sprechStart"] * FPS)), "Cream" if s["art"] == "satz" else "Mint", s["id"], s["text"], 1)
 
 print("Spuren: Video", zeitleiste.GetTrackCount("video"), "Audio", zeitleiste.GetTrackCount("audio"), "Untertitel", zeitleiste.GetTrackCount("subtitle"))
 for art in ("video", "audio", "subtitle"):

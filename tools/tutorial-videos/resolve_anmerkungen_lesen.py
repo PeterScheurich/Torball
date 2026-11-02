@@ -5,6 +5,7 @@ from resolve_verbindung import verbinde
 
 sys.stdout.reconfigure(encoding="utf-8")
 FPS = 24
+SCHICHT = {"Red": "TON", "Blue": "BILD", "Yellow": "TEXT", "Purple": "FRAGE", "Cream": "(Satz)", "Mint": "(Ueberschrift)"}  # siehe ANMERKUNGEN.md
 resolve, projekt = verbinde()
 name = sys.argv[1]
 t = next((projekt.GetTimelineByIndex(i) for i in range(1, projekt.GetTimelineCount() + 1) if projekt.GetTimelineByIndex(i).GetName() == name), None)
@@ -13,7 +14,7 @@ if t is None:
 start = t.GetStartFrame()
 print("== Marker auf der Zeitleiste ==")
 for frame, m in sorted((t.GetMarkers() or {}).items()):
-    print(f"  {m['color']:8} {frame / FPS:7.2f} s  {m['name']} | {m['note']}")
+    print(f"  {SCHICHT.get(m['color'], m['color']):14} {frame / FPS:7.2f} s  {m['name']} | {m['note']}")
 print("== Clips mit Kommentar, Farbe oder Marker ==")
 for art in ("video", "audio"):
     for i in range(1, t.GetTrackCount(art) + 1):
