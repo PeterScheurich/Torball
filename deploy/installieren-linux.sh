@@ -516,6 +516,11 @@ if [[ -n "${SUDO_USER:-}" && "${SUDO_USER}" != "root" ]]; then
         runuser -u "$SUDO_USER" -- env XDG_RUNTIME_DIR="/run/user/${benutzer_uid}" \
           DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${benutzer_uid}/bus" \
           gio set "$ziel" metadata::trusted true >/dev/null 2>&1 || true
+        # Xfce (Xubuntu) fragt trotzdem "Nicht vertrauenswuerdiger Anwendungsstarter", solange die Datei keine Pruefsumme
+        # als Vertrauensmarke traegt - genau das setzt dort der Knopf "Als sicher kennzeichnen und starten".
+        runuser -u "$SUDO_USER" -- env XDG_RUNTIME_DIR="/run/user/${benutzer_uid}" \
+          DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${benutzer_uid}/bus" \
+          gio set "$ziel" metadata::xfce-exe-checksum "$(sha256sum "$ziel" | cut -d' ' -f1)" >/dev/null 2>&1 || true
       fi
       break
     fi

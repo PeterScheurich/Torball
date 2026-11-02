@@ -131,6 +131,13 @@ Gefunden und behoben:
     Folgenlos (`ufw` legt die Regel nicht doppelt an, der Deinstaller ignoriert das zweite Löschen), aber unsauber. Jetzt wird nur ergänzt, wenn die
     Zeile fehlt (auch für `firewalld`). Geprüft: zwei Läufe hintereinander, ein Eintrag.
 
+11. **Xfce fragte beim ersten Klick auf die Verknüpfung „Nicht vertrauenswürdiger Anwendungsstarter“** (Peter am Bildschirm, 2026-11-02; „Trotzdem
+    ausführen / Als sicher kennzeichnen und starten / Abbrechen"). Die GNOME-Markierung `metadata::trusted` genügt Xfce nicht: dort gilt eine Verknüpfung auf dem
+    Schreibtisch erst als sicher, wenn `metadata::xfce-exe-checksum` die SHA-256-Prüfsumme der Datei trägt – genau das setzt der Knopf „Als sicher kennzeichnen“
+    (an der VM nachgelesen: Wert = `sha256sum` der Datei). Der Installer setzt jetzt beide Markierungen (nur bei angemeldeter Person, sonst bleibt der Dialog
+    einmalig). Geprüft auf der VM: Metadaten zuvor zurückgesetzt, Installer gelaufen, beide Werte stehen korrekt. **Der Klick ohne Dialog steht noch aus.**
+    Das Anlegen des ersten Benutzers nach „Als sicher kennzeichnen und starten“ hat funktioniert (Browser öffnet die App).
+
 Beobachtung ohne Änderung:
 
 - Läuft der Installer als Benutzer ohne Schreibtisch-Ordner (hier `claudetest`), entsteht keine Verknüpfung, und es gibt dazu keinen Hinweis. Für die Zielgruppe
