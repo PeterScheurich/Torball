@@ -52,13 +52,13 @@ diesem Rechner**, unabhängig von einem Konto auf dem Online-Server – für die
 Konto auf dem Server.
 
 Für Tests ohne Tastatur (`TORBALL_UNBEAUFSICHTIGT=1`) lassen sich die Angaben über `TORBALL_ADMIN_NAME`,
-`TORBALL_ADMIN_VORNAME` (optional), `TORBALL_ADMIN_EMAIL` und `TORBALL_ADMIN_PASSWORT` mitgeben; fehlen sie, wird die
-Frage übersprungen.
+`TORBALL_ADMIN_VORNAME` (optional), `TORBALL_ADMIN_EMAIL` und das Passwort mitgeben; fehlen sie, wird die Frage übersprungen.
 
-> **Nur für Wegwerf-Rechner und Tests:** Das klassische `sudo` (Debian, Ubuntu bis 25.04, Linux Mint) schreibt die so
-> weitergereichten Umgebungsvariablen **einschließlich des Passworts** in das Systemprotokoll (`/var/log/auth.log` bzw. das
-> Journal). Auf einem echten Rechner das Konto daher per Tastatur anlegen (Standard) oder im Browser einrichten. Das neuere
-> `sudo-rs` (Ubuntu ab 25.10) protokolliert das nicht.
+Das Passwort übergibst du am besten **über eine Datei**: `TORBALL_ADMIN_PASSWORT_DATEI=/pfad/zur/datei` (erste Zeile = Passwort,
+am besten mit `chmod 600`). Das klassische `sudo` (Debian, Ubuntu bis 25.04, Linux Mint) schreibt weitergereichte
+Umgebungsvariablen nämlich in das Systemprotokoll (`/var/log/auth.log` bzw. das Journal): Bei der Datei steht dort nur der Pfad,
+bei `TORBALL_ADMIN_PASSWORT` das **Klartext-Passwort**. Der Installer weist darauf hin, wenn die Umgebungsvariable benutzt wird
+bzw. die Datei für andere lesbar ist. Das neuere `sudo-rs` (Ubuntu ab 25.10) protokolliert beides nicht.
 
 ## Was wo liegt
 

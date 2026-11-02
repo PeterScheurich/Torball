@@ -166,15 +166,21 @@ installiert (vorher alles entfernt). Quelle: ZIP aus `git archive HEAD` (Stand `
 **Wo taucht das Passwort auf?** Installationsausgabe, Prozessliste (alle 0,1 s während der Installation abgetastet), Dienst-Journal, `/opt`,
 `/etc/torball-turniere` und das Home-Verzeichnis: **nirgends**. Beim Tastaturweg auch nicht im Ablaufprotokoll (der Installer liest verdeckt).
 
-**Gefunden – nicht behoben, Entscheidung offen:**
+**Gefunden – danach behoben (siehe unten):**
 
 12. **Klassisches `sudo` protokolliert das Passwort bei unbeaufsichtigter Installation.** Der Installer ruft sich mit
     `sudo --preserve-env=…,TORBALL_ADMIN_PASSWORT,…` neu auf; `sudo 1.9` (Mint, Debian, ältere Ubuntu) schreibt die weitergereichten
     Variablen als `ENV=…` in `/var/log/auth.log` und ins Journal – **mit dem Klartext-Passwort** (auf Mint zweimal gefunden, je Lauf eine Zeile).
     Auf Xubuntu (`sudo-rs`) nicht. Das betrifft nur den unbeaufsichtigten Weg mit der Umgebungsvariable (gedacht für Tests und Automatisierung);
-    der Tastaturweg ist nicht betroffen. Gelesen werden kann das Protokoll nur von `root` und der Gruppe `adm`. Vorerst in
-    `INSTALLATION-LINUX.md` als Warnung festgehalten. Sauber wäre eine Möglichkeit, das Passwort aus einer Datei zu lesen
-    (`TORBALL_ADMIN_PASSWORT_DATEI`), dann stünde nur der Pfad im Protokoll.
+    der Tastaturweg ist nicht betroffen. Gelesen werden kann das Protokoll nur von `root` und der Gruppe `adm`.
+
+    **Behoben (Peter: „Ja, Datei-Option“):** Neu `TORBALL_ADMIN_PASSWORT_DATEI=/pfad` (erste Zeile = Passwort, ein Windows-Zeilenende wird
+    abgeschnitten). Der Installer meldet eine nicht lesbare Datei (Konto wird übersprungen, Hinweis auf den Browser) und warnt bei einer für
+    andere lesbaren Datei sowie bei Benutzung der Umgebungsvariable `TORBALL_ADMIN_PASSWORT`. Die Variable steht in den drei `--preserve-env`-Listen
+    (`installieren`, `aktualisieren`, `deinstallieren`). Geprüft auf Mint (klassisches `sudo`), frisch installiert: (1) nicht lesbare Datei → Hinweis,
+    `ERSTES-KONTO: FREI`; (2) zweiter Lauf mit Datei (Modus 644, CRLF) → Warnung zur Lesbarkeit, Konto angelegt, Anmeldung 200; im Protokoll steht nur
+    `TORBALL_ADMIN_PASSWORT_DATEI=<Pfad>`, das Passwort kommt in Installationsausgaben, Journal, `/var/log`, `/opt` und `/etc/torball-turniere` **nirgends** vor
+    (Suche über eine Musterdatei, damit der Suchbefehl selbst nichts ins Protokoll schreibt).
 
 Hinweis zur Messung: Ein erster Suchlauf zeigte „1 Datei“ auch auf Xubuntu – das war der Suchbefehl selbst (`sudo grep -F <Passwort>` steht mit seinem
 Argument im Protokoll). Die Gegenprobe mit dem Variablennamen statt des Passworts zeigte: Mint 3 Treffer (zwei mit Passwort), Xubuntu keine in den Dateien.

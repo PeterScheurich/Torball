@@ -40,7 +40,7 @@ fehler() { echo; echo "FEHLER: $*" >&2; exit 1; }
 if [[ $EUID -ne 0 ]]; then
   if command -v sudo >/dev/null 2>&1; then
     echo "Die Installation braucht Administrator-Rechte - du wirst gleich nach deinem Passwort gefragt."
-    exec sudo --preserve-env=TORBALL_UNBEAUFSICHTIGT,TORBALL_PORT,TORBALL_NETZWERK,TORBALL_ADMIN_NAME,TORBALL_ADMIN_VORNAME,TORBALL_ADMIN_EMAIL,TORBALL_ADMIN_PASSWORT,TORBALL_ALLES_ENTFERNEN bash "${BASH_SOURCE[0]}" "$@"
+    exec sudo --preserve-env=TORBALL_UNBEAUFSICHTIGT,TORBALL_PORT,TORBALL_NETZWERK,TORBALL_ADMIN_NAME,TORBALL_ADMIN_VORNAME,TORBALL_ADMIN_EMAIL,TORBALL_ADMIN_PASSWORT,TORBALL_ADMIN_PASSWORT_DATEI,TORBALL_ALLES_ENTFERNEN bash "${BASH_SOURCE[0]}" "$@"
   fi
   fehler "Bitte als Administrator ausfuehren. Auf einem Debian ohne 'sudo': erst mit 'su -' zum Administrator werden und dann erneut 'bash Setup-Linux.sh' starten."
 fi
@@ -383,6 +383,22 @@ lege_erstes_konto_an() {
   if [[ -n "$UNBEAUFSICHTIGT" ]]; then
     name="${TORBALL_ADMIN_NAME:-}"; vorname="${TORBALL_ADMIN_VORNAME:-}"
     email="${TORBALL_ADMIN_EMAIL:-}"; pw="${TORBALL_ADMIN_PASSWORT:-}"
+    if [[ -z "$pw" && -n "${TORBALL_ADMIN_PASSWORT_DATEI:-}" ]]; then
+      # Besser als die Umgebungsvariable: Das klassische sudo (Debian, Mint, aeltere Ubuntu) schreibt weitergereichte
+      # Variablen in /var/log/auth.log und das Journal - bei dieser Variante steht dort nur der Pfad der Datei.
+      if [[ ! -r "$TORBALL_ADMIN_PASSWORT_DATEI" ]]; then
+        echo "(Die Datei TORBALL_ADMIN_PASSWORT_DATEI=$TORBALL_ADMIN_PASSWORT_DATEI ist nicht lesbar - das erste Konto wird NICHT angelegt. Du legst es dann beim ersten Oeffnen der Seite im Browser an.)"
+        return 0
+      fi
+      if [[ -n "$(find "$TORBALL_ADMIN_PASSWORT_DATEI" -maxdepth 0 -perm /077 2>/dev/null)" ]]; then
+        echo "Hinweis: Die Passwort-Datei ist fuer andere Benutzer lesbar. Besser: chmod 600 $TORBALL_ADMIN_PASSWORT_DATEI"
+      fi
+      # Erste Zeile ohne Zeilenende (auch ohne Windows-CR); der Rest der Datei bleibt unbeachtet.
+      IFS= read -r pw < "$TORBALL_ADMIN_PASSWORT_DATEI" || true
+      pw="${pw%$'\r'}"
+    elif [[ -n "$pw" ]]; then
+      echo "Hinweis: Das Passwort kam ueber die Umgebungsvariable TORBALL_ADMIN_PASSWORT. Das klassische sudo protokolliert sie in /var/log/auth.log - auf einem echten Rechner besser TORBALL_ADMIN_PASSWORT_DATEI (Pfad einer Datei mit dem Passwort) verwenden."
+    fi
     if [[ -z "$name" || -z "$email" || -z "$pw" ]]; then
       echo "(Unbeaufsichtigt, keine TORBALL_ADMIN_*-Angaben - uebersprungen. Das erste Konto legst du dann beim ersten Oeffnen der Seite im Browser an.)"
       return 0
@@ -434,7 +450,7 @@ lege_erstes_konto_an() {
 echo
 echo "== Erstes Benutzerkonto =="
 lege_erstes_konto_an || true
-unset TORBALL_ADMIN_PASSWORT
+unset TORBALL_ADMIN_PASSWORT TORBALL_ADMIN_PASSWORT_DATEI
 
 # ---------------------------------------------------------------------------------- 8. Firewall
 echo
