@@ -109,6 +109,38 @@ Gefunden und behoben:
    Alle drei Skripte nutzen jetzt `sudo --preserve-env=<Liste der TORBALL_-Variablen>` (auf sudo-rs 0.2.14 geprüft: die Variable kommt an). Mit dem
    klassischen `sudo` (Debian, Mint) noch zu prüfen.
 
+## Fünfter Durchgang: Xubuntu 26.04.1 LTS (Xfce) – am 2026-11-02
+
+Proxmox-VM, 8 GB RAM, `lightdm`, Xfce-Sitzung des Benutzers `peter`, deutschsprachig, `ufw` zuerst aus, dann für den Test eingeschaltet (SSH freigegeben).
+Quelle war ein ZIP aus `git archive HEAD` (also mit allen Linux-Korrekturen bis `979dd8a`), Aufruf per SSH als `claudetest` im unbeaufsichtigten Modus.
+
+Geprüft und in Ordnung:
+
+- **Frische Installation** (Exit 0, rund 3 Minuten): beide Dienste `active`, HTTP 200, `/api/sync/status` meldet Lokalinstallation und `10.10.20.143`.
+  Rechte wie zuvor (`/etc/torball-turniere` 0700 `root`, `backend/.env` 0600 `torball`, CouchDB nur `127.0.0.1`).
+- **`sudo` ist hier sudo-rs** (26.04): die `--preserve-env`-Umstellung vom vierten Durchgang greift, Port und Netzwerkantwort kamen an.
+- **Firewall:** `3000/tcp ALLOW 10.10.20.0/24`, von einem Rechner in einem anderen Netz (192.168.188.x) erwartungsgemäß nicht erreichbar.
+- **Aktualisieren** (zweiter Lauf, als `peter` simuliert): Exit 0, `backend/.env` unverändert (Prüfsumme gleich).
+- **Menü-Eintrag** besteht `desktop-file-validate`. **Schreibtisch-Verknüpfung** liegt in `~/Schreibtisch` von `peter` (Besitzer `peter`, 0755).
+- **Vollständiges Deinstallieren:** kein Dienst, kein Benutzer `torball`, keine Ordner, keine Firewall-Regel, kein Menü-Eintrag, keine Verknüpfung,
+  kein `node`/`couchdb`; `apt update` danach ohne Warnung. Danach frische Neuinstallation: gut.
+
+Gefunden und behoben:
+
+10. **Firewall-Merkliste bekam bei jedem Lauf eine weitere Zeile.** `echo … >> firewall-regeln` hängte beim Aktualisieren denselben Eintrag noch einmal an.
+    Folgenlos (`ufw` legt die Regel nicht doppelt an, der Deinstaller ignoriert das zweite Löschen), aber unsauber. Jetzt wird nur ergänzt, wenn die
+    Zeile fehlt (auch für `firewalld`). Geprüft: zwei Läufe hintereinander, ein Eintrag.
+
+Beobachtung ohne Änderung:
+
+- Läuft der Installer als Benutzer ohne Schreibtisch-Ordner (hier `claudetest`), entsteht keine Verknüpfung, und es gibt dazu keinen Hinweis. Für die Zielgruppe
+  (Person am eigenen Rechner) unkritisch, nur der Menü-Eintrag bleibt.
+- Auf dem Test-VM-System existierte `/opt` vorher nicht und ist nach dem Deinstallieren wieder weg – harmlos.
+
+**Von hier aus nicht prüfbar:** Ob ein Doppelklick auf die Verknüpfung in Xfce direkt startet oder zuerst den Dialog „Nicht vertrauenswürdiger
+Anwendungsstarter“ zeigt (Xfce prüft die Ausführbarkeit, ggf. auch eine Prüfsumme in den Metadaten), und ob der Browser mit der App aufgeht. Der Bildschirm der
+Sitzung war per Bildschirmfoto schwarz (gesperrt/Ruhezustand); eine Bedienung der Sitzung von außen wurde bewusst nicht versucht.
+
 ## Kleinigkeiten, nicht geändert
 
 - Der Diagnose-Bericht landet im Programmordner (`/opt/torball-turniere/app/backend/…`), wo ihn ein Laie nicht sucht. Der Pfad wird
