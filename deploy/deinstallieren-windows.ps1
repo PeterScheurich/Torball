@@ -41,6 +41,10 @@ if (-not (Test-Admin)) {
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot "windows-paket.ps1")
 $TorballOrdner = Get-TorballBasisOrdner
+# Installation aus dem Windows-Paket? Dann steckt Node.js im Paket und wurde NIE separat installiert - der Schritt
+# "Node.js entfernen" entfaellt (er wuerde sonst ein Node.js loeschen, das jemand fuer ganz andere Zwecke nutzt).
+# Jetzt festhalten: spaeter koennen die Dateien schon geloescht sein.
+$PaketInstallation = Test-Path (Join-Path $RepoRoot "paket.json")
 
 Write-Host "Torball-Turniere - lokale Installation entfernen"
 Write-Host "Projektordner: $RepoRoot"
@@ -52,6 +56,8 @@ Write-Host ""
 
 function Frage-MitDefault {
     param([string]$Text, [string]$Standard)
+    # Nur fuer Tests ohne Tastatur (TORBALL_UNBEAUFSICHTIGT=1): jede Frage mit ihrem Standard beantworten.
+    if ($env:TORBALL_UNBEAUFSICHTIGT) { return $Standard }
     $eingabe = Read-Host "$Text [$Standard]"
     if ([string]::IsNullOrWhiteSpace($eingabe)) { return $Standard }
     return $eingabe
@@ -65,6 +71,9 @@ function Frage-OptionalerSchritt {
     Write-Host "-- $Titel --"
     Write-Host $Erklaerung
     Write-Host "Auswirkung auf diesen Rechner: $Auswirkung"
+    # Nur fuer Tests ohne Tastatur: TORBALL_ALLES_ENTFERNEN=1 bejaht jeden dieser Schritte (Node.js entfaellt bei einer
+    # Paket-Installation ohnehin ganz, siehe unten).
+    if ($env:TORBALL_ALLES_ENTFERNEN) { Write-Host "(Testlauf: wird bejaht.)"; return $true }
     $antwort = Frage-MitDefault -Text "Jetzt entfernen? (j/n)" -Standard "n"
     return ($antwort -in @("j", "J", "ja", "Ja", "JA"))
 }
@@ -181,6 +190,10 @@ if ($couchdbSchritt) {
 # --- [4/4] Node.js ---------------------------------------------------------------------------
 Write-Host ""
 Write-Host "== [4/4] Node.js =="
+if ($PaketInstallation) {
+    Write-Host "Node.js gehoerte zum Installationspaket (mitgeliefert) und wurde nicht separat installiert - es gibt nichts zu entfernen."
+    $nodeSchritt = $false
+} else {
 $nodeSchritt = Frage-OptionalerSchritt -Titel "Node.js entfernen" `
     -Erklaerung "Node.js ist die Software-Umgebung, mit der Torball-Turniere laeuft. Sie wurde beim Einrichten evtl. eigens fuer diese App installiert." `
     -Auswirkung "Node.js wird ganz normal deinstalliert (wie jedes andere Programm auch). WICHTIG: Falls auf diesem Rechner noch andere Programme Node.js benoetigen, wuerden auch diese danach nicht mehr funktionieren - im Zweifel diesen Schritt ueberspringen und Node.js spaeter manuell ueber 'Apps & Features' entfernen, wenn sicher ist, dass es nicht mehr gebraucht wird."
@@ -191,10 +204,15 @@ if ($nodeSchritt) {
     } else {
         Write-Host "winget nicht gefunden - bitte Node.js manuell ueber 'Apps & Features' entfernen."
     }
-} else {
+} elseif (-not $PaketInstallation) {
     Write-Host "Uebersprungen."
+}
 }
 
 Write-Host ""
 Write-Host "Fertig."
-Write-Host "Der Projektordner selbst ('$RepoRoot') wurde nicht geloescht - falls gewuenscht, jetzt von Hand entfernen (z.B. in den Papierkorb verschieben)."
+if (Test-Path $RepoRoot) {
+    Write-Host "Der Projektordner selbst ('$RepoRoot') wurde nicht geloescht - falls gewuenscht, jetzt von Hand entfernen (z.B. in den Papierkorb verschieben)."
+} else {
+    Write-Host "Der Projektordner ('$RepoRoot') ist ebenfalls entfernt."
+}

@@ -1,4 +1,4 @@
 {
-  "github": "",
-  "hinweis": "Eintragen als \"Besitzer/Repository\" des GitHub-Repositorys, an dem die Releases veroeffentlicht werden (z. B. \"OWNER/Torball-Turniere\")."
+  "github": "PeterScheurich/Torball",
+  "hinweis": "Besitzer/Repository des GitHub-Repositorys, an dem die Releases veroeffentlicht werden (Update-Quelle der lokalen Windows-Installation)."
 }
