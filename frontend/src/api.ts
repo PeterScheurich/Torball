@@ -82,6 +82,21 @@ function segment(wert: string): string {
  */
 export class VerbindungsFehler extends Error {}
 
+/**
+ * Der Server hat geantwortet und abgelehnt - mit dem HTTP-Status dazu. Erbt von Error, alle bestehenden
+ * `err instanceof Error`-Abfragen greifen unveraendert. Gebraucht wird der Status dort, wo 401 ("nicht (mehr)
+ * angemeldet") etwas anderes bedeuten muss als eine fachliche Ablehnung: Die digitale Protokollierung darf ein
+ * Ereignis nicht wegwerfen, nur weil die Anmeldung inzwischen ausgelaufen ist.
+ */
+export class HttpFehler extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 async function anfrage<T>(pfad: string, init?: RequestInit): Promise<T> {
   let antwort: Response;
   try {
@@ -101,7 +116,7 @@ async function anfrage<T>(pfad: string, init?: RequestInit): Promise<T> {
       throw new VerbindungsFehler(`Backend antwortet nicht (Status ${antwort.status}). Läuft der Server?`);
     }
     const body = await antwort.json().catch(() => ({}) as { error?: string });
-    throw new Error(body.error ?? `Anfrage fehlgeschlagen (Status ${antwort.status})`);
+    throw new HttpFehler(body.error ?? `Anfrage fehlgeschlagen (Status ${antwort.status})`, antwort.status);
   }
 
   if (antwort.status === 204) {

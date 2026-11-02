@@ -759,6 +759,10 @@ export const HILFE_THEMEN: HilfeThema[] = [
             hinweis:
               "Helfer-Geräte, die sich mit einem Turnier-Code angemeldet haben, bleiben wie bisher bis zu 12 Stunden angemeldet.",
           },
+          {
+            hinweis:
+              "Läuft die Anmeldung mitten in der digitalen Protokollierung ab, gehen keine Ereignisse verloren: Sie bleiben im Protokollfenster gesichert und werden gesendet, sobald du dich in einem anderen Browser-Tab neu angemeldet hast. Das Protokollfenster selbst schließt du dabei nicht.",
+          },
         ],
       },
       {

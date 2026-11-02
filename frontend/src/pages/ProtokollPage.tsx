@@ -18,7 +18,15 @@ import {
 import { berechneProtokollStand, type ProtokollStand } from "../protokoll/stand";
 import type { KanalNachricht, StandPaket } from "../schiedsrichter/kanal";
 import { HERZSCHLAG_MS, oeffneKanal } from "../schiedsrichter/kanal";
-import { VerbindungsFehler } from "../api";
+import { HttpFehler, VerbindungsFehler } from "../api";
+
+/** 401 = nicht (mehr) angemeldet. Anmeldungen enden spaetestens 12 Stunden nach dem Anmelden. */
+function istAnmeldungAbgelaufen(err: unknown): boolean {
+  return err instanceof HttpFehler && err.status === 401;
+}
+
+const ANMELDUNG_ABGELAUFEN_HINWEIS =
+  "Die Anmeldung ist abgelaufen. Deine Ereignisse sind gesichert und werden nachgesendet, sobald du dich neu angemeldet hast. Öffne dazu die Anmeldeseite in einem neuen Browser-Tab – dieses Fenster bleibt offen.";
 import {
   istVorlaeufig,
   ladeWarteschlange,
@@ -547,6 +555,12 @@ export function ProtokollPage() {
         stelleAn(nutzlast);
         return true;
       }
+      if (istAnmeldungAbgelaufen(err)) {
+        // Das Ereignis ist nicht fachlich abgelehnt, nur die Anmeldung ist ausgelaufen: festhalten statt wegwerfen.
+        stelleAn(nutzlast);
+        setFehler(ANMELDUNG_ABGELAUFEN_HINWEIS);
+        return true;
+      }
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim Speichern");
       return false;
     } finally {
@@ -577,6 +591,11 @@ export function ProtokollPage() {
           setzeWarteschlange(warteschlangeRef.current.filter((e) => e.lokalId !== naechstes.lokalId));
         } catch (err) {
           if (err instanceof VerbindungsFehler) return;
+          if (istAnmeldungAbgelaufen(err)) {
+            // Bleibt in der Schlange; der naechste Versuch (alle 3 s) klappt, sobald in einem anderen Tab neu angemeldet wurde.
+            setFehler(ANMELDUNG_ABGELAUFEN_HINWEIS);
+            return;
+          }
           setzeWarteschlange(warteschlangeRef.current.filter((e) => e.lokalId !== naechstes.lokalId));
           setFehler(
             `Ein nachträglich gesendetes Ereignis wurde abgelehnt und verworfen: ${
