@@ -34,17 +34,20 @@ function wortZeit(id, teil) {
 const ZEIGER = () => {
   const stil = document.createElement("style");
   stil.textContent =
-    "#__z{position:fixed;z-index:2147483647;width:24px;height:24px;border-radius:50%;background:rgba(255,213,79,.9);border:3px solid #fff;" +
+    "#__z{position:fixed;z-index:2147483647;width:30px;height:30px;border-radius:50%;background:rgba(255,213,79,.9);border:4px solid #fff;" +
     "box-shadow:0 0 0 2px rgba(0,0,0,.65);pointer-events:none;transform:translate(-50%,-50%);transition:transform .1s}" +
     "#__z.klick{transform:translate(-50%,-50%) scale(.55)}" +
     ".__hl{outline:4px solid #ffd54f !important;outline-offset:4px !important;border-radius:6px}" +
+    // 125 % Zoom: Die Aufnahme zeichnet nur CSS-Pixel auf und fuellt bei kleinerem Fenster mit Grau. Deshalb Fenster 1920x1080 und
+    // der Zoom per CSS auf dem body (der Zeiger haengt am html-Element und bleibt unskaliert).
+    "body{zoom:1.25}" +
     // Hinweis-Banner der Entwicklungsumgebung gehoert nicht ins Tutorial
     "[class*=\"umgebungs-banner\"]{display:none !important}";
   const z = document.createElement("div");
   z.id = "__z";
   const lade = () => {
     document.head.appendChild(stil);
-    document.body.appendChild(z);
+    document.documentElement.appendChild(z);
     const x = Number(sessionStorage.getItem("__zx") ?? -60);
     const y = Number(sessionStorage.getItem("__zy") ?? -60);
     z.style.left = `${x}px`;
@@ -63,8 +66,8 @@ const ZEIGER = () => {
 const konto = holeTestkonto();
 const browser = await chromium.launch();
 const context = await browser.newContext({
-  viewport: { width: 1536, height: 864 },
-  deviceScaleFactor: 1.25, // entspricht 125 % Zoom bei 1920x1080 Ausgabe
+  viewport: { width: 1920, height: 1080 },
+  deviceScaleFactor: 1,
   colorScheme: "dark",
   locale: "de-DE",
   timezoneId: "Europe/Berlin",

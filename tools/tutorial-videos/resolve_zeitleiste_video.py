@@ -62,6 +62,10 @@ start = zeitleiste.GetStartFrame()
 # Nur auf der noch leeren Zeitleiste landen sie am Anfang. Bild und Ton danach beachten recordFrame.
 if srt:
     mp.SetCurrentFolder(video_ordner)
+    # Eine schon importierte SRT wuerde Resolve unveraendert weiterverwenden (veralteter Stand) - deshalb zuerst entfernen
+    alte = [c for c in video_ordner.GetClipList() if os.path.normcase(c.GetClipProperty("File Path") or "") == os.path.normcase(os.path.normpath(srt))]
+    if alte:
+        print("alte SRT im Media Pool entfernt:", mp.DeleteClips(alte))
     t = mp.ImportMedia([srt])
     print("SRT importiert:", bool(t))
     if t:
