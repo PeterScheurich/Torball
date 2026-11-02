@@ -118,7 +118,7 @@ Platz (<code>C:\Torball-Turniere\App</code>), der entpackte Ordner kann danach g
 <p>Im entpackten Ordner die Datei <code>Setup.cmd</code> doppelklicken und die Windows-Nachfrage
 nach Administratorrechten bestätigen. Wenn Windows vor einer „unbekannten App“ warnt: „Weitere
 Informationen“ und dann „Trotzdem ausführen“ wählen. Das Installationsprogramm arbeitet danach die nötigen
-Schritte ab. Bei jeder Frage übernimmt die <kbd>Enter</kbd>-Taste den vorgeschlagenen Standardwert:</p>
+Schritte ab. Die Fragen kommen gebündelt ganz am Anfang, jede in einem abgesetzten Kasten mit „FRAGE:“ in der Überschrift; danach läuft die Installation ohne Unterbrechung durch. Bei jeder Frage übernimmt die <kbd>Enter</kbd>-Taste den vorgeschlagenen Standardwert:</p>
 
 <table>
   <caption>Die Fragen des Installationsprogramms</caption>
@@ -136,17 +136,8 @@ Schritte ab. Bei jeder Frage übernimmt die <kbd>Enter</kbd>-Taste den vorgeschl
         Dafür wird eine Windows-Firewall-Regel angelegt. Wer die Anwendung nur allein an diesem
         Rechner nutzt, kann mit „n“ antworten.</td>
   </tr>
-  <tr>
-    <td>Das erste Konto jetzt anlegen? (Nachname, Vorname, E-Mail-Adresse, Passwort)</td>
-    <td><strong>Ja</strong> – das ist das Administrator-Konto dieser Installation, das später u.&nbsp;a. zum
-        Koppeln mit dem Online-Server gebraucht wird. Das Passwort braucht mindestens 12 Zeichen, am
-        besten ein Satz aus ein paar Wörtern (Sonderzeichen sind nicht nötig); es wird bei der Eingabe
-        nicht angezeigt und zweimal verlangt. Wer gleich hier anlegt, verhindert, dass jemand anderes im
-        Netz die Einrichtung vorher im Browser abschließt. Mit „n“ geht es auch – dann legst du das Konto
-        beim ersten Öffnen im Browser an (Schritt&nbsp;4).</td>
-  </tr>
 </table>
-<p>Den Port wählt das Installationsprogramm selbst (den ersten freien ab 3000), Node.js muss nicht
+<p>Den Port wählt das Installationsprogramm selbst (den ersten freien ab 3100 – so kommt er Entwicklungsumgebungen nicht in die Quere), Node.js muss nicht
 installiert werden – es steckt im Paket. Die Installation dauert meist nur wenige Minuten. Am Ende
 meldet das Fenster „Fertig!“ – erst dann schließen.</p>
 
@@ -158,10 +149,12 @@ meldet das Fenster „Fertig!“ – erst dann schließen.</p>
   <li>Die Anwendung läuft im Hintergrund als <strong>Windows-Dienst</strong> „Torball-Turniere“ und startet mit
       dem Rechner von selbst. Es gibt kein Fenster, das offen bleiben muss oder nicht geschlossen werden
       darf.</li>
-  <li>Hast du im Installationsprogramm das erste Konto schon angelegt, meldest du dich einfach mit
-      diesen Zugangsdaten an. Sonst führt die Anmeldeseite beim allerersten Öffnen durch die
-      <strong>Ersteinrichtung des ersten Administrator-Kontos</strong> (E-Mail-Adresse, Name, Passwort).
-      In beiden Fällen: die Zugangsdaten gut aufbewahren.</li>
+  <li>Am Ende der Installation öffnet sich der Browser von selbst auf der Seite <strong>„Ersteinrichtung“</strong>.
+      Dort legst du das <strong>erste Administrator-Konto</strong> an (Name, E-Mail-Adresse, Passwort; das Passwort
+      braucht mindestens 12 Zeichen, am besten ein Satz aus ein paar Wörtern) und bist danach gleich angemeldet.
+      Öffnet sich der Browser nicht, doppelklickst du die Verknüpfung und klickst auf der Anmeldeseite auf
+      „Ersteinrichtung starten“. Die Zugangsdaten gut aufbewahren – es ist ein eigenes Konto auf diesem Rechner,
+      unabhängig von einem Konto auf dem Online-Server.</li>
 </ol>
 
 <h3>Weitere Geräte verbinden (wenn Netzwerkzugriff aktiviert wurde)</h3>

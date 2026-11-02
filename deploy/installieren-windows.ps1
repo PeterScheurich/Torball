@@ -88,6 +88,17 @@ function Frage-MitDefault {
     return $eingabe
 }
 
+# Abgesetzte Ueberschrift fuer alles, wo der Installer auf eine Eingabe wartet (Nutzer-Vorgabe 2026-11-02:
+# im Fliesstext gingen die einzelnen Fragen unter, die Person wusste nicht, wann sie dran ist).
+function Write-Kasten {
+    param([string]$Text)
+    $strich = "*" * 76
+    Write-Host ""
+    Write-Host $strich -ForegroundColor Cyan
+    Write-Host "* $Text" -ForegroundColor Cyan
+    Write-Host $strich -ForegroundColor Cyan
+}
+
 # Erklaert eine bevorstehende Aenderung an DIESEM Rechner (nicht am Projektordner selbst) und
 # fragt um ausdrueckliche Zustimmung, bevor sie ausgefuehrt wird. Bricht bei Ablehnung die gesamte
 # Installation ab (Nutzer-Vorgabe 2026-08-19: keine Aenderung an einem fremden Rechner ohne
@@ -96,8 +107,7 @@ function Frage-MitDefault {
 # Fachbegriffen in Titel/Erklaerung/Auswirkung).
 function Bestaetige-Systemaenderung {
     param([string]$Titel, [string]$Erklaerung, [string]$Auswirkung)
-    Write-Host ""
-    Write-Host "-- $Titel --"
+    Write-Kasten "FRAGE: $Titel"
     Write-Host $Erklaerung
     Write-Host "Auswirkung auf diesen Rechner: $Auswirkung"
     $antwort = Frage-MitDefault -Text "Einverstanden? (j/n)" -Standard "j"
@@ -135,8 +145,7 @@ function Set-TorballFirewallRegel {
 # Installation nicht abbrechen.
 function Frage-Netzwerkzugriff {
     param([string]$Standard)
-    Write-Host ""
-    Write-Host "-- Zugriff aus dem lokalen Netzwerk --"
+    Write-Kasten "FRAGE: Zugriff aus dem lokalen Netzwerk"
     Write-Host "Sollen sich andere Geraete im selben Netzwerk mit der App verbinden koennen - z.B. Handys"
     Write-Host "oder Tablets von Helfern fuer die Ergebniserfassung oder den Zugriff per Turnier-Code?"
     Write-Host "Auswirkung auf diesen Rechner: Die App wird im lokalen Netzwerk erreichbar gemacht und in"
@@ -211,18 +220,19 @@ function Frage-ErstesKonto {
         Write-Host $e.Ausgabe
         return ($e.ExitCode -eq 0)
     }
-    Write-Host ""
-    Write-Host "-- Erstes Benutzerkonto (Administrator) --"
+    Write-Kasten "FRAGE: Erstes Benutzerkonto (Administrator)"
     Write-Host "Ohne Konto kann sich niemand anmelden. Das erste Konto wird Administrator dieser Installation und wird"
     Write-Host "u.a. gebraucht, um diese Installation spaeter mit dem Online-Server zu koppeln. Es ist ein EIGENES"
-    Write-Host "Konto auf diesem Rechner, unabhaengig von einem Konto auf dem Server. Wenn du es jetzt gleich anlegst,"
-    Write-Host "kann niemand anderes im Netz die Einrichtung vor dir im Browser abschliessen."
+    Write-Host "Konto auf diesem Rechner, unabhaengig von einem Konto auf dem Server."
     $antwort = Frage-MitDefault -Text "Das erste Konto jetzt anlegen? (j/n)" -Standard "j"
     $nein = "Uebersprungen. Das erste Konto legst du dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung)."
     if ($antwort -notin @("j", "J", "ja", "Ja", "JA")) { Write-Host $nein; return $false }
 
     # Anfuehrungszeichen und Backslash lassen sich nicht sicher als Programm-Argument uebergeben.
-    $unzulaessig = '["\]'
+    # (Im Regex muss der Backslash selbst verdoppelt werden - mit '\]' blieb die Zeichenklasse offen und PowerShell
+    # brach mit "Nicht abgeschlossener []-Satz" ab, live beim ersten echten Durchlauf erlebt.)
+    $unzulaessig = '["\\]'
+    $emailMuster = '^[^\s@"\\]+@[^\s@"\\]+\.[^\s@"\\]+$'
     $name = ""
     for ($i = 0; $i -lt 3 -and [string]::IsNullOrWhiteSpace($name); $i++) {
         $name = (Read-Host "Nachname").Trim()
@@ -231,10 +241,10 @@ function Frage-ErstesKonto {
     $vorname = (Read-Host "Vorname (darf leer bleiben)").Trim()
     if ($vorname -match $unzulaessig) { Write-Host "Der Vorname enthaelt unzulaessige Zeichen und wird weggelassen."; $vorname = "" }
     $email = ""
-    for ($i = 0; $i -lt 3 -and $email -notmatch '^[^\s@"\]+@[^\s@"\]+\.[^\s@"\]+$'; $i++) {
+    for ($i = 0; $i -lt 3 -and $email -notmatch $emailMuster; $i++) {
         $email = (Read-Host "E-Mail-Adresse (damit meldest du dich an)").Trim()
     }
-    if ([string]::IsNullOrWhiteSpace($name) -or $email -notmatch '^[^\s@"\]+@[^\s@"\]+\.[^\s@"\]+$') {
+    if ([string]::IsNullOrWhiteSpace($name) -or $email -notmatch $emailMuster) {
         Write-Host "Die Angaben waren unvollstaendig. $nein"
         return $false
     }
@@ -280,8 +290,7 @@ $TorballOrdner = Get-TorballBasisOrdner
 $AppZielOrdner = Join-Path $TorballOrdner "App"
 if (-not $PaketModus -and -not (Test-Path (Join-Path $RepoRoot ".git")) -and
     -not $RepoRoot.StartsWith($TorballOrdner, [System.StringComparison]::OrdinalIgnoreCase)) {
-    Write-Host ""
-    Write-Host "-- Projektordner an einen dauerhaften Ort verlegen --"
+    Write-Kasten "FRAGE: Projektordner an einen dauerhaften Ort verlegen"
     Write-Host "Der Projektordner liegt aktuell unter: $RepoRoot"
     Write-Host "Die Installation wird DAUERHAFT von diesem Ordner aus laufen (Programmdateien,"
     Write-Host "Konfiguration, Desktop-Verknuepfung zeigen dorthin). Liegt er z.B. im Downloads-"
@@ -333,6 +342,29 @@ if ($PaketModus) {
     } else {
         Write-Host "Neue Installation."
     }
+}
+
+# --- Vorab-Fragen (nur Erstinstallation mit Paket) --------------------------------------------------
+# Alle Entscheidungen, die die Person treffen muss, kommen gebuendelt VOR dem eigentlichen Installieren
+# (Nutzer-Vorgabe 2026-11-02: ein staendig anhaltender Installer wirkt, als sei etwas haengengeblieben).
+# Danach laeuft alles ohne Unterbrechung durch. Das erste Benutzerkonto wird hier bewusst NICHT abgefragt:
+# das legt die Person im Browser an (Schaltflaeche "Ersteinrichtung" auf der Anmeldeseite), dort ist
+# die Eingabe von Name und Passwort ohnehin bequemer und barriereaermer als in einer Konsole.
+$CouchdbErklaerung = "CouchDB ist die Datenbank, in der Torball-Turniere alle Turnierdaten speichert (Mannschaften, Spielplaene, Ergebnisse usw.) - ohne CouchDB hat die App keinen Ort, um Daten zu speichern."
+$CouchdbAuswirkung = "CouchDB wird als Hintergrunddienst installiert (nach C:\Torball-Turniere\CouchDB, nicht wie sonst ueblich nach 'Programme' - so bleibt alles, was diese Installation auf dem Rechner ablegt, an einer einzigen, leicht wiederzufindenden Stelle): es startet automatisch mit Windows und laeuft dauerhaft im Hintergrund, auch wenn Torball-Turniere gerade nicht benutzt wird (aehnlich wie z.B. ein Antivirenprogramm). Es ist ausschliesslich von diesem Rechner selbst erreichbar, nicht ueber das Internet. Laesst sich jederzeit ganz normal ueber 'Apps & Features' wieder entfernen."
+$VorabNetzwerk = $null
+$CouchdbVorabZugestimmt = $false
+if ($PaketModus -and -not $Aktualisierung) {
+    Write-Host "Ein paar Fragen vorab - danach laeuft die Installation ohne Unterbrechung durch."
+    $VorabNetzwerk = Frage-Netzwerkzugriff -Standard "j"
+    $couchdbLaeuft = $false
+    try { $couchdbLaeuft = ((Invoke-WebRequest -Uri "http://127.0.0.1:5984/" -UseBasicParsing -TimeoutSec 3).StatusCode -eq 200) } catch { }
+    if (-not $couchdbLaeuft) {
+        Bestaetige-Systemaenderung -Titel "CouchDB installieren" -Erklaerung $CouchdbErklaerung -Auswirkung $CouchdbAuswirkung
+        $CouchdbVorabZugestimmt = $true
+    }
+    Write-Host ""
+    Write-Host "Danke - jetzt wird installiert. Das dauert einige Minuten, bitte das Fenster nicht schliessen."
 }
 
 # --- [1/6] Node.js ---------------------------------------------------------------------------
@@ -417,9 +449,9 @@ if (Test-Couchdb) {
         $CouchAdminPass = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
     }
 } else {
-    Bestaetige-Systemaenderung -Titel "CouchDB installieren" `
-        -Erklaerung "CouchDB ist die Datenbank, in der Torball-Turniere alle Turnierdaten speichert (Mannschaften, Spielplaene, Ergebnisse usw.) - ohne CouchDB hat die App keinen Ort, um Daten zu speichern." `
-        -Auswirkung "CouchDB wird als Hintergrunddienst installiert (nach C:\Torball-Turniere\CouchDB, nicht wie sonst ueblich nach 'Programme' - so bleibt alles, was diese Installation auf dem Rechner ablegt, an einer einzigen, leicht wiederzufindenden Stelle): es startet automatisch mit Windows und laeuft dauerhaft im Hintergrund, auch wenn Torball-Turniere gerade nicht benutzt wird (aehnlich wie z.B. ein Antivirenprogramm). Es ist ausschliesslich von diesem Rechner selbst erreichbar, nicht ueber das Internet. Laesst sich jederzeit ganz normal ueber 'Apps & Features' wieder entfernen."
+    if (-not $CouchdbVorabZugestimmt) {
+        Bestaetige-Systemaenderung -Titel "CouchDB installieren" -Erklaerung $CouchdbErklaerung -Auswirkung $CouchdbAuswirkung
+    }
     Write-Host "CouchDB nicht gefunden - lade offiziellen Installer herunter (Version $CouchdbVersion) ..."
     $CouchAdminUser = "admin"
     $CouchAdminPass = New-ZufallsPasswort
@@ -761,8 +793,10 @@ if (Test-Path $EnvFile) {
     # kommentarlos scheitern und der Browser landete verwirrend bei der fremden Anwendung
     # (live erlebt, 2026-08-21).
     if ($PaketModus) {
-        # Keine Frage: der erste freie Port ab 3000 (ein belegter wird uebersprungen).
-        $Port = [string](Get-FreierPort -Start 3000)
+        # Keine Frage: der erste freie Port ab 3100 (ein belegter wird uebersprungen). Bewusst NICHT 3000 -
+        # das ist der Standard von Entwicklungsumgebungen (auch dieses Projekts): Ein dauerhaft laufender Dienst darauf
+        # wuerde dort entweder den Start verhindern oder eine Entwicklungsoberflaeche still auf die falsche Anwendung zeigen lassen.
+        $Port = [string](Get-FreierPort -Start 3100)
         Write-Host "Die Anwendung ist spaeter unter dem Port $Port erreichbar."
     } else {
     $Port = Frage-MitDefault -Text "Port, unter dem die App laufen soll" -Standard "3000"
@@ -781,7 +815,7 @@ if (Test-Path $EnvFile) {
     # Standard "ja": der Betriebsmodus "Lokales Netzwerk" (Turnier-Codes, Helfer-Erfassung) ist
     # ein Kernanwendungsfall der lokalen Installation - wer nur allein am Rechner arbeitet,
     # antwortet mit n und die App bleibt rein lokal (HOST=127.0.0.1, keine Firewall-Regel).
-    $NetzwerkZugriff = Frage-Netzwerkzugriff -Standard "j"
+    $NetzwerkZugriff = if ($null -ne $VorabNetzwerk) { $VorabNetzwerk } else { Frage-Netzwerkzugriff -Standard "j" }
     $HostWert = if ($NetzwerkZugriff) { "0.0.0.0" } else { "127.0.0.1" }
     if ($NetzwerkZugriff) { $FirewallRegelNoetig = $true }
 
@@ -837,6 +871,8 @@ if (($FirewallRegelNoetig -or $netzwerkBereitsAktiv) -and $EffectivePort -match 
 $ErstesKontoDa = $false
 if ($Aktualisierung) {
     $ErstesKontoDa = $true   # bei einem Update gibt es das Konto schon
+} elseif ($PaketModus -and -not $env:TORBALL_UNBEAUFSICHTIGT) {
+    $ErstesKontoDa = $false  # wird am Ende im Browser angelegt (siehe Vorab-Fragen)
 } else {
     try { $ErstesKontoDa = Frage-ErstesKonto }
     catch { Write-Host "Das erste Konto konnte hier nicht angelegt werden ($($_.Exception.Message)). Du legst es dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung)." }
@@ -896,16 +932,26 @@ if ($PaketModus) {
         Write-Host "Netzwerk-Adresse dieses Rechners (Port $EffectivePort) - die genaue Adresse zeigt die App im"
         Write-Host "Turnier unter 'Teilen' bei den Codes fuer das Lokale Netzwerk an."
     }
-    if (-not $Aktualisierung) {
-        if ($ErstesKontoDa) {
-            Write-Host "Anmelden: mit dem Administrator-Konto, das eben angelegt wurde (bzw. schon vorhanden war)."
-        } else {
-            Write-Host "Beim allerersten Oeffnen fuehrt die Anmeldeseite durch die einmalige Ersteinrichtung des ersten Admin-Kontos."
-        }
-    }
     Write-Host ""
     Write-Host "Spaeter aktualisieren: Startmenue -> Torball-Turniere -> 'Torball-Turniere aktualisieren' (oder"
     Write-Host "'Aktualisieren-Torball.cmd' im Programmordner doppelklicken) - holt die neueste Version selbst."
+    if (-not $Aktualisierung) {
+        if ($ErstesKontoDa) {
+            Write-Host ""
+            Write-Host "Anmelden: mit dem Administrator-Konto, das eben angelegt wurde (bzw. schon vorhanden war)."
+        } else {
+            Write-Kasten "NAECHSTER SCHRITT: Administrator-Konto im Browser anlegen"
+            Write-Host "Gleich oeffnet sich der Browser mit der Seite 'Ersteinrichtung'. Dort legst du dein eigenes"
+            Write-Host "Administrator-Konto an (Name, E-Mail-Adresse, Passwort) und bist danach angemeldet."
+            Write-Host "Falls sich der Browser nicht oeffnet: Desktop-Verknuepfung 'Torball-Turniere' doppelklicken und auf der"
+            Write-Host "Anmeldeseite auf 'Ersteinrichtung starten' klicken."
+            if ($anwendungLaeuft -and -not $env:TORBALL_UNBEAUFSICHTIGT) {
+                # Gleich selbst oeffnen: Je kuerzer die Zeit zwischen "App laeuft" und "Konto angelegt", desto weniger
+                # Gelegenheit hat jemand anderes im Netz, die Ersteinrichtung vorher abzuschliessen.
+                try { Start-Process "http://localhost:$EffectivePort/ersteinrichtung" } catch { }
+            }
+        }
+    }
     exit 0
 }
 
