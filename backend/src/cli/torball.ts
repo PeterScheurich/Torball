@@ -16,6 +16,7 @@ import type { Benutzer, Verein } from "@torball/shared";
 import { findAllByType, insertDoc } from "../repository";
 import { legeErstenAdminAn } from "../auth/ersteinrichtung";
 import { passwortRegelVerstoss } from "../auth/passwort";
+import { erzeugeNotzugang, meldeNotzugang, NOTZUGANG_GUELTIG_MS } from "../auth/notzugang";
 import { erzeugeBeispieldaten } from "../demo/beispieldaten";
 import { erstelleSnapshot, stelleSnapshotWiederher } from "../demo/snapshot";
 import { erstelleMailBericht } from "../mail/bericht";
@@ -53,6 +54,15 @@ const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
   "benutzer:entsperren": {
     beschreibung: 'Entsperrt einen Benutzer. Optionen: --email="<E-Mail>"',
     ausfuehren: benutzerEntsperren,
+  },
+  "admin:notzugang": {
+    beschreibung:
+      'NOTZUGANG fuer Administratoren, wenn alle Zugangsdaten vergessen wurden: erzeugt einen einmaligen Link (60 Minuten ' +
+      'gueltig), ueber den im Browser ein neues Passwort gewaehlt wird. Beendet alle Sitzungen des Kontos und hebt eine ' +
+      'Anmeldesperre auf. Optionen: [--email="<E-Mail>"] (kann entfallen, wenn es nur ein Administrator-Konto gibt) ' +
+      '[--zwei-fa-zuruecksetzen] (schaltet auch die Zwei-Faktor-Anmeldung aus, falls der Authenticator verloren ist). ' +
+      'Funktioniert nur mit Zugriff auf diesen Rechner.',
+    ausfuehren: adminNotzugang,
   },
   "erstes-konto:status": {
     beschreibung:
@@ -323,6 +333,35 @@ async function benutzerListe(): Promise<void> {
         : "GESPERRT";
     console.log(`${b.email}\tRolle: ${b.globaleRolle}\t${status}`);
   }
+}
+
+async function adminNotzugang(optionen: Optionen): Promise<void> {
+  const ergebnis = await erzeugeNotzugang({
+    email: optionen.email,
+    zweiFaZuruecksetzen: "zwei-fa-zuruecksetzen" in optionen,
+  });
+  if (!ergebnis.ok) {
+    console.error(ergebnis.meldung);
+    process.exitCode = 1;
+    return;
+  }
+
+  // Dieselbe Quelle wie die Anwendung selbst (FRONTEND_URL); fehlt sie, ist die lokale Adresse die brauchbarste Annahme.
+  const basis = (process.env.FRONTEND_URL ?? `http://localhost:${process.env.PORT ?? "3000"}`).replace(/\/+$/, "");
+  const minuten = Math.round(NOTZUGANG_GUELTIG_MS / 60000);
+  console.log(`Notzugang fuer ${ergebnis.konto.email}`);
+  console.log(`\nOeffne diesen Link im Browser und waehle ein neues Passwort (einmal verwendbar, ${minuten} Minuten gueltig):\n`);
+  console.log(`  ${basis}/passwort-reset/${ergebnis.token}\n`);
+  if (ergebnis.zweiFaZurueckgesetzt) {
+    console.log("Die Zwei-Faktor-Anmeldung wurde ausgeschaltet. Nach der Anmeldung unter 'Mein Profil' neu einrichten.\n");
+  }
+  console.log("Gib den Link nicht weiter: Wer ihn oeffnet, bestimmt das Passwort dieses Administrator-Kontos.");
+  if (!process.env.FRONTEND_URL) {
+    console.log("(FRONTEND_URL ist nicht gesetzt - falls der Link nicht passt, ersetze den Anfang durch die Adresse der Anwendung.)");
+  }
+
+  // Erst NACH der Ausgabe: Ein haengender Mailversand soll den Link nicht verzoegern.
+  await meldeNotzugang(ergebnis.konto, ergebnis.zweiFaZurueckgesetzt);
 }
 
 async function ersteKontoStatus(): Promise<void> {

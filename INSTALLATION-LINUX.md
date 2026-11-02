@@ -94,6 +94,16 @@ sudo torball-turniere-konsole diagnose      # schreibt einen Bericht, den man we
 sudo torball-turniere-konsole --hilfe       # weitere Befehle, z. B. ein gesperrtes Konto entsperren
 ```
 
+### Alle Zugangsdaten vergessen (Notzugang für Administratoren)
+
+```bash
+sudo torball-turniere-konsole admin:notzugang
+```
+
+Der Befehl gibt einen **einmaligen Link** aus (60 Minuten gültig). Du öffnest ihn im Browser und wählst dort ein neues Passwort. Gibt es mehrere
+Administrator-Konten, nennt der Befehl sie und du wählst eines mit `--email="…"`. Ist auch die Authenticator-App verloren, hängst du
+`--zwei-fa-zuruecksetzen` an. Das geht nur auf diesem Rechner, nicht über die Webseite.
+
 ## Deinstallieren
 
 ```bash

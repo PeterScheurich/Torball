@@ -771,6 +771,20 @@ export const HILFE_THEMEN: HilfeThema[] = [
           "Über „Passwort vergessen“ auf der Anmeldeseite forderst du einen Link an, mit dem du dir ein neues Passwort setzen kannst.",
         ],
       },
+      {
+        frage: "Ich bin Administrator und komme gar nicht mehr hinein – was nun?",
+        text: [
+          "Für diesen Fall gibt es einen Notzugang. Er geht bewusst nur direkt auf dem Rechner, auf dem Torball-Turniere läuft – nicht über die Webseite, denn jede solche Tür könnte auch ein Fremder nutzen. Er erzeugt einen einmaligen Link, der 60 Minuten gilt. Du öffnest ihn im Browser und wählst dort selbst ein neues Passwort; es taucht nirgends sonst auf.",
+          {
+            hinweis:
+              "Windows: Doppelklick auf „Notzugang-Torball.cmd“ im Programmordner (Rechtsklick → „Als Administrator ausführen“). Linux und Server: Befehl admin:notzugang der Konsole, auf Linux zum Beispiel „sudo torball-turniere-konsole admin:notzugang“. Gibt es mehrere Administrator-Konten, nennt der Befehl sie, und du wählst eines mit --email. Ist auch die Authenticator-App verloren, schaltet der Zusatz --zwei-fa-zuruecksetzen die Zwei-Faktor-Anmeldung aus; Windows fragt danach.",
+          },
+          {
+            hinweis:
+              "Beim Notzugang werden alle bisherigen Anmeldungen dieses Kontos beendet, und das Konto bekommt einen Hinweis (und eine Mail, falls der Versand eingerichtet ist), dass der Notzugang genutzt wurde. Ein gesperrtes Konto bleibt gesperrt – das hebst du vorher mit dem Befehl benutzer:entsperren auf.",
+          },
+        ],
+      },
     ],
   },
   {

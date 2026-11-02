@@ -155,6 +155,16 @@ Verkapselung würde `req.benutzer` sonst nur innerhalb dieses einen Scopes
 sichtbar machen, nicht in den als Geschwister-Plugins registrierten
 Routen-Dateien (`verein.ts`, `turnier.ts`, …).
 
+**Notzugang für Administratoren (2026-11-02, Auftraggeber):** Sind ALLE Zugangsdaten vergessen, hilft nur Zugriff auf den Rechner - bewusst
+KEIN Weg über die Webseite (jede solche Tür stünde auch einem Angreifer offen). Konsolenbefehl `admin:notzugang [--email=…]
+[--zwei-fa-zuruecksetzen]` (`auth/notzugang.ts`, Auswahl rein in `notzugangWahl.ts`) schreibt einen Reset-Token mit 60 Minuten Gültigkeit
+ans Konto (nur Hash gespeichert) und druckt den Link `<FRONTEND_URL>/passwort-reset/<token>`; das Passwort wählt die Person selbst über die
+vorhandene Zurücksetzen-Seite (beendet alle Sitzungen, hebt die Abkühlzeit auf, Passwortregeln greifen). Nur für ADMIN-Konten, nie für
+gesperrte (Hinweis auf `benutzer:entsperren`); ohne `--email` nur, wenn es genau einen nutzbaren Admin gibt, sonst Liste. Konto-Hinweis
+(`durch: Notzugang auf dem Server`) + Mail, NACH der Ausgabe des Links (ein hängender Mailversand verzögert ihn nicht). Windows:
+`Notzugang-Torball.cmd` (im Paket, fragt E-Mail und 2FA); Linux: `sudo torball-turniere-konsole admin:notzugang`. Tests:
+`notzugang.test.ts` (Auswahl, ohne DB), `notzugang.integration.test.ts` (ganzer Weg). Das Passwort wird nie auf der Konsole bewegt.
+
 **„Angemeldet bleiben“ (2026-11-02, Auftraggeber):** `POST /auth/login` nimmt `angemeldetBleiben` (Wahrheitswert, Standard aus). Es
 steuert NUR das Cookie (`setzeSessionCookie(reply, token, dauerhaft)`) und wird als `Session.dauerhaft` gemerkt: ohne Haken kein
 `Max-Age` (Browser wirft es beim Schließen weg), mit Haken 12 h - und `authPreHandler` erneuert es bei jeder Anfrage

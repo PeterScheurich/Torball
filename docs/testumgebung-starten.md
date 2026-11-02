@@ -83,6 +83,7 @@ Ohne Befehl oder mit `--hilfe` zeigt es die verfügbaren Befehle. Aktuell:
 
 - `benutzer:liste` – listet alle Benutzer mit E-Mail, Rolle und Sperr-Status.
 - `benutzer:entsperren --email="admin@example.com"` – entsperrt einen Benutzer.
+- `admin:notzugang [--email="…"] [--zwei-fa-zuruecksetzen]` – Notzugang für Administratoren: erzeugt einen einmaligen Link (60 Minuten), über den im Browser ein neues Passwort gewählt wird.
 - `konfiguration:anzeigen` – zeigt die aktuelle `backend/.env` (Passwörter maskiert).
 - `konfiguration:setzen --schluessel="PORT" --wert="3005"` – ändert gezielt einen
   `.env`-Wert (feste Allowlist, Neustart des Backends nötig).

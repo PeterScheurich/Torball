@@ -17,7 +17,7 @@
  * Installation holt sie von dort (deploy/aktualisieren-windows.ps1).
  *
  * Aufbau des Pakets (identisch zum installierten Ordner C:\Torball-Turniere\App):
- *   Setup.cmd, Aktualisieren-Torball.cmd, Deinstallieren-Torball.cmd, *.html (Anleitungen)
+ *   Setup.cmd, Aktualisieren-Torball.cmd, Deinstallieren-Torball.cmd, Notzugang-Torball.cmd, *.html (Anleitungen)
  *   paket.json            Version, Bauzeit, Commit, Update-Quelle
  *   node\node.exe         mitgelieferte Node.js-Laufzeit (Version fest, Pruefsumme geprueft)
  *   dienst\               WinSW (Windows-Dienst-Huelle) + Vorlage der Dienst-Konfiguration
@@ -276,6 +276,7 @@ for (const datei of [
   "Setup.cmd",
   "Aktualisieren-Torball.cmd",
   "Deinstallieren-Torball.cmd",
+  "Notzugang-Torball.cmd",
   "Installations-Anleitung.html",
   "Lokales-Netzwerk-Anleitung.html",
   "AKTUALISIEREN.md",

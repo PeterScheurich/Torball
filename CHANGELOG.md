@@ -7,6 +7,11 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Notzugang für Administratoren, wenn alle Zugangsdaten vergessen wurden.** Direkt auf dem Rechner, auf dem die Anwendung läuft
+  (Windows: Doppelklick auf „Notzugang-Torball.cmd“; Linux/Server: Konsolenbefehl `admin:notzugang`), entsteht ein einmaliger Link,
+  über den man im Browser ein neues Passwort wählt (60 Minuten gültig). Bei verlorener Authenticator-App lässt sich auch die
+  Zwei-Faktor-Anmeldung ausschalten. Alle bisherigen Anmeldungen des Kontos werden beendet, und das Konto bekommt einen Hinweis. Über die
+  Webseite gibt es bewusst keinen Notzugang.
 - **„Angemeldet bleiben“ auf der Anmeldeseite.** Bisher blieb jede Anmeldung nach dem Schließen des Browsers 12 Stunden bestehen –
   ohne dass man es beeinflussen konnte. Jetzt entscheidet jede Person selbst: Ohne Haken (Voreinstellung) endet die Anmeldung mit
   dem Schließen des Browsers, mit Haken bleibt sie auch danach bestehen. Die letzte Wahl merkt sich der Browser. Eine Anmeldung endet
