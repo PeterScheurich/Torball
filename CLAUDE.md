@@ -1464,8 +1464,8 @@ Scam-/Spam-Schutz). Kontaktdaten stehen aktuell in der Konstante `ENTWICKLER`
 Betriebskonfiguration kommen.
 
 **App-Version:** menschenlesbarer Anzeigetext in `frontend/src/version.ts`
-(`APP_VERSION`, aktuell „0.9.0 Beta"), Badge neben der Marke in der Kopfzeile;
-die maschinelle semver-Version steht in den `package.json` (`0.9.0-beta`). Bei
+(`APP_VERSION`, aktuell „0.10.0 Beta"), Badge neben der Marke in der Kopfzeile;
+die maschinelle semver-Version steht in den `package.json` (`0.10.0-beta`). Bei
 einem Versionswechsel **beide** Stellen anpassen.
 
 **Turnier-Datenimport (Spieltag-Ableitung, teilweise umgesetzt):** Ein neues

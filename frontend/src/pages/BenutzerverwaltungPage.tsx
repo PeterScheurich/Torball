@@ -39,8 +39,11 @@ export function BenutzerverwaltungPage() {
   const [einladungVerein, setEinladungVerein] = useState("");
   const [einladungslink, setEinladungslink] = useState<string | undefined>();
   const [einladungPerMail, setEinladungPerMail] = useState(false);
+  const [einladungBrauchtAdmin, setEinladungBrauchtAdmin] = useState(false);
   const [resetHinweis, setResetHinweis] = useState<{ email: string; link?: string } | undefined>();
-  const [einladungErneutHinweis, setEinladungErneutHinweis] = useState<{ email: string; link?: string } | undefined>();
+  const [einladungErneutHinweis, setEinladungErneutHinweis] = useState<
+    { email: string; link?: string; mailVersendet: boolean } | undefined
+  >();
   const [fehler, setFehler] = useState<string | undefined>();
 
   const laden = useCallback(async () => {
@@ -73,8 +76,9 @@ export function BenutzerverwaltungPage() {
     setFehler(undefined);
     setEinladungslink(undefined);
     setEinladungPerMail(false);
+    setEinladungBrauchtAdmin(false);
     try {
-      const { einladungsToken } = await benutzerEinladen({
+      const { einladungsToken, mailVersendet } = await benutzerEinladen({
         name,
         vorname: vorname.trim() || undefined,
         email,
@@ -83,8 +87,10 @@ export function BenutzerverwaltungPage() {
       });
       if (einladungsToken) {
         setEinladungslink(`${window.location.origin}/einladung/${einladungsToken}`);
-      } else {
+      } else if (mailVersendet) {
         setEinladungPerMail(true);
+      } else {
+        setEinladungBrauchtAdmin(true);
       }
       setName("");
       setVorname("");
@@ -155,10 +161,11 @@ export function BenutzerverwaltungPage() {
     setFehler(undefined);
     setEinladungErneutHinweis(undefined);
     try {
-      const { email, einladungsToken } = await benutzerEinladungErneutSenden(b._id);
+      const { email, einladungsToken, mailVersendet } = await benutzerEinladungErneutSenden(b._id);
       setEinladungErneutHinweis({
         email,
         link: einladungsToken ? `${window.location.origin}/einladung/${einladungsToken}` : undefined,
+        mailVersendet,
       });
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler beim erneuten Senden der Einladung");
@@ -393,6 +400,12 @@ export function BenutzerverwaltungPage() {
       </form>
 
       {einladungPerMail && <p>Einladung wurde per E-Mail verschickt.</p>}
+      {einladungBrauchtAdmin && (
+        <p>
+          Die Einladung ist angelegt, konnte aber nicht verschickt werden: Der E-Mail-Versand ist nicht eingerichtet. Bitte einen
+          Administrator, die Einladung zu übermitteln (in der Benutzerverwaltung beim Konto auf das Briefsymbol klicken).
+        </p>
+      )}
       {einladungslink && (
         <p>
           Kein E-Mail-Versand konfiguriert - Einladungslink bitte manuell weitergeben:
@@ -421,8 +434,13 @@ export function BenutzerverwaltungPage() {
             <br />
             <input type="text" readOnly value={einladungErneutHinweis.link} onFocus={(e) => e.target.select()} />
           </p>
-        ) : (
+        ) : einladungErneutHinweis.mailVersendet ? (
           <p>Einladung für {einladungErneutHinweis.email} erneuert und per E-Mail verschickt.</p>
+        ) : (
+          <p>
+            Einladung für {einladungErneutHinweis.email} erneuert, konnte aber nicht verschickt werden (E-Mail-Versand nicht
+            eingerichtet oder nicht erreichbar). Bitte einen Administrator, sie zu übermitteln.
+          </p>
         ))}
     </>
   );

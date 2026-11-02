@@ -7,6 +7,29 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+## [0.10.0-beta] - 2026-11-02
+
+### Das ist neu in dieser Version
+
+- **Windows: fertiges Installationspaket.** Nichts mehr bauen oder einzeln installieren; die Anwendung läuft als Windows-Dienst und startet mit dem Rechner.
+- **Aktualisieren mit einem Klick** (Startmenü → „Torball-Turniere aktualisieren“), mit automatischem Zurücksetzen, falls die neue Version nicht antwortet.
+- **Übersichtlicherer Installer:** alle Fragen gebündelt am Anfang, abgesetzte Überschriften, das erste Konto im Browser mit Einrichtungs-Code, Fenster schließen sich selbst.
+- **Linux-Installation** für Debian, Ubuntu, Linux Mint und Xubuntu (erprobt auf Debian 13, Ubuntu 26.04, Mint 22.3 und Xubuntu 26.04).
+- **Turniermodi:** zwei Gruppen, Endrunde mit 4, 6 oder 8 Mannschaften, Spiel um Platz 3 und Platzierungsspiele; Endrunde auf Wunsch automatisch erzeugt; Halle und Startzeit wählbar; eigene Vorlagen als Kopien; eine Spielnummer über das ganze Turnier.
+- **National oder international:** Nichtantreten zählt international 5:0, „Land“ statt „Bundesland“, Länderliste und Land am Verein.
+- **Digitale Protokollierung (Beta) weiter ausgebaut:** Strafwurf und Penalty getrennt, 8-Sekunden-Anzeige auch dabei, keine verlorenen Ereignisse bei kurzem Netzausfall, Schutz vor dem falschen Spielprotokoll.
+- **Schiedsrichter-Anzeige am Feld** auf einem zweiten Bildschirm, je Turnier einstellbar, mit eigenem Hell/Dunkel.
+- **Sicherheit:** Durchgang nach den OWASP Top 10, Zwei-Faktor-Code nicht mehr erratbar, erneute Bestätigung bei sensiblen Aktionen, Ersteinrichtung mit Einrichtungs-Code, Windows-Freigabe nur fürs eigene Netz.
+- **Konten:** Änderungen am eigenen Konto werden gemeldet (Mail und Hinweis), Notzugang für Administratoren, „Angemeldet bleiben“ wählbar, Manager sehen nur ihre eigenen Konten, Einladungs- und Reset-Links nur für Administratoren.
+- **Datenschutz:** Freigabe an Personen nur per genauer E-Mail-Adresse, keine Benutzerliste mehr.
+- **Passwörter:** mindestens 12 Zeichen, aber keine Pflicht für Sonderzeichen – eine Passphrase genügt.
+- **Regeln und Planung:** „Gesamtzeit pro Spiel“, Regeln speichern von selbst, strengere Eingabeprüfung, neue Standardwerte.
+- **Barrierefreiheit:** automatisch gespeicherte Felder melden sich jetzt hörbar; Felder neben „Vorname“ heißen „Nachname“.
+- **Sicherung** des gesamten Datenbestands als Datei (Admin → Systemeinstellungen).
+- **Gut zu wissen:** Die Version ist weiterhin eine Beta. Ältere Windows-Installationen aus dem Quellcode-ZIP werden nicht migriert – bitte neu installieren.
+
+### Alle Änderungen im Detail
+
 - **Ersteinrichtung auf dem Server mit Einrichtungs-Code.** Solange es noch kein Konto gibt, konnte auf einem bereits erreichbaren Server jede
   Person die Ersteinrichtung vor dem Betreiber abschließen und Administrator werden. Das Deploy-Skript erzeugt jetzt beim ersten Mal einen
   Zufallscode und zeigt ihn im Terminal; die Ersteinrichtung im Browser verlangt ihn zusätzlich. Bei lokalen Installationen ändert sich nichts.
@@ -25,8 +48,8 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
   als ZIP-Datei `Torball-Turniere-Windows-<Version>.zip` (als Anhang eines GitHub-Releases). Sie enthält die fertig gebaute
   Anwendung samt Node.js – es muss nichts mehr installiert, heruntergeladen oder gebaut werden. Das macht die Installation
   schneller und deutlich weniger fehleranfällig. Die Anwendung läuft als **Windows-Dienst** im Hintergrund und startet mit dem
-  Rechner von selbst; das Server-Fenster, das man nicht schließen durfte, entfällt. Die Installation stellt nur noch drei Fragen
-  (Datenbank, Netzwerkzugriff, erstes Konto); den Port wählt sie selbst.
+  Rechner von selbst; das Server-Fenster, das man nicht schließen durfte, entfällt. Die Installation stellt nur noch zwei Fragen
+  (Datenbank, Netzwerkzugriff); den Port wählt sie selbst.
 - **Windows-Installer übersichtlicher.** Alle Fragen kommen jetzt gebündelt am Anfang, jede in einem deutlich abgesetzten Kasten; danach läuft die Installation ohne
   Unterbrechung durch. Das erste Konto wird nicht mehr in der Konsole abgefragt, sondern im Browser angelegt, der sich am Ende von selbst auf der Seite „Ersteinrichtung“ öffnet. Wie beim Server schützt ein Einrichtungs-Code diese Einrichtung (am Ende deutlich angezeigt, bereits eingetragen, bei erneutem Setup wieder sichtbar, solange es kein Konto gibt).
   Neue Installationen wählen den Port ab 3100 statt ab 3000, damit sie Entwicklungsumgebungen nicht in die Quere kommen.
@@ -39,8 +62,8 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
   sichert den bisherigen Stand, tauscht die Programmdateien aus und stellt den alten Stand automatisch wieder her, falls die neue
   Version nicht antwortet. Turnierdaten und Konfiguration bleiben unverändert. Eine neue Version steht erst bereit, wenn ein
   Release veröffentlicht wurde – nicht mit jedem Commit. Administratoren sehen in der Anwendung einen Hinweis, sobald es eine
-  neuere Version gibt. Ältere Installationen (aus dem Quellcode-ZIP) werden beim ersten Ausführen des neuen `Setup.cmd` umgestellt;
-  Daten und Konfiguration bleiben erhalten.
+  neuere Version gibt. Ältere Installationen (aus dem Quellcode-ZIP) werden **nicht** migriert: Eine Umstellung ist nicht vorgesehen und nicht getestet – bitte
+  neu installieren.
 - **Änderungen am eigenen Konto werden gemeldet – auf zwei Wegen.** Wird das Passwort geändert oder zurückgesetzt, die
   E-Mail-Adresse oder Rolle geändert oder die Zwei-Faktor-Anmeldung ein- oder ausgeschaltet, bekommt die Person eine
   E-Mail (bei einer neuen Adresse geht sie auch an die alte) und beim nächsten Aufruf einen Hinweis oben auf der Seite, den
@@ -49,10 +72,14 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 - **Passwort zurücksetzen durch einen Manager.** Der Zurücksetz-Link wird immer per E-Mail an die Person geschickt. Ist der
   Mailversand nicht eingerichtet oder nicht erreichbar, löst ein Administrator das Zurücksetzen aus (er bekommt den Link
   angezeigt und gibt ihn persönlich weiter); ein Manager erhält dann eine Meldung.
-- **Erstes Konto schon beim Installieren anlegen.** Die Installer für Windows und Linux fragen jetzt nach Name,
-  E-Mail-Adresse und Passwort des ersten Administrator-Kontos und legen es gleich an – damit entfällt das Zeitfenster, in dem
-  jemand anderes die Ersteinrichtung im Browser vor dir hätte abschließen können. Wer die Fragen überspringt, legt das Konto
-  wie bisher beim ersten Öffnen der Seite im Browser an. Dazu gibt es den Konsolenbefehl `erstes-konto:anlegen`.
+- **Erstes Konto: ohne Zeitfenster für Fremde.** Der Linux-Installer fragt nach Nachname, Vorname, E-Mail-Adresse und Passwort des ersten
+  Administrator-Kontos und legt es gleich an. Unter Windows legt man es im Browser an – mit dem Einrichtungs-Code, den der Installer am
+  Ende anzeigt. In beiden Fällen kann niemand anderes im Netz die Einrichtung vorher abschließen. Dazu gibt es den Konsolenbefehl
+  `erstes-konto:anlegen`.
+- **Einladungslink ohne Mailversand nur für Administratoren.** Ist kein E-Mail-Versand eingerichtet, sieht den Einladungslink nur noch ein
+  Administrator (beim Einladen und bei „Einladung erneut senden“). Ein Manager legt die Einladung an und bekommt einen Hinweis, einen
+  Administrator zu bitten; der holt den Link in der Benutzerverwaltung mit dem Briefsymbol. Wer den Link hat, könnte das Konto sonst selbst
+  aktivieren und als die eingeladene Person auftreten.
 - **Linux-Installer erprobt und verbessert.** Er wurde auf einem Debian 13 und einem Ubuntu 26.04 durchgespielt (Installation,
   Neustart, Aktualisieren, Deinstallieren, Firewall). Dabei behoben: Der Deinstaller ließ eine Paketquelle von Node.js zurück, die
   danach bei jedem `apt update` eine Warnung auslöste; der Installer legt keine Compiler-Pakete mehr an (rund 250 MB weniger).

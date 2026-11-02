@@ -165,10 +165,17 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
           app.log.error(err, "Einladungsmail konnte nicht versendet werden, Anlage zurueckgerollt");
           return reply.code(502).send({ error: "Einladung konnte nicht per E-Mail versendet werden." });
         }
-        return reply.code(201).send({ benutzer: oeffentlichesProfil(gespeichert) });
+        return reply.code(201).send({ benutzer: oeffentlichesProfil(gespeichert), mailVersendet: true });
       }
 
-      return reply.code(201).send({ benutzer: oeffentlichesProfil(gespeichert), einladungsToken: token });
+      // Ohne Mailversand bekommt NUR ein Admin den Klartext-Link (Auftraggeber 2026-11-02: Zugangsdaten verteilen Admins). Wer ihn hat,
+      // koennte das Konto selbst aktivieren und als die eingeladene Person auftreten - die Mail waere sonst der Beweis fuer die Adresse.
+      // Ein Manager legt die Einladung an; der Admin sieht das Konto und holt den Link per "Einladung erneut senden".
+      return reply.code(201).send({
+        benutzer: oeffentlichesProfil(gespeichert),
+        mailVersendet: false,
+        ...(req.benutzer!.globaleRolle === "admin" ? { einladungsToken: token } : {}),
+      });
     },
   );
 
@@ -537,6 +544,8 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       einladungAblauf: new Date(Date.now() + EINLADUNG_GUELTIG_MS).toISOString(),
     });
 
+    // Klartext-Link nur fuer Admins (siehe Einladen oben).
+    const adminLink = req.benutzer!.globaleRolle === "admin" ? { einladungsToken: token } : {};
     const smtpFuerEinladung = smtpVerbindungAus(await aktuelleSystemeinstellungen());
     if (smtpFuerEinladung) {
       try {
@@ -550,14 +559,14 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
             `${FRONTEND_URL}/einladung/${token}\n\n` +
             `Der Link ist 7 Tage gueltig.`,
         });
-        return reply.send({ email: ziel.email });
+        return reply.send({ email: ziel.email, mailVersendet: true });
       } catch (err) {
         app.log.error(err, "Einladungsmail (erneut) konnte nicht versendet werden");
-        return reply.send({ email: ziel.email, einladungsToken: token });
+        return reply.send({ email: ziel.email, mailVersendet: false, ...adminLink });
       }
     }
 
-    return reply.send({ email: ziel.email, einladungsToken: token });
+    return reply.send({ email: ziel.email, mailVersendet: false, ...adminLink });
   });
 
   /**

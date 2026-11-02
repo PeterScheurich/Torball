@@ -677,10 +677,11 @@ export interface NeuerBenutzer {
   vereinId?: string;
 }
 
-/** Ist E-Mail-Versand konfiguriert, geht der Einladungslink direkt an die neue Adresse und einladungsToken fehlt in der Antwort; andernfalls kommt der Klartext-Link direkt zurueck. */
+/** Ist E-Mail-Versand konfiguriert, geht der Einladungslink direkt an die neue Adresse (mailVersendet, kein einladungsToken). Ohne Mailversand
+ * kommt der Klartext-Link NUR an einen Admin zurueck; ein Manager bekommt mailVersendet=false ohne Link und muss einen Admin bitten. */
 export function benutzerEinladen(
   daten: NeuerBenutzer,
-): Promise<{ benutzer: BenutzerProfil; einladungsToken?: string }> {
+): Promise<{ benutzer: BenutzerProfil; mailVersendet: boolean; einladungsToken?: string }> {
   return anfrage("/benutzer", { method: "POST", body: JSON.stringify(daten) });
 }
 
@@ -704,8 +705,10 @@ export function benutzerPasswortResetAusloesen(id: string): Promise<{ email: str
 /** Verschickt die Einladung fuer einen noch nicht aktivierten Account erneut (frischer Token) -
  * z.B. wenn die urspruengliche Mail nie ankam. Ist Mailversand konfiguriert, geht der Link direkt
  * an die Adresse und einladungsToken fehlt in der Antwort - sonst kommt der Klartext-Token direkt
- * zurueck, analog zur Erst-Einladung. */
-export function benutzerEinladungErneutSenden(id: string): Promise<{ email: string; einladungsToken?: string }> {
+ * zurueck, analog zur Erst-Einladung - aber nur an einen Admin (ein Manager bekommt mailVersendet=false ohne Link). */
+export function benutzerEinladungErneutSenden(
+  id: string,
+): Promise<{ email: string; mailVersendet: boolean; einladungsToken?: string }> {
   return anfrage(`/benutzer/${id}/einladung-erneut-senden`, { method: "POST" });
 }
 

@@ -643,7 +643,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Wie kommen neue Benutzer hinzu?",
         text: [
-          "Über die Benutzerverwaltung (nur für Administrator und Manager) können neue Konten angelegt werden. Dafür ist eine E-Mail-Adresse zwingend notwendig. An diese Adresse wird dann eine Einladung verschickt. Die eingeladene Person setzt sich über den Einladungslink selbst ein Passwort.",
+          "Über die Benutzerverwaltung (nur für Administrator und Manager) können neue Konten angelegt werden. Dafür ist eine E-Mail-Adresse zwingend notwendig. An diese Adresse wird dann eine Einladung verschickt. Die eingeladene Person setzt sich über den Einladungslink selbst ein Passwort. Ist auf der Installation kein E-Mail-Versand eingerichtet, kann die Einladung nicht verschickt werden: Den Einladungslink zum Weitergeben sieht dann nur ein Administrator – als Manager legst du die Einladung an und bittest einen Administrator, sie zu übermitteln (in der Benutzerverwaltung beim Konto das Briefsymbol).",
         ],
       },
       {
