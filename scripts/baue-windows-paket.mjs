@@ -2,7 +2,7 @@
 /**
  * Baut das fertige Windows-Paket der lokalen Installation (Stufe 2, 2026-11-02):
  *
- *   node scripts/baue-windows-paket.mjs [--ohne-build] [--ausgabe=<Ordner>]
+ *   node scripts/baue-windows-paket.mjs [--ohne-build] [--ausgabe=<Ordner>] [--version=<nur fuer Tests>] [--defekt]
  *
  * Statt des Quellcodes (den der Rechner der Nutzer erst mit Node.js, npm install und einem Build
  * zu einer Anwendung machen musste) enthaelt das Paket die FERTIG GEBAUTE Anwendung samt Laufzeit-
@@ -155,7 +155,8 @@ function schreibeZip(ordner, zielDatei) {
 }
 
 const wurzelPaket = JSON.parse(fs.readFileSync(path.join(WURZEL, "package.json"), "utf8"));
-const VERSION = wurzelPaket.version;
+// --version=<x> ueberschreibt die Versionsnummer - nur fuer Testbauten (z. B. um ein Update zu pruefen).
+const VERSION = argumente.find((a) => a.startsWith("--version="))?.split("=")[1] ?? wurzelPaket.version;
 const PAKETNAME = `Torball-Turniere-Windows-${VERSION}`;
 const BUEHNE = path.join(AUSGABE, "buehne");
 const ZWISCHENSPEICHER = path.join(AUSGABE, "cache");
@@ -318,6 +319,12 @@ fs.writeFileSync(
     2,
   ),
 );
+
+// Nur fuer Tests des Rueckfall-Wegs (--defekt): die Anwendung bricht beim Start ab, der Updater muss zuruecksetzen.
+if (argumente.includes("--defekt")) {
+  fs.appendFileSync(path.join(BUEHNE, "backend/dist/index.js"), '\nthrow new Error("absichtlich defekt (Testpaket)");\n');
+  protokoll("ACHTUNG: absichtlich defektes Testpaket.");
+}
 
 // --- Zippen (eigener, abhaengigkeitsfreier ZIP-Schreiber) + Pruefsumme
 // Bewusst kein tar/Compress-Archive: das Windows-tar stuerzte beim Packen dieses Baums ab (Zugriffsfehler),

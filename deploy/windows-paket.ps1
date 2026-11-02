@@ -120,11 +120,25 @@ function Invoke-Robocopy {
 
 # Sichert den bisherigen Stand nach <App>.alt (nur eine Generation) - Grundlage fuer das automatische
 # Zuruecksetzen, falls die neue Version nicht startet.
+# Prueft vor dem Sichern/Austauschen, ob der bestehende Programmordner lesbar ist. Ist er es nicht (z. B. nach einer
+# unterbrochenen Installation mit kaputten Zugriffsrechten), wuerde robocopy bei jeder Datei mehrfach warten - lieber
+# gleich mit einer klaren Anweisung abbrechen.
+function Pruefe-AppLesbar {
+    param([string]$AppOrdner)
+    foreach ($probe in @("paket.json", "node\node.exe", "backend\dist\index.js")) {
+        $pfad = Join-Path $AppOrdner $probe
+        if (-not (Test-Path $pfad)) { continue }
+        try { $strom = [IO.File]::OpenRead($pfad); $strom.Close() }
+        catch { throw "Der bisherige Programmordner ($AppOrdner) ist nicht lesbar (Zugriffsrechte beschaedigt: $probe). Bitte den Ordner im Explorer loeschen (bei einer Rueckfrage nach Rechten 'Fortfahren') und das Setup erneut starten - die Turnierdaten liegen in der Datenbank und bleiben erhalten." }
+    }
+}
+
 function Sichere-App {
     param([string]$AppOrdner)
+    Pruefe-AppLesbar -AppOrdner $AppOrdner
     $sicherung = "$AppOrdner.alt"
     Write-Host "Sichere den bisherigen Stand ($sicherung) ..."
-    Invoke-Robocopy -Argumente @($AppOrdner, $sicherung, "/MIR", "/R:2", "/W:2", "/NFL", "/NDL", "/NJH", "/NJS", "/NP")
+    Invoke-Robocopy -Argumente @($AppOrdner, $sicherung, "/MIR", "/R:1", "/W:1", "/NFL", "/NDL", "/NJH", "/NJS", "/NP")
 }
 
 function Stelle-AppWiederHer {
@@ -132,17 +146,18 @@ function Stelle-AppWiederHer {
     $sicherung = "$AppOrdner.alt"
     if (-not (Test-Path $sicherung)) { throw "Keine Sicherung vorhanden ($sicherung)." }
     Write-Host "Stelle den bisherigen Stand wieder her ..."
-    Invoke-Robocopy -Argumente @($sicherung, $AppOrdner, "/MIR", "/R:2", "/W:2", "/NFL", "/NDL", "/NJH", "/NJS", "/NP")
+    Invoke-Robocopy -Argumente @($sicherung, $AppOrdner, "/MIR", "/R:1", "/W:1", "/NFL", "/NDL", "/NJH", "/NJS", "/NP")
 }
 
 # Kopiert das Paket nach $Ziel. /MIR raeumt dabei Dateien weg, die es in der neuen Version nicht mehr
 # gibt; die Konfiguration (backend\.env) und Sicherungsdateien bleiben bewusst unangetastet.
 function Kopiere-PaketNachApp {
     param([string]$Quelle, [string]$Ziel)
+    if (Test-Path $Ziel) { Pruefe-AppLesbar -AppOrdner $Ziel }
     New-Item -ItemType Directory -Force -Path $Ziel | Out-Null
     Write-Host "Kopiere die Programmdateien nach $Ziel ..."
     Invoke-Robocopy -Argumente @(
-        $Quelle, $Ziel, "/MIR", "/R:2", "/W:2", "/NFL", "/NDL", "/NJH", "/NJS", "/NP",
+        $Quelle, $Ziel, "/MIR", "/R:1", "/W:1", "/NFL", "/NDL", "/NJH", "/NJS", "/NP",
         "/XF", ".env", ".env.test.local", "anschluss.txt"
     )
 }
@@ -154,16 +169,36 @@ function Kopiere-PaketNachApp {
 #   S-1-5-32-544 Administratoren, S-1-5-18 SYSTEM, S-1-5-32-545 Benutzer, S-1-5-19 LocalService.
 function Setze-AppRechte {
     param([string]$AppOrdner, [string]$LogOrdner, [bool]$Rekursiv)
-    $optionen = @("/inheritance:r", "/grant:r", "*S-1-5-32-544:(OI)(CI)F", "*S-1-5-18:(OI)(CI)F",
-        "*S-1-5-32-545:(OI)(CI)RX", "*S-1-5-19:(OI)(CI)RX", "/C", "/Q")
-    if ($Rekursiv) { $optionen += "/T" }
-    & icacls.exe $AppOrdner @optionen | Out-Null
+    # Nur der ORDNER selbst bekommt die festen, vererbbaren Rechte; alles darin erbt sie. Bewusst NICHT
+    # "/inheritance:r" zusammen mit "/T" ueber den ganzen Baum: das entzog den Dateien JEDE Berechtigung (live
+    # erlebt, 2026-11-02: danach kam nicht einmal ein Administrator an node.exe) - bei vererbbaren Rechten auf
+    # Dateien greifen die Vererbungs-Markierungen (OI)(CI) nicht.
+    & icacls.exe $AppOrdner /inheritance:r /grant:r "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" "*S-1-5-32-545:(OI)(CI)RX" "*S-1-5-19:(OI)(CI)RX" | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Die Zugriffsrechte auf $AppOrdner konnten nicht gesetzt werden (icacls Code $LASTEXITCODE)." }
+    if ($Rekursiv) {
+        # Schon vorhandene Dateien (Umstellung einer aelteren Installation) sollen ab jetzt vom Ordner erben.
+        Get-ChildItem -Path $AppOrdner -Force | ForEach-Object { & icacls.exe $_.FullName /reset /T /C /Q | Out-Null }
+    }
     $envDatei = Join-Path $AppOrdner "backend\.env"
     if (Test-Path $envDatei) {
         & icacls.exe $envDatei /inheritance:r /grant:r "*S-1-5-32-544:F" "*S-1-5-18:F" "*S-1-5-19:R" | Out-Null
     }
     New-Item -ItemType Directory -Force -Path $LogOrdner | Out-Null
     & icacls.exe $LogOrdner /grant "*S-1-5-19:(OI)(CI)M" /C /Q | Out-Null
+}
+
+# Wartet, bis ein entfernter Dienst WIRKLICH weg ist. "uninstall" markiert ihn nur zum Loeschen; weg ist er erst, wenn
+# nirgends mehr ein Zugriff offen ist (auch nicht in diesem Prozess durch die Dienst-Abfragen) - erst dann laesst sich
+# derselbe Name neu anlegen. sc.exe meldet Code 1060, wenn es den Dienst nicht mehr gibt.
+function Warte-DienstWeg {
+    [GC]::Collect()
+    [GC]::WaitForPendingFinalizers()
+    for ($i = 0; $i -lt 30; $i++) {
+        & sc.exe query $DienstName | Out-Null
+        if ($LASTEXITCODE -eq 1060) { return $true }
+        Start-Sleep -Seconds 1
+    }
+    return $false
 }
 
 # Legt den Windows-Dienst an (bzw. ersetzt einen vorhandenen). Die XML-Datei wird aus der Vorlage im
@@ -176,17 +211,26 @@ function Registriere-TorballDienst {
     $vorlage = Join-Path $dienstOrdner "torball-dienst.xml.vorlage"
     if (-not (Test-Path $exe) -or -not (Test-Path $vorlage)) { throw "Dienst-Dateien fehlen im Ordner $dienstOrdner." }
 
-    if (Get-TorballDienst) {
-        Stop-TorballDienst
-        & $exe uninstall | Out-Null
-        Start-Sleep -Seconds 1
-    }
+    # Die Konfigurationsdatei ZUERST erzeugen: WinSW braucht sie auch zum Entfernen eines vorhandenen Dienstes, und beim
+    # Austausch der Programmdateien (robocopy /MIR) wird sie als "nicht im Paket" geloescht (live im Test erlebt: ohne sie
+    # schlug das Entfernen still fehl, und das Neuanlegen scheiterte mit "Dienst existiert bereits", Code 1073).
     $xml = (Get-Content $vorlage -Raw -Encoding UTF8).Replace("@@LOGPFAD@@", [Security.SecurityElement]::Escape($LogOrdner))
     [IO.File]::WriteAllText((Join-Path $dienstOrdner "torball-dienst.xml"), $xml, (New-Object Text.UTF8Encoding($false)))
 
+    if (Get-TorballDienst) {
+        Stop-TorballDienst
+        Entferne-DienstRegistrierung -Exe $exe
+    }
+
     Write-Host "Richte den Torball-Dienst ein ..."
-    & $exe install | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Der Dienst konnte nicht eingerichtet werden (Code $LASTEXITCODE)." }
+    # Code 1073 = "Dienst existiert bereits": ein gerade entfernter Dienst bleibt noch kurz "zum Loeschen markiert".
+    # Deshalb ein paar Mal wiederholen, statt sofort aufzugeben.
+    for ($versuch = 1; $versuch -le 10; $versuch++) {
+        & $exe install | Out-Null
+        if ($LASTEXITCODE -eq 0) { break }
+        if ($LASTEXITCODE -ne 1073 -or $versuch -eq 10) { throw "Der Dienst konnte nicht eingerichtet werden (Code $LASTEXITCODE)." }
+        Start-Sleep -Seconds 2
+    }
     & sc.exe config $DienstName obj= "NT AUTHORITY\LocalService" | Out-Null
     & sc.exe config $DienstName start= delayed-auto | Out-Null
     & sc.exe description $DienstName "Lokaler Server der Anwendung Torball-Turniere (Turnierverwaltung)." | Out-Null
@@ -205,12 +249,15 @@ function Warte-AufAnwendung {
     $alterPort = $env:PORT
     $env:PORT = $Port
     try {
-        & $node $skript anwendung
+        # "| Out-Host": die Textausgabe der Wartehilfe soll auf den Bildschirm, NICHT in den Rueckgabewert. Ohne das
+        # lieferte die Funktion ein Array aus Textzeilen (in PowerShell immer "wahr") und meldete nie "nicht erreichbar":
+        # live im Test erlebt - eine defekte neue Version galt als erfolgreich installiert, der Rueckfall griff nie.
+        & $node $skript anwendung | Out-Host
         $ok = ($LASTEXITCODE -eq 0)
     } finally {
         $env:PORT = $alterPort
     }
-    return $ok
+    return [bool]$ok
 }
 
 # Port aus der .env (Administratoren-Sicht) - Grundlage fuer die Erreichbarkeitspruefung nach einem Update.
@@ -291,9 +338,21 @@ function Entferne-TorballDienst {
     param([string]$AppOrdner)
     if (-not (Get-TorballDienst)) { return }
     Stop-TorballDienst
-    $exe = Join-Path $AppOrdner "dienst\torball-dienst.exe"
-    if (Test-Path $exe) { & $exe uninstall | Out-Null } else { & sc.exe delete $DienstName | Out-Null }
-    Start-Sleep -Seconds 1
+    Entferne-DienstRegistrierung -Exe (Join-Path $AppOrdner "dienst\torball-dienst.exe")
+}
+
+# Meldet den (angehaltenen) Dienst ab: zuerst ueber WinSW (braucht deren XML neben der exe), schlaegt das fehl oder gibt
+# es die Dateien nicht mehr, ueber "sc delete". Wartet danach, bis der Dienst wirklich weg ist.
+function Entferne-DienstRegistrierung {
+    param([string]$Exe)
+    $abgemeldet = $false
+    $xml = Join-Path (Split-Path -Parent $Exe) "torball-dienst.xml"
+    if ((Test-Path $Exe) -and (Test-Path $xml)) {
+        & $Exe uninstall | Out-Null
+        $abgemeldet = ($LASTEXITCODE -eq 0)
+    }
+    if (-not $abgemeldet) { & sc.exe delete $DienstName | Out-Null }
+    $null = Warte-DienstWeg
 }
 
 # Waehlt aus der Release-Liste (GitHub-API) die neueste passende Version aus. Entwuerfe zaehlen nie; Vorab-Versionen

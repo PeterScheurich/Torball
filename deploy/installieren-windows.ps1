@@ -31,6 +31,11 @@ $ErrorActionPreference = "Stop"
 $CouchdbVersion = "3.5.2-1"
 $CouchdbMsiUrl = "https://couchdb.neighbourhood.ie/downloads/$CouchdbVersion/win/apache-couchdb-$CouchdbVersion.msi"
 $CouchdbSha256Url = "$CouchdbMsiUrl.sha256"
+# Fest hinterlegte Pruefsumme genau dieser Version (SHA-256 des .msi, am 2026-11-02 ermittelt; die Datei ist
+# ausserdem von der Apache Software Foundation signiert). Sicherer und zuverlaessiger als die .sha256-Datei des
+# Hosters, die dort wiederholt mit 403 AccessDenied ausfiel. WIRD $CouchdbVersion GEAENDERT, MUSS DIESER WERT MIT.
+$CouchdbSha256Fest = "c23bd1162b9fe5c12812880ed54c6944eb7a2c94f6599a0d42ff21496e2acf57"
+$CouchdbSha256FestFuer = "3.5.2-1"
 
 function Test-Admin {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -425,29 +430,42 @@ if (Test-Couchdb) {
     $shaPath = "$msiPath.sha256"
     Invoke-WebRequest -Uri $CouchdbMsiUrl -OutFile $msiPath
 
-    # Die .sha256-Datei liegt auf demselben Hoster (couchdb.neighbourhood.ie -> DigitalOcean
-    # Spaces) wie der Installer selbst, aber als eigenes Objekt - kann unabhaengig vom .msi
-    # nicht verfuegbar sein (live erlebt: .msi lud problemlos, .sha256 lieferte 403 AccessDenied,
-    # offenbar eine Bucket-Berechtigung nur fuer dieses eine Objekt). Kein Abbruch bei fehlender
-    # Pruefsumme - das waere ein reines Fremd-Server-Problem, keines dieser Installation -,
-    # sondern eine bewusste Nachfrage, ob trotzdem fortgefahren werden soll.
-    $pruefsummeVerfuegbar = $true
-    try {
-        Invoke-WebRequest -Uri $CouchdbSha256Url -OutFile $shaPath -ErrorAction Stop
-    } catch {
-        $pruefsummeVerfuegbar = $false
-    }
-
-    if ($pruefsummeVerfuegbar) {
-        $expectedHash = ((Get-Content $shaPath) -split "\s+")[0]
-        $actualHash = (Get-FileHash -Path $msiPath -Algorithm SHA256).Hash
-        if ($actualHash.ToLower() -ne $expectedHash.ToLower()) {
+    # Pruefung des heruntergeladenen Installers, in dieser Reihenfolge:
+    #  1. die fest im Installer hinterlegte Pruefsumme (bei Abweichung: Abbruch),
+    #  2. sonst die .sha256-Datei des Hosters (liegt dort als eigenes Objekt und fiel live mit 403 AccessDenied aus),
+    #  3. sonst die digitale Signatur der Apache Software Foundation,
+    #  4. erst wenn alles fehlt: bewusste Nachfrage, ob trotzdem fortgefahren werden soll (Standard: nein).
+    $actualHash = (Get-FileHash -Path $msiPath -Algorithm SHA256).Hash.ToLower()
+    $verifiziert = $false
+    if ($CouchdbVersion -eq $CouchdbSha256FestFuer) {
+        if ($actualHash -ne $CouchdbSha256Fest) {
             Write-Error "Pruefsumme des CouchDB-Installers stimmt nicht ueberein - Abbruch (moeglicher Download-Fehler). Bitte erneut versuchen."
             exit 1
         }
-    } else {
+        $verifiziert = $true
+        Write-Host "Pruefsumme des CouchDB-Installers stimmt."
+    }
+    if (-not $verifiziert) {
+        try {
+            Invoke-WebRequest -Uri $CouchdbSha256Url -OutFile $shaPath -ErrorAction Stop
+            $expectedHash = ((Get-Content $shaPath) -split "\s+")[0]
+            if ($actualHash -ne $expectedHash.ToLower()) {
+                Write-Error "Pruefsumme des CouchDB-Installers stimmt nicht ueberein - Abbruch (moeglicher Download-Fehler). Bitte erneut versuchen."
+                exit 1
+            }
+            $verifiziert = $true
+        } catch { }
+    }
+    if (-not $verifiziert) {
+        $signatur = Get-AuthenticodeSignature -FilePath $msiPath
+        if ($signatur.Status -eq "Valid" -and $signatur.SignerCertificate.Subject -match "The Apache Software Foundation") {
+            $verifiziert = $true
+            Write-Host "Der CouchDB-Installer ist von der Apache Software Foundation signiert."
+        }
+    }
+    if (-not $verifiziert) {
         Write-Host ""
-        Write-Warning "Die Pruefsummen-Datei konnte nicht vom CouchDB-Anbieter (couchdb.neighbourhood.ie) heruntergeladen werden - das liegt an dessen Server, nicht an dieser Installation. Der Installer selbst wurde erfolgreich heruntergeladen, nur die Verifikation war nicht moeglich."
+        Write-Warning "Der heruntergeladene CouchDB-Installer konnte nicht ueberprueft werden (weder Pruefsumme noch Signatur)."
         $weiter = Frage-MitDefault -Text "Trotzdem mit der heruntergeladenen (nicht verifizierten) Installationsdatei fortfahren? (j/n)" -Standard "n"
         if ($weiter -notin @("j", "J", "ja", "Ja", "JA")) {
             Write-Host "Abgebrochen."
@@ -644,24 +662,39 @@ if ($PaketModus) {
     if ($Aktualisierung) {
         Stop-TorballDienst
         $null = Stop-AlterTorballServer
-        if ($KopierenNoetig) {
-            Sichere-App -AppOrdner $AppZielOrdner
-            Kopiere-PaketNachApp -Quelle $RepoRoot -Ziel $AppZielOrdner
-        }
-        $RepoRoot = $AppZielOrdner
-        Setze-AppRechte -AppOrdner $AppZielOrdner -LogOrdner $LogOrdner -Rekursiv $Migration
-        $portAlt = Get-PortAusEnv -AppOrdner $AppZielOrdner
-        Registriere-TorballDienst -AppOrdner $AppZielOrdner -LogOrdner $LogOrdner
-        Start-TorballDienst
-        if (-not (Warte-AufAnwendung -AppOrdner $AppZielOrdner -Port $portAlt)) {
-            Write-Warning "Die neue Version antwortet nicht - der bisherige Stand wird wiederhergestellt."
-            Entferne-TorballDienst -AppOrdner $AppZielOrdner
-            if ($KopierenNoetig) { Stelle-AppWiederHer -AppOrdner $AppZielOrdner }
-            if (-not $Migration) {
-                Registriere-TorballDienst -AppOrdner $AppZielOrdner -LogOrdner $LogOrdner
-                Start-TorballDienst
+        # JEDER Fehler ab hier fuehrt zum automatischen Zuruecksetzen (nicht nur eine nicht antwortende Anwendung):
+        # sonst bliebe die Anwendung angehalten und halb aktualisiert zurueck (live im Test erlebt: der Dienst liess
+        # sich nicht neu anlegen, danach stand alles still).
+        $gesichert = $false
+        try {
+            if ($KopierenNoetig) {
+                Sichere-App -AppOrdner $AppZielOrdner
+                $gesichert = $true   # erst NACH vollstaendiger Sicherung - eine halbe darf nie zurueckgespielt werden
+                Kopiere-PaketNachApp -Quelle $RepoRoot -Ziel $AppZielOrdner
             }
-            throw "Das Aktualisieren ist fehlgeschlagen. Der bisherige Stand wurde wiederhergestellt. Bitte den Diagnose-Bericht (Konsole-Torball.cmd diagnose) weitergeben."
+            $RepoRoot = $AppZielOrdner
+            Setze-AppRechte -AppOrdner $AppZielOrdner -LogOrdner $LogOrdner -Rekursiv $Migration
+            $portAlt = Get-PortAusEnv -AppOrdner $AppZielOrdner
+            Registriere-TorballDienst -AppOrdner $AppZielOrdner -LogOrdner $LogOrdner
+            Start-TorballDienst
+            if (-not (Warte-AufAnwendung -AppOrdner $AppZielOrdner -Port $portAlt)) {
+                throw "Die neue Version antwortet nicht."
+            }
+        } catch {
+            $grund = $_.Exception.Message
+            Write-Warning "Das Aktualisieren ist fehlgeschlagen ($grund) - der bisherige Stand wird wiederhergestellt."
+            try {
+                Entferne-TorballDienst -AppOrdner $AppZielOrdner
+                if ($gesichert) { Stelle-AppWiederHer -AppOrdner $AppZielOrdner }
+                if (-not $Migration) {
+                    Registriere-TorballDienst -AppOrdner $AppZielOrdner -LogOrdner $LogOrdner
+                    Start-TorballDienst
+                    $null = Warte-AufAnwendung -AppOrdner $AppZielOrdner -Port (Get-PortAusEnv -AppOrdner $AppZielOrdner)
+                }
+            } catch {
+                Write-Warning "Auch das Wiederherstellen hat nicht ganz geklappt: $($_.Exception.Message)"
+            }
+            throw "Das Aktualisieren ist fehlgeschlagen: $grund Der bisherige Stand wurde wiederhergestellt. Bitte den Diagnose-Bericht (Konsole-Torball.cmd diagnose) weitergeben."
         }
     } else {
         $null = Stop-AlterTorballServer

@@ -1973,9 +1973,20 @@ Pakets. Die Versionsregel steht dreifach mit denselben Testfällen: `deploy/wind
 `backend/src/versionsvergleich.ts` (+ Test). Die Anwendung selbst zeigt Admins einer lokalen Installation den Hinweis (`GET /system/update`, `UpdateHinweis.tsx`, 6 h
 zwischengespeichert). **Quelle und Steuerung:** Updates stehen erst bereit, wenn ein GitHub-Release mit dem Paket als Anhang veröffentlicht ist – nicht mit jedem Commit.
 `deploy/release-quelle.json` (`github: "Besitzer/Repository"`) legt fest, wo; sie wird beim Bau in `paket.json` geschrieben. **Test-Hilfen:** `TORBALL_ORDNER` (Basisordner
-statt `C:\Torball-Turniere`), `TORBALL_UNBEAUFSICHTIGT=1` (+ `TORBALL_ADMIN_NAME/_VORNAME/_EMAIL/_PASSWORT`), `TORBALL_UPDATE_BASIS` (Release-API-Adresse). **Nicht getestet,
-weil Administratorrechte nötig sind:** der Ablauf von Installer/Updater als Ganzes, Dienst-Registrierung, Rechte, Rollback – auf einer Windows-VM prüfen. Beim Bau/Test beachten:
-ein `tar` aus Git-Bash versteht `D:\...` nicht (es nimmt das als Rechnernamen).
+statt `C:\Torball-Turniere`), `TORBALL_UNBEAUFSICHTIGT=1` (+ `TORBALL_ADMIN_NAME/_VORNAME/_EMAIL/_PASSWORT`), `TORBALL_UPDATE_BASIS` (Release-API-Adresse). **Getestet am 2026-11-02 auf einem echten Windows 11 (mit Administratorrechten, Wegwerf-Installation unter `C:\Torball-Turniere`):** Neuinstallation (CouchDB, Dienst, Rechte,
+Verknüpfungen, Firewall, erstes Konto, Anmeldung), Reparatur/erneutes Setup, Update 0.9.0-beta → 0.9.1-test über einen lokalen Ersatz für die GitHub-Schnittstelle (Daten und
+Konto blieben erhalten), automatischer Rückfall bei einer absichtlich defekten Version (`baue-windows-paket.mjs --version=… --defekt`), „schon aktuell“. **Noch nicht getestet:**
+Umstellung einer älteren Installation (Quellcode-Format), der Deinstaller, Neustart des Rechners (Autostart nach CouchDB), echte GitHub-Releases und der Browserstart der
+Verknüpfung. **Lehren aus diesem Test (jede kostete einen Durchlauf):** (1) `icacls /inheritance:r … /T` über einen Dateibaum entzieht den Dateien JEDE Berechtigung – nur den Ordner
+setzen und `/reset` für vorhandene Kinder; ein so beschädigter Ordner lässt sich nur mit `takeown` + `robocopy <leer> <ordner> /MIR /B` löschen. (2) `robocopy /MIR` löscht auch
+Erzeugtes, das nicht im Paket steht (die `torball-dienst.xml`, ohne die WinSW den Dienst nicht entfernen kann → Code 1073 „existiert bereits“) – Erzeugtes vor dem Gebrauch neu schreiben
+oder per `/XF` ausnehmen. (3) **Eine PowerShell-Funktion gibt ALLE Ausgaben zurück, nicht nur das `return`:** `Warte-AufAnwendung` lieferte ein Textarray (immer „wahr“), der Rückfall
+griff nie – native Programme in Funktionen mit Rückgabewert immer `| Out-Host`/`| Out-Null`. (4) Jeder Fehler im Update-Block muss zurücksetzen (`try/catch` um alles ab dem Sichern),
+nicht nur eine nicht antwortende Anwendung. (5) GitHub-Anhänge kommen als `application/octet-stream` – `Invoke-WebRequest().Content` ist dann `Byte[]`; in eine Datei laden und von dort lesen.
+(6) Skripte nie über Shell-Heredocs mit Backslashes patchen (`\n`, `\d`, `\.` gingen mehrfach verloren) – `Edit` benutzen. (7) CouchDB: die `.sha256`-Datei des Hosters liefert oft 403;
+der Installer prüft deshalb gegen eine FEST hinterlegte Summe (`$CouchdbSha256Fest`, muss bei Versionswechsel mit), dann Hoster-Datei, dann die Apache-Signatur. (8) Beim Bau/Test:
+ein `tar` aus Git-Bash versteht `D:\...` nicht (nimmt es als Rechnernamen). **Testen ohne Tastatur:** `TORBALL_ORDNER`, `TORBALL_UNBEAUFSICHTIGT=1` (+ `TORBALL_ADMIN_NAME/_VORNAME/_EMAIL/_PASSWORT`),
+`TORBALL_UPDATE_BASIS` (Adresse der Release-Schnittstelle; ein Ersatz-Server liefert `/releases` und `/a/<Datei>` ohne Content-Type).
 
 **Lokale Windows-Installation (Quellcode-Modus, für Entwickler) ist ebenfalls skript-basiert** (`Setup.cmd` auf der obersten Ebene
   des entpackten Quellcode-ZIPs/Checkouts → ruft nur `deploy/Installieren-Windows.cmd` auf →

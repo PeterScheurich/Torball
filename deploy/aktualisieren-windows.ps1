@@ -110,7 +110,11 @@ try {
     $zipDatei = Join-Path $arbeit $zipAnhang.name
     Write-Host "Lade $($zipAnhang.name) herunter ($([math]::Round($zipAnhang.size / 1MB)) MB) ..."
     Invoke-WebRequest -Uri $zipAnhang.browser_download_url -OutFile $zipDatei -UseBasicParsing
-    $erwartet = ((Invoke-WebRequest -Uri $summeAnhang.browser_download_url -UseBasicParsing).Content | Out-String).Trim().Split(" ")[0].ToLowerInvariant()
+    # Die Pruefsumme in eine Datei laden und von dort lesen: GitHub liefert Anhaenge als application/octet-stream,
+    # dann gaebe .Content Bytes statt Text zurueck.
+    $summeDatei = Join-Path $arbeit $summeAnhang.name
+    Invoke-WebRequest -Uri $summeAnhang.browser_download_url -OutFile $summeDatei -UseBasicParsing
+    $erwartet = ((Get-Content -Path $summeDatei -Raw).Trim() -split "\s+")[0].ToLowerInvariant()
     $tatsaechlich = (Get-FileHash -Path $zipDatei -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($erwartet -ne $tatsaechlich) {
         throw "Die heruntergeladene Datei ist beschaedigt (Pruefsumme stimmt nicht). Bitte noch einmal versuchen."
