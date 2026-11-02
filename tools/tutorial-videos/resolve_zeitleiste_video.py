@@ -34,19 +34,25 @@ bild_ordner = unterordner(video_ordner, "Bild")
 if any(projekt.GetTimelineByIndex(i).GetName() == name for i in range(1, projekt.GetTimelineCount() + 1)):
     raise SystemExit(f"Die Zeitleiste '{name}' gibt es schon.")
 
-# Medien importieren, soweit noch nicht da
+# Medien IMMER frisch importieren: Wird eine Datei neu erzeugt (neue Aufnahme, neu gesprochener Satz), behaelt Resolve sonst die
+# Daten der alten Fassung (falsche Dauer, "Media Offline"). Die beiden Ordner enthalten nur Importe dieses Skripts.
+for ordner_alt in (saetze_ordner, bild_ordner):
+    alte = ordner_alt.GetClipList() or []
+    if alte:
+        print(f"Alte Clips in '{ordner_alt.GetName()}' entfernt:", mp.DeleteClips(alte))
+
 mp.SetCurrentFolder(saetze_ordner)
-satz_clips = {c.GetClipProperty("File Path"): c for c in saetze_ordner.GetClipList()}
-neu = [s["datei"].replace("/", "\\") for s in plan["saetze"] if s["datei"].replace("/", "\\") not in satz_clips]
-for c in (mp.ImportMedia(neu) if neu else []) or []:
+satz_clips = {}
+for c in mp.ImportMedia([s["datei"].replace("/", "\\") for s in plan["saetze"]]) or []:
     satz_clips[c.GetClipProperty("File Path")] = c
+fehlend = [s["id"] for s in plan["saetze"] if s["datei"].replace("/", "\\") not in satz_clips]
+if fehlend:
+    raise SystemExit(f"Diese Satz-Dateien konnten nicht importiert werden: {fehlend}")
 
 mp.SetCurrentFolder(bild_ordner)
 bild_pfad = aufnahme["datei"]
-bild = next((c for c in bild_ordner.GetClipList() if c.GetClipProperty("File Path") == bild_pfad), None)
-if bild is None:
-    importiert = mp.ImportMedia([bild_pfad])
-    bild = importiert[0] if importiert else None
+importiert = mp.ImportMedia([bild_pfad])
+bild = importiert[0] if importiert else None
 if bild is None:
     raise SystemExit("Das Bild konnte nicht importiert werden.")
 print("Bild-Clip:", bild.GetName(), "Dauer", bild.GetClipProperty("Duration"), "FPS", bild.GetClipProperty("FPS"))
