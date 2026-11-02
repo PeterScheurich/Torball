@@ -20,7 +20,7 @@ interface LoginBody {
   email: string;
   passwort: string;
   totpCode?: string;
-  /** "Angemeldet bleiben": Cookie ueberlebt das Schliessen des Browsers (hoechstens 12 Stunden). */
+  /** "Angemeldet bleiben": Cookie ueberlebt das Schliessen des Browsers (solange gearbeitet wird; endet nach 12 Stunden ohne Aktivitaet). */
   angemeldetBleiben?: boolean;
 }
 
@@ -142,9 +142,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
-    const { token } = await erstelleSession(benutzer._id);
     // Ohne ausdruecklichen Haken endet die Anmeldung mit dem Schliessen des Browsers.
-    setzeSessionCookie(reply, token, req.body.angemeldetBleiben === true);
+    const dauerhaft = req.body.angemeldetBleiben === true;
+    const { token } = await erstelleSession(benutzer._id, dauerhaft);
+    setzeSessionCookie(reply, token, dauerhaft);
 
     const aktualisiert =
       (await aendereBenutzerAtomar(benutzer._id, (b) => ({

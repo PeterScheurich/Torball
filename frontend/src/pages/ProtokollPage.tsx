@@ -20,7 +20,7 @@ import type { KanalNachricht, StandPaket } from "../schiedsrichter/kanal";
 import { HERZSCHLAG_MS, oeffneKanal } from "../schiedsrichter/kanal";
 import { HttpFehler, VerbindungsFehler } from "../api";
 
-/** 401 = nicht (mehr) angemeldet. Anmeldungen enden spaetestens 12 Stunden nach dem Anmelden. */
+/** 401 = nicht (mehr) angemeldet - etwa nach 12 Stunden ohne Aktivitaet oder wenn die Anmeldung beendet wurde (Abmeldung, Passwortaenderung, Sperre). */
 function istAnmeldungAbgelaufen(err: unknown): boolean {
   return err instanceof HttpFehler && err.status === 401;
 }

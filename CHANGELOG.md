@@ -9,8 +9,10 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 - **„Angemeldet bleiben“ auf der Anmeldeseite.** Bisher blieb jede Anmeldung nach dem Schließen des Browsers 12 Stunden bestehen –
   ohne dass man es beeinflussen konnte. Jetzt entscheidet jede Person selbst: Ohne Haken (Voreinstellung) endet die Anmeldung mit
-  dem Schließen des Browsers, mit Haken bleibt sie bis zu 12 Stunden bestehen. Die letzte Wahl merkt sich der Browser. Zusätzlich
-  gilt jetzt eine feste Obergrenze: Jede Anmeldung endet spätestens 12 Stunden nach dem Anmelden, auch wenn sie ständig benutzt wird.
+  dem Schließen des Browsers, mit Haken bleibt sie auch danach bestehen. Die letzte Wahl merkt sich der Browser. Eine Anmeldung endet
+  nur, wenn sie 12 Stunden lang nicht benutzt wurde – wer arbeitet (etwa beim digitalen Protokoll), wird nie abgemeldet. Außerdem
+  gehen bei einer abgelaufenen Anmeldung mitten im Protokoll keine Ereignisse mehr verloren: Sie bleiben gesichert und werden
+  nach einer neuen Anmeldung in einem anderen Tab nachgesendet.
 - **Windows: fertiges Installationspaket statt Quellcode, Aktualisieren mit einem Klick.** Die lokale Installation kommt jetzt
   als ZIP-Datei `Torball-Turniere-Windows-<Version>.zip` (als Anhang eines GitHub-Releases). Sie enthält die fertig gebaute
   Anwendung samt Node.js – es muss nichts mehr installiert, heruntergeladen oder gebaut werden. Das macht die Installation

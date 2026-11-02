@@ -6,6 +6,12 @@ interface SessionBasis extends CouchMeta {
   erstelltAm: Zeitstempel;
   laeuftAbAm: Zeitstempel;
   letzteAktivitaetAm: Zeitstempel;
+  /**
+   * "Angemeldet bleiben": Das Cookie hat ein Ablaufdatum und ueberlebt das Schliessen des Browsers; der Server
+   * erneuert es bei Aktivitaet, damit es nicht mitten in der Nutzung ausgeht. Fehlt/false = Cookie ohne
+   * Ablaufdatum (endet mit dem Browser). Die Session selbst laeuft in beiden Faellen nur nach Inaktivitaet ab.
+   */
+  dauerhaft?: boolean;
 }
 
 /**

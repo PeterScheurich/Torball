@@ -6,19 +6,15 @@ import { deleteDoc, findAllBySelector, findById, insertDoc } from "../repository
 // als Cookie gesetzt; persistiert wird nur dessen SHA-256-Hash als Doc-ID (session:<hash>), damit
 // die Pruefung pro Request ein direkter findById-Lookup ist (siehe CLAUDE.md, Auth).
 
-/** Inaktivitaets-Fenster (Abschnitt 25.1: "automatischer Logout nach konfigurierbarer Inaktivitaet"). Aktuell fest, spaeter aus der Systemkonfiguration. */
-const INAKTIVITAETS_FENSTER_MS = 12 * 60 * 60 * 1000;
-
 /**
- * Harte Obergrenze je Session, gerechnet ab der Anmeldung - unabhaengig von der Aktivitaet (2026-11-02).
- * Das Inaktivitaets-Fenster oben wird bei jeder Anfrage verlaengert; ohne diese Grenze liesse sich eine
- * kopierte Sitzungskennung durch regelmaessige Anfragen beliebig lange am Leben halten. Das Cookie
- * "Angemeldet bleiben" lebt genauso lange (setzeSessionCookie), Server und Browser sind also gleicher Meinung.
- * Gilt auch fuer ein Cookie OHNE Ablaufdatum (Anmeldung ohne "Angemeldet bleiben"): Manche Browser behalten
- * solche Cookies ueber einen Neustart hinweg ("Zuletzt geoeffnete Tabs wieder oeffnen") - der Server beendet
- * die Sitzung dann trotzdem nach spaetestens 12 Stunden.
+ * Inaktivitaets-Fenster (Abschnitt 25.1: "automatischer Logout nach konfigurierbarer Inaktivitaet"). Aktuell fest,
+ * spaeter aus der Systemkonfiguration. Wird bei jeder Anfrage neu berechnet: Wer arbeitet, bleibt angemeldet -
+ * auch ueber mehr als 12 Stunden, etwa waehrend eines langen Turniertags mit digitalem Protokoll (Auftraggeber,
+ * 2026-11-02; eine feste Obergrenze ab der Anmeldung wurde bewusst wieder verworfen, sie haette mitten im Spiel
+ * abgemeldet). Die 12 Stunden werden erst geprueft, wenn die Sitzung das naechste Mal benutzt wird.
  */
-export const SESSION_HOECHSTDAUER_MS = 12 * 60 * 60 * 1000;
+export const SESSION_INAKTIVITAETS_FENSTER_MS = 12 * 60 * 60 * 1000;
+const INAKTIVITAETS_FENSTER_MS = SESSION_INAKTIVITAETS_FENSTER_MS;
 
 function tokenHash(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -31,7 +27,10 @@ function sessionIdVon(token: string): string {
 
 /** Legt eine neue Session fuer einen Benutzer an und gibt den Klartext-Token (fuers Cookie)
  *  zusammen mit dem gespeicherten Session-Dokument zurueck. */
-export async function erstelleSession(benutzerId: string): Promise<{ token: string; session: Session }> {
+export async function erstelleSession(
+  benutzerId: string,
+  dauerhaft = false,
+): Promise<{ token: string; session: Session }> {
   const token = randomBytes(32).toString("hex");
   const jetzt = new Date();
   const session: BenutzerSession = {
@@ -39,6 +38,7 @@ export async function erstelleSession(benutzerId: string): Promise<{ token: stri
     docType: "session",
     sessionId: sessionIdVon(token),
     sessionArt: "benutzer",
+    dauerhaft,
     benutzerId,
     erstelltAm: jetzt.toISOString(),
     laeuftAbAm: new Date(jetzt.getTime() + INAKTIVITAETS_FENSTER_MS).toISOString(),
@@ -62,6 +62,8 @@ export async function erstelleCodeSession(
     docType: "session",
     sessionId: sessionIdVon(token),
     sessionArt: "code",
+    // Helfer-Geraete am Spielfeld: ein geschlossener Browser soll kein Neu-Eintippen des Codes erzwingen.
+    dauerhaft: true,
     turnierId,
     rolle,
     erstelltAm: jetzt.toISOString(),
@@ -77,10 +79,8 @@ export async function erstelleCodeSession(
 export async function findeSessionPerToken(token: string): Promise<Session | null> {
   const session = await findById<Session>(sessionIdVon(token), "session");
   if (!session) return null;
-  const jetzt = Date.now();
-  // Ein fehlendes oder unlesbares erstelltAm zaehlt als abgelaufen (fail closed).
-  const hoechstensBis = new Date(session.erstelltAm).getTime() + SESSION_HOECHSTDAUER_MS;
-  if (new Date(session.laeuftAbAm).getTime() < jetzt || !(hoechstensBis >= jetzt)) {
+  // Ein fehlendes oder unlesbares laeuftAbAm zaehlt als abgelaufen (fail closed).
+  if (!(new Date(session.laeuftAbAm).getTime() >= Date.now())) {
     await deleteDoc(session._id, session._rev!);
     return null;
   }

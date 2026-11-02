@@ -2,7 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import "@fastify/cookie";
 import type { Benutzer, GlobaleRolle, TurnierCodeRolle, TurnierId } from "@torball/shared";
 import { findById } from "../repository";
-import { beruehreSession, findeSessionPerToken, SESSION_HOECHSTDAUER_MS } from "./session";
+import { beruehreSession, findeSessionPerToken, SESSION_INAKTIVITAETS_FENSTER_MS } from "./session";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -37,7 +37,7 @@ const COOKIE_SECURE = process.env.COOKIE_SECURE === "true";
  * waere, nicht in den Routen-Dateien (verein.ts, turnier.ts, ...), die als
  * eigene Geschwister-Plugins registriert werden.
  */
-export async function authPreHandler(req: FastifyRequest): Promise<void> {
+export async function authPreHandler(req: FastifyRequest, reply: FastifyReply): Promise<void> {
   const token = req.cookies[SESSION_COOKIE_NAME];
   if (!token) return;
 
@@ -48,6 +48,7 @@ export async function authPreHandler(req: FastifyRequest): Promise<void> {
     req.turnierCode = { turnierId: session.turnierId, rolle: session.rolle };
     req.sessionId = session._id;
     await beruehreSession(session);
+    erneuereDauerhaftesCookie(req, reply, token, session.dauerhaft);
     return;
   }
 
@@ -57,13 +58,33 @@ export async function authPreHandler(req: FastifyRequest): Promise<void> {
   req.benutzer = benutzer;
   req.sessionId = session._id;
   await beruehreSession(session);
+  erneuereDauerhaftesCookie(req, reply, token, session.dauerhaft);
 }
 
 /**
- * `dauerhaft` = "Angemeldet bleiben": Das Cookie hat dann ein Ablaufdatum (genau die Hoechstdauer der Session)
- * und ueberlebt das Schliessen des Browsers. Ohne bekommt es keins - der Browser wirft es beim Schliessen weg
- * (die serverseitige Hoechstdauer gilt in beiden Faellen, siehe SESSION_HOECHSTDAUER_MS). Alle anderen
- * Cookie-Eigenschaften (httpOnly, sameSite, secure) sind in beiden Faellen gleich.
+ * "Angemeldet bleiben" gilt, solange gearbeitet wird: Das Cookie bekommt bei jeder Anfrage ein neues Ablaufdatum
+ * (gleitend, wie das Inaktivitaets-Fenster auf dem Server). Ohne das ginge es 12 Stunden nach dem Anmelden aus,
+ * egal wie aktiv die Person ist - mitten in der digitalen Protokollierung. Nicht an Login/Logout: Dort setzt oder
+ * loescht die Route das Cookie selbst, und ein davor gesetztes altes duerfte nicht dazwischenfunken.
+ */
+function erneuereDauerhaftesCookie(
+  req: FastifyRequest,
+  reply: FastifyReply,
+  token: string,
+  dauerhaft: boolean | undefined,
+): void {
+  if (!dauerhaft) return;
+  const route = req.routeOptions?.url ?? "";
+  if (route.endsWith("/auth/login") || route.endsWith("/auth/logout")) return;
+  setzeSessionCookie(reply, token, true);
+}
+
+/**
+ * `dauerhaft` = "Angemeldet bleiben": Das Cookie hat dann ein Ablaufdatum (das Inaktivitaets-Fenster der Session,
+ * bei jeder Anfrage erneuert) und ueberlebt das Schliessen des Browsers. Ohne bekommt es keins - der Browser wirft es
+ * beim Schliessen weg. Die Session selbst laeuft in beiden Faellen nur nach Inaktivitaet ab (siehe
+ * SESSION_INAKTIVITAETS_FENSTER_MS). Alle anderen Cookie-Eigenschaften (httpOnly, sameSite, secure) sind in beiden
+ * Faellen gleich.
  */
 export function setzeSessionCookie(reply: FastifyReply, token: string, dauerhaft: boolean): void {
   reply.setCookie(SESSION_COOKIE_NAME, token, {
@@ -71,7 +92,7 @@ export function setzeSessionCookie(reply: FastifyReply, token: string, dauerhaft
     httpOnly: true,
     sameSite: "lax",
     secure: COOKIE_SECURE,
-    ...(dauerhaft ? { maxAge: SESSION_HOECHSTDAUER_MS / 1000 } : {}),
+    ...(dauerhaft ? { maxAge: SESSION_INAKTIVITAETS_FENSTER_MS / 1000 } : {}),
   });
 }
 

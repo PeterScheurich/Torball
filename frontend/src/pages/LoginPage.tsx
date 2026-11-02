@@ -114,7 +114,7 @@ export function LoginPage() {
             Angemeldet bleiben
           </label>
           <p id="angemeldet-bleiben-hinweis" className="feld-hinweis">
-            Auch nach dem Schließen des Browsers bis zu 12 Stunden angemeldet. Nur auf einem Gerät verwenden, das nur du benutzt.
+            Auch nach dem Schließen des Browsers angemeldet bleiben (solange du innerhalb von 12 Stunden zurückkehrst). Nur auf einem Gerät verwenden, das nur du benutzt.
           </p>
         </div>
         {benoetigtTotp && (
