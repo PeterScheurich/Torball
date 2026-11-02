@@ -27,6 +27,9 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
   schneller und deutlich weniger fehleranfällig. Die Anwendung läuft als **Windows-Dienst** im Hintergrund und startet mit dem
   Rechner von selbst; das Server-Fenster, das man nicht schließen durfte, entfällt. Die Installation stellt nur noch drei Fragen
   (Datenbank, Netzwerkzugriff, erstes Konto); den Port wählt sie selbst.
+- **Nach dem Hochfahren steht die Anwendung schneller bereit.** Der Windows-Dienst startet jetzt direkt mit Windows (vorher erst etwa
+  zweieinhalb Minuten später), und die Verknüpfung erkennt, wenn der Rechner noch hochfährt: Sie zeigt dann einen freundlichen Hinweis und
+  wartet länger, statt nach einer Minute eine Fehlermeldung zu zeigen.
 - **Aktualisieren mit einem Klick.** Startmenü → Torball-Turniere → „Torball-Turniere aktualisieren“ (oder
   `Aktualisieren-Torball.cmd`): Das Programm sieht selbst bei den GitHub-Releases nach, lädt die neueste Version, prüft sie,
   sichert den bisherigen Stand, tauscht die Programmdateien aus und stellt den alten Stand automatisch wieder her, falls die neue

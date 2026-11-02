@@ -28,6 +28,7 @@
 
 import { get as httpGet } from "node:http";
 import { get as httpsGet } from "node:https";
+import os from "node:os";
 
 /** Abstand zwischen zwei Versuchen. Kurz genug, dass es fluessig wirkt, ohne zu hetzen. */
 const ABSTAND_MS = 400;
@@ -75,11 +76,36 @@ function antwortet(adresse) {
   });
 }
 
+/**
+ * Wie lange Windows schon laeuft, in Sekunden. Fuer Tests laesst sich der Wert per Umgebungsvariable vorgeben.
+ * Direkt nach dem Hochfahren starten Dienste noch nach und nach - wer die Anwendung in dieser Zeit oeffnet, soll
+ * nicht nach einer Minute einen Fehler sehen, sondern einen freundlichen Hinweis und eine laengere Wartezeit.
+ */
+function windowsLaeuftSeit() {
+  const vorgabe = Number(process.env.TORBALL_WARTE_UPTIME_SEKUNDEN);
+  return Number.isFinite(vorgabe) && process.env.TORBALL_WARTE_UPTIME_SEKUNDEN ? vorgabe : os.uptime();
+}
+
+/** Bis zu dieser Laufzeit gilt Windows als "faehrt noch hoch". */
+const HOCHFAHREN_BIS_SEKUNDEN = 600;
+/** So lange wird in dieser Zeit auf die Anwendung gewartet. */
+const MAX_SEKUNDEN_BEIM_HOCHFAHREN = 330;
+
 async function warte(phase) {
   const adresse = phase.adresse();
+  let maxSekunden = phase.maxSekunden;
+  const laeuftSeit = windowsLaeuftSeit();
+  if (phase.beschriftung === "Anwendung" && laeuftSeit < HOCHFAHREN_BIS_SEKUNDEN) {
+    maxSekunden = Math.max(maxSekunden, MAX_SEKUNDEN_BEIM_HOCHFAHREN);
+    const minuten = Math.max(1, Math.round(laeuftSeit / 60));
+    process.stdout.write(
+      `Windows ist erst seit etwa ${minuten} Minute(n) gestartet und faehrt noch hoch. Direkt danach braucht die\n` +
+        "Anwendung etwas laenger - bitte einen Moment Geduld, es dauert hoechstens ein paar Minuten.\n",
+    );
+  }
   process.stdout.write(`${phase.beschriftung} wird gestartet `);
 
-  const ende = Date.now() + phase.maxSekunden * 1000;
+  const ende = Date.now() + maxSekunden * 1000;
   let punkte = 0;
   while (Date.now() < ende) {
     if (await antwortet(adresse)) {
@@ -87,7 +113,7 @@ async function warte(phase) {
       return true;
     }
     // Ein Punkt je Sekunde - sichtbares Lebenszeichen, ohne die Zeile zu ueberfluten.
-    if (punkte < Math.floor((phase.maxSekunden * 1000 - (ende - Date.now())) / 1000)) {
+    if (punkte < Math.floor((maxSekunden * 1000 - (ende - Date.now())) / 1000)) {
       process.stdout.write(".");
       punkte += 1;
     }

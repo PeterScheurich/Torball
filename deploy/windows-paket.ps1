@@ -203,7 +203,7 @@ function Warte-DienstWeg {
 
 # Legt den Windows-Dienst an (bzw. ersetzt einen vorhandenen). Die XML-Datei wird aus der Vorlage im
 # Paket erzeugt; der Dienst laeuft als LocalService (nicht als SYSTEM: ein Webserver braucht keine
-# Vollrechte), startet automatisch (verzoegert, nach CouchDB) und wird bei einem Absturz neu gestartet.
+# Vollrechte), startet automatisch mit Windows (nach CouchDB) und wird bei einem Absturz neu gestartet.
 function Registriere-TorballDienst {
     param([string]$AppOrdner, [string]$LogOrdner)
     $dienstOrdner = Join-Path $AppOrdner "dienst"
@@ -232,7 +232,11 @@ function Registriere-TorballDienst {
         Start-Sleep -Seconds 2
     }
     & sc.exe config $DienstName obj= "NT AUTHORITY\LocalService" | Out-Null
-    & sc.exe config $DienstName start= delayed-auto | Out-Null
+    # Normaler Autostart, NICHT "verzoegert" (delayed-auto): Windows startet verzoegerte Dienste erst etwa zwei bis drei
+    # Minuten nach dem Hochfahren - nach einem Neustart sah die Verknuepfung deshalb "die Anwendung antwortet nicht"
+    # (live erlebt, 2026-11-02: Dienst 2 Min 17 s nach dem Systemstart). Auf CouchDB wartet der Dienst ohnehin (Abhaengigkeit),
+    # und ist die Datenbank beim ersten Versuch noch nicht bereit, startet ihn WinSW nach 10 Sekunden neu.
+    & sc.exe config $DienstName start= auto | Out-Null
     & sc.exe description $DienstName "Lokaler Server der Anwendung Torball-Turniere (Turnierverwaltung)." | Out-Null
 }
 
@@ -309,7 +313,8 @@ echo.
 echo Die Anwendung antwortet nicht.
 echo.
 echo Das ist meist einer dieser Faelle:
-echo  - Der Rechner wurde gerade erst hochgefahren: in einer Minute noch einmal versuchen.
+echo  - Der Rechner wurde gerade erst hochgefahren: ein paar Minuten warten und dann die
+echo    Verknuepfung noch einmal doppelklicken.
 echo  - Der Dienst "Torball-Turniere" oder die Datenbank "Apache CouchDB" laeuft nicht:
 echo    in der Windows-Suche "Dienste" oeffnen, beide Eintraege suchen und starten.
 echo  - Es hilft ein Neustart des Rechners.

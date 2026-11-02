@@ -1980,7 +1980,7 @@ das Windows-`tar` stürzte beim Packen ab. **Beim Anwender:** `deploy/installier
 beiden gilt der alte Quellcode-Ablauf unverändert für Entwickler). Er kopiert nach `C:\Torball-Turniere\App` (keine Verlegen-Frage mehr), überspringt Node und – bei Update –
 die CouchDB-Schritte, wählt den Port selbst (`Get-FreierPort`), schreibt `.env` OHNE Byte-Order-Mark (PowerShell 5.1 hängt bei `Set-Content -Encoding utf8` eins an, dann ist die
 erste Zeile `PORT=` für Node kein Schlüssel mehr – vermutlich die wahre Ursache des früher dem Prozessumfeld zugeschriebenen Port-Problems) und richtet den **Windows-Dienst
-`TorballTurniere`** ein (WinSW, `deploy/torball-dienst.xml.vorlage`; Konto `LocalService`, verzögerter Autostart, hängt von „Apache CouchDB“ ab, Neustart bei Absturz). Rechte:
+`TorballTurniere`** ein (WinSW, `deploy/torball-dienst.xml.vorlage`; Konto `LocalService`, normaler Autostart, hängt von „Apache CouchDB“ ab, Neustart bei Absturz). Rechte:
 Benutzer dürfen die Programmdateien nur lesen, `backend\.env` nur Administratoren/SYSTEM/LocalService (SIDs statt Namen). Die Verknüpfung liest den Port aus `anschluss.txt`
 (für alle lesbar; `konfiguration:setzen PORT` zieht sie nach). **Update = derselbe Installer mit einem neueren Paket:** Dienst anhalten, alten Stand nach `App.alt`
 sichern, `robocopy /MIR` (ohne `.env`, `anschluss.txt`, `Start-/Konsole-Torball.cmd`), Dienst neu einrichten und starten, Erreichbarkeit prüfen, bei Misserfolg automatisch
@@ -2003,7 +2003,7 @@ griff nie – native Programme in Funktionen mit Rückgabewert immer `| Out-Host
 nicht nur eine nicht antwortende Anwendung. (5) GitHub-Anhänge kommen als `application/octet-stream` – `Invoke-WebRequest().Content` ist dann `Byte[]`; in eine Datei laden und von dort lesen.
 (6) Skripte nie über Shell-Heredocs mit Backslashes patchen (`\n`, `\d`, `\.` gingen mehrfach verloren) – `Edit` benutzen. (7) CouchDB: die `.sha256`-Datei des Hosters liefert oft 403;
 der Installer prüft deshalb gegen eine FEST hinterlegte Summe (`$CouchdbSha256Fest`, muss bei Versionswechsel mit), dann Hoster-Datei, dann die Apache-Signatur. (8) Beim Bau/Test:
-ein `tar` aus Git-Bash versteht `D:\...` nicht (nimmt es als Rechnernamen). **Testen ohne Tastatur:** `TORBALL_ORDNER`, `TORBALL_UNBEAUFSICHTIGT=1` (+ `TORBALL_ADMIN_NAME/_VORNAME/_EMAIL/_PASSWORT`),
+ein `tar` aus Git-Bash versteht `D:\...` nicht (nimmt es als Rechnernamen). (9) **Kein „verzögerter“ Autostart (`delayed-auto`) für den Dienst:** Windows startet solche Dienste erst ~2,5 Minuten nach dem Hochfahren – nach einem Neustart meldete die Verknüpfung deshalb "antwortet nicht" (live gemessen: Rechner 15:38:43, CouchDB 15:38:56, Torball-Dienst 15:41:00). Normaler Autostart genügt, denn der Dienst wartet über die Abhängigkeit auf CouchDB und WinSW startet ihn bei einer noch nicht bereiten Datenbank nach 10 s neu. Zusätzlich fragt `deploy/warte-auf-dienste.mjs` per `os.uptime()` ab, ob Windows noch hochfährt (< 10 Min.): dann zeigt es einen freundlichen Hinweis und wartet bis zu 330 s statt 60 s (Test: `TORBALL_WARTE_UPTIME_SEKUNDEN`). **Testen ohne Tastatur:** `TORBALL_ORDNER`, `TORBALL_UNBEAUFSICHTIGT=1` (+ `TORBALL_ADMIN_NAME/_VORNAME/_EMAIL/_PASSWORT`),
 `TORBALL_UPDATE_BASIS` (Adresse der Release-Schnittstelle; ein Ersatz-Server liefert `/releases` und `/a/<Datei>` ohne Content-Type).
 
 **Lokale Windows-Installation (Quellcode-Modus, für Entwickler) ist ebenfalls skript-basiert** (`Setup.cmd` auf der obersten Ebene
