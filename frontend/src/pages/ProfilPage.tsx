@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Breite, Dichte, GlobaleRolle, Theme, Verein } from "@torball/shared";
+import { kontoHinweisText } from "@torball/shared";
 import {
   eigenesPasswortAendern,
   eigenesProfilAktualisieren,
@@ -613,6 +614,24 @@ export function ProfilPage() {
             2FA einrichten
           </button>
         </>
+      )}
+
+      <h2>Letzte Änderungen an deinem Konto</h2>
+      <p>
+        Hier stehen die letzten sicherheitsrelevanten Änderungen (Passwort, E-Mail-Adresse, Zwei-Faktor-Anmeldung,
+        Rolle). Bei Änderungen, die nicht du selbst gerade vorgenommen hast, bekommst du außerdem einen Hinweis
+        oben auf der Seite und – wenn der Mailversand eingerichtet ist – eine E-Mail.
+      </p>
+      {(benutzer.kontoHinweise ?? []).length === 0 ? (
+        <p className="platzhalter-zeile">Noch keine Änderungen aufgezeichnet.</p>
+      ) : (
+        <ul>
+          {[...(benutzer.kontoHinweise ?? [])].reverse().map((h) => (
+            <li key={h.id}>
+              <strong>{formatiereZeitstempel(h.zeitpunkt)}:</strong> {kontoHinweisText(h)}
+            </li>
+          ))}
+        </ul>
       )}
 
       <h2>Verbundene Instanzen</h2>

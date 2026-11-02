@@ -135,6 +135,102 @@ function Frage-Netzwerkzugriff {
     return ($antwort -in @("j", "J", "ja", "Ja", "JA"))
 }
 
+# Liest ein Passwort verdeckt ein und gibt es als Text zurueck (nur kurz im Speicher, der Puffer wird
+# sofort geleert). Nie ausgeben, nie in eine Datei oder Protokollzeile schreiben.
+function Lese-Passwort {
+    param([string]$Text)
+    $sicher = Read-Host $Text -AsSecureString
+    $zeiger = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sicher)
+    try { return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($zeiger) }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($zeiger) }
+}
+
+# Ruft einen Befehl des Konsolen-Tools (backend/src/cli/torball.ts) auf und gibt Ausgabe + Exit-Code zurueck.
+# Bewusst direkt ueber node statt "npm run torball": npm.cmd laeuft ueber die Eingabeaufforderung, und dort
+# wuerden Zeichen wie & oder % in einem Namen/einer Adresse als Befehl missverstanden. Das Passwort
+# kommt nie als Argument, sondern nur ueber $env:TORBALL_ERSTES_PASSWORT (setzt der Aufrufer, nur fuer diesen Aufruf).
+function Invoke-TorballKonsole {
+    param([string[]]$Argumente)
+    # Lokal auf "Continue": mit "Stop" wuerde schon jede Zeile auf stderr (z. B. die Fehlermeldung des Befehls)
+    # als Ausnahme geworfen, bevor wir sie lesen koennen.
+    $ErrorActionPreference = "Continue"
+    Push-Location (Join-Path $RepoRoot "backend")
+    try {
+        $ausgabe = & node --env-file=.env --import tsx src/cli/torball.ts @Argumente 2>&1 | ForEach-Object { "$_" }
+        return [pscustomobject]@{ Ausgabe = ($ausgabe -join "`n"); ExitCode = $LASTEXITCODE }
+    } finally {
+        Pop-Location
+    }
+}
+
+# Legt das erste Administrator-Konto gleich bei der Installation an (statt im Browser). Sonst koennte in
+# dem Zeitfenster zwischen "App laeuft" und "Besitzer richtet sich ein" jede Person im Netz, die die Seite
+# aufruft, das erste Admin-Konto anlegen. Ueberspringen ist erlaubt und bricht NIE die Installation ab:
+# dann bleibt die Ersteinrichtung im Browser als Notweg. Gibt $true zurueck, wenn es ein Konto gibt.
+function Frage-ErstesKonto {
+    $status = Invoke-TorballKonsole -Argumente @("erstes-konto:status")
+    if ($status.Ausgabe -match "(?m)^ERSTES-KONTO: VERGEBEN") {
+        Write-Host "Es gibt bereits ein Benutzerkonto - hier wird kein neues angelegt."
+        return $true
+    }
+    if ($status.Ausgabe -notmatch "(?m)^ERSTES-KONTO: FREI") {
+        Write-Host "Hinweis: Der Stand der Benutzerkonten konnte nicht geprueft werden. Das erste Konto legst du dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung)."
+        return $false
+    }
+
+    Write-Host ""
+    Write-Host "-- Erstes Benutzerkonto (Administrator) --"
+    Write-Host "Ohne Konto kann sich niemand anmelden. Das erste Konto wird Administrator dieser Installation und wird"
+    Write-Host "u.a. gebraucht, um diese Installation spaeter mit dem Online-Server zu koppeln. Es ist ein EIGENES"
+    Write-Host "Konto auf diesem Rechner, unabhaengig von einem Konto auf dem Server. Wenn du es jetzt gleich anlegst,"
+    Write-Host "kann niemand anderes im Netz die Einrichtung vor dir im Browser abschliessen."
+    $antwort = Frage-MitDefault -Text "Das erste Konto jetzt anlegen? (j/n)" -Standard "j"
+    $nein = "Uebersprungen. Das erste Konto legst du dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung)."
+    if ($antwort -notin @("j", "J", "ja", "Ja", "JA")) { Write-Host $nein; return $false }
+
+    # Anfuehrungszeichen und Backslash lassen sich nicht sicher als Programm-Argument uebergeben.
+    $unzulaessig = '["\]'
+    $name = ""
+    for ($i = 0; $i -lt 3 -and [string]::IsNullOrWhiteSpace($name); $i++) {
+        $name = (Read-Host "Nachname").Trim()
+        if ($name -match $unzulaessig) { Write-Host "Bitte ohne Anfuehrungszeichen und Backslash."; $name = "" }
+    }
+    $vorname = (Read-Host "Vorname (darf leer bleiben)").Trim()
+    if ($vorname -match $unzulaessig) { Write-Host "Der Vorname enthaelt unzulaessige Zeichen und wird weggelassen."; $vorname = "" }
+    $email = ""
+    for ($i = 0; $i -lt 3 -and $email -notmatch '^[^\s@"\]+@[^\s@"\]+\.[^\s@"\]+$'; $i++) {
+        $email = (Read-Host "E-Mail-Adresse (damit meldest du dich an)").Trim()
+    }
+    if ([string]::IsNullOrWhiteSpace($name) -or $email -notmatch '^[^\s@"\]+@[^\s@"\]+\.[^\s@"\]+$') {
+        Write-Host "Die Angaben waren unvollstaendig. $nein"
+        return $false
+    }
+
+    Write-Host "Passwort: mindestens 12 Zeichen. Am besten ein Satz aus ein paar Woertern - Sonderzeichen sind nicht noetig."
+    for ($versuch = 1; $versuch -le 3; $versuch++) {
+        $passwort = Lese-Passwort -Text "Passwort"
+        $wiederholt = Lese-Passwort -Text "Passwort wiederholen"
+        if ($passwort -ne $wiederholt) { Write-Host "Die beiden Eingaben stimmen nicht ueberein."; continue }
+        $argumente = @("erstes-konto:anlegen", "--name=$name", "--vorname=$vorname", "--email=$email")
+        $env:TORBALL_ERSTES_PASSWORT = $passwort
+        try { $ergebnis = Invoke-TorballKonsole -Argumente $argumente }
+        finally { Remove-Item Env:\TORBALL_ERSTES_PASSWORT -ErrorAction SilentlyContinue }
+        $passwort = $null; $wiederholt = $null
+        if ($ergebnis.ExitCode -eq 0) {
+            if ($ergebnis.Ausgabe -match "(?m)^ERSTES-KONTO: ANGELEGT") {
+                Write-Host "Das Administrator-Konto fuer $email wurde angelegt. Du kannst dich nach dem Start der App anmelden."
+            } else {
+                Write-Host "Es gibt bereits ein Benutzerkonto - hier wurde kein neues angelegt."
+            }
+            return $true
+        }
+        Write-Host "Das Konto konnte nicht angelegt werden:"
+        Write-Host "  $($ergebnis.Ausgabe)"
+    }
+    Write-Host "Kein gueltiges Passwort eingegeben. $nein"
+    return $false
+}
+
 # --- [0/6] Projektordner an einen dauerhaften Ort verlegen ---------------------------------------
 # Alles, was dieses Skript ausserhalb des Projektordners ablegt, liegt gebuendelt unter
 # C:\Torball-Turniere (Nutzer-Vorgabe 2026-08-19, siehe Kommentar beim CouchDB-Schritt) - und seit
@@ -587,6 +683,12 @@ if (($FirewallRegelNoetig -or $netzwerkBereitsAktiv) -and $EffectivePort -match 
     Set-TorballFirewallRegel -Port ([int]$EffectivePort)
 }
 
+# Erstes Benutzerkonto: braucht die laufende Datenbank (Schritt 2/3), das gebaute Projekt (Schritt 4)
+# und die backend/.env - alles steht jetzt. Bricht nie ab: ohne Konto bleibt die Einrichtung im Browser.
+$ErstesKontoDa = $false
+try { $ErstesKontoDa = Frage-ErstesKonto }
+catch { Write-Host "Das erste Konto konnte hier nicht angelegt werden ($($_.Exception.Message)). Du legst es dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung)." }
+
 # --- [6/6] Start-Skript + Desktop-Verknuepfung ---------------------------------------------------
 # "Aktualisieren-Torball.cmd" wird hier bewusst NICHT (mehr) generiert: ihr Inhalt ist rein
 # statisch (kein einziger installationsspezifischer Wert), deshalb liegt sie seit 2026-08-19 als
@@ -682,7 +784,11 @@ if ($FirewallRegelNoetig) {
     Write-Host "Netzwerk-Adresse dieses Rechners (Port $EffectivePort) - die genaue Adresse zeigt die App im"
     Write-Host "Turnier unter 'Teilen' bei den Codes fuer das Lokale Netzwerk an."
 }
-Write-Host "Beim allerersten Start fuehrt die Anmeldeseite durch die einmalige Ersteinrichtung des ersten Admin-Kontos."
+if ($ErstesKontoDa) {
+    Write-Host "Anmelden: mit dem Administrator-Konto, das eben angelegt wurde (bzw. schon vorhanden war)."
+} else {
+    Write-Host "Beim allerersten Start fuehrt die Anmeldeseite durch die einmalige Ersteinrichtung des ersten Admin-Kontos."
+}
 Write-Host ""
 Write-Host "Spaeter aktualisieren: 'Aktualisieren-Torball.cmd' im Projektordner doppelklicken (siehe auch AKTUALISIEREN.md)."
 Write-Host "Spaeter Konfiguration anpassen (z.B. Port): in backend/ 'npm run torball -- konfiguration:anzeigen' bzw. 'konfiguration:setzen' (siehe --hilfe)."

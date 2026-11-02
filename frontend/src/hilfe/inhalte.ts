@@ -663,12 +663,25 @@ export const HILFE_THEMEN: HilfeThema[] = [
           "In der Benutzerverwaltung (nur für Administrator und Manager) gibt es je nach Fall drei Wege:",
           {
             liste: [
-              "Passwort vergessen: Du kannst für ein Konto einen Zurücksetz-Link auslösen. Die Person kann sich damit selbst ein neues Passwort setzen.",
+              "Passwort vergessen: Du kannst für ein Konto einen Zurücksetz-Link auslösen. Er geht per E-Mail an die Person, die sich damit selbst ein neues Passwort setzt – du siehst den Link nie. Ist der Mailversand nicht eingerichtet oder gerade nicht erreichbar (etwa auf einer lokalen Installation ohne Internet), kann nur ein Administrator das Zurücksetzen auslösen: Er bekommt den Link angezeigt und gibt ihn der Person persönlich weiter. Als Manager erhältst du dann eine Meldung und bittest einen Administrator darum – so kann niemand mit einem Link ein fremdes Konto übernehmen. Die betroffene Person sieht das Zurücksetzen außerdem als Hinweis in ihrem Konto.",
               "Einladung nie angekommen: Bei einem Konto, das noch nicht aktiviert wurde, lässt sich die Einladung erneut senden. Der alte Link wird dabei ungültig.",
               "Authenticator-App verloren: Nur Administratoren können die Zwei-Faktor-Anmeldung eines fremden Kontos deaktivieren – danach genügen wieder E-Mail und Passwort, und die Person kann sie neu einrichten. Für das eigene Konto geht das nicht auf diesem Weg, sondern nur im eigenen Profil – dort verlangt das Deaktivieren dein Passwort und einen aktuellen Code aus der Authenticator-App.",
             ],
           },
           "Nach fünf falschen Versuchen – ob Passwort oder Bestätigungscode – pausiert die Anmeldung übrigens nur zeitweise und gibt sich danach von selbst wieder frei – hier musst du nichts tun.",
+        ],
+      },
+      {
+        frage: "Woher weiß ich, dass etwas an meinem Konto geändert wurde?",
+        text: [
+          "Änderungen, die für die Sicherheit deines Kontos wichtig sind, werden dir auf zwei Wegen gemeldet: als E-Mail (wenn der Mailversand eingerichtet ist) und als Hinweis oben auf der Seite, sobald du dich das nächste Mal anmeldest. Der Hinweis bleibt stehen, bis du ihn mit „Verstanden“ bestätigst – er funktioniert deshalb auch auf einer lokalen Installation ohne Mailversand.",
+          {
+            liste: [
+              "Gemeldet werden: Passwort geändert oder zurückgesetzt, neue E-Mail-Adresse (die alte Adresse bekommt die Mail), Zwei-Faktor-Anmeldung ein- oder ausgeschaltet und eine geänderte Rolle.",
+              "Hast du die Änderung gerade selbst vorgenommen, bekommst du nur die E-Mail und keinen Hinweis oben auf der Seite. Nachlesen kannst du alles unter {{profil}} → „Letzte Änderungen an deinem Konto“.",
+              "Hast du eine Änderung nicht selbst veranlasst, ändere bitte sofort dein Passwort und sag der Turnierleitung oder einer Administratorin bzw. einem Administrator Bescheid.",
+            ],
+          },
         ],
       },
       {
@@ -862,7 +875,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Ist mein Konto auf der lokalen Installation dasselbe wie auf dem Server?",
         text: [
-          "Nein. Bei der Ersteinrichtung legst du auf dem Turnier-Rechner ein eigenes Konto mit eigenem Passwort an. Es ist unabhängig vom Konto auf dem Server – die beiden werden nicht abgeglichen.",
+          "Nein. Beim Installieren fragt der Installer nach dem ersten Konto (Name, E-Mail-Adresse, Passwort) – wer das überspringt, legt es beim ersten Öffnen der Seite im Browser an (Ersteinrichtung). Dieses Konto ist ein Administrator-Konto mit eigenem Passwort. Es ist unabhängig vom Konto auf dem Server – die beiden werden nicht abgeglichen. Für die Kopplung mit dem Server brauchst du trotzdem zusätzlich ein Konto auf dem Server (dort erzeugst du den Kopplungscode).",
           "Das heißt: Änderst du ein Passwort, gilt die Änderung nur dort, wo du sie vorgenommen hast. Ein auf dem Server zurückgesetztes Passwort ändert nichts am lokalen Konto und umgekehrt.",
           {
             hinweis:

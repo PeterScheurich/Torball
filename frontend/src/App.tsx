@@ -43,6 +43,7 @@ import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
 import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { UmgebungsBanner } from "./components/UmgebungsBanner";
 import { LokaleInstallationBanner } from "./components/LokaleInstallationBanner";
+import { KontoHinweise } from "./components/KontoHinweise";
 import { Fusszeile } from "./components/Fusszeile";
 import { useAuth } from "./auth";
 import { VerbindungsFehler, getWartungStatus, kanbanBoardVerfuegbar, mailPostfachVerfuegbar } from "./api";
@@ -421,6 +422,7 @@ function App() {
       <WartungKurzfristHinweis wartung={wartung} />
       <Kopfzeile />
       <main>
+        {!gesperrt && <KontoHinweise />}
         {gesperrt ? (
           <WartungPage wartung={wartung} />
         ) : (

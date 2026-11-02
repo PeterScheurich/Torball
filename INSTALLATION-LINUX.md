@@ -35,11 +35,23 @@ Der Installer erklärt **vor jeder Änderung an deinem Rechner**, worum es geht 
 um Zustimmung. Wer eine Frage ablehnt, bricht die Installation ab – es wird nichts halb gemacht. Er fragt außerdem
 nach der Portnummer (Vorschlag: 3000) und danach, ob auch **andere Geräte im Netzwerk** zugreifen dürfen.
 
+Zum Schluss, sobald die App läuft, bietet er an, gleich das **erste Benutzerkonto** anzulegen (Nachname, Vorname,
+E-Mail-Adresse und ein Passwort mit mindestens 12 Zeichen, am besten ein Satz aus ein paar Wörtern – Sonderzeichen sind
+nicht nötig; die Eingabe des Passworts bleibt unsichtbar und wird zweimal verlangt). Dieses Konto wird **Administrator**
+und wird später u. a. gebraucht, um die Installation mit dem Online-Server zu koppeln. Wer hier gleich anlegt, schließt
+das Zeitfenster, in dem sonst jede Person im Netz, die die Seite aufruft, die Einrichtung im Browser vor dir abschließen
+könnte. Wer die Frage mit „n“ beantwortet, richtet das Konto stattdessen beim ersten Öffnen im Browser ein (s. u.).
+
 Danach läuft die App als Dienst `torball-turniere` und startet mit dem Rechner. Auf einem Rechner mit Oberfläche gibt es außerdem einen
 Eintrag im Anwendungsmenü und eine Verknüpfung auf dem Schreibtisch; erscheint sie dort nur als Textdatei, hilft Rechtsklick → „Start erlauben“. Aufruf im Browser:
-`http://localhost:3000`. Beim ersten Öffnen führt die Anmeldeseite durch die Einrichtung des ersten
-Administrator-Kontos – das ist ein **eigenes Konto auf diesem Rechner**, unabhängig von einem Konto auf dem
-Online-Server.
+`http://localhost:3000`. Wurde im Installer noch kein Konto angelegt, führt die Anmeldeseite beim ersten Öffnen durch
+die Einrichtung des ersten Administrator-Kontos (der Notweg im Browser). In beiden Fällen ist es ein **eigenes Konto auf
+diesem Rechner**, unabhängig von einem Konto auf dem Online-Server – für die Synchronisation braucht man zusätzlich ein
+Konto auf dem Server.
+
+Für Tests ohne Tastatur (`TORBALL_UNBEAUFSICHTIGT=1`) lassen sich die Angaben über `TORBALL_ADMIN_NAME`,
+`TORBALL_ADMIN_VORNAME` (optional), `TORBALL_ADMIN_EMAIL` und `TORBALL_ADMIN_PASSWORT` mitgeben; fehlen sie, wird die
+Frage übersprungen.
 
 ## Was wo liegt
 

@@ -1699,6 +1699,25 @@ Zielgruppe der wertvollste Test, den dieses Projekt machen kann.
   gute Passphrasen verhindert, schadet mehr als sie nuetzt (in `passwort.test.ts` festgehalten).
   Geaendert an: `shared/src/logik/passwortRegeln.ts` (seit 2026-10 die EINE Stelle), `frontend/src/passwortAnforderungen.ts`,
   `ProfilPage.tsx`, `hilfe/inhalte.ts`, Spez. 21.4.
+- **Kontoänderungen werden auf zwei Wegen gemeldet (2026-11-02, Auftraggeber, Vorbild Google):** `meldeKontoAenderung()`
+  (`backend/src/auth/kontoHinweis.ts`) hängt einen `KontoHinweis` an `Benutzer.kontoHinweise` (höchstens 20, Typ und Texte in
+  `shared/src/logik/kontoHinweise.ts` – EINE Stelle für Mail und Oberfläche) UND schickt, falls der Mailversand eingerichtet ist,
+  eine Mail. Best effort: ein Fehler dort verhindert nie die eigentliche Aktion, der Aufruf kommt NACH dem Speichern. Der Hinweis ist
+  ein zweiter Weg, weil eine lokale Installation oft keinen Mailversand hat. `selbst: true` (Person ändert in ihrer Sitzung etwas) =
+  Hinweis sofort „gelesen“, nur Liste im Profil + Mail; alles durch ANDERE (Reset, Rolle, 2FA durch Admin) oder ohne Sitzung (Passwort
+  über Reset-Link) bleibt als Banner (`KontoHinweise.tsx`, oben in `<main>`) stehen, bis „Verstanden“. Gemeldet werden Passwort,
+  E-Mail (auch an die ALTE Adresse), 2FA ein/aus, Rolle, Reset ausgelöst. **Wer eine neue sicherheitsrelevante Kontoänderung einbaut,
+  ruft `meldeKontoAenderung` dort auf** und ergänzt Art + Text in `kontoHinweise.ts`. Profile ANDERER Konten gehen über
+  `oeffentlichesProfilFuerAndere` (ohne Hinweise). Test: `konto-hinweise.integration.test.ts`.
+- **Reset-Link nur an Admins (2026-11-02):** `POST /benutzer/:id/passwort-reset-ausloesen` gibt den Link nur einem Admin in der
+  Antwort zurück (lokale Installation ohne Mail); ein Manager bekommt 409 und legt gar keinen Token an – wer den Link hat, könnte ihn
+  selbst einlösen und das Konto übernehmen. Gilt bewusst NICHT für Einladungen (`einladung-erneut-senden`, Einladen): dort wählt der
+  Manager die Adresse selbst. Test: `konto-hinweise.integration.test.ts`.
+- **Erstes Konto im Installer (2026-11-02):** Beide Installer rufen `erstes-konto:status`/`erstes-konto:anlegen` des Konsolen-Tools
+  auf (Passwort nur über die Umgebungsvariable `TORBALL_ERSTES_PASSWORT`, nie als Option). Die Ersteinrichtung im Browser bleibt als
+  Notweg bestehen und teilt sich mit dem Installer `legeErstenAdminAn()` (`backend/src/auth/ersteinrichtung.ts`). Server-Deploy
+  (`deploy-instanz.sh`) unverändert; dort wäre ein Einmal-Code der nächste Schritt. Die Kopplung mit der Server-Instanz hängt am
+  SERVER-Konto, nicht am lokalen – das lokale erste Konto muss nur Admin sein (nur ein Admin darf `/sync/verbinden`).
 - Sensible Felder (Passwort-Hash, 2FA-Secret, Einladungs-/Reset-Token-Hashes)
   dürfen nie über die API zurückgegeben werden - immer über
   `oeffentlichesProfil()` (`backend/src/auth/benutzerProfil.ts`) filtern.

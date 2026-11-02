@@ -7,6 +7,18 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Änderungen am eigenen Konto werden gemeldet – auf zwei Wegen.** Wird das Passwort geändert oder zurückgesetzt, die
+  E-Mail-Adresse oder Rolle geändert oder die Zwei-Faktor-Anmeldung ein- oder ausgeschaltet, bekommt die Person eine
+  E-Mail (bei einer neuen Adresse geht sie auch an die alte) und beim nächsten Aufruf einen Hinweis oben auf der Seite, den
+  sie mit „Verstanden“ bestätigt. Der Hinweis funktioniert auch auf einer lokalen Installation ohne Mailversand. Unter
+  Profil steht außerdem die Liste der letzten Änderungen. Wer eine Änderung selbst vornimmt, bekommt nur die Mail.
+- **Passwort zurücksetzen durch einen Manager.** Der Zurücksetz-Link wird immer per E-Mail an die Person geschickt. Ist der
+  Mailversand nicht eingerichtet oder nicht erreichbar, löst ein Administrator das Zurücksetzen aus (er bekommt den Link
+  angezeigt und gibt ihn persönlich weiter); ein Manager erhält dann eine Meldung.
+- **Erstes Konto schon beim Installieren anlegen.** Die Installer für Windows und Linux fragen jetzt nach Name,
+  E-Mail-Adresse und Passwort des ersten Administrator-Kontos und legen es gleich an – damit entfällt das Zeitfenster, in dem
+  jemand anderes die Ersteinrichtung im Browser vor dir hätte abschließen können. Wer die Fragen überspringt, legt das Konto
+  wie bisher beim ersten Öffnen der Seite im Browser an. Dazu gibt es den Konsolenbefehl `erstes-konto:anlegen`.
 - **Linux-Installer erprobt und verbessert.** Er wurde auf einem Debian 13 und einem Ubuntu 26.04 durchgespielt (Installation,
   Neustart, Aktualisieren, Deinstallieren, Firewall). Dabei behoben: Der Deinstaller ließ eine Paketquelle von Node.js zurück, die
   danach bei jedem `apt update` eine Warnung auslöste; der Installer legt keine Compiler-Pakete mehr an (rund 250 MB weniger).

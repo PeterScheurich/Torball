@@ -327,6 +327,106 @@ if [[ "$LAEUFT" != true ]]; then
   fehler "Die App antwortet nicht unter Port ${PORT}. Die letzten Meldungen stehen oben (auch: journalctl -u ${SERVICE})."
 fi
 
+# ---------------------------------------------------------------------------------- Erstes Benutzerkonto
+# Ohne diesen Schritt koennte im Zeitfenster zwischen "App laeuft" und "Besitzer richtet sich ein" jede
+# Person im Netz, die die Seite aufruft, das erste Administrator-Konto anlegen. Wird es gleich hier
+# angelegt, gibt es dieses Fenster nicht. Ueberspringen ist erlaubt: dann bleibt die Einrichtung im Browser.
+konsole() {   # Befehl des Konsolen-Tools als Dienstbenutzer; das Passwort kommt NUR ueber die Umgebung (nie als Argument).
+  ( cd "${APP_DIR}/backend" && als_dienstbenutzer npm run torball --silent -- "$@" )
+}
+
+# Fragt zweimal (verdeckt) nach dem Passwort und setzt pw; leer = kein gueltiges Passwort nach drei Versuchen.
+frage_passwort() {
+  local pw2 versuch
+  pw=""
+  echo "Passwort: mindestens 12 Zeichen. Am besten ein Satz aus ein paar Woertern - Sonderzeichen sind nicht noetig."
+  for versuch in 1 2 3; do
+    read -r -s -p "Passwort: " pw || pw=""; echo
+    read -r -s -p "Passwort wiederholen: " pw2 || pw2=""; echo
+    if [[ "$pw" != "$pw2" ]]; then echo "Die beiden Eingaben stimmen nicht ueberein."; pw=""; continue; fi
+    if [[ ${#pw} -lt 12 ]]; then echo "Das Passwort braucht mindestens 12 Zeichen."; pw=""; continue; fi
+    break
+  done
+  pw2=""
+}
+
+ERSTES_KONTO_DA=false
+lege_erstes_konto_an() {
+  local status name vorname email ergebnis versuch
+  status="$(konsole erstes-konto:status 2>/dev/null || true)"
+  if grep -q "^ERSTES-KONTO: VERGEBEN" <<<"$status"; then
+    echo "Es gibt bereits ein Benutzerkonto - hier wird kein neues angelegt."
+    ERSTES_KONTO_DA=true
+    return 0
+  fi
+  if ! grep -q "^ERSTES-KONTO: FREI" <<<"$status"; then
+    echo "Hinweis: Der Stand der Benutzerkonten konnte nicht geprueft werden. Das erste Konto legst du dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung)."
+    return 0
+  fi
+
+  echo
+  echo "Erstes Benutzerkonto (Administrator)"
+  echo "  Worum geht es:  Ohne Konto kann sich niemand anmelden. Das erste Konto wird Administrator dieser Installation"
+  echo "                  und wird u. a. gebraucht, um diese Installation spaeter mit dem Online-Server zu koppeln."
+  echo "                  Es ist ein EIGENES Konto auf diesem Rechner, unabhaengig von einem Konto auf dem Server."
+  echo "  Wenn du jetzt gleich anlegst, kann niemand anderes im Netz die Einrichtung vor dir im Browser abschliessen."
+
+  if [[ -n "$UNBEAUFSICHTIGT" ]]; then
+    name="${TORBALL_ADMIN_NAME:-}"; vorname="${TORBALL_ADMIN_VORNAME:-}"
+    email="${TORBALL_ADMIN_EMAIL:-}"; pw="${TORBALL_ADMIN_PASSWORT:-}"
+    if [[ -z "$name" || -z "$email" || -z "$pw" ]]; then
+      echo "(Unbeaufsichtigt, keine TORBALL_ADMIN_*-Angaben - uebersprungen. Das erste Konto legst du dann beim ersten Oeffnen der Seite im Browser an.)"
+      return 0
+    fi
+  else
+    frage_ja_nein "Das erste Konto jetzt anlegen?" j || {
+      echo "Uebersprungen. Das erste Konto legst du dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung)."
+      return 0
+    }
+    name=""; vorname=""; email=""; pw=""
+    while [[ -z "$name" ]]; do read -r -p "Nachname: " name || { name=""; break; }; done
+    read -r -p "Vorname (darf leer bleiben): " vorname || vorname=""
+    while [[ ! "$email" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]]; do
+      read -r -p "E-Mail-Adresse (damit meldest du dich an): " email || { email=""; break; }
+    done
+    if [[ -z "$name" || -z "$email" ]]; then
+      echo "Abgebrochen. Das erste Konto legst du dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung)."
+      return 0
+    fi
+    frage_passwort
+    if [[ -z "$pw" ]]; then
+      echo "Kein gueltiges Passwort eingegeben - uebersprungen. Das erste Konto legst du dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung)."
+      return 0
+    fi
+  fi
+
+  # Das Passwort steht nur in der Umgebung dieses einen Aufrufs (nicht in der Prozessliste, nicht im Protokoll).
+  for versuch in 1 2 3; do
+    if ergebnis="$( export TORBALL_ERSTES_PASSWORT="$pw"; konsole erstes-konto:anlegen --name="$name" --vorname="$vorname" --email="$email" 2>&1 )"; then
+      pw=""
+      if grep -q "^ERSTES-KONTO: ANGELEGT" <<<"$ergebnis"; then
+        echo "Das Administrator-Konto fuer ${email} wurde angelegt. Du kannst dich jetzt anmelden."
+      else
+        echo "Es gibt bereits ein Benutzerkonto - hier wurde kein neues angelegt."
+      fi
+      ERSTES_KONTO_DA=true
+      return 0
+    fi
+    echo "Das Konto konnte nicht angelegt werden:"; echo "  ${ergebnis}"
+    # Bei einer Regelverletzung des Passworts (nur interaktiv) neu fragen; sonst aufgeben.
+    [[ -n "$UNBEAUFSICHTIGT" || "$versuch" == 3 ]] && break
+    frage_passwort
+    [[ -n "$pw" ]] || break
+  done
+  pw=""
+  echo "Das erste Konto legst du dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung)."
+}
+
+echo
+echo "== Erstes Benutzerkonto =="
+lege_erstes_konto_an || true
+unset TORBALL_ADMIN_PASSWORT
+
 # ---------------------------------------------------------------------------------- 8. Firewall
 echo
 echo "== [8/9] Firewall =="
@@ -419,9 +519,13 @@ echo "Fertig! Torball-Turniere laeuft."
 echo "  Auf diesem Rechner:   ${START_URL}"
 [[ "$HOST_WERT" == "0.0.0.0" && -n "$LAN_IP" ]] && echo "  Fuer andere Geraete:  http://${LAN_IP}:${PORT}   (im selben Netzwerk)"
 echo
-echo "Erster Start: Es gibt noch kein Benutzerkonto - die Anmeldeseite fuehrt durch die einmalige"
-echo "Einrichtung des ersten Administrator-Kontos. Das ist ein EIGENES Konto auf diesem Rechner,"
-echo "unabhaengig von einem Konto auf dem Online-Server."
+if [[ "$ERSTES_KONTO_DA" == true ]]; then
+  echo "Anmelden: Mit dem Administrator-Konto, das du eben angelegt hast (bzw. das schon vorhanden war)."
+else
+  echo "Erster Start: Es gibt noch kein Benutzerkonto - die Anmeldeseite fuehrt durch die einmalige"
+  echo "Einrichtung des ersten Administrator-Kontos. Das ist ein EIGENES Konto auf diesem Rechner,"
+  echo "unabhaengig von einem Konto auf dem Online-Server."
+fi
 echo
 echo "Spaeter:"
 echo "  Aktualisieren:   sudo torball-turniere-aktualisieren"

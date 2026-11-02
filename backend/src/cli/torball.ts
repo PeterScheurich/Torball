@@ -14,6 +14,8 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Benutzer, Verein } from "@torball/shared";
 import { findAllByType, insertDoc } from "../repository";
+import { legeErstenAdminAn } from "../auth/ersteinrichtung";
+import { passwortRegelVerstoss } from "../auth/passwort";
 import { erzeugeBeispieldaten } from "../demo/beispieldaten";
 import { erstelleSnapshot, stelleSnapshotWiederher } from "../demo/snapshot";
 import { erstelleMailBericht } from "../mail/bericht";
@@ -51,6 +53,20 @@ const BEFEHLE: Record<string, { beschreibung: string; ausfuehren: Befehl }> = {
   "benutzer:entsperren": {
     beschreibung: 'Entsperrt einen Benutzer. Optionen: --email="<E-Mail>"',
     ausfuehren: benutzerEntsperren,
+  },
+  "erstes-konto:status": {
+    beschreibung:
+      'Gibt "ERSTES-KONTO: FREI" aus, solange es noch kein einziges Konto gibt (jede Person, die die Seite aufrufen ' +
+      'kann, koennte dann im Browser das erste Admin-Konto anlegen), sonst "ERSTES-KONTO: VERGEBEN". Fuer die Installer.',
+    ausfuehren: ersteKontoStatus,
+  },
+  "erstes-konto:anlegen": {
+    beschreibung:
+      'Legt das ERSTE Admin-Konto an, solange es noch kein Konto gibt. Optionen: --name="<Nachname>" ' +
+      '[--vorname="<Vorname>"] --email="<E-Mail>"; das Passwort wird NICHT als Option, sondern ueber die ' +
+      'Umgebungsvariable TORBALL_ERSTES_PASSWORT uebergeben (steht so nicht in der Prozessliste/Historie). ' +
+      "Fuer die Installer, die damit die Ersteinrichtung im Browser ersetzen.",
+    ausfuehren: ersteKontoAnlegen,
   },
   "vereine:land-setzen": {
     beschreibung:
@@ -307,6 +323,46 @@ async function benutzerListe(): Promise<void> {
         : "GESPERRT";
     console.log(`${b.email}\tRolle: ${b.globaleRolle}\t${status}`);
   }
+}
+
+async function ersteKontoStatus(): Promise<void> {
+  const alle = await findAllByType<Benutzer>("benutzer");
+  console.log(alle.length === 0 ? "ERSTES-KONTO: FREI" : "ERSTES-KONTO: VERGEBEN");
+}
+
+async function ersteKontoAnlegen(optionen: Optionen): Promise<void> {
+  const name = optionen.name?.trim();
+  const vorname = optionen.vorname?.trim();
+  const email = optionen.email?.trim().toLowerCase();
+  const passwort = process.env.TORBALL_ERSTES_PASSWORT;
+  if (!name || !email || !passwort) {
+    console.error(
+      'Bitte --name="<Nachname>" und --email="<E-Mail>" angeben sowie das Passwort in der Umgebungsvariable TORBALL_ERSTES_PASSWORT.',
+    );
+    process.exitCode = 1;
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    console.error(`"${email}" sieht nicht wie eine E-Mail-Adresse aus.`);
+    process.exitCode = 1;
+    return;
+  }
+  const verstoss = passwortRegelVerstoss(passwort, { name, email });
+  if (verstoss) {
+    console.error(verstoss);
+    process.exitCode = 1;
+    return;
+  }
+  if ((await findAllByType<Benutzer>("benutzer")).length > 0) {
+    console.log("ERSTES-KONTO: VERGEBEN - es gibt bereits ein Konto, nichts angelegt.");
+    return;
+  }
+  const angelegt = await legeErstenAdminAn({ name, vorname, email, passwort });
+  console.log(
+    angelegt
+      ? `ERSTES-KONTO: ANGELEGT - Administrator-Konto fuer "${email}" erstellt.`
+      : "ERSTES-KONTO: VERGEBEN - es gibt bereits ein Konto, nichts angelegt.",
+  );
 }
 
 async function benutzerEntsperren(optionen: Optionen): Promise<void> {

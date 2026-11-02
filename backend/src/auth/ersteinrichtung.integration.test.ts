@@ -53,3 +53,39 @@ test(
     }
   },
 );
+
+test(
+  "Erster Admin (Installer-Weg): Konto mit gehashtem Passwort und kleingeschriebener Adresse, ein zweites scheitert",
+  { skip: !hatCouchDbKonfiguration && "COUCHDB_* Umgebungsvariablen nicht gesetzt" },
+  async (t) => {
+    const { ERSTES_KONTO_ID, legeErstenAdminAn } = await import("./ersteinrichtung");
+    const { passwortStimmt } = await import("./passwort");
+    const { findByIdUngeprueft, deleteDoc } = await import("../repository");
+
+    if (await findByIdUngeprueft(ERSTES_KONTO_ID)) {
+      t.skip("In dieser Datenbank gibt es das feste Erst-Konto bereits (echte Installation?) - nichts angefasst.");
+      return;
+    }
+    try {
+      const konto = await legeErstenAdminAn({
+        name: "Mustermann",
+        vorname: "  Erika ",
+        email: " Erika.Mustermann@Example.INVALID ",
+        passwort: "Dienstag-Halle-Baum-Sieben",
+      });
+      assert.ok(konto);
+      assert.equal(konto.globaleRolle, "admin");
+      assert.equal(konto.email, "erika.mustermann@example.invalid");
+      assert.equal(konto.vorname, "Erika");
+      assert.notEqual(konto.passwortHash, "Dienstag-Halle-Baum-Sieben", "nie im Klartext gespeichert");
+      assert.ok(await passwortStimmt("Dienstag-Halle-Baum-Sieben", konto.passwortHash!));
+      assert.equal(
+        await legeErstenAdminAn({ name: "Zweiter", email: "zweiter@example.invalid", passwort: "Dienstag-Halle-Baum-Acht" }),
+        undefined,
+      );
+    } finally {
+      const doc = await findByIdUngeprueft(ERSTES_KONTO_ID);
+      if (doc) await deleteDoc(ERSTES_KONTO_ID, (doc as { _rev: string })._rev);
+    }
+  },
+);

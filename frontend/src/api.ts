@@ -663,8 +663,9 @@ export function benutzerAktualisieren(
 
 /** Loest fuer eine andere Person einen Passwort-Reset aus (z.B. weil sie den Self-Service-Weg
  * ueber "Passwort vergessen" nicht selbst gehen kann). Ist Mailversand konfiguriert, geht der
- * Link direkt an die Adresse und resetToken fehlt in der Antwort - sonst (z.B. lokale
- * Installation ohne Internet) kommt der Klartext-Token direkt zurueck, analog zur Einladung. */
+ * Link direkt an die Adresse und resetToken fehlt in der Antwort. Sonst (z.B. lokale Installation
+ * ohne Internet) kommt der Klartext-Token zurueck - aber NUR an einen Admin; ein Manager bekommt
+ * dann einen Fehler und muss einen Admin bitten (sonst koennte er das Konto uebernehmen). */
 export function benutzerPasswortResetAusloesen(id: string): Promise<{ email: string; resetToken?: string }> {
   return anfrage(`/benutzer/${id}/passwort-reset-ausloesen`, { method: "POST" });
 }
@@ -697,6 +698,11 @@ export function eigenesProfilAktualisieren(daten: {
   standardBreite?: Breite;
 }): Promise<BenutzerProfil> {
   return anfrage("/benutzer/mich", { method: "PUT", body: JSON.stringify(daten) });
+}
+
+/** Bestaetigt die Hinweise zu Aenderungen am eigenen Konto ("Verstanden"). */
+export function kontoHinweiseGelesen(): Promise<BenutzerProfil> {
+  return anfrage("/benutzer/mich/hinweise/gelesen", { method: "POST" });
 }
 
 export function eigenesPasswortAendern(aktuellesPasswort: string, neuesPasswort: string): Promise<BenutzerProfil> {

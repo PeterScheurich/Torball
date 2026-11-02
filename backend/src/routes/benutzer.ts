@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import type { Benutzer, GlobaleRolle, VerbundeneInstanz } from "@torball/shared";
 import { deleteDoc, findAllBySelector, findAllByType, findById, insertDoc, newId } from "../repository";
-import { oeffentlichesProfil } from "../auth/benutzerProfil";
+import { oeffentlichesProfil, oeffentlichesProfilFuerAndere } from "../auth/benutzerProfil";
+import { markiereKontoHinweiseGelesen, meldeKontoAenderung } from "../auth/kontoHinweis";
 import { managerSiehtKonto, profilFuerManager } from "../auth/benutzerSicht";
 import { hashePasswort, passwortRegelVerstoss, passwortStimmt } from "../auth/passwort";
 import { requireAuth, requireRolle } from "../auth/plugin";
@@ -19,6 +20,13 @@ const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
 const EINLADUNG_GUELTIG_MS = 7 * 24 * 60 * 60 * 1000; // 7 Tage
 const RESET_GUELTIG_MS = 24 * 60 * 60 * 1000; // Abschnitt 21.4: 24 Stunden
 const KOPPLUNG_GUELTIG_MS = 15 * 60 * 1000; // Turnier-Sync: Instanz-Kopplungscode, 15 Minuten
+
+/** "Vorname Name" - so nennt die Anwendung Personen (siehe CLAUDE.md, Benutzer-Fachregeln). */
+function anzeigeName(b: Benutzer): string {
+  return [b.vorname, b.name].filter(Boolean).join(" ");
+}
+
+const ROLLEN_NAMEN: Record<GlobaleRolle, string> = { admin: "Administrator", manager: "Manager", benutzer: "Benutzer" };
 
 /** Manager duerfen laut Abschnitt 21.1 nur "Benutzer" und "Manager" anlegen/bearbeiten, keine Admins. */
 function darfZielRolleVergeben(vergebendeRolle: GlobaleRolle, zielRolle: GlobaleRolle): boolean {
@@ -72,7 +80,7 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
     const alle = await findAllByType<Benutzer>("benutzer");
     // Admin: alle Konten. Manager: nur die eigenen, selbst eingeladenen und die des eigenen Vereins -
     // und auch davon nur die zum Verwalten noetigen Felder, keine Kontaktdaten (benutzerSicht.ts).
-    if (req.benutzer!.globaleRolle === "admin") return alle.map(oeffentlichesProfil);
+    if (req.benutzer!.globaleRolle === "admin") return alle.map(oeffentlichesProfilFuerAndere);
     return alle
       .filter((b) => managerSiehtKonto(req.benutzer!, b))
       .map((b) => profilFuerManager(oeffentlichesProfil(b)));
@@ -292,8 +300,19 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         }
       }
 
+      const alteEmail = req.benutzer!.email;
       const aktualisiert = await insertDoc({ ...req.benutzer!, ...aenderungen });
-      return oeffentlichesProfil(aktualisiert);
+      if (aenderungen.email) {
+        // Die ALTE Adresse erfaehrt es ebenfalls: Wer ein Konto uebernommen hat und die Adresse aendert,
+        // schneidet sonst die rechtmaessige Person von allen Mails ab.
+        await meldeKontoAenderung(aktualisiert._id, {
+          art: "email-geaendert",
+          selbst: true,
+          detail: `Bisher: ${alteEmail}, jetzt: ${aenderungen.email}.`,
+          zusaetzlicheMailAn: alteEmail,
+        });
+      }
+      return oeffentlichesProfil((await findById<Benutzer>(aktualisiert._id, "benutzer")) ?? aktualisiert);
     },
   );
 
@@ -335,10 +354,18 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       if (req.sessionId) {
         await loescheAndereSessionenVonBenutzer(req.benutzer!._id, req.sessionId);
       }
+      await meldeKontoAenderung(aktualisiert._id, { art: "passwort-geaendert", selbst: true });
 
-      return oeffentlichesProfil(aktualisiert);
+      return oeffentlichesProfil((await findById<Benutzer>(aktualisiert._id, "benutzer")) ?? aktualisiert);
     },
   );
+
+  /** Bestaetigt die Hinweise zu Kontoaenderungen ("Verstanden" in der Oberflaeche). */
+  app.post("/benutzer/mich/hinweise/gelesen", async (req, reply) => {
+    if (!requireAuth(req, reply)) return;
+    await markiereKontoHinweiseGelesen(req.benutzer!._id);
+    return oeffentlichesProfil((await findById<Benutzer>(req.benutzer!._id, "benutzer")) ?? req.benutzer!);
+  });
 
   app.put<{ Params: { id: string }; Body: BenutzerAktualisierenBody }>(
     "/benutzer/:id",
@@ -393,7 +420,14 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       if ("vereinId" in req.body) aenderungen.vereinId = req.body.vereinId ?? undefined;
 
       const aktualisiert = await insertDoc({ ...bestehend, ...aenderungen, ...sperrPatch });
-      return oeffentlichesProfil(aktualisiert);
+      if (aenderungen.globaleRolle && aenderungen.globaleRolle !== bestehend.globaleRolle) {
+        await meldeKontoAenderung(aktualisiert._id, {
+          art: "rolle-geaendert",
+          durch: anzeigeName(req.benutzer!),
+          detail: `Neue Rolle: ${ROLLEN_NAMEN[aenderungen.globaleRolle]}.`,
+        });
+      }
+      return oeffentlichesProfilFuerAndere(aktualisiert);
     },
   );
 
@@ -418,14 +452,31 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(403).send({ error: "Diesen Benutzer darfst du nicht bearbeiten." });
     }
 
+    // Den Link in der Antwort bekommt NUR ein Admin (Sicherheitsentscheidung 02.11.2026): wer den Link
+    // in der Hand hat, kann ihn selbst oeffnen und ein Passwort setzen - ein Manager koennte damit das
+    // Konto uebernehmen, statt es nur zuruecksetzen zu lassen. Ohne funktionierenden Mailversand muss
+    // deshalb ein Admin den Reset ausloesen.
+    const istAdmin = req.benutzer!.globaleRolle === "admin";
+    const smtpFuerReset = smtpVerbindungAus(await aktuelleSystemeinstellungen());
+    const KEIN_MAILVERSAND =
+      "Der Link kann nicht per E-Mail zugestellt werden (Mailversand nicht eingerichtet oder gerade nicht erreichbar). " +
+      "Bitte einen Administrator bitten, das Zurücksetzen auszulösen.";
+    if (!smtpFuerReset && !istAdmin) return reply.code(409).send({ error: KEIN_MAILVERSAND });
+
     const { token, hash } = erzeugeToken();
-    await insertDoc({
-      ...ziel,
+    await aendereBenutzerAtomar(ziel._id, (b) => ({
+      ...b,
       resetTokenHash: hash,
       resetAblauf: new Date(Date.now() + RESET_GUELTIG_MS).toISOString(),
-    });
+    }));
+    // Die Mail mit dem Link ist selbst die Benachrichtigung - hier nur der Hinweis am Konto.
+    const hinweis = () =>
+      meldeKontoAenderung(ziel._id, {
+        art: "passwort-zuruecksetzen-ausgeloest",
+        durch: anzeigeName(req.benutzer!),
+        mail: false,
+      });
 
-    const smtpFuerReset = smtpVerbindungAus(await aktuelleSystemeinstellungen());
     if (smtpFuerReset) {
       try {
         await sendeMail(smtpFuerReset, {
@@ -433,20 +484,27 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
           betreff: "Passwort zurücksetzen - Torball-Turniere",
           text:
             `Hallo ${ziel.name},\n\n` +
-            `für dein Konto wurde von der Turnierleitung/einem Admin ein Passwort-Reset ausgelöst. ` +
+            `für dein Konto wurde von der Turnierleitung/einem Admin ein Passwort-Reset ausgelöst ` +
+            `(${anzeigeName(req.benutzer!)}). ` +
             `Falls das nicht erwartet war, wende dich bitte an sie/ihn.\n\n` +
             `Neues Passwort setzen (Link 24 Stunden gültig):\n` +
             `${FRONTEND_URL}/passwort-reset/${token}`,
         });
+        await hinweis();
         return reply.send({ email: ziel.email });
       } catch (err) {
-        // Fallback auf den Link in der Antwort, statt die Aktion wirkungslos verpuffen zu lassen
-        // (z.B. SMTP konfiguriert, aber gerade kein Internet auf einer lokalen Installation).
         app.log.error(err, "Passwort-Reset-Mail konnte nicht versendet werden");
-        return reply.send({ email: ziel.email, resetToken: token });
+        if (!istAdmin) {
+          // Der Link ist nirgends angekommen - nicht als gueltig stehen lassen.
+          await aendereBenutzerAtomar(ziel._id, (b) => ({ ...b, resetTokenHash: undefined, resetAblauf: undefined }));
+          return reply.code(409).send({ error: KEIN_MAILVERSAND });
+        }
+        // Admin: Fallback auf den Link in der Antwort, statt die Aktion wirkungslos verpuffen zu lassen
+        // (z.B. SMTP konfiguriert, aber gerade kein Internet auf einer lokalen Installation).
       }
     }
 
+    await hinweis();
     return reply.send({ email: ziel.email, resetToken: token });
   });
 
@@ -529,7 +587,8 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       zweiFaSecret: undefined,
       zweiFaLetzterZeitschritt: undefined,
     });
-    return oeffentlichesProfil(aktualisiert);
+    await meldeKontoAenderung(aktualisiert._id, { art: "zwei-fa-deaktiviert", durch: anzeigeName(req.benutzer!) });
+    return oeffentlichesProfilFuerAndere(aktualisiert);
   });
 
   app.get<{ Params: { token: string } }>("/benutzer/einladung/:token", async (req, reply) => {
@@ -678,6 +737,13 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
       });
       // Abschnitt 21.4: "alle aktiven Sessions beendet".
       await loescheAlleSessionenVonBenutzer(benutzer._id);
+      // Bewusst NICHT als "selbst" gelesen: Wer ueber einen Link das Passwort setzt, ist nicht angemeldet.
+      // Hat jemand anderes (z. B. mit einem weitergegebenen Link) das Konto uebernommen, sieht die
+      // rechtmaessige Person das beim naechsten Anmelden.
+      await meldeKontoAenderung(benutzer._id, {
+        art: "passwort-geaendert",
+        detail: "Es wurde über einen Zurücksetzen-Link gesetzt.",
+      });
 
       return reply.send({ ok: true });
     },
@@ -712,7 +778,8 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(401).send({ error: "Der Bestätigungscode ist ungültig." });
       }
       const aktualisiert = await insertDoc({ ...req.benutzer!, zweiFaAktiv: true });
-      return oeffentlichesProfil(aktualisiert);
+      await meldeKontoAenderung(aktualisiert._id, { art: "zwei-fa-aktiviert", selbst: true });
+      return oeffentlichesProfil((await findById<Benutzer>(aktualisiert._id, "benutzer")) ?? aktualisiert);
     },
   );
 
@@ -739,7 +806,10 @@ export async function benutzerRoutes(app: FastifyInstance): Promise<void> {
         zweiFaSecret: undefined,
         zweiFaLetzterZeitschritt: undefined,
       }));
-      return oeffentlichesProfil(aktualisiert ?? req.benutzer!);
+      await meldeKontoAenderung(req.benutzer!._id, { art: "zwei-fa-deaktiviert", selbst: true });
+      return oeffentlichesProfil(
+        (await findById<Benutzer>(req.benutzer!._id, "benutzer")) ?? aktualisiert ?? req.benutzer!,
+      );
     },
   );
 

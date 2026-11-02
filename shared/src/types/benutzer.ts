@@ -105,4 +105,32 @@ export interface Benutzer extends CouchMeta {
    *  lokale Installation sich dauerhaft mit diesem Konto koppelt (siehe VerbundeneInstanz). */
   instanzKopplungscodeHash?: string;
   instanzKopplungscodeAblauf?: Zeitstempel;
+
+  /**
+   * Die letzten sicherheitsrelevanten Aenderungen an DIESEM Konto (neueste zuletzt, begrenzt). Zweiter
+   * Benachrichtigungsweg neben der Mail: funktioniert auch auf einer lokalen Installation ohne
+   * Mailversand und ohne Internet. Vom Server gesetzt, nie vom Client.
+   */
+  kontoHinweise?: KontoHinweis[];
+}
+
+/** Welche Aenderung an einem Konto gemeldet wird. Texte: shared/src/logik/kontoHinweise.ts. */
+export type KontoHinweisArt =
+  | "passwort-zuruecksetzen-ausgeloest"
+  | "passwort-geaendert"
+  | "email-geaendert"
+  | "zwei-fa-aktiviert"
+  | "zwei-fa-deaktiviert"
+  | "rolle-geaendert";
+
+export interface KontoHinweis {
+  id: string;
+  art: KontoHinweisArt;
+  zeitpunkt: Zeitstempel;
+  /** Name der ANDEREN Person, die die Aenderung vorgenommen hat. Fehlt bei einer Aenderung durch die Person selbst. */
+  durch?: string;
+  /** Zusatz fuer die Anzeige (z. B. "ueber einen Zuruecksetzen-Link", neue Rolle). */
+  detail?: string;
+  /** Erst nach "Gelesen" bzw. bei Aenderungen der Person selbst in der laufenden Sitzung true. */
+  gelesen: boolean;
 }

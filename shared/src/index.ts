@@ -11,3 +11,4 @@ export * from "./logik/passwortRegeln";
 export * from "./logik/schiedsrichterAnzeige";
 export * from "./logik/turniermodus";
 export * from "./logik/spielNummern";
+export * from "./logik/kontoHinweise";

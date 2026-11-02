@@ -8,7 +8,7 @@ import { erstelleSession, loescheSessionPerToken } from "../auth/session";
 import { pruefeTotpCode } from "../auth/totp";
 import { aendereBenutzerAtomar } from "../auth/benutzerAenderung";
 import { inAbkuehlung, registriereFehlversuch } from "../auth/loginZaehler";
-import { ERSTES_KONTO_ID, legeErstesKontoAn } from "../auth/ersteinrichtung";
+import { legeErstenAdminAn } from "../auth/ersteinrichtung";
 import { aktuelleSystemeinstellungen, benachrichtigeNeuenAccount } from "../systemeinstellungen";
 import { SENSIBEL_RATE_LIMIT } from "../rateLimit";
 
@@ -194,22 +194,13 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       });
       if (verstoss) return reply.code(400).send({ error: verstoss });
 
-      const benutzer: Benutzer = {
-        _id: ERSTES_KONTO_ID,
-        docType: "benutzer",
-        benutzerId: ERSTES_KONTO_ID,
-        email: req.body.email.trim().toLowerCase(),
-        passwortHash: await hashePasswort(req.body.passwort),
-        name: req.body.name,
-        vorname: req.body.vorname?.trim() || undefined,
-        globaleRolle: "admin",
-        sprache: "de",
-        zweiFaAktiv: false,
-        gesperrt: false,
-        erstelltAm: new Date().toISOString(),
-      };
       // Atomar: bei zwei gleichzeitigen Anfragen gewinnt genau eine (feste ID, siehe ersteinrichtung.ts).
-      const gespeichert = await legeErstesKontoAn(benutzer);
+      const gespeichert = await legeErstenAdminAn({
+        name: req.body.name,
+        vorname: req.body.vorname,
+        email: req.body.email,
+        passwort: req.body.passwort,
+      });
       if (!gespeichert) {
         return reply
           .code(409)

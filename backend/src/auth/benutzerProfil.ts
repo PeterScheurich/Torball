@@ -35,3 +35,10 @@ export function oeffentlichesProfil(benutzer: Benutzer): OeffentlichesBenutzerPr
   } = benutzer;
   return { ...rest, hatPasswort: Boolean(passwortHash) };
 }
+
+/** Profil eines ANDEREN Kontos (Benutzerverwaltung): die Hinweise zu Kontoaenderungen gehoeren nur der
+ *  Person selbst und bleiben aussen vor. */
+export function oeffentlichesProfilFuerAndere(benutzer: Benutzer): Omit<OeffentlichesBenutzerProfil, "kontoHinweise"> {
+  const { kontoHinweise, ...rest } = oeffentlichesProfil(benutzer);
+  return rest;
+}
