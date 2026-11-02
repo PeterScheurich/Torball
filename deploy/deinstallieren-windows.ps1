@@ -49,10 +49,19 @@ $PaketInstallation = Test-Path (Join-Path $RepoRoot "paket.json")
 Write-Host "Torball-Turniere - lokale Installation entfernen"
 Write-Host "Projektordner: $RepoRoot"
 Write-Host ""
-Write-Host "Jeder der folgenden Schritte wird einzeln erklaert und einzeln abgefragt - du kannst"
-Write-Host "z.B. nur die Programmdateien entfernen und CouchDB/Node.js auf dem Rechner belassen,"
-Write-Host "falls du dir nicht sicher bist, ob sie noch woanders gebraucht werden."
-Write-Host ""
+Write-Host "Zuerst kommen ein paar Fragen - jede einzeln erklaert. Du kannst z.B. nur die Programmdateien"
+Write-Host "entfernen und CouchDB/Node.js auf dem Rechner belassen, falls du dir nicht sicher bist, ob sie"
+Write-Host "noch woanders gebraucht werden. Erst NACH der letzten Frage wird etwas entfernt."
+
+# Abgesetzte Ueberschrift fuer alles, wo auf eine Eingabe gewartet wird (gleiche Gestaltung wie im Installer).
+function Write-Kasten {
+    param([string]$Text)
+    $strich = "*" * 76
+    Write-Host ""
+    Write-Host $strich -ForegroundColor Cyan
+    Write-Host "* $Text" -ForegroundColor Cyan
+    Write-Host $strich -ForegroundColor Cyan
+}
 
 function Frage-MitDefault {
     param([string]$Text, [string]$Standard)
@@ -67,8 +76,7 @@ function Frage-MitDefault {
 # zurueck, ob der jeweilige Schritt durchgefuehrt werden soll. Standardantwort "nein".
 function Frage-OptionalerSchritt {
     param([string]$Titel, [string]$Erklaerung, [string]$Auswirkung)
-    Write-Host ""
-    Write-Host "-- $Titel --"
+    Write-Kasten "FRAGE: $Titel"
     Write-Host $Erklaerung
     Write-Host "Auswirkung auf diesen Rechner: $Auswirkung"
     # Nur fuer Tests ohne Tastatur: TORBALL_ALLES_ENTFERNEN=1 bejaht jeden dieser Schritte (Node.js entfaellt bei einer
@@ -77,6 +85,22 @@ function Frage-OptionalerSchritt {
     $antwort = Frage-MitDefault -Text "Jetzt entfernen? (j/n)" -Standard "n"
     return ($antwort -in @("j", "J", "ja", "Ja", "JA"))
 }
+
+# --- Alle Fragen vorab (Nutzer-Vorgabe 2026-11-02: gebuendelt am Anfang, danach ohne Unterbrechung) --
+$projektSchritt = Frage-OptionalerSchritt -Titel "Konfigurationsdatei und Programmdateien loeschen" `
+    -Erklaerung "Im Projektordner liegen 'backend/.env' (die Zugangsdaten dieser Installation zur Datenbank) sowie mehrere 'node_modules'- und 'dist'-Ordner (heruntergeladene bzw. aus dem Quellcode gebaute Programmdateien, kein eigener Inhalt)." `
+    -Auswirkung "Diese Dateien werden geloescht. Der Projektordner selbst und dein eigener Quellcode bleiben erhalten - du kannst den Ordner danach z.B. per Hand in den Papierkorb verschieben, wenn du auch den Rest nicht mehr brauchst."
+$couchdbSchritt = Frage-OptionalerSchritt -Titel "CouchDB entfernen" `
+    -Erklaerung "CouchDB ist die Datenbank, in der Torball-Turniere alle Turnierdaten speichert (Mannschaften, Spielplaene, Ergebnisse usw.). Falls CouchDB auf diesem Rechner nur fuer Torball-Turniere installiert wurde, kann es mit entfernt werden." `
+    -Auswirkung "ACHTUNG: Dabei werden nicht nur das Programm und der Hintergrunddienst entfernt, sondern auch ALLE bisher gespeicherten Turnierdaten in '$TorballOrdner' UNWIDERRUFLICH geloescht. Nur bestaetigen, wenn diese Daten nicht mehr gebraucht werden (z.B. vorher exportiert/gesichert wurden) und CouchDB auf diesem Rechner sonst von keiner anderen Anwendung genutzt wird."
+$nodeSchritt = $false
+if (-not $PaketInstallation) {
+    $nodeSchritt = Frage-OptionalerSchritt -Titel "Node.js entfernen" `
+        -Erklaerung "Node.js ist die Software-Umgebung, mit der Torball-Turniere laeuft. Sie wurde beim Einrichten evtl. eigens fuer diese App installiert." `
+        -Auswirkung "Node.js wird ganz normal deinstalliert (wie jedes andere Programm auch). WICHTIG: Falls auf diesem Rechner noch andere Programme Node.js benoetigen, wuerden auch diese danach nicht mehr funktionieren - im Zweifel diesen Schritt ueberspringen und Node.js spaeter manuell ueber 'Apps & Features' entfernen, wenn sicher ist, dass es nicht mehr gebraucht wird."
+}
+Write-Host ""
+Write-Host "Danke - jetzt wird entfernt. Bitte das Fenster nicht schliessen."
 
 # --- [1/4] Desktop-Verknuepfung + generierte Start-Datei -----------------------------------------
 # Reine Aufraeumarbeit im Projektordner bzw. einer selbst erzeugten Verknuepfung, kein
@@ -122,9 +146,6 @@ if ($fwRegel) {
 # --- [2/4] Projektdateien: .env + heruntergeladene/gebaute Programmdateien -----------------------
 Write-Host ""
 Write-Host "== [2/4] Konfigurationsdatei + Programmdateien im Projektordner =="
-$projektSchritt = Frage-OptionalerSchritt -Titel "Konfigurationsdatei und Programmdateien loeschen" `
-    -Erklaerung "Im Projektordner liegen 'backend/.env' (die Zugangsdaten dieser Installation zur Datenbank) sowie mehrere 'node_modules'- und 'dist'-Ordner (heruntergeladene bzw. aus dem Quellcode gebaute Programmdateien, kein eigener Inhalt)." `
-    -Auswirkung "Diese Dateien werden geloescht. Der Projektordner selbst und dein eigener Quellcode bleiben erhalten - du kannst den Ordner danach z.B. per Hand in den Papierkorb verschieben, wenn du auch den Rest nicht mehr brauchst."
 if ($projektSchritt) {
     # Laeuft der Torball-Server noch (minimiertes "NICHT SCHLIESSEN"-Fenster), haelt sein
     # node-Prozess Dateien in node_modules/dist offen - das Loeschen wuerde dann mittendrin mit
@@ -157,9 +178,6 @@ if ($projektSchritt) {
 # --- [3/4] CouchDB (Dienst + Programm + alle Turnierdaten) ---------------------------------------
 Write-Host ""
 Write-Host "== [3/4] CouchDB =="
-$couchdbSchritt = Frage-OptionalerSchritt -Titel "CouchDB entfernen" `
-    -Erklaerung "CouchDB ist die Datenbank, in der Torball-Turniere alle Turnierdaten speichert (Mannschaften, Spielplaene, Ergebnisse usw.). Falls CouchDB auf diesem Rechner nur fuer Torball-Turniere installiert wurde, kann es mit entfernt werden." `
-    -Auswirkung "ACHTUNG: Dabei werden nicht nur das Programm und der Hintergrunddienst entfernt, sondern auch ALLE bisher gespeicherten Turnierdaten in '$TorballOrdner' UNWIDERRUFLICH geloescht. Nur bestaetigen, wenn diese Daten nicht mehr gebraucht werden (z.B. vorher exportiert/gesichert wurden) und CouchDB auf diesem Rechner sonst von keiner anderen Anwendung genutzt wird."
 if ($couchdbSchritt) {
     Write-Host "Stoppe Dienst 'Apache CouchDB' ..."
     try { Stop-Service -Name "Apache CouchDB" -Force -ErrorAction Stop } catch { }
@@ -214,11 +232,7 @@ Write-Host ""
 Write-Host "== [4/4] Node.js =="
 if ($PaketInstallation) {
     Write-Host "Node.js gehoerte zum Installationspaket (mitgeliefert) und wurde nicht separat installiert - es gibt nichts zu entfernen."
-    $nodeSchritt = $false
 } else {
-$nodeSchritt = Frage-OptionalerSchritt -Titel "Node.js entfernen" `
-    -Erklaerung "Node.js ist die Software-Umgebung, mit der Torball-Turniere laeuft. Sie wurde beim Einrichten evtl. eigens fuer diese App installiert." `
-    -Auswirkung "Node.js wird ganz normal deinstalliert (wie jedes andere Programm auch). WICHTIG: Falls auf diesem Rechner noch andere Programme Node.js benoetigen, wuerden auch diese danach nicht mehr funktionieren - im Zweifel diesen Schritt ueberspringen und Node.js spaeter manuell ueber 'Apps & Features' entfernen, wenn sicher ist, dass es nicht mehr gebraucht wird."
 if ($nodeSchritt) {
     if (Get-Command winget -ErrorAction SilentlyContinue) {
         Write-Host "Deinstalliere Node.js (winget) ..."
