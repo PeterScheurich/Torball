@@ -166,6 +166,10 @@ export function UeberblickPage() {
         </li>
         <li>Entwickelt von {ENTWICKLER.name} in enger Zusammenarbeit mit einer KI.</li>
         <li>
+          Was die zentrale Instanz speichert und warum, steht in der <Link to="/datenschutz">Datenschutzerklärung</Link>, die Angaben
+          zum Betreiber im <Link to="/impressum">Impressum</Link>.
+        </li>
+        <li>
           Die Anwendung speichert Konten mit Name und E-Mail-Adresse und die Turnierdaten. Bei einer lokalen Installation bleiben
           alle Daten auf deinem Rechner, und du bist dort selbst für sie verantwortlich.
         </li>

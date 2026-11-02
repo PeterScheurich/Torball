@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { getOeffentlicheTurnierliste, getOeffentlicheVideos, type OeffentlichesTurnierListenElement } from "../api";
 import { formatiereDatum } from "../format";
 import { TurnierLogo } from "../components/TurnierLogo";
+import { VideoMitZustimmung } from "../components/VideoMitZustimmung";
 import { VIDEO_SLOT_STARTSEITE_INTRO } from "../videoSlots";
 import { youtubeEmbedUrl } from "../youtube";
 
@@ -79,13 +80,7 @@ export function OeffentlicheStartseitePage() {
         </div>
         {introVideoEmbedUrl && (
           <div className="startseite-video">
-            <iframe
-              src={introVideoEmbedUrl}
-              title="Einführungsvideo: Torball-Turniere"
-              loading="lazy"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-            />
+            <VideoMitZustimmung embedUrl={introVideoEmbedUrl} titel="Einführungsvideo: Torball-Turniere" />
           </div>
         )}
       </div>

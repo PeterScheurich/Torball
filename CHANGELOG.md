@@ -7,6 +7,9 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Impressum und Datenschutzerklärung (Entwurf).** Neue öffentliche Seiten `/impressum` und `/datenschutz`, in der Fußzeile jeder Seite verlinkt und auch bei einer Wartungssperre erreichbar. Die Datenschutzerklärung beschreibt, was die Anwendung wirklich speichert (Konten, Cookie, Server-Protokolle, Turnierdaten, E-Mails). Beide tragen oben einen Entwurfshinweis, bis sie geprüft und freigegeben sind; die Angaben (Anschrift, Aufbewahrungsdauer der Protokolle, Aufsichtsbehörde) stehen in `frontend/src/rechtliches.ts`.
+- **Einführungsvideo erst nach Klick.** Das YouTube-Video auf der Startseite wird nicht mehr beim Öffnen der Seite geladen, sondern erst nach „Video laden“. Vorher wurde die IP-Adresse jedes Besuchers an YouTube übertragen.
+- **Server-Protokolle höchstens 14 Tage.** `deploy/provision.sh` stellt das Systemprotokoll (journald) auf 14 Tage ein; es hatte bisher keine Zeitgrenze und enthält die Anfragen mit IP-Adresse.
 - **Neue Seite „Torball-Turniere auf einen Blick“.** Ohne Anmeldung erreichbar, verlinkt von der Startseite („Neu hier?“): was die Anwendung kann und was nicht, die Betriebsarten (Internet, lokale Installation, selbst betreiben), Voraussetzungen, was auf einen zukommt, Kosten und Lizenz. Lässt sich drucken oder als PDF speichern. Die Kontaktadresse erscheint erst auf Knopfdruck (Schutz vor Spam).
 
 ## [0.10.0-beta] - 2026-11-02

@@ -40,6 +40,8 @@ import { HilfePage } from "./pages/HilfePage";
 import { UeberPage } from "./pages/UeberPage";
 import { FehlerMeldenPage } from "./pages/FehlerMeldenPage";
 import { UeberblickPage } from "./pages/UeberblickPage";
+import { ImpressumPage } from "./pages/ImpressumPage";
+import { DatenschutzPage } from "./pages/DatenschutzPage";
 import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
 import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { UmgebungsBanner } from "./components/UmgebungsBanner";
@@ -64,6 +66,9 @@ function wartungAusgenommenerPfad(pathname: string): boolean {
     pathname === "/login" ||
     pathname === "/passwort-vergessen" ||
     pathname === "/ersteinrichtung" ||
+    // Impressum und Datenschutzerklaerung muessen immer erreichbar sein, auch waehrend einer Wartungssperre.
+    pathname === "/impressum" ||
+    pathname === "/datenschutz" ||
     pathname.startsWith("/passwort-reset/")
   );
 }
@@ -460,6 +465,8 @@ function App() {
             <Route path="/einstellungen" element={<EinstellungenPage />} />
             <Route path="/hilfe" element={<HilfePage />} />
             <Route path="/ueberblick" element={<UeberblickPage />} />
+            <Route path="/impressum" element={<ImpressumPage />} />
+            <Route path="/datenschutz" element={<DatenschutzPage />} />
             {/* Root ist oeffentlich: Gaeste sehen die Startseite, Angemeldete die Verwaltungsliste. */}
             <Route path="/" element={<StartRoute wartung={wartung} />} />
 

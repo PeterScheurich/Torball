@@ -656,6 +656,11 @@ form {
   flex: 1 1 240px;
   max-width: 360px;
 }
+.startseite-video .video-zustimmung {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
 .startseite-video iframe {
   display: block;
   width: 100%;

@@ -141,6 +141,15 @@ echo "== [7/7] Globaler Befehl torball-aktualisieren =="
 SKRIPT_ORDNER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ln -sf "${SKRIPT_ORDNER}/aktualisieren.sh" /usr/local/bin/torball-aktualisieren
 
+echo "== Aufbewahrung der Systemprotokolle (Datenschutz) =="
+# Die Anwendung schreibt jede Anfrage MIT IP-Adresse in das Systemprotokoll (journald). Ohne Zeitgrenze bleibt das monatelang
+# stehen (auf Prod reichte es bis August zurueck). Die Datenschutzerklaerung (frontend/src/rechtliches.ts, logAufbewahrungTage)
+# nennt 14 Tage - die Einstellung hier macht die Aussage wahr. nginx rotiert seine Zugriffsprotokolle schon taeglich mit 14 Staenden.
+mkdir -p /etc/systemd/journald.conf.d
+printf '[Journal]\nMaxRetentionSec=14day\n' > /etc/systemd/journald.conf.d/torball-aufbewahrung.conf
+systemctl restart systemd-journald
+journalctl --vacuum-time=14d >/dev/null 2>&1 || true
+
 echo
 echo "Basis fertig."
 echo "  CouchDB-Admin-Passwort:  ${COUCH_ADMIN_FILE}  (nur root lesbar)"

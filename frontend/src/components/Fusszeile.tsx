@@ -45,6 +45,8 @@ export function Fusszeile() {
           </Link>
         </>
       )}
+      <Link to="/impressum">Impressum</Link>
+      <Link to="/datenschutz">Datenschutz</Link>
       <span className="marke-version">{APP_VERSION}</span>
     </footer>
   );
