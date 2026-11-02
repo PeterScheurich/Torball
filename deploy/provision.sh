@@ -146,8 +146,11 @@ echo "== Aufbewahrung der Systemprotokolle (Datenschutz) =="
 # stehen (auf Prod reichte es bis August zurueck). Die Datenschutzerklaerung (frontend/src/rechtliches.ts, logAufbewahrungTage)
 # nennt 14 Tage - die Einstellung hier macht die Aussage wahr. nginx rotiert seine Zugriffsprotokolle schon taeglich mit 14 Staenden.
 mkdir -p /etc/systemd/journald.conf.d
-printf '[Journal]\nMaxRetentionSec=14day\n' > /etc/systemd/journald.conf.d/torball-aufbewahrung.conf
+# MaxFileSec=1day: journald loescht nur GANZE Dateien. Ohne taeglich neue Dateien bliebe in der aktuellen Datei alles bis zu
+# einem Monat stehen (auf Prod reichte sie nach der ersten Umstellung noch 21 Tage zurueck).
+printf '[Journal]\nMaxRetentionSec=14day\nMaxFileSec=1day\n' > /etc/systemd/journald.conf.d/torball-aufbewahrung.conf
 systemctl restart systemd-journald
+journalctl --rotate >/dev/null 2>&1 || true
 journalctl --vacuum-time=14d >/dev/null 2>&1 || true
 
 echo
