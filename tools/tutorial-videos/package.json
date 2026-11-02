@@ -1,0 +1,10 @@
+{
+  "name": "torball-tutorial-videos",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Werkzeuge fuer die Tutorial-Videos von Torball-Turniere (Bildschirmaufnahme per Browser-Skript, Sprache, DaVinci Resolve). Kein Teil der Anwendung und kein npm-Workspace.",
+  "type": "module",
+  "dependencies": {
+    "playwright": "1.64.1"
+  }
+}
