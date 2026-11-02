@@ -109,7 +109,7 @@ export function SpielerKader({
     const trikotnummer = werte.trikotnummer.trim();
 
     if (name === "") {
-      setFehler("Name darf nicht leer sein");
+      setFehler("Nachname darf nicht leer sein");
       setBearbeitung((b) => ({ ...b, [s._id]: { ...werte, name: s.name } }));
       return;
     }
@@ -256,7 +256,7 @@ export function SpielerKader({
                   Nr. <span className="pflicht-stern" title="Pflichtfeld">*</span>
                 </th>
                 <th scope="col">
-                  Name <span className="pflicht-stern" title="Pflichtfeld">*</span>
+                  Nachname <span className="pflicht-stern" title="Pflichtfeld">*</span>
                 </th>
                 <th scope="col">Vorname</th>
                 <th scope="col">Klassifizierung</th>
@@ -285,7 +285,7 @@ export function SpielerKader({
                   </td>
                   <td>
                     <label className="sr-only" htmlFor={`spieler-name-${s._id}`}>
-                      Name von {s.name}
+                      Nachname von {s.name}
                     </label>
                     <input
                       id={`spieler-name-${s._id}`}
@@ -383,7 +383,7 @@ export function SpielerKader({
           />
         </div>
         <div className="feld">
-          <label htmlFor={`neu-name-${mannschaftId}`}>Name</label>
+          <label htmlFor={`neu-name-${mannschaftId}`}>Nachname</label>
           <input
             id={`neu-name-${mannschaftId}`}
             required

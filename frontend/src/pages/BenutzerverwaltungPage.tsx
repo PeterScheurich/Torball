@@ -310,7 +310,7 @@ export function BenutzerverwaltungPage() {
             <tbody>
               <tr>
                 <th scope="row">
-                  <label htmlFor="name">Name</label>
+                  <label htmlFor="name">Nachname</label>
                 </th>
                 <td>
                   <input id="name" required value={name} onChange={(e) => setName(e.target.value)} />

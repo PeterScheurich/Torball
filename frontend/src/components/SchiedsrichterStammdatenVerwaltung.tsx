@@ -145,7 +145,7 @@ export function SchiedsrichterStammdatenVerwaltung({ vereine, darfBearbeiten }: 
     if (!werte) return;
 
     if (werte.name.trim() === "") {
-      setFehler("Name darf nicht leer sein");
+      setFehler("Nachname darf nicht leer sein");
       return;
     }
 
@@ -202,7 +202,7 @@ export function SchiedsrichterStammdatenVerwaltung({ vereine, darfBearbeiten }: 
               <thead>
                 <tr>
                   <th scope="col">
-                    Name <span className="pflicht-stern" title="Pflichtfeld">*</span>
+                    Nachname <span className="pflicht-stern" title="Pflichtfeld">*</span>
                   </th>
                   <th scope="col">Vorname</th>
                   <th scope="col">Telefon</th>
@@ -217,7 +217,7 @@ export function SchiedsrichterStammdatenVerwaltung({ vereine, darfBearbeiten }: 
                   <tr key={s._id}>
                     <td>
                       <label className="sr-only" htmlFor={`sstamm-name-${s._id}`}>
-                        Name von {s.name}
+                        Nachname von {s.name}
                       </label>
                       <input
                         id={`sstamm-name-${s._id}`}
@@ -356,7 +356,7 @@ export function SchiedsrichterStammdatenVerwaltung({ vereine, darfBearbeiten }: 
                   <tbody>
                     <tr>
                       <th scope="row">
-                        <label htmlFor="sstammNeuName">Name</label>
+                        <label htmlFor="sstammNeuName">Nachname</label>
                       </th>
                       <td>
                         <input

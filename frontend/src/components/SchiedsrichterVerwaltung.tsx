@@ -125,7 +125,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
   async function speichern(s: SchiedsrichterImTurnier, override: Partial<SchiedsrichterAktualisierung> = {}) {
     const b = bearbeitung[s._id] ?? ausText(s);
     if (b.name.trim() === "") {
-      setFehler("Name darf nicht leer sein");
+      setFehler("Nachname darf nicht leer sein");
       setBearbeitung((z) => ({ ...z, [s._id]: { ...b, name: s.name } }));
       return;
     }
@@ -272,7 +272,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
             <thead>
               <tr>
                 <th scope="col">
-                  Name <span className="pflicht-stern" title="Pflichtfeld">*</span>
+                  Nachname <span className="pflicht-stern" title="Pflichtfeld">*</span>
                 </th>
                 <th scope="col">Vorname</th>
                 <th scope="col">Telefon</th>
@@ -288,7 +288,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
                 <tr key={s._id}>
                   <td>
                     <label className="sr-only" htmlFor={`sr-name-${s._id}`}>
-                      Name von {s.name}
+                      Nachname von {s.name}
                     </label>
                     <input
                       id={`sr-name-${s._id}`}
@@ -450,7 +450,7 @@ export function SchiedsrichterVerwaltung({ turnierId, gesperrt = false }: Props)
 
       <form onSubmit={anlegen} className="schiedsrichter-formular">
         <div className="feld">
-          <label htmlFor="sr-neu-name">Name</label>
+          <label htmlFor="sr-neu-name">Nachname</label>
           <input id="sr-neu-name" ref={nameRef} required value={neuName} onChange={(e) => setNeuName(e.target.value)} />
         </div>
         <div className="feld">

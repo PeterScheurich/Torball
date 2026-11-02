@@ -168,7 +168,7 @@ export function ProfilPage() {
     // Der Name ist Pflicht: leer wird nicht gespeichert, sondern zurueckgesetzt (der Server
     // ignoriert einen leeren Namen ohnehin - ohne Ruecksetzen stuende im Feld weiter nichts).
     if (feld === "name" && wert === "") {
-      setFehler("Name darf nicht leer sein");
+      setFehler("Nachname darf nicht leer sein");
       setStammdaten((d) => ({ ...d, name: benutzer.name }));
       return;
     }
@@ -450,7 +450,7 @@ export function ProfilPage() {
             <tbody>
               <tr>
                 <th scope="row">
-                  <label htmlFor="stammName">Name</label>
+                  <label htmlFor="stammName">Nachname</label>
                 </th>
                 <td>
                   <input

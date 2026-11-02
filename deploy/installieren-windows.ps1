@@ -988,7 +988,7 @@ if ($PaketModus) {
                 Write-Host "Der Code schuetzt die Einrichtung davor, dass jemand anderes im Netz sie vor dir abschliesst."
             }
             Write-Host "Gleich oeffnet sich der Browser mit der Seite 'Ersteinrichtung' (der Code ist dort schon eingetragen)."
-            Write-Host "Dort legst du dein eigenes Administrator-Konto an (Name, E-Mail-Adresse, Passwort) und bist danach angemeldet."
+            Write-Host "Dort legst du dein eigenes Administrator-Konto an (Nachname, Vorname, E-Mail-Adresse, Passwort) und bist danach angemeldet."
             Write-Host "Falls sich der Browser nicht oeffnet: Desktop-Verknuepfung 'Torball-Turniere' doppelklicken, auf der"
             Write-Host "Anmeldeseite 'Ersteinrichtung starten' klicken und den Code eintippen (Gross-/Kleinschreibung egal)."
             Write-Host "Setup erneut ausfuehren zeigt den Code wieder an - solange es noch kein Konto gibt. Danach nicht mehr."

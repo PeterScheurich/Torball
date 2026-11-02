@@ -82,7 +82,7 @@ export function ErsteinrichtungPage() {
           </div>
         )}
         <div className="feld">
-          <label htmlFor="name">Name</label>
+          <label htmlFor="name">Nachname</label>
           <input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div className="feld">
