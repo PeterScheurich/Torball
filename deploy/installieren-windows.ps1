@@ -170,6 +170,22 @@ function Lese-Passwort {
     finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($zeiger) }
 }
 
+# Einrichtungs-Code fuer die Ersteinrichtung im Browser - gleiches Format wie auf dem Server (deploy-instanz.sh):
+# 12 Zeichen in Dreiergruppen ohne leicht verwechselbare (0/O/1/I/L). Kryptografischer Zufall mit Rejection-Sampling
+# (31 Zeichen, nur Byte-Werte < 248 = 8*31 verwenden, damit jedes Zeichen gleich wahrscheinlich ist).
+function New-EinrichtungsCode {
+    $zeichen = "ABCDEFGHJKMNPQRSTUVWXYZ23456789".ToCharArray()
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $byte = New-Object byte[] 1
+    $code = ""
+    while ($code.Length -lt 12) {
+        $rng.GetBytes($byte)
+        if ($byte[0] -lt 248) { $code += $zeichen[$byte[0] % 31] }
+    }
+    $rng.Dispose()
+    return ($code.Substring(0, 4) + "-" + $code.Substring(4, 4) + "-" + $code.Substring(8, 4))
+}
+
 # Ruft einen Befehl des Konsolen-Tools (backend/src/cli/torball.ts) auf und gibt Ausgabe + Exit-Code zurueck.
 # Bewusst direkt ueber node statt "npm run torball": npm.cmd laeuft ueber die Eingabeaufforderung, und dort
 # wuerden Zeichen wie & oder % in einem Namen/einer Adresse als Befehl missverstanden. Das Passwort
@@ -822,6 +838,10 @@ if (Test-Path $EnvFile) {
     # SMTP-Mailversand (Einladungen/Passwort-Reset) wird NICHT hier abgefragt - seit 2026-08-15
     # ueber die Oberflaeche gepflegt (Admin-Menue -> Systemeinstellungen -> "E-Mail-Versand (SMTP)"),
     # kein .env-Wert mehr.
+    # Einrichtungs-Code nur beim Paket (dort wird das erste Konto im Browser angelegt, siehe Ende des Skripts).
+    $EinrichtungsCodeZeile = if ($PaketModus) {
+        "# Schuetzt die Ersteinrichtung im Browser: Wer sie zuerst abschliesst, wird Administrator. Wirkungslos, sobald es ein Konto gibt.`nERSTEINRICHTUNGS_CODE=$(New-EinrichtungsCode)"
+    } else { "" }
     @"
 PORT=$Port
 # 0.0.0.0 = auch fuer andere Geraete im lokalen Netzwerk erreichbar (Betriebsmodus "Lokales
@@ -837,6 +857,7 @@ COOKIE_SECURE=false
 FRONTEND_URL=http://localhost:$Port
 KANBAN_BOARD_AKTIV=false
 SERVE_FRONTEND=true
+$EinrichtungsCodeZeile
 # Explizit statt der Systemzeitzone des Rechners - siehe deploy-instanz.sh fuer die Begruendung
 # (Turnier-Startzeiten sollen unabhaengig von der lokalen Windows-Zeitzoneneinstellung als
 # deutsche Zeit interpretiert werden, inkl. korrekter Sommer-/Winterzeit-Umstellung).
@@ -869,10 +890,27 @@ if (($FirewallRegelNoetig -or $netzwerkBereitsAktiv) -and $EffectivePort -match 
 # Erstes Benutzerkonto: braucht die laufende Datenbank (Schritt 2/3), das gebaute Projekt (Schritt 4)
 # und die backend/.env - alles steht jetzt. Bricht nie ab: ohne Konto bleibt die Einrichtung im Browser.
 $ErstesKontoDa = $false
-if ($Aktualisierung) {
+$EinrichtungsCode = $null
+if ($PaketModus -and -not $env:TORBALL_UNBEAUFSICHTIGT) {
+    # Paket: Das erste Konto legt die Person im Browser an, geschuetzt durch den Einrichtungs-Code aus der .env (wie auf dem
+    # Server). Er wird am Ende angezeigt - auch bei einem erneuten Lauf, solange es noch kein Konto gibt; danach nicht mehr.
+    $kontoStatus = Invoke-TorballKonsole -Argumente @("erstes-konto:status")
+    if ($kontoStatus.Ausgabe -match "(?m)^ERSTES-KONTO: VERGEBEN") {
+        $ErstesKontoDa = $true
+    } else {
+        $codeZeile = (Get-Content $EnvFile) | Where-Object { $_ -match '^ERSTEINRICHTUNGS_CODE=' } | Select-Object -First 1
+        if ($codeZeile) {
+            $EinrichtungsCode = ($codeZeile -split '=', 2)[1].Trim()
+        } else {
+            # Aeltere Installation ohne Code (noch kein Konto angelegt): nachtragen. Der laufende Dienst liest die .env nur
+            # beim Start - deshalb neu starten, sonst gaelte der Code erst nach dem naechsten Neustart.
+            $EinrichtungsCode = New-EinrichtungsCode
+            [IO.File]::AppendAllText($EnvFile, "ERSTEINRICHTUNGS_CODE=$EinrichtungsCode`r`n", (New-Object Text.UTF8Encoding($false)))
+            if (Get-TorballDienst) { Restart-Service -Name $DienstName }
+        }
+    }
+} elseif ($Aktualisierung) {
     $ErstesKontoDa = $true   # bei einem Update gibt es das Konto schon
-} elseif ($PaketModus -and -not $env:TORBALL_UNBEAUFSICHTIGT) {
-    $ErstesKontoDa = $false  # wird am Ende im Browser angelegt (siehe Vorab-Fragen)
 } else {
     try { $ErstesKontoDa = Frage-ErstesKonto }
     catch { Write-Host "Das erste Konto konnte hier nicht angelegt werden ($($_.Exception.Message)). Du legst es dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung)." }
@@ -941,14 +979,22 @@ if ($PaketModus) {
             Write-Host "Anmelden: mit dem Administrator-Konto, das eben angelegt wurde (bzw. schon vorhanden war)."
         } else {
             Write-Kasten "NAECHSTER SCHRITT: Administrator-Konto im Browser anlegen"
-            Write-Host "Gleich oeffnet sich der Browser mit der Seite 'Ersteinrichtung'. Dort legst du dein eigenes"
-            Write-Host "Administrator-Konto an (Name, E-Mail-Adresse, Passwort) und bist danach angemeldet."
-            Write-Host "Falls sich der Browser nicht oeffnet: Desktop-Verknuepfung 'Torball-Turniere' doppelklicken und auf der"
-            Write-Host "Anmeldeseite auf 'Ersteinrichtung starten' klicken."
+            if ($EinrichtungsCode) {
+                Write-Host ""
+                Write-Host "    Dein Einrichtungs-Code:   $EinrichtungsCode" -ForegroundColor Yellow
+                Write-Host ""
+                Write-Host "Der Code schuetzt die Einrichtung davor, dass jemand anderes im Netz sie vor dir abschliesst."
+            }
+            Write-Host "Gleich oeffnet sich der Browser mit der Seite 'Ersteinrichtung' (der Code ist dort schon eingetragen)."
+            Write-Host "Dort legst du dein eigenes Administrator-Konto an (Name, E-Mail-Adresse, Passwort) und bist danach angemeldet."
+            Write-Host "Falls sich der Browser nicht oeffnet: Desktop-Verknuepfung 'Torball-Turniere' doppelklicken, auf der"
+            Write-Host "Anmeldeseite 'Ersteinrichtung starten' klicken und den Code eintippen (Gross-/Kleinschreibung egal)."
+            Write-Host "Setup erneut ausfuehren zeigt den Code wieder an - solange es noch kein Konto gibt. Danach nicht mehr."
             if ($anwendungLaeuft -and -not $env:TORBALL_UNBEAUFSICHTIGT) {
-                # Gleich selbst oeffnen: Je kuerzer die Zeit zwischen "App laeuft" und "Konto angelegt", desto weniger
-                # Gelegenheit hat jemand anderes im Netz, die Ersteinrichtung vorher abzuschliessen.
-                try { Start-Process "http://localhost:$EffectivePort/ersteinrichtung" } catch { }
+                # Der Code steht hinter "#" (Fragment): Der Browser schickt ihn nie an den Server, er landet in keinem Log.
+                $ziel = "http://localhost:$EffectivePort/ersteinrichtung"
+                if ($EinrichtungsCode) { $ziel += "#code=$EinrichtungsCode" }
+                try { Start-Process $ziel } catch { }
             }
         }
     }

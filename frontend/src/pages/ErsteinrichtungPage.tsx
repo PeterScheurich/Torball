@@ -16,7 +16,11 @@ export function ErsteinrichtungPage() {
   const [passwort, setPasswort] = useState("");
   const [passwortWiederholung, setPasswortWiederholung] = useState("");
   const [codeErforderlich, setCodeErforderlich] = useState(false);
-  const [einrichtungsCode, setEinrichtungsCode] = useState("");
+  // Der Installer der lokalen Windows-Installation öffnet die Seite mit "#code=…": Der Teil nach dem "#" geht nie an den
+  // Server und steht in keinem Log, der Code muss so nicht abgetippt werden.
+  const [einrichtungsCode, setEinrichtungsCode] = useState(
+    () => new URLSearchParams(window.location.hash.replace(/^#/, "")).get("code") ?? "",
+  );
   const [fehler, setFehler] = useState<string | undefined>();
   const [sendet, setSendet] = useState(false);
   const navigate = useNavigate();

@@ -4,8 +4,9 @@ import { createHash, timingSafeEqual } from "node:crypto";
  * Einrichtungs-Code fuer die Ersteinrichtung im Browser (Auftraggeber, 02.11.2026). Auf einem Server, der schon aus dem
  * Internet erreichbar ist, aber noch kein Konto hat, koennte sonst jede Person zuerst "Ersteinrichtung starten" druecken
  * und Admin werden. Das Deploy-Skript erzeugt deshalb beim ersten Deploy einen Zufallscode (ERSTEINRICHTUNGS_CODE in
- * backend/.env) und zeigt ihn im Terminal; die Ersteinrichtung verlangt ihn. Ohne gesetzten Code (Entwicklung, lokale
- * Installation - dort legt der Installer das Konto selbst an) gilt die Ersteinrichtung wie bisher.
+ * backend/.env) und zeigt ihn im Terminal; die Ersteinrichtung verlangt ihn. Die lokale Windows-Installation setzt den Code
+ * ebenfalls (der Installer zeigt ihn am Ende an). Ohne gesetzten Code (Entwicklung, Linux-Installer - dort legt der Installer das
+ * Konto selbst an) gilt die Ersteinrichtung wie bisher.
  */
 
 /** Gross-/Kleinschreibung, Bindestriche und Leerzeichen sind beim Abtippen egal. */
