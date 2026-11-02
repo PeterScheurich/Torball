@@ -918,7 +918,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Ist mein Konto auf der lokalen Installation dasselbe wie auf dem Server?",
         text: [
-          "Nein. Beim Installieren fragt der Installer nach dem ersten Konto (Name, E-Mail-Adresse, Passwort) – wer das überspringt, legt es beim ersten Öffnen der Seite im Browser an (Ersteinrichtung). Dieses Konto ist ein Administrator-Konto mit eigenem Passwort. Es ist unabhängig vom Konto auf dem Server – die beiden werden nicht abgeglichen. Für die Kopplung mit dem Server brauchst du trotzdem zusätzlich ein Konto auf dem Server (dort erzeugst du den Kopplungscode).",
+          "Nein. Beim Installieren fragt der Installer nach dem ersten Konto (Name, E-Mail-Adresse, Passwort) – wer das überspringt, legt es beim ersten Öffnen der Seite im Browser an (Ersteinrichtung; auf einem Server mit Einrichtungs-Code gibst du dort zusätzlich den Code aus dem Installationsskript ein). Dieses Konto ist ein Administrator-Konto mit eigenem Passwort. Es ist unabhängig vom Konto auf dem Server – die beiden werden nicht abgeglichen. Für die Kopplung mit dem Server brauchst du trotzdem zusätzlich ein Konto auf dem Server (dort erzeugst du den Kopplungscode).",
           "Das heißt: Änderst du ein Passwort, gilt die Änderung nur dort, wo du sie vorgenommen hast. Ein auf dem Server zurückgesetztes Passwort ändert nichts am lokalen Konto und umgekehrt.",
           {
             hinweis:

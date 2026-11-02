@@ -9,6 +9,7 @@ import { pruefeTotpCode } from "../auth/totp";
 import { aendereBenutzerAtomar } from "../auth/benutzerAenderung";
 import { inAbkuehlung, registriereFehlversuch } from "../auth/loginZaehler";
 import { legeErstenAdminAn } from "../auth/ersteinrichtung";
+import { einrichtungsCodeStimmt, konfigurierterEinrichtungsCode } from "../auth/einrichtungsCode";
 import { aktuelleSystemeinstellungen, benachrichtigeNeuenAccount } from "../systemeinstellungen";
 import { SENSIBEL_RATE_LIMIT } from "../rateLimit";
 
@@ -40,6 +41,8 @@ interface BootstrapAdminBody {
   passwort: string;
   name: string;
   vorname?: string;
+  /** Nur noetig, wenn ERSTEINRICHTUNGS_CODE gesetzt ist (siehe auth/einrichtungsCode.ts). */
+  einrichtungsCode?: string;
 }
 
 const bootstrapAdminSchema = {
@@ -50,6 +53,7 @@ const bootstrapAdminSchema = {
     passwort: { type: "string", minLength: 1 },
     name: { type: "string", minLength: 1 },
     vorname: { type: "string" },
+    einrichtungsCode: { type: "string" },
   },
 } as const;
 
@@ -174,7 +178,9 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   /** Oeffentlich abrufbar (keine Anmeldung noetig), damit die Login-Seite bei einer frischen Installation auf die Ersteinrichtung hinweisen kann. */
   app.get("/auth/bootstrap-verfuegbar", async () => {
     const bestehende = await findAllByType<Benutzer>("benutzer");
-    return { verfuegbar: bestehende.length === 0 };
+    const verfuegbar = bestehende.length === 0;
+    // Nur ob ein Code verlangt wird, nie der Code selbst.
+    return { verfuegbar, codeErforderlich: verfuegbar && konfigurierterEinrichtungsCode() !== undefined };
   });
 
   /**
@@ -186,6 +192,15 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     "/auth/bootstrap-admin",
     { schema: { body: bootstrapAdminSchema }, config: { rateLimit: SENSIBEL_RATE_LIMIT } },
     async (req, reply) => {
+      // Zuerst der Code (wenn die Instanz einen verlangt): ohne ihn erfaehrt man nichts ueber den Zustand der Instanz.
+      const erwarteterCode = konfigurierterEinrichtungsCode();
+      if (erwarteterCode && !einrichtungsCodeStimmt(req.body.einrichtungsCode, erwarteterCode)) {
+        return reply.code(403).send({
+          error:
+            "Der Einrichtungs-Code stimmt nicht. Du findest ihn in der Ausgabe des Installationsskripts und in der Datei backend/.env (ERSTEINRICHTUNGS_CODE).",
+        });
+      }
+
       const bestehende = await findAllByType<Benutzer>("benutzer");
       if (bestehende.length > 0) {
         return reply

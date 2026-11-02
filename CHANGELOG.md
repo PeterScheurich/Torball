@@ -7,6 +7,9 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Ersteinrichtung auf dem Server mit Einrichtungs-Code.** Solange es noch kein Konto gibt, konnte auf einem bereits erreichbaren Server jede
+  Person die Ersteinrichtung vor dem Betreiber abschließen und Administrator werden. Das Deploy-Skript erzeugt jetzt beim ersten Mal einen
+  Zufallscode und zeigt ihn im Terminal; die Ersteinrichtung im Browser verlangt ihn zusätzlich. Bei lokalen Installationen ändert sich nichts.
 - **Notzugang für Administratoren, wenn alle Zugangsdaten vergessen wurden.** Direkt auf dem Rechner, auf dem die Anwendung läuft
   (Windows: Doppelklick auf „Notzugang-Torball.cmd“; Linux/Server: Konsolenbefehl `admin:notzugang`), entsteht ein einmaliger Link,
   über den man im Browser ein neues Passwort wählt (60 Minuten gültig). Bei verlorener Authenticator-App lässt sich auch die

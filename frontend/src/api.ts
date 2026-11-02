@@ -636,11 +636,16 @@ export function bootstrapAdmin(
   passwort: string,
   name: string,
   vorname?: string,
+  einrichtungsCode?: string,
 ): Promise<BenutzerProfil> {
-  return anfrage("/auth/bootstrap-admin", { method: "POST", body: JSON.stringify({ email, passwort, name, vorname }) });
+  return anfrage("/auth/bootstrap-admin", {
+    method: "POST",
+    body: JSON.stringify({ email, passwort, name, vorname, einrichtungsCode }),
+  });
 }
 
-export function bootstrapVerfuegbar(): Promise<{ verfuegbar: boolean }> {
+/** `codeErforderlich`: Die Instanz verlangt für die Ersteinrichtung einen Einrichtungs-Code (steht im Installationsskript). */
+export function bootstrapVerfuegbar(): Promise<{ verfuegbar: boolean; codeErforderlich?: boolean }> {
   return anfrage("/auth/bootstrap-verfuegbar");
 }
 

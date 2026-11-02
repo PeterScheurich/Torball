@@ -1766,7 +1766,15 @@ Zielgruppe der wertvollste Test, den dieses Projekt machen kann.
   **Das erste Admin-Konto hat eine FESTE ID** (`benutzer:ersteinrichtung`, `auth/ersteinrichtung.ts`): Die Ersteinrichtung
   prueft "gibt es schon einen Benutzer?" und legt danach an - dazwischen liegt ein Fenster, in dem zwei gleichzeitige
   Anfragen zwei Admins erzeugten. CouchDB lehnt eine zweite Anlage mit derselben ID atomar ab (409), ohne eigenes Sperr-
-  Dokument. Weitere Härtung der Ersteinrichtung: Entscheidung steht aus (Karte im Entwicklungs-Board).
+  Dokument. **Einrichtungs-Code (2026-11-02, Auftraggeber, löst die Karte "Ersteinrichtung härten" ab):** Auf einem schon erreichbaren
+  Server ohne Konto könnte sonst jede Person zuerst "Ersteinrichtung starten" drücken und Admin werden. `deploy-instanz.sh` erzeugt beim
+  ersten Deploy einen Zufallscode (12 Zeichen, ohne verwechselbare 0/O/1/I/L) als `ERSTEINRICHTUNGS_CODE` in `backend/.env` und zeigt ihn;
+  `POST /auth/bootstrap-admin` verlangt ihn dann (`auth/einrichtungsCode.ts`: Groß-/Kleinschreibung und Bindestriche egal, zeitkonstanter
+  Vergleich, Prüfung VOR der Frage nach vorhandenen Konten, 403), `GET /auth/bootstrap-verfuegbar` meldet nur `codeErforderlich`, nie den Code.
+  **Ohne gesetzten Code (Entwicklung, lokale Installation - dort legt der Installer das Konto selbst an) gilt die Ersteinrichtung wie bisher.**
+  Das Skript wiederholt Code und Hinweis bei JEDEM Update, solange es noch kein Konto gibt (Abfrage per `curl` auf `/auth/bootstrap-verfuegbar`),
+  und trägt bei einer älteren Instanz ohne Code einen nach. Der Konsolenweg (`erstes-konto:anlegen`) braucht keinen Code (Shell-Zugriff).
+  Test: `einrichtungsCode.test.ts`, `ersteinrichtung-code.integration.test.ts`.
 - **Login-Antwortzeit gleich halten** (Sicherheitsdurchsicht 2026-08-20): `/auth/login` ruft an den
   Pfaden, die sonst ohne bcrypt sofort zurückkehren würden (Konto existiert nicht / Konto in
   Abkühlzeit), `verbrenneLoginZeit()` (`backend/src/auth/passwort.ts`, bcrypt-Vergleich gegen einen

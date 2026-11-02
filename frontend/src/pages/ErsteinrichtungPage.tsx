@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { bootstrapAdmin } from "../api";
+import { bootstrapAdmin, bootstrapVerfuegbar } from "../api";
 import { useAuth } from "../auth";
 import { PasswortRegeln } from "../PasswortRegeln";
 
@@ -15,10 +15,18 @@ export function ErsteinrichtungPage() {
   const [email, setEmail] = useState("");
   const [passwort, setPasswort] = useState("");
   const [passwortWiederholung, setPasswortWiederholung] = useState("");
+  const [codeErforderlich, setCodeErforderlich] = useState(false);
+  const [einrichtungsCode, setEinrichtungsCode] = useState("");
   const [fehler, setFehler] = useState<string | undefined>();
   const [sendet, setSendet] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  useEffect(() => {
+    bootstrapVerfuegbar()
+      .then((r) => setCodeErforderlich(Boolean(r.codeErforderlich)))
+      .catch(() => setCodeErforderlich(false));
+  }, []);
 
   // Legt den Admin an und meldet ihn direkt an. Passwort-Gleichheit wird hier im Client
   // vorgeprueft (die inhaltlichen Passwortregeln erzwingt zusaetzlich der Server).
@@ -33,7 +41,7 @@ export function ErsteinrichtungPage() {
 
     setSendet(true);
     try {
-      await bootstrapAdmin(email, passwort, name, vorname);
+      await bootstrapAdmin(email, passwort, name, vorname, codeErforderlich ? einrichtungsCode : undefined);
       await login(email, passwort);
       navigate("/");
     } catch (err) {
@@ -49,6 +57,26 @@ export function ErsteinrichtungPage() {
       <p>Lege den ersten Admin-Account an. Diese Seite funktioniert nur, solange noch kein Benutzer existiert.</p>
 
       <form onSubmit={anlegen}>
+        {codeErforderlich && (
+          <div className="feld">
+            <label htmlFor="einrichtungsCode">Einrichtungs-Code</label>
+            <input
+              id="einrichtungsCode"
+              required
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              aria-describedby="einrichtungsCodeHinweis"
+              value={einrichtungsCode}
+              onChange={(e) => setEinrichtungsCode(e.target.value)}
+            />
+            <p id="einrichtungsCodeHinweis" className="feld-hinweis">
+              Der Code schützt die Ersteinrichtung davor, dass jemand anderes sie zuerst abschließt. Du findest ihn in der Ausgabe
+              des Installationsskripts (zwölf Zeichen, in Dreiergruppen mit Bindestrichen) und in der Datei backend/.env unter
+              ERSTEINRICHTUNGS_CODE. Groß- und Kleinschreibung sowie Bindestriche spielen keine Rolle.
+            </p>
+          </div>
+        )}
         <div className="feld">
           <label htmlFor="name">Name</label>
           <input id="name" required value={name} onChange={(e) => setName(e.target.value)} />

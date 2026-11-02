@@ -71,6 +71,13 @@ Solange noch kein Benutzer existiert, weist die Anmeldeseite auf die einmalige
 Ersteinrichtung eines Admin-Kontos hin. Danach laufen weitere Konten
 ausschließlich über den Einladungs-Flow (Benutzerverwaltung).
 
+**Einrichtungs-Code (Server-Installation):** Damit nicht jemand anderes die Ersteinrichtung vor dir abschließt, erzeugt
+`deploy-instanz.sh` beim ersten Deploy einen Zufallscode, zeigt ihn am Ende der Ausgabe und trägt ihn als
+`ERSTEINRICHTUNGS_CODE` in `backend/.env` ein. Die Ersteinrichtung im Browser verlangt ihn als zusätzliches Feld
+(Groß-/Kleinschreibung und Bindestriche spielen keine Rolle). Solange es noch kein Konto gibt, zeigt jedes weitere Update
+Code und Hinweis erneut. Ist das Terminal weg: `grep ERSTEINRICHTUNGS_CODE /opt/torball/<name>/backend/.env`. Bei der
+lokalen Installation (Windows/Linux) legt der Installer das erste Konto selbst an, dort gibt es keinen Code.
+
 ## Standardregeln (Systemkonfiguration)
 
 Die Standardwerte für neue Turniere (Spielzeit, Pausen, Wertung,

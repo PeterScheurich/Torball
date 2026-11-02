@@ -153,6 +153,12 @@ echo "VITE_INSTANZ_NAME=${NAME}" > "${DIR}/frontend/.env"
   npm run build --workspace=shared
   npm run build )
 
+# Zufallscode fuer die Ersteinrichtung: 12 Zeichen in Dreiergruppen, ohne verwechselbare Zeichen (0/O, 1/I/L), damit er sich
+# abtippen und vorlesen laesst. Node ist an dieser Stelle bereits installiert (der Bau laeuft damit).
+erzeuge_einrichtungs_code() {
+  node -e 'const c=require("node:crypto");const a="ABCDEFGHJKMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<12;i++)s+=a[c.randomInt(a.length)];console.log(s.match(/.{4}/g).join("-"))'
+}
+
 echo "== CouchDB: Datenbank + Instanz-Benutzer =="
 PW_FILE="${CONF_DIR}/db-${NAME}.pass"
 [[ -f "$PW_FILE" ]] || { openssl rand -base64 24 > "$PW_FILE"; chmod 600 "$PW_FILE"; }
@@ -195,6 +201,7 @@ if [[ -f "${DIR}/backend/.env" ]]; then
   echo "== backend/.env existiert bereits - unveraendert gelassen (Update) =="
 else
   echo "== backend/.env schreiben (Erstanlage) =="
+  EINRICHTUNGS_CODE="$(erzeuge_einrichtungs_code)"
   cat > "${DIR}/backend/.env" <<EOF
 PORT=${BE_PORT}
 HOST=127.0.0.1
@@ -218,6 +225,8 @@ KANBAN_BOARD_AKTIV=false
 # bleibt fuer jede Instanz false, bis deploy/demo-snapshot-einrichten.sh gezielt fuer eine
 # Demo-Instanz durchlaeuft. Nie versehentlich gegen Produktivdaten aktivieren.
 DEMO_SNAPSHOT_ERLAUBT=false
+# Einrichtungs-Code fuer die Ersteinrichtung im Browser (nur relevant, solange es noch kein Konto gibt).
+ERSTEINRICHTUNGS_CODE=${EINRICHTUNGS_CODE}
 EOF
   chmod 600 "${DIR}/backend/.env"
 fi
@@ -274,6 +283,33 @@ echo "Instanz '${NAME}' aktualisiert und gestartet."
 echo "  Frontend:  http://<server-ip>:${FE_PORT}"
 echo "  Backend:   127.0.0.1:${BE_PORT}   DB: ${DB}"
 echo "  Logs:      journalctl -u torball@${NAME} -f"
-echo
-echo "Erststart: Es existiert noch kein Benutzer - die Anmeldeseite fuehrt durch die einmalige"
-echo "Ersteinrichtung des ersten Admin-Kontos."
+
+# Ersteinrichtung: nur erwaehnen, wenn es wirklich noch kein Konto gibt (bei einem Update steht hier sonst nichts).
+# Der Dienst braucht einen Moment, bis er antwortet.
+BOOTSTRAP_ANTWORT=""
+for _ in $(seq 1 20); do
+  BOOTSTRAP_ANTWORT="$(curl -s --max-time 3 "http://127.0.0.1:${BE_PORT}/auth/bootstrap-verfuegbar" || true)"
+  [[ "$BOOTSTRAP_ANTWORT" == *verfuegbar* ]] && break
+  sleep 1
+done
+if [[ "$BOOTSTRAP_ANTWORT" == *'"verfuegbar":true'* ]]; then
+  CODE_ZEILE="$(grep -m1 '^ERSTEINRICHTUNGS_CODE=' "${DIR}/backend/.env" || true)"
+  EINRICHTUNGS_CODE="${CODE_ZEILE#ERSTEINRICHTUNGS_CODE=}"
+  if [[ -z "$EINRICHTUNGS_CODE" ]]; then
+    # Aeltere Instanz ohne Code, aber ohne Konto: Code nachtragen und neu starten, damit er greift.
+    EINRICHTUNGS_CODE="$(erzeuge_einrichtungs_code)"
+    sed -i '/^ERSTEINRICHTUNGS_CODE=/d' "${DIR}/backend/.env"
+    echo "ERSTEINRICHTUNGS_CODE=${EINRICHTUNGS_CODE}" >> "${DIR}/backend/.env"
+    systemctl restart "torball@${NAME}"
+  fi
+  echo "======================================================================"
+  echo "Ersteinrichtung: Es existiert noch kein Benutzerkonto."
+  echo "Oeffne die Instanz im Browser und waehle auf der Anmeldeseite 'Ersteinrichtung starten'."
+  echo
+  echo "  Einrichtungs-Code:  ${EINRICHTUNGS_CODE}"
+  echo
+  echo "Der Code schuetzt die Ersteinrichtung davor, dass jemand anderes sie vor dir abschliesst."
+  echo "Er steht auch in ${DIR}/backend/.env (ERSTEINRICHTUNGS_CODE). Dieser Hinweis erscheint bei jedem"
+  echo "Update erneut, solange es noch kein Konto gibt."
+  echo "======================================================================"
+fi
