@@ -48,6 +48,7 @@ import type {
   VideoEintrag,
   WartungStatus,
 } from "@torball/shared";
+import { gemerktesAngemeldetBleiben } from "./angemeldetBleiben";
 
 // Zentraler API-Client des Frontends: duenne fetch-Wrapper um die Backend-Routen. Alle
 // Aufrufe laufen ueber `anfrage()` (einheitliche Fehlerbehandlung + Cookie-Auth) gegen das
@@ -593,8 +594,18 @@ export function deleteSchiedsrichterStammdaten(id: string): Promise<void> {
 
 export type LoginErgebnis = BenutzerProfil | { benoetigtTotp: true };
 
-export function login(email: string, passwort: string, totpCode?: string): Promise<LoginErgebnis> {
-  return anfrage("/auth/login", { method: "POST", body: JSON.stringify({ email, passwort, totpCode }) });
+/** `angemeldetBleiben` fehlt = die zuletzt in diesem Browser gewaehlte Einstellung (Standard: aus). Das betrifft
+ *  auch die Anmeldung direkt nach Registrierung/Einladung/Ersteinrichtung, die keinen eigenen Haken haben. */
+export function login(
+  email: string,
+  passwort: string,
+  totpCode?: string,
+  angemeldetBleiben: boolean = gemerktesAngemeldetBleiben(),
+): Promise<LoginErgebnis> {
+  return anfrage("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, passwort, totpCode, angemeldetBleiben }),
+  });
 }
 
 export function logout(): Promise<void> {

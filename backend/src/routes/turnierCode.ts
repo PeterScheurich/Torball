@@ -160,7 +160,9 @@ export async function turnierCodeRoutes(app: FastifyInstance): Promise<void> {
 
       const rolle = passtTurnierleitung ? "turnierleitung" : passtSpielleitung ? "spielleitung" : "protokollant";
       const { token } = await erstelleCodeSession(turnier._id, rolle);
-      setzeSessionCookie(reply, token);
+      // Helfer-Geraete am Spielfeld bleiben wie bisher fuer die Hoechstdauer angemeldet - hier gibt es keine
+      // Anmeldeseite mit Auswahl, und ein geschlossener Browser mitten im Spiel soll kein Neu-Eintippen erzwingen.
+      setzeSessionCookie(reply, token, true);
       return { rolle, turnierName: turnier.name };
     },
   );

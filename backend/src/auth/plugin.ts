@@ -2,7 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import "@fastify/cookie";
 import type { Benutzer, GlobaleRolle, TurnierCodeRolle, TurnierId } from "@torball/shared";
 import { findById } from "../repository";
-import { beruehreSession, findeSessionPerToken } from "./session";
+import { beruehreSession, findeSessionPerToken, SESSION_HOECHSTDAUER_MS } from "./session";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -59,13 +59,19 @@ export async function authPreHandler(req: FastifyRequest): Promise<void> {
   await beruehreSession(session);
 }
 
-export function setzeSessionCookie(reply: FastifyReply, token: string): void {
+/**
+ * `dauerhaft` = "Angemeldet bleiben": Das Cookie hat dann ein Ablaufdatum (genau die Hoechstdauer der Session)
+ * und ueberlebt das Schliessen des Browsers. Ohne bekommt es keins - der Browser wirft es beim Schliessen weg
+ * (die serverseitige Hoechstdauer gilt in beiden Faellen, siehe SESSION_HOECHSTDAUER_MS). Alle anderen
+ * Cookie-Eigenschaften (httpOnly, sameSite, secure) sind in beiden Faellen gleich.
+ */
+export function setzeSessionCookie(reply: FastifyReply, token: string, dauerhaft: boolean): void {
   reply.setCookie(SESSION_COOKIE_NAME, token, {
     path: "/",
     httpOnly: true,
     sameSite: "lax",
     secure: COOKIE_SECURE,
-    maxAge: 60 * 60 * 12,
+    ...(dauerhaft ? { maxAge: SESSION_HOECHSTDAUER_MS / 1000 } : {}),
   });
 }
 

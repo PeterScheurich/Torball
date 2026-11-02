@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { bootstrapVerfuegbar, registrierungVerfuegbar } from "../api";
 import { useAuth } from "../auth";
+import { gemerktesAngemeldetBleiben, merkeAngemeldetBleiben } from "../angemeldetBleiben";
 
 /**
  * Anmeldeseite. Zweistufig, wenn 2FA aktiv ist: Der erste Login-Versuch liefert
@@ -15,6 +16,7 @@ export function LoginPage() {
   const [totpCode, setTotpCode] = useState("");
   const [feststelltasteAktiv, setFeststelltasteAktiv] = useState(false);
   const [benoetigtTotp, setBenoetigtTotp] = useState(false);
+  const [angemeldetBleiben, setAngemeldetBleiben] = useState(gemerktesAngemeldetBleiben);
   const [ersteinrichtungVerfuegbar, setErsteinrichtungVerfuegbar] = useState(false);
   const [registrierungErlaubt, setRegistrierungErlaubt] = useState(false);
   const [fehler, setFehler] = useState<string | undefined>();
@@ -38,11 +40,13 @@ export function LoginPage() {
     setFehler(undefined);
     setSendet(true);
     try {
-      const ergebnis = await authLogin(email, passwort, benoetigtTotp ? totpCode : undefined);
+      const ergebnis = await authLogin(email, passwort, benoetigtTotp ? totpCode : undefined, angemeldetBleiben);
       if ("benoetigtTotp" in ergebnis) {
         setBenoetigtTotp(true);
         return;
       }
+      // Erst nach gelungener Anmeldung merken, damit ein Vertippen nichts an der Vorbelegung ändert.
+      merkeAngemeldetBleiben(angemeldetBleiben);
       navigate("/");
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Unbekannter Fehler bei der Anmeldung");
@@ -97,6 +101,21 @@ export function LoginPage() {
               Achtung: Die Feststelltaste ist aktiviert.
             </p>
           )}
+        </div>
+        <div className="feld">
+          <label className="feld-checkbox">
+            <input
+              type="checkbox"
+              checked={angemeldetBleiben}
+              onChange={(e) => setAngemeldetBleiben(e.target.checked)}
+              aria-describedby="angemeldet-bleiben-hinweis"
+              disabled={benoetigtTotp}
+            />{" "}
+            Angemeldet bleiben
+          </label>
+          <p id="angemeldet-bleiben-hinweis" className="feld-hinweis">
+            Auch nach dem Schließen des Browsers bis zu 12 Stunden angemeldet. Nur auf einem Gerät verwenden, das nur du benutzt.
+          </p>
         </div>
         {benoetigtTotp && (
           <div className="feld">

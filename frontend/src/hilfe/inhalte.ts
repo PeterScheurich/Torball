@@ -748,6 +748,20 @@ export const HILFE_THEMEN: HilfeThema[] = [
         ],
       },
       {
+        frage: "Muss ich mich nach dem Schließen des Browsers neu anmelden?",
+        text: [
+          "Ja, wenn du auf der Anmeldeseite „Angemeldet bleiben“ nicht angehakt hast – das ist die Voreinstellung. Mit Haken bleibst du auch nach dem Schließen des Browsers angemeldet. Deine letzte Wahl merkt sich dieser Browser und belegt den Haken bei der nächsten Anmeldung wieder vor; du kannst ihn jederzeit wieder entfernen.",
+          {
+            hinweis:
+              "Eine Anmeldung gilt in jedem Fall höchstens 12 Stunden, egal ob mit oder ohne Haken und egal wie aktiv du bist – das reicht für einen Turniertag. Danach meldest du dich neu an. Setze den Haken nur auf einem Gerät, das nur du benutzt. Auf einem gemeinsam genutzten Rechner meldest du dich am Ende über „Abmelden“ ab.",
+          },
+          {
+            hinweis:
+              "Helfer-Geräte, die sich mit einem Turnier-Code angemeldet haben, bleiben wie bisher bis zu 12 Stunden angemeldet.",
+          },
+        ],
+      },
+      {
         frage: "Ich habe mein Passwort vergessen.",
         text: [
           "Über „Passwort vergessen“ auf der Anmeldeseite forderst du einen Link an, mit dem du dir ein neues Passwort setzen kannst.",

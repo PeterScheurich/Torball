@@ -9,6 +9,17 @@ import { deleteDoc, findAllBySelector, findById, insertDoc } from "../repository
 /** Inaktivitaets-Fenster (Abschnitt 25.1: "automatischer Logout nach konfigurierbarer Inaktivitaet"). Aktuell fest, spaeter aus der Systemkonfiguration. */
 const INAKTIVITAETS_FENSTER_MS = 12 * 60 * 60 * 1000;
 
+/**
+ * Harte Obergrenze je Session, gerechnet ab der Anmeldung - unabhaengig von der Aktivitaet (2026-11-02).
+ * Das Inaktivitaets-Fenster oben wird bei jeder Anfrage verlaengert; ohne diese Grenze liesse sich eine
+ * kopierte Sitzungskennung durch regelmaessige Anfragen beliebig lange am Leben halten. Das Cookie
+ * "Angemeldet bleiben" lebt genauso lange (setzeSessionCookie), Server und Browser sind also gleicher Meinung.
+ * Gilt auch fuer ein Cookie OHNE Ablaufdatum (Anmeldung ohne "Angemeldet bleiben"): Manche Browser behalten
+ * solche Cookies ueber einen Neustart hinweg ("Zuletzt geoeffnete Tabs wieder oeffnen") - der Server beendet
+ * die Sitzung dann trotzdem nach spaetestens 12 Stunden.
+ */
+export const SESSION_HOECHSTDAUER_MS = 12 * 60 * 60 * 1000;
+
 function tokenHash(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
@@ -66,7 +77,10 @@ export async function erstelleCodeSession(
 export async function findeSessionPerToken(token: string): Promise<Session | null> {
   const session = await findById<Session>(sessionIdVon(token), "session");
   if (!session) return null;
-  if (new Date(session.laeuftAbAm).getTime() < Date.now()) {
+  const jetzt = Date.now();
+  // Ein fehlendes oder unlesbares erstelltAm zaehlt als abgelaufen (fail closed).
+  const hoechstensBis = new Date(session.erstelltAm).getTime() + SESSION_HOECHSTDAUER_MS;
+  if (new Date(session.laeuftAbAm).getTime() < jetzt || !(hoechstensBis >= jetzt)) {
     await deleteDoc(session._id, session._rev!);
     return null;
   }

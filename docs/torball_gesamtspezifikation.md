@@ -1144,7 +1144,7 @@ Schritte).
 
 E-Mail als Benutzername, Passwort-Hash (bcrypt oder Argon2), 2FA via TOTP, Session-Management mit sicheren Tokens, automatischer Logout nach konfigurierbarer Inaktivität.
 
-**Umsetzungsstand:** Session per HttpOnly-Cookie (nur der SHA-256-Hash des Tokens wird als CouchDB-Doc-ID gespeichert). Das `Secure`-Flag ist umgebungsgesteuert (`COOKIE_SECURE`) – lokal über HTTP aus, in Produktion hinter HTTPS zwingend `true`. Ein Admin kann die 2FA eines Benutzers deaktivieren (für den Fall einer verlorenen Authenticator-App); das eigene Konto ist davon ausgenommen (nur Selbst-Service mit Passwort).
+**Umsetzungsstand:** Session per HttpOnly-Cookie (nur der SHA-256-Hash des Tokens wird als CouchDB-Doc-ID gespeichert). Jede Session endet serverseitig spätestens 12 Stunden nach der Anmeldung (harte Obergrenze, unabhängig von der Aktivität) und nach 12 Stunden ohne Aktivität. Auf der Anmeldeseite steuert „Angemeldet bleiben“ (Standard aus, letzte Wahl wird pro Browser gemerkt), ob das Cookie das Schließen des Browsers überlebt: ohne Haken hat es kein Ablaufdatum, mit Haken 12 Stunden. Das `Secure`-Flag ist umgebungsgesteuert (`COOKIE_SECURE`) – lokal über HTTP aus, in Produktion hinter HTTPS zwingend `true`. Ein Admin kann die 2FA eines Benutzers deaktivieren (für den Fall einer verlorenen Authenticator-App); das eigene Konto ist davon ausgenommen (nur Selbst-Service mit Passwort).
 
 ### 25.2 Erstanmeldung
 

@@ -23,7 +23,7 @@ function uebernimmKontoStandards(profil: BenutzerProfil): void {
 interface AuthContextWert {
   benutzer: BenutzerProfil | null;
   laedt: boolean;
-  login: (email: string, passwort: string, totpCode?: string) => Promise<LoginErgebnis>;
+  login: (email: string, passwort: string, totpCode?: string, angemeldetBleiben?: boolean) => Promise<LoginErgebnis>;
   logout: () => Promise<void>;
   /** Aktualisiert den im Context gehaltenen Benutzer nach einer Profil-Änderung (z.B. 2FA), ohne neu von /auth/me zu laden. */
   aktualisiereBenutzer: (profil: BenutzerProfil) => void;
@@ -45,8 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLaedt(false));
   }, []);
 
-  const login = useCallback(async (email: string, passwort: string, totpCode?: string) => {
-    const ergebnis = await apiLogin(email, passwort, totpCode);
+  const login = useCallback(async (email: string, passwort: string, totpCode?: string, angemeldetBleiben?: boolean) => {
+    const ergebnis = await apiLogin(email, passwort, totpCode, angemeldetBleiben);
     if (!("benoetigtTotp" in ergebnis)) {
       uebernimmKontoStandards(ergebnis);
       setBenutzer(ergebnis);

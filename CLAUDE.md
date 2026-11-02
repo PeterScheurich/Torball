@@ -155,6 +155,17 @@ Verkapselung würde `req.benutzer` sonst nur innerhalb dieses einen Scopes
 sichtbar machen, nicht in den als Geschwister-Plugins registrierten
 Routen-Dateien (`verein.ts`, `turnier.ts`, …).
 
+**„Angemeldet bleiben“ und die 12-Stunden-Grenze (2026-11-02, Auftraggeber):** `POST /auth/login` nimmt `angemeldetBleiben`
+(Wahrheitswert, Standard aus). Es steuert NUR das Cookie (`setzeSessionCookie(reply, token, dauerhaft)`): ohne Haken kein
+`Max-Age` (Browser wirft es beim Schließen weg), mit Haken 12 h. **Die Sicherheit hängt nicht am Cookie, sondern an
+`SESSION_HOECHSTDAUER_MS` in `auth/session.ts`:** `findeSessionPerToken` lehnt jede Session ab, deren `erstelltAm` mehr als 12 h
+zurückliegt - unabhängig vom gleitenden Inaktivitäts-Fenster (das bei jeder Anfrage verlängert wird und eine kopierte Kennung sonst
+beliebig lange am Leben hielte) und auch für ein Cookie ohne Ablaufdatum (Chrome „Zuletzt geöffnete Tabs wieder öffnen“ behält
+solche Cookies über einen Neustart). Fehlendes/unlesbares `erstelltAm` gilt als abgelaufen. Die letzte Wahl merkt das Frontend pro
+Browser (`angemeldetBleiben.ts`, `localStorage`), nicht pro Konto - beim Anmelden ist das Konto noch unbekannt; die Anmeldung direkt
+nach Registrierung/Einladung/Ersteinrichtung nimmt dieselbe gemerkte Wahl. Turnier-Code-Sessions bleiben bewusst bei 12 h Cookie
+(`turnierCode.ts` übergibt `true`). Test: `angemeldet-bleiben.integration.test.ts`.
+
 **Berechtigungsmodell:** `backend/src/auth/turnierZugriff.ts` berechnet pro
 Turnier eine **dreistufige** `Zugriffsstufe` (`lesen` < `schreiben_spielbetrieb`
 < `schreiben_voll`, seit Abschnitt 21.2/21.3 – vorher binär `lesen`/`schreiben`,
