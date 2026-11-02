@@ -107,8 +107,26 @@ async function gleite(zielX, zielY, dauer = 0.8) {
   }
   mx = zielX; my = zielY;
 }
+/** Bringt ein Element weich (nicht ruckartig) in die Bildmitte, falls es ausserhalb des gut sichtbaren Bereichs liegt. Ein Sprung im Bild
+ *  wurde beim Abnehmen als unverstaendlich bemaengelt. */
+async function weichScrollen(loc, dauer = 0.8) {
+  const b = await loc.boundingBox();
+  const vh = page.viewportSize().height;
+  if (b.y >= 120 && b.y + b.height <= vh - 120) return false;
+  const delta = b.y + b.height / 2 - vh / 2; // sichtbare Pixel
+  await page.evaluate(([d, ms]) => new Promise((fertig) => {
+    const von = window.scrollY, t0 = performance.now();
+    const schritt = (t) => {
+      const p = Math.min(1, (t - t0) / ms), e = 0.5 - Math.cos(p * Math.PI) / 2;
+      window.scrollTo(0, von + d * e);
+      if (p < 1) requestAnimationFrame(schritt); else fertig();
+    };
+    requestAnimationFrame(schritt);
+  }), [delta, dauer * 1000]);
+  return true;
+}
 async function mitte(loc) {
-  await loc.scrollIntoViewIfNeeded();
+  await weichScrollen(loc);
   const b = await loc.boundingBox();
   return [b.x + Math.min(b.width / 2, 120), b.y + b.height / 2];
 }
@@ -178,8 +196,8 @@ await hervorheben(page.locator("#startzeit"));
 await bis(satz["C-06"].sprechStart, "C-06");
 await keinHervor();
 // C-07: weitere Felder
-await bis(wortZeit("C-07", "Anzahl") - 0.4, "C-07 Anzahl");
-await page.locator("#anzahlFelder").scrollIntoViewIfNeeded();
+await bis(wortZeit("C-07", "Anzahl") - 1.7, "C-07 Anzahl");
+await weichScrollen(page.locator("#anzahlFelder"));
 await hinzu(page.locator("#anzahlFelder"), 0.7);
 await hervorheben(page.locator("#anzahlFelder"));
 await bis(wortZeit("C-07", "Spielmodus"), "C-07 Spielmodus");
@@ -209,13 +227,13 @@ await hervorheben(page.locator("#spielzeitMinuten"));
 await bis(wortZeit("D-02", "Pausen"), "D-02 Pausen");
 await hinzu(page.locator("#pauseMinuten"), 0.7);
 await hervorheben(page.locator("#pauseMinuten"));
-await bis(wortZeit("D-02", "Wertung"), "D-02 Wertung");
+await bis(wortZeit("D-02", "Wertung") - 0.5, "D-02 Wertung");
 await hinzu(page.locator("#punkteSieg"), 1.0);
 await hervorheben(page.locator("#punkteSieg"));
 await bild("D02-Regeln");
 await bis(satz["D-03"].sprechStart, "D-03");
 await keinHervor();
-await bis(satz["D-04"].sprechStart, "D-04");
+await bis(satz["D-04"].sprechStart - 0.8, "D-04");
 const weiter2 = page.getByRole("button", { name: "Weiter zu Mannschaften" });
 await hinzu(weiter2, 1.0);
 await hervorheben(weiter2);

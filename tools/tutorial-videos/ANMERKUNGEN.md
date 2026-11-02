@@ -12,7 +12,8 @@ und die Zeitleiste neu bauen. Anmerkungen zum Bild lohnen sich deshalb erst, wen
 
 - **Rot = Ton.** Etwas ist falsch gesprochen, abgeschnitten, falsch betont, zu schnell oder zu langsam, oder eine Pause ist zu kurz oder zu lang.
 - **Blau = Bild.** Etwas passiert im Bild falsch: Mauszeiger zu schnell, Feld nicht hervorgehoben, falsche Stelle angeklickt, Bild springt.
-- **Gelb = Text.** Der Wortlaut soll sich ändern, weil er unklar, falsch oder veraltet ist. Das kostet neue Sprache und Aufnahme.
+- **Gelb = Wortlaut.** Der gesprochene Text soll sich ändern, weil er unklar, falsch oder veraltet ist, oder ein Satz soll geteilt werden. Das kostet neue Sprache und Aufnahme.
+- **Grün = Schnitt und Einblendungen.** Etwas gehört in den Schnitt oder soll eingeblendet werden: Intro, Outro, Kapitelüberschrift, Überblendung, Reihenfolge, Länge einer Szene. Das kostet nichts und ändert weder Ton noch Aufnahme.
 - **Lila = Frage oder Idee.** Etwas ist unklar, oder du hast einen Gedanken, der noch keine Anweisung ist. Claude antwortet darauf, statt es zu ändern.
 
 Creme und Mintgrün setzt Claude selbst: Creme steht an jedem Satzanfang mit der Satznummer, Mintgrün an jeder Überschrift. Diese beiden Farben bitte nicht verwenden.
@@ -34,5 +35,6 @@ Creme und Mintgrün setzt Claude selbst: Creme steht an jedem Satzanfang mit der
 - Rot: den Satz neu sprechen lassen (kostet Credits, rund 0,4 je Zeichen) oder die Pausen in `pausen.json` ändern (kostet nichts).
 - Blau: das Aufnahmeskript anpassen und neu aufnehmen (kostet nichts).
 - Gelb: erst den neuen Wortlaut zur Freigabe vorlegen, dann sprechen und aufnehmen.
+- Grün: den Aufbau ändern (Datei `aufbau.json` im Ordner des Videos: Intro, Kapitelüberschriften, Outro) und die Zeitleiste neu bauen.
 - Lila: antworten.
 - Danach baut Claude die Zeitleiste neu und nennt dir die neue Version.

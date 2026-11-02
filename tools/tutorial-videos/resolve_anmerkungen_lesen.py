@@ -5,7 +5,7 @@ from resolve_verbindung import verbinde
 
 sys.stdout.reconfigure(encoding="utf-8")
 FPS = 24
-SCHICHT = {"Red": "TON", "Blue": "BILD", "Yellow": "TEXT", "Purple": "FRAGE", "Cream": "(Satz)", "Mint": "(Ueberschrift)"}  # siehe ANMERKUNGEN.md
+SCHICHT = {"Red": "TON", "Blue": "BILD", "Yellow": "WORTLAUT", "Green": "SCHNITT", "Purple": "FRAGE", "Cream": "(Satz)", "Mint": "(Ueberschrift)"}  # siehe ANMERKUNGEN.md
 resolve, projekt = verbinde()
 name = sys.argv[1]
 t = next((projekt.GetTimelineByIndex(i) for i in range(1, projekt.GetTimelineCount() + 1) if projekt.GetTimelineByIndex(i).GetName() == name), None)

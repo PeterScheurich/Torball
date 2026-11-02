@@ -1,0 +1,81 @@
+Composition {
+	CurrentTime = 0,
+	RenderRange = { 0, 133 },
+	GlobalRange = { 0, 133 },
+	CurrentID = 5,
+	HiQ = true,
+	PlaybackUpdateMode = 0,
+	StereoMode = false,
+	Version = "DaVinci Resolve Studio 21.1.2.0010",
+	SavedOutputs = 0,
+	HeldTools = 0,
+	DisabledTools = 0,
+	LockedTools = 0,
+	AudioOffset = 0,
+	Resumable = true,
+	OutputClips = {
+	},
+	CustomData = { TEMPLATE_ID = "Text+" },
+	Tools = {
+		Template = TextPlus {
+			CtrlWZoom = false,
+			Inputs = {
+				GlobalOut = Input { Value = 133, },
+				Width = Input { Value = 1920, },
+				Height = Input { Value = 1080, },
+				UseFrameFormatSettings = Input { Value = 1, },
+				Layout = Input { Value = 0, },
+				Background = Input { Value = 0, },
+				Blue1 = Input { Value = 0.498039215686275, },
+				StyledText = Input { Value = "Neues Turnier anlegen", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Semibold", },
+				Size = Input { Value = 0.09, },
+				VerticalJustificationNew = Input { Value = 3, },
+				HorizontalJustificationNew = Input { Value = 3, }
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 49.5 } },
+			Version = 1
+		},
+		MediaOut1 = Saver {
+			Inputs = {
+				Index = Input { Value = "0", },
+				Input = Input {
+					SourceOp = "Template",
+					Source = "Output",
+				}
+			},
+			ViewInfo = OperatorInfo { Pos = { 440, 49.5 } },
+		}
+	},
+	Frames = {
+	},
+	Prefs = {
+		Comp = {
+			Interactive = {
+				Proxy = {
+					Scale = 1,
+				},
+			},
+			Views = {
+				FullScreen = { PickW = 1, PickH = 1 }
+			},
+			Paths = {
+				Map = {
+					["ResolveCaches:"] = "C:\\Projekte\\DaVinci Resolve\\CacheClip\\84ea6df2-3817-49ad-946c-fb69e87e490d\\cfb6599b-adc5-446f-91bd-0f6b4c27b6f9\\e9b26ded-b045-44e3-a1c6-56075e4f3764\\Fusion",
+				},
+			},
+			FrameFormat = {
+				Rate = 24,
+				GuideRatio = 1.77777777777778,
+				DepthFull = 3,
+				DepthPreview = 3,
+				DepthInteractive = 3,
+			},
+			LastFile = "D:\\Projekte\\Entwicklung\\Torball\\Torball-Turniere\\frontend\\public\\images\\torball-logo-dark-1024.png",
+			Unsorted = {
+				GlobalEnd = 133
+			},
+		}
+	},
+}
