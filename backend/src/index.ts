@@ -33,6 +33,7 @@ import { kanbanRoutes } from "./routes/kanban";
 import { instanzSyncRoutes } from "./routes/instanzSync";
 import { turnierSyncRoutes } from "./routes/turnierSync";
 import { syncRoutes } from "./routes/sync";
+import { systemRoutes } from "./routes/system";
 import { mailPostfachRoutes } from "./routes/mailPostfach";
 import { dokuRoutes } from "./routes/doku";
 import { sicherungRoutes } from "./routes/sicherung";
@@ -150,6 +151,7 @@ const registerApiRoutes = async (instance: FastifyInstance): Promise<void> => {
   instance.register(instanzSyncRoutes);
   instance.register(turnierSyncRoutes);
   instance.register(syncRoutes);
+  instance.register(systemRoutes);
   instance.register(mailPostfachRoutes);
   instance.register(dokuRoutes);
   instance.register(sicherungRoutes);

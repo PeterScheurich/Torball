@@ -382,7 +382,7 @@ export function SystemeinstellungenPage() {
       <p className="feld-hinweis">
         Zurückspielen lässt sich eine Sicherung bewusst nur über die Konsole – sie überschreibt im Zweifel einen
         laufenden Turnierbestand und soll deshalb ein bewusster Schritt bleiben:{" "}
-        <code>npm run torball -- sicherung:einspielen --datei="…"</code>
+        <code>npm run torball -- sicherung:einspielen --datei="…"</code> (lokale Installation: <code>Konsole-Torball.cmd sicherung:einspielen --datei="…"</code> als Administrator im Programmordner)
       </p>
     </>
   );

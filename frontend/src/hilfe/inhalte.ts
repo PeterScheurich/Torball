@@ -846,7 +846,7 @@ export const HILFE_THEMEN: HilfeThema[] = [
               titel: "Und wie spiele ich eine Sicherung zurück?",
               text: [
                 "Das geschieht bewusst nicht per Knopfdruck, sondern über die Konsole: Es überschreibt im Zweifel einen laufenden Turnierbestand und soll ein bewusster Schritt sein.",
-                "Im Ordner „backend“ eine Eingabeaufforderung öffnen und eingeben: npm run torball -- sicherung:einspielen --datei=\"C:\\Pfad\\zur\\datei.json\"",
+                "Eine Eingabeaufforderung als Administrator im Programmordner (C:\\Torball-Turniere\\App) öffnen und eingeben: Konsole-Torball.cmd sicherung:einspielen --datei=\"C:\\Pfad\\zur\\datei.json\"",
                 "Standardmäßig werden nur fehlende Daten ergänzt, vorhandene bleiben unangetastet. Erst mit dem zusätzlichen Wort --ueberschreiben werden auch vorhandene ersetzt. Der übliche Fall – frisch installierter Ersatzrechner – braucht das nicht.",
               ],
             },
@@ -856,20 +856,31 @@ export const HILFE_THEMEN: HilfeThema[] = [
       {
         frage: "Etwas funktioniert nicht – was kann ich weitergeben?",
         text: [
-          "Bei der lokalen Installation schreibt der Server ein Protokoll in den Ordner C:\\Torball-Turniere\\logs. Das bleibt auch nach einem Neustart erhalten – anders als die Ausgabe im minimierten Server-Fenster.",
-          "Für eine Rückmeldung an die Entwicklung: im Ordner „backend“ eine Eingabeaufforderung öffnen und npm run torball -- diagnose eingeben. Das schreibt eine Textdatei mit Version, Einstellungen, Datenbank-Zustand und den letzten Protokollzeilen. Passwörter stehen nicht darin – die Datei kann also unbesehen mitgeschickt werden.",
+          "Bei der lokalen Installation schreibt der Server ein Protokoll in den Ordner C:\\Torball-Turniere\\logs. Das bleibt auch nach einem Neustart erhalten.",
+          "Für eine Rückmeldung an die Entwicklung: eine Eingabeaufforderung als Administrator im Programmordner (C:\\Torball-Turniere\\App) öffnen und Konsole-Torball.cmd diagnose eingeben. Das schreibt eine Textdatei mit Version, Einstellungen, Datenbank-Zustand und den letzten Protokollzeilen. Passwörter stehen nicht darin – die Datei kann also unbesehen mitgeschickt werden.",
         ],
       },
       {
         frage: "Wie richte ich eine lokale Installation ein?",
         text: [
-          "Unter Windows gibt es einen Ein-Klick-Installer: {{download-quellcode}} (direkt von diesem Server) und danach entpacken. Starte darin die Datei „Setup.cmd“ auf der obersten Ebene per Doppelklick – das Skript richtet alles Nötige automatisch ein und bietet dabei an, den Ordner an seinen dauerhaften Platz (C:\\Torball-Turniere\\App) zu verlegen; diese Frage am besten mit „Ja“ beantworten, damit die Installation nicht im Downloads-Ordner hängen bleibt. Eine ausführliche Schritt-für-Schritt-Anleitung liegt als „Installations-Anleitung.html“ direkt im entpackten Ordner.",
+          "Unter Windows gibt es ein fertiges Installationspaket: die ZIP-Datei „Torball-Turniere-Windows-….zip“ von der Seite der Veröffentlichungen („Releases“) des Projekts herunterladen und entpacken. Darin die Datei „Setup.cmd“ per Doppelklick starten – das Programm richtet alles Nötige automatisch ein (Node.js oder ein Build sind nicht nötig, es steckt alles im Paket) und stellt nur wenige Fragen. Die Anwendung läuft danach im Hintergrund als Windows-Dienst und startet mit dem Rechner von selbst. Eine ausführliche Schritt-für-Schritt-Anleitung liegt als „Installations-Anleitung.html“ direkt im entpackten Ordner.",
           {
             hinweis:
-              "Dafür ist einmalig eine Internetverbindung nötig (für die Downloads) – danach läuft die lokale Installation komplett offline.",
+              "Dafür ist beim Installieren und beim Aktualisieren eine Internetverbindung nötig – dazwischen läuft die lokale Installation komplett offline.",
           },
-          "Unter Linux (Debian, Ubuntu und davon abgeleitete Systeme) funktioniert es entsprechend: Quellcode-ZIP entpacken und im Ordner „bash Setup-Linux.sh“ starten. Der Installer erklärt jeden Schritt und fragt vorher um Zustimmung; die Schritt-für-Schritt-Anleitung heißt „INSTALLATION-LINUX.md“ und liegt im entpackten Ordner. Diese Linux-Variante ist neu und noch nicht auf vielen Systemen erprobt – über Rückmeldungen freuen wir uns.",
+          "Unter Linux (Debian, Ubuntu und davon abgeleitete Systeme) funktioniert es mit dem Quellcode ({{download-quellcode}}, direkt von diesem Server): ZIP entpacken und im Ordner „bash Setup-Linux.sh“ starten. Der Installer erklärt jeden Schritt und fragt vorher um Zustimmung; die Schritt-für-Schritt-Anleitung heißt „INSTALLATION-LINUX.md“ und liegt im entpackten Ordner. Diese Linux-Variante ist neu und noch nicht auf vielen Systemen erprobt – über Rückmeldungen freuen wir uns.",
           "Für macOS gibt es bisher keine Installation. Bei Fragen dazu wende dich an deine Turnierleitung bzw. die technische Betreuung.",
+        ],
+      },
+      {
+        frage: "Wie aktualisiere ich die lokale Installation?",
+        text: [
+          "Im Startmenü unter „Torball-Turniere“ auf „Torball-Turniere aktualisieren“ klicken (oder im Programmordner die Datei „Aktualisieren-Torball.cmd“ doppelklicken) und die Windows-Nachfrage bestätigen. Das Programm sieht selbst nach, ob es eine neuere Version gibt, lädt sie herunter, prüft sie und tauscht sie aus – es muss nichts von Hand heruntergeladen werden. Die Turnierdaten und deine Einstellungen bleiben dabei unverändert.",
+          "Die Anwendung zeigt Administratoren am oberen Rand einen Hinweis, sobald es eine neue Version gibt. Eine neue Version steht erst bereit, wenn sie ausdrücklich veröffentlicht wurde – nicht schon mit jeder Änderung an der Entwicklung.",
+          {
+            hinweis:
+              "Bitte nicht mitten in einem Turnier aktualisieren: Während des Austauschs ist die Anwendung etwa eine Minute lang nicht erreichbar. Antwortet die neue Version nicht, stellt das Programm automatisch den bisherigen Stand wieder her.",
+          },
         ],
       },
       {

@@ -84,10 +84,12 @@ fragt vorher in Alltagssprache nach, bevor es etwas an diesem Rechner verändert
 <div class="kasten">
 <strong>Das Wichtigste in Kürze:</strong>
 <ol>
-  <li>Quellcode-Paket (ZIP-Datei) herunterladen und entpacken.</li>
+  <li>Das Installationspaket (<code>Torball-Turniere-Windows-….zip</code>) herunterladen und entpacken.</li>
   <li>Im entpackten Ordner <code>Setup.cmd</code> doppelklicken.</li>
-  <li>Die Fragen des Installationsprogramms beantworten (Enter übernimmt jeweils den Vorschlag).</li>
-  <li>Über die neue Desktop-Verknüpfung „Torball-Turniere“ starten.</li>
+  <li>Die wenigen Fragen beantworten (Enter übernimmt jeweils den Vorschlag).</li>
+  <li>Über die Desktop-Verknüpfung „Torball-Turniere“ öffnen.</li>
+  <li>Später aktualisieren: im Startmenü unter „Torball-Turniere“ auf „Torball-Turniere aktualisieren“
+      klicken – mehr nicht.</li>
 </ol>
 </div>
 
@@ -96,60 +98,36 @@ fragt vorher in Alltagssprache nach, bevor es etwas an diesem Rechner verändert
   <li>Windows 10 oder 11 mit <strong>Administratorrechten</strong> (die Windows-Nachfrage „Möchten
       Sie zulassen, dass durch diese App Änderungen … vorgenommen werden?“ muss bestätigt werden
       können).</li>
-  <li><strong>Internetverbindung während der Installation</strong> (zum Herunterladen der benötigten
-      Programme). Danach läuft die Anwendung auch ohne Internet.</li>
-  <li>Etwa 2&nbsp;GB freier Speicherplatz.</li>
+  <li><strong>Internetverbindung</strong> beim Installieren (die Datenbank wird heruntergeladen) und
+      beim Aktualisieren. Dazwischen läuft die Anwendung auch ohne Internet.</li>
+  <li>Etwa 1&nbsp;GB freier Speicherplatz. Es muss nichts anderes vorher installiert sein.</li>
 </ul>
 
-<h2>Schritt 1: ZIP-Datei herunterladen</h2>
-<p>Das Quellcode-Paket gibt es direkt vom Torball-Turniere-Server: an dessen Internet-Adresse den
-Pfad <code>/download/torball-quellcode.zip</code> anhängen (der fertige Link steht auch in der
-Hilfe der Anwendung im Thema „Lokale Installation &amp; Turnier-Sync“). Die Datei landet
-üblicherweise im Ordner „Downloads“.</p>
+<h2>Schritt 1: Installationspaket herunterladen</h2>
+<p>Das Paket ist eine einzelne ZIP-Datei mit dem Namen <code>Torball-Turniere-Windows-….zip</code>. Es gibt
+sie auf der Seite der Veröffentlichungen („Releases“) des Projekts – dort die neueste Version wählen und die
+ZIP-Datei herunterladen (der Link steht in der Hilfe der Anwendung im Thema „Lokale Installation &amp;
+Turnier-Sync“). Sie landet üblicherweise im Ordner „Downloads“.</p>
 
 <h2>Schritt 2: Entpacken</h2>
-<p>Mit der rechten Maustaste auf die heruntergeladene ZIP-Datei klicken und
-<strong>„Alle extrahieren…“</strong> wählen. Wo entpackt wird, ist zunächst egal – das
-Installationsprogramm bietet im nächsten Schritt an, den Ordner an seinen dauerhaften Platz
-(<code>C:\Torball-Turniere\App</code>) zu verlegen.</p>
-
-<div class="warnung">
-<strong>Wichtig:</strong> Die Installation läuft dauerhaft aus dem Ordner, in dem sie eingerichtet
-wurde. Der Downloads-Ordner ist dafür ein schlechter Ort – wird er irgendwann „aufgeräumt“, ist
-die Installation weg. Deshalb beim Installieren die Frage nach dem <strong>Verlegen nach
-<code>C:\Torball-Turniere\App</code> mit „j“ (Ja) beantworten</strong>. Dort liegt dann alles, was
-zu Torball-Turniere gehört, gebündelt an einer Stelle.
-</div>
+<p>Mit der rechten Maustaste auf die ZIP-Datei klicken und <strong>„Alle extrahieren…“</strong> wählen.
+Wo entpackt wird, ist egal: Das Installationsprogramm legt die Anwendung selbst an ihren dauerhaften
+Platz (<code>C:\Torball-Turniere\App</code>), der entpackte Ordner kann danach gelöscht werden.</p>
 
 <h2>Schritt 3: <code>Setup.cmd</code> ausführen</h2>
 <p>Im entpackten Ordner die Datei <code>Setup.cmd</code> doppelklicken und die Windows-Nachfrage
-nach Administratorrechten bestätigen. Das Installationsprogramm arbeitet dann die nötigen Schritte
-ab und stellt dabei einige Fragen – bei jeder Frage übernimmt die <kbd>Enter</kbd>-Taste den
-vorgeschlagenen Standardwert:</p>
+nach Administratorrechten bestätigen. Wenn Windows vor einer „unbekannten App“ warnt: „Weitere
+Informationen“ und dann „Trotzdem ausführen“ wählen. Das Installationsprogramm arbeitet danach die nötigen
+Schritte ab. Bei jeder Frage übernimmt die <kbd>Enter</kbd>-Taste den vorgeschlagenen Standardwert:</p>
 
 <table>
   <caption>Die Fragen des Installationsprogramms</caption>
   <tr><th>Frage</th><th>Empfehlung</th></tr>
   <tr>
-    <td>Projektordner nach <code>C:\Torball-Turniere\App</code> verlegen?</td>
-    <td><strong>Ja</strong> – siehe Hinweis oben. Der ursprüngliche (z.&nbsp;B. Downloads-)Ordner
-        kann nach Abschluss der Installation gelöscht werden.</td>
-  </tr>
-  <tr>
-    <td>Node.js installieren?</td>
-    <td><strong>Ja</strong> – die Software-Umgebung, mit der die Anwendung läuft. Ohne sie geht es
-        nicht.</td>
-  </tr>
-  <tr>
     <td>CouchDB installieren?</td>
     <td><strong>Ja</strong> – die Datenbank, in der alle Turnierdaten gespeichert werden. Läuft als
-        Hintergrunddienst und ist nur von diesem Rechner bzw. dem lokalen Netzwerk aus erreichbar,
-        nicht aus dem Internet.</td>
-  </tr>
-  <tr>
-    <td>Port, unter dem die App laufen soll?</td>
-    <td><kbd>Enter</kbd> (Standard 3000) – nur ändern, wenn auf dem Rechner bereits ein anderes
-        Programm diesen Port benutzt.</td>
+        Hintergrunddienst und ist nur von diesem Rechner aus erreichbar, nicht aus dem Internet.
+        (Diese Frage kommt nur, wenn CouchDB noch fehlt.)</td>
   </tr>
   <tr>
     <td>Netzwerkzugriff aktivieren?</td>
@@ -163,28 +141,25 @@ vorgeschlagenen Standardwert:</p>
     <td><strong>Ja</strong> – das ist das Administrator-Konto dieser Installation, das später u.&nbsp;a. zum
         Koppeln mit dem Online-Server gebraucht wird. Das Passwort braucht mindestens 12 Zeichen, am
         besten ein Satz aus ein paar Wörtern (Sonderzeichen sind nicht nötig); es wird bei der Eingabe
-        nicht angezeigt und zweimal verlangt. Wer gleich hier anlegt, muss die Einrichtung nicht mehr im
-        Browser machen und verhindert, dass jemand anderes im Netz sie vorher abschließt. Mit „n“ geht es
-        auch – dann legst du das Konto beim ersten Öffnen im Browser an (Schritt&nbsp;4).</td>
+        nicht angezeigt und zweimal verlangt. Wer gleich hier anlegt, verhindert, dass jemand anderes im
+        Netz die Einrichtung vorher im Browser abschließt. Mit „n“ geht es auch – dann legst du das Konto
+        beim ersten Öffnen im Browser an (Schritt&nbsp;4).</td>
   </tr>
 </table>
+<p>Den Port wählt das Installationsprogramm selbst (den ersten freien ab 3000), Node.js muss nicht
+installiert werden – es steckt im Paket. Die Installation dauert meist nur wenige Minuten. Am Ende
+meldet das Fenster „Fertig!“ – erst dann schließen.</p>
 
-<p>Die Installation dauert je nach Internetverbindung einige Minuten. Am Ende meldet das Fenster
-„Fertig!“ – erst dann schließen.</p>
-
-<h2>Schritt 4: Starten und Ersteinrichtung</h2>
+<h2>Schritt 4: Öffnen und Ersteinrichtung</h2>
 <ol>
-  <li>Auf dem Desktop liegt jetzt die Verknüpfung <strong>„Torball-Turniere“</strong> –
-      doppelklicken.</li>
-  <li>Es öffnet sich (minimiert in der Taskleiste) ein Fenster mit dem Titel
-      „Torball-Turniere-Server – NICHT SCHLIESSEN!“. Dieses Fenster ist der laufende Server:
-      <strong>geöffnet lassen</strong>, solange mit der Anwendung gearbeitet wird.</li>
-  <li>Ein zweites Fenster zeigt „Torball-Turniere wird gestartet“ und wartet, bis Datenbank und
-      Server bereit sind. Das kann beim ersten Mal oder direkt nach dem Hochfahren des Rechners
-      einen Moment dauern – der Browser öffnet sich <strong>automatisch</strong>, sobald es so
-      weit ist. Bitte so lange einfach warten und nicht mehrfach klicken.</li>
+  <li>Auf dem Desktop liegt jetzt die Verknüpfung <strong>„Torball-Turniere“</strong> – doppelklicken.
+      Der Browser öffnet sich, sobald die Anwendung bereit ist (direkt nach dem Hochfahren des Rechners kann
+      das einen Moment dauern – bitte warten und nicht mehrfach klicken).</li>
+  <li>Die Anwendung läuft im Hintergrund als <strong>Windows-Dienst</strong> „Torball-Turniere“ und startet mit
+      dem Rechner von selbst. Es gibt kein Fenster, das offen bleiben muss oder nicht geschlossen werden
+      darf.</li>
   <li>Hast du im Installationsprogramm das erste Konto schon angelegt, meldest du dich einfach mit
-      diesen Zugangsdaten an. Sonst führt die Anmeldeseite beim allerersten Start durch die
+      diesen Zugangsdaten an. Sonst führt die Anmeldeseite beim allerersten Öffnen durch die
       <strong>Ersteinrichtung des ersten Administrator-Kontos</strong> (E-Mail-Adresse, Name, Passwort).
       In beiden Fällen: die Zugangsdaten gut aufbewahren.</li>
 </ol>
@@ -198,26 +173,38 @@ QR-Codes weitergeben. Eine eigene Schritt-für-Schritt-Anleitung dazu (Netzwerk 
 Ergebniserfassung per Smartphone/Tablet, Fehlersuche) steht in der
 <a href="Lokales-Netzwerk-Anleitung.html">Lokales-Netzwerk-Anleitung</a> im selben Ordner.</p>
 
-<h2>Später: Aktualisieren und Deinstallieren</h2>
-<ul>
-  <li><strong>Aktualisieren:</strong> <code>Aktualisieren-Torball.cmd</code> im Projektordner
-      doppelklicken. Bei einer ZIP-Installation kommt eine neue Version, indem das aktuelle ZIP neu
-      heruntergeladen, irgendwo entpackt und dort erneut <code>Setup.cmd</code> gestartet wird –
-      die Verlegen-Frage wieder mit „j“ beantworten, dann landet der neue Stand über dem alten
-      (Turnierdaten und Konfiguration bleiben erhalten). Details: <code>AKTUALISIEREN.md</code> im
-      Projektordner.</li>
-  <li><strong>Deinstallieren:</strong> <code>Deinstallieren-Torball.cmd</code> im Projektordner –
-      fragt jeden Schritt einzeln ab und warnt deutlich, bevor Turnierdaten gelöscht würden.</li>
-</ul>
+<h2>Später: Aktualisieren</h2>
+<p>Die Anwendung weist Administratoren am oberen Rand darauf hin, wenn es eine neue Version gibt. Zum
+Aktualisieren:</p>
+<ol>
+  <li>Im Startmenü unter <strong>„Torball-Turniere“</strong> den Eintrag <strong>„Torball-Turniere
+      aktualisieren“</strong> öffnen (oder <code>Aktualisieren-Torball.cmd</code> im Programmordner
+      doppelklicken) und die Windows-Nachfrage bestätigen.</li>
+  <li>Das Programm sieht nach, lädt die neueste Version selbst herunter, prüft sie und tauscht sie aus. Dazu
+      ist eine Internetverbindung nötig; es muss nichts von Hand heruntergeladen oder entpackt werden.</li>
+  <li>Die Turnierdaten und die Einstellungen bleiben unverändert. Während des Austauschs ist die Anwendung
+      eine Minute lang nicht erreichbar – bitte also <strong>nicht mitten in einem Turnier</strong>
+      aktualisieren.</li>
+  <li>Antwortet die neue Version nicht, stellt das Programm automatisch den bisherigen Stand wieder her.</li>
+</ol>
+
+<h2>Deinstallieren</h2>
+<p><code>Deinstallieren-Torball.cmd</code> im Programmordner doppelklicken – das Programm fragt jeden Schritt
+einzeln ab und warnt deutlich, bevor Turnierdaten gelöscht würden.</p>
 
 <h2>Wo liegt was?</h2>
 <table>
   <caption>Ablageorte der Installation</caption>
   <tr><th>Ort</th><th>Inhalt</th></tr>
   <tr><td><code>C:\Torball-Turniere\App</code></td>
-      <td>Die Anwendung selbst (bei empfohlener Verlegung), inkl. Start-/Update-Skripte.</td></tr>
+      <td>Die Anwendung selbst samt Skripten. Die Konfiguration steht in <code>backend\.env</code> (nur für
+          Administratoren lesbar, enthält das Datenbank-Passwort).</td></tr>
+  <tr><td><code>C:\Torball-Turniere\App.alt</code></td>
+      <td>Der Stand vor dem letzten Update – Grundlage für das automatische Zurücksetzen.</td></tr>
   <tr><td><code>C:\Torball-Turniere\CouchDB</code></td>
       <td>Die Datenbank – hier liegen alle Turnierdaten. Nicht von Hand verändern.</td></tr>
+  <tr><td><code>C:\Torball-Turniere\logs</code></td>
+      <td>Protokolle des Servers – hilfreich, wenn etwas nicht klappt.</td></tr>
   <tr><td><code>C:\Torball-Turniere</code> (direkt)</td>
       <td>Passwort-Dateien der Datenbank (nur für Administratoren lesbar) und das
           Installations-Protokoll.</td></tr>
@@ -225,11 +212,12 @@ Ergebniserfassung per Smartphone/Tablet, Fehlersuche) steht in der
 
 <h2>Wenn etwas nicht klappt</h2>
 <ul>
-  <li>Das minimierte Server-Fenster über die Taskleiste öffnen – die letzte Meldung dort beschreibt
-      das Problem meist genau.</li>
+  <li>Die Verknüpfung meldet „Die Anwendung antwortet nicht“: in der Windows-Suche „Dienste“ öffnen und prüfen,
+      ob „Apache CouchDB“ und „Torball-Turniere“ laufen (sonst starten). Ein Neustart des Rechners hilft meist.</li>
+  <li>Einen <strong>Diagnose-Bericht</strong> zum Weitergeben erzeugt <code>Konsole-Torball.cmd diagnose</code>
+      (in einer Eingabeaufforderung als Administrator im Programmordner). Er enthält keine Passwörter.</li>
   <li><code>Setup.cmd</code> lässt sich gefahrlos <strong>erneut ausführen</strong>: Bereits
-      Installiertes wird erkannt und übersprungen, vorhandene Turnierdaten und Konfiguration
-      bleiben erhalten.</li>
+      Installiertes wird erkannt, vorhandene Turnierdaten und Konfiguration bleiben erhalten.</li>
   <li>Hilft das nicht: Rückmeldung über „Fehler melden“ in der Fußzeile der Anwendung (falls sie
       startet) bzw. an den bekannten Entwickler-Kontakt.</li>
 </ul>

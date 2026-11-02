@@ -1510,6 +1510,10 @@ dieser Version gilt der folgende Ablauf:
    nachvollziehbar, unabhängig vom jeweils aktuellen `main`-Stand.
 7. **Deployen:** `torball-aktualisieren <name> <fe_port> <be_port>` je Instanz bzw. das lokale
    Sammel-Skript für Prod+Demo (siehe „Betrieb / Infrastruktur“ unten).
+7a. **Windows-Paket veröffentlichen (macht erst ein Update für lokale Installationen verfügbar):** `node scripts/baue-windows-paket.mjs`
+   (baut vorher alles; Ergebnis `dist-paket/Torball-Turniere-Windows-<Version>.zip` + `.sha256`), dann ein GitHub-Release zum Tag `v<Version>` anlegen und beide
+   Dateien anhängen (Vorab-Versionen als „pre-release“ markieren). Das ist nach außen sichtbar und wird nur nach ausdrücklichem Auftrag gemacht. Vorher
+   `deploy/release-quelle.json` prüfen. Ein Release ohne Anhang wird vom Updater ignoriert.
 8. **Verifizieren:** Versions-Badge in der Kopfzeile der laufenden Instanz prüfen, kurzer
    Rauchtest der Kernfunktionen.
 
@@ -1934,7 +1938,33 @@ Zielgruppe der wertvollste Test, den dieses Projekt machen kann.
 - **Interne LAN-Adressen gehören NICHT ins Repo** (Nutzer-Vorgabe): Dev-CouchDB,
   Gitea-Repo, BookStack usw. stehen im Repo nur als Platzhalter (`couchdb-host`,
   `gitea-host`, `bookstack-host`); die konkreten Adressen liegen im Claude-Memory.
-- **Lokale Windows-Installation ist ebenfalls skript-basiert** (`Setup.cmd` auf der obersten Ebene
+- **Windows-Installationspaket, Dienst und Ein-Klick-Aktualisierung (2026-11-02, Auftraggeber: „Setup inkl. Aktualisierung deutlich vereinfachen“):**
+Die lokale Windows-Installation kommt für Anwender als FERTIGES PAKET (`Torball-Turniere-Windows-<Version>.zip`, gebaut von `node scripts/baue-windows-paket.mjs`, ~50 MB):
+gebaute Anwendung in derselben Ordnerstruktur wie der Quellcode (`backend/dist`, `frontend/dist`, `shared/dist`, `node_modules` nur mit Laufzeit-Abhängigkeiten,
+`@torball/shared` als echte Kopie statt Verknüpfung), mitgelieferte `node\node.exe` (Version + SHA-256 im Skript fest), WinSW (`dienst\torball-dienst.exe`, MIT),
+`paket.json` (Version, Commit, `updateQuelle.github`) und die `deploy/`-Skripte. Alle Laufzeit-Abhängigkeiten des Backends sind reines JavaScript (die einzigen nativen
+Dateien in `node_modules` gehören zu Entwickler-Werkzeugen) – das Paket ist deshalb plattformunabhängig bau- und der Bau scheitert bewusst bei nativen Dateien oder
+Nicht-ASCII-Dateinamen (das Windows-`tar` entpackt sie nicht; Test-Ordner der Bibliotheken werden weggelassen). **Das ZIP schreibt ein eigener Schreiber im Skript, nicht `tar`:**
+das Windows-`tar` stürzte beim Packen ab. **Beim Anwender:** `deploy/installieren-windows.ps1` hat einen Paket-Modus (erkannt an `paket.json` + `node\node.exe`; ohne die
+beiden gilt der alte Quellcode-Ablauf unverändert für Entwickler). Er kopiert nach `C:\Torball-Turniere\App` (keine Verlegen-Frage mehr), überspringt Node und – bei Update –
+die CouchDB-Schritte, wählt den Port selbst (`Get-FreierPort`), schreibt `.env` OHNE Byte-Order-Mark (PowerShell 5.1 hängt bei `Set-Content -Encoding utf8` eins an, dann ist die
+erste Zeile `PORT=` für Node kein Schlüssel mehr – vermutlich die wahre Ursache des früher dem Prozessumfeld zugeschriebenen Port-Problems) und richtet den **Windows-Dienst
+`TorballTurniere`** ein (WinSW, `deploy/torball-dienst.xml.vorlage`; Konto `LocalService`, verzögerter Autostart, hängt von „Apache CouchDB“ ab, Neustart bei Absturz). Rechte:
+Benutzer dürfen die Programmdateien nur lesen, `backend\.env` nur Administratoren/SYSTEM/LocalService (SIDs statt Namen). Die Verknüpfung liest den Port aus `anschluss.txt`
+(für alle lesbar; `konfiguration:setzen PORT` zieht sie nach). **Update = derselbe Installer mit einem neueren Paket:** Dienst anhalten, alten Stand nach `App.alt`
+sichern, `robocopy /MIR` (ohne `.env`, `anschluss.txt`, `Start-/Konsole-Torball.cmd`), Dienst neu einrichten und starten, Erreichbarkeit prüfen, bei Misserfolg automatisch
+zurück. Ein Git-Checkout in `C:\Torball-Turniere\App` wird nie überschrieben. **Auslöser:** `Aktualisieren-Torball.cmd` (bei `paket.json` → `deploy/aktualisieren-windows.ps1`, sonst
+alter `git pull`-Weg) fragt `https://api.github.com/repos/<updateQuelle.github>/releases` ab, wählt das neueste Release (Entwürfe nie; Vorab-Versionen nur, wenn die
+installierte Version selbst eine ist), lädt das ZIP + `.sha256`-Anhang, prüft die Summe, entpackt (`tar`, Rückfall `Expand-Archive`, das ~160 s braucht) und startet den Installer DES NEUEN
+Pakets. Die Versionsregel steht dreifach mit denselben Testfällen: `deploy/windows-paket.ps1` (`Vergleiche-Version`, `Waehle-NeuestesRelease`),
+`backend/src/versionsvergleich.ts` (+ Test). Die Anwendung selbst zeigt Admins einer lokalen Installation den Hinweis (`GET /system/update`, `UpdateHinweis.tsx`, 6 h
+zwischengespeichert). **Quelle und Steuerung:** Updates stehen erst bereit, wenn ein GitHub-Release mit dem Paket als Anhang veröffentlicht ist – nicht mit jedem Commit.
+`deploy/release-quelle.json` (`github: "Besitzer/Repository"`) legt fest, wo; sie wird beim Bau in `paket.json` geschrieben. **Test-Hilfen:** `TORBALL_ORDNER` (Basisordner
+statt `C:\Torball-Turniere`), `TORBALL_UNBEAUFSICHTIGT=1` (+ `TORBALL_ADMIN_NAME/_VORNAME/_EMAIL/_PASSWORT`), `TORBALL_UPDATE_BASIS` (Release-API-Adresse). **Nicht getestet,
+weil Administratorrechte nötig sind:** der Ablauf von Installer/Updater als Ganzes, Dienst-Registrierung, Rechte, Rollback – auf einer Windows-VM prüfen. Beim Bau/Test beachten:
+ein `tar` aus Git-Bash versteht `D:\...` nicht (es nimmt das als Rechnernamen).
+
+**Lokale Windows-Installation (Quellcode-Modus, für Entwickler) ist ebenfalls skript-basiert** (`Setup.cmd` auf der obersten Ebene
   des entpackten Quellcode-ZIPs/Checkouts → ruft nur `deploy/Installieren-Windows.cmd` auf →
   `deploy/installieren-windows.ps1`, Option A der geplanten Installationswege). `Setup.cmd` existiert
   bewusst zusätzlich (2026-08-19, Nutzer-Vorgabe): nach dem Entpacken des Quellcode-ZIPs sieht man

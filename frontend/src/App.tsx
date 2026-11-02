@@ -43,6 +43,7 @@ import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
 import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { UmgebungsBanner } from "./components/UmgebungsBanner";
 import { LokaleInstallationBanner } from "./components/LokaleInstallationBanner";
+import { UpdateHinweis } from "./components/UpdateHinweis";
 import { KontoHinweise } from "./components/KontoHinweise";
 import { Fusszeile } from "./components/Fusszeile";
 import { useAuth } from "./auth";
@@ -414,6 +415,7 @@ function App() {
     <>
       <UmgebungsBanner />
       <LokaleInstallationBanner />
+      <UpdateHinweis />
       {wartung?.aktiv && istAdmin && (
         <div className="wartungs-banner" role="alert">
           ⚠ Wartungsmodus ist aktiv – andere Personen sehen aktuell nur die Wartungsseite.

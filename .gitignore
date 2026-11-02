@@ -154,3 +154,4 @@ docs/Archiv/
 # Repository verwalten. "Aktualisieren-Torball.cmd" dagegen ist rein statisch (kein
 # installationsspezifischer Wert) und deshalb als normale Datei mitversioniert, siehe dort.
 /Start-Torball.cmd
+dist-paket/

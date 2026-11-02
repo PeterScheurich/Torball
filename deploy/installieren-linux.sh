@@ -452,7 +452,8 @@ else
       "Freigegeben wird NUR fuer das eigene Netz (${NETZE//$'\n'/, }), nicht fuer das Internet. Die Freigabe laesst sich spaeter mit dem Deinstaller wieder entfernen."
     for netz in $NETZE; do
       ufw allow from "$netz" to any port "$PORT" proto tcp comment "Torball-Turniere" >/dev/null
-      echo "ufw|${netz}|${PORT}" >> "$FIREWALL_MERKER"
+      # Bei einem erneuten Lauf (Aktualisieren) nicht noch einmal eintragen.
+      grep -qxF "ufw|${netz}|${PORT}" "$FIREWALL_MERKER" 2>/dev/null || echo "ufw|${netz}|${PORT}" >> "$FIREWALL_MERKER"
     done
   elif command -v firewall-cmd >/dev/null 2>&1 && firewall-cmd --state >/dev/null 2>&1; then
     [[ -n "$NETZE" ]] || fehler "Die Firewall ist aktiv, aber das eigene Netz wurde nicht erkannt. Bitte die Freigabe von Hand einrichten: siehe INSTALLATION-LINUX.md."
@@ -462,7 +463,7 @@ else
       "Freigegeben wird NUR fuer das eigene Netz (${NETZE//$'\n'/, }), nicht fuer das Internet."
     for netz in $NETZE; do
       firewall-cmd --permanent --add-rich-rule="rule family=ipv4 source address=${netz} port port=${PORT} protocol=tcp accept" >/dev/null
-      echo "firewalld|${netz}|${PORT}" >> "$FIREWALL_MERKER"
+      grep -qxF "firewalld|${netz}|${PORT}" "$FIREWALL_MERKER" 2>/dev/null || echo "firewalld|${netz}|${PORT}" >> "$FIREWALL_MERKER"
     done
     firewall-cmd --reload >/dev/null
   else

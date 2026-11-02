@@ -48,8 +48,17 @@ if (-not (Test-Admin)) {
 }
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot "windows-paket.ps1")
+
+# Paket-Modus (seit 2026-11-02): Der Ordner enthaelt die FERTIG GEBAUTE Anwendung samt node.exe (paket.json
+# + node\node.exe) statt des Quellcodes. Dann entfallen Node.js-Installation, npm install und Build; die
+# Anwendung wird nach C:\Torball-Turniere\App kopiert und laeuft als Windows-Dienst. Ohne diese Dateien
+# (Quellcode-ZIP, git clone) gilt der bisherige Ablauf unveraendert (Entwickler).
+$PaketModus = (Test-Path (Join-Path $RepoRoot "paket.json")) -and (Test-Path (Join-Path $RepoRoot "node\node.exe"))
+$PaketInfo = if ($PaketModus) { Get-PaketInfo -Ordner $RepoRoot } else { $null }
+
 Write-Host "Torball-Turniere - lokale Installation"
-Write-Host "Projektordner: $RepoRoot"
+if ($PaketModus) { Write-Host "Version: $($PaketInfo.version)" } else { Write-Host "Projektordner: $RepoRoot" }
 Write-Host ""
 Write-Host "Um Torball-Turniere auf diesem Rechner lokal zu nutzen, werden ein paar zusaetzliche"
 Write-Host "Programme/Funktionen benoetigt, die hier vielleicht noch fehlen. Fuer jeden solchen"
@@ -67,6 +76,8 @@ function Update-EnvPath {
 # Fragt einen Wert ab; leere Eingabe (nur Enter) uebernimmt den vorgeschlagenen Standard.
 function Frage-MitDefault {
     param([string]$Text, [string]$Standard)
+    # Nur fuer Tests ohne Tastatur (TORBALL_UNBEAUFSICHTIGT=1): jede Frage mit ihrem Standard beantworten.
+    if ($env:TORBALL_UNBEAUFSICHTIGT) { return $Standard }
     $eingabe = Read-Host "$Text [$Standard]"
     if ([string]::IsNullOrWhiteSpace($eingabe)) { return $Standard }
     return $eingabe
@@ -156,7 +167,12 @@ function Invoke-TorballKonsole {
     $ErrorActionPreference = "Continue"
     Push-Location (Join-Path $RepoRoot "backend")
     try {
-        $ausgabe = & node --env-file=.env --import tsx src/cli/torball.ts @Argumente 2>&1 | ForEach-Object { "$_" }
+        if ($PaketModus) {
+            # Mitgelieferte node.exe und das gebaute Skript (im Paket gibt es weder npm noch den Quelltext).
+            $ausgabe = & (Join-Path $RepoRoot "node\node.exe") --env-file=.env dist\cli\torball.js @Argumente 2>&1 | ForEach-Object { "$_" }
+        } else {
+            $ausgabe = & node --env-file=.env --import tsx src/cli/torball.ts @Argumente 2>&1 | ForEach-Object { "$_" }
+        }
         return [pscustomobject]@{ Ausgabe = ($ausgabe -join "`n"); ExitCode = $LASTEXITCODE }
     } finally {
         Pop-Location
@@ -178,6 +194,18 @@ function Frage-ErstesKonto {
         return $false
     }
 
+    if ($env:TORBALL_UNBEAUFSICHTIGT) {
+        # Nur fuer Tests ohne Tastatur: Angaben aus der Umgebung, fehlen sie, wird uebersprungen.
+        if (-not ($env:TORBALL_ADMIN_NAME -and $env:TORBALL_ADMIN_EMAIL -and $env:TORBALL_ADMIN_PASSWORT)) {
+            Write-Host "(Unbeaufsichtigt, keine TORBALL_ADMIN_*-Angaben - uebersprungen. Das erste Konto legst du dann im Browser an.)"
+            return $false
+        }
+        $env:TORBALL_ERSTES_PASSWORT = $env:TORBALL_ADMIN_PASSWORT
+        try { $e = Invoke-TorballKonsole -Argumente @("erstes-konto:anlegen", "--name=$($env:TORBALL_ADMIN_NAME)", "--vorname=$($env:TORBALL_ADMIN_VORNAME)", "--email=$($env:TORBALL_ADMIN_EMAIL)") }
+        finally { Remove-Item Env:\TORBALL_ERSTES_PASSWORT -ErrorAction SilentlyContinue }
+        Write-Host $e.Ausgabe
+        return ($e.ExitCode -eq 0)
+    }
     Write-Host ""
     Write-Host "-- Erstes Benutzerkonto (Administrator) --"
     Write-Host "Ohne Konto kann sich niemand anmelden. Das erste Konto wird Administrator dieser Installation und wird"
@@ -243,9 +271,9 @@ function Frage-ErstesKonto {
 # damit zum selben Ablauf (neues ZIP irgendwo entpacken, Setup.cmd starten, Verlegung bejahen -
 # der neue Quellcode landet ueber dem alten in App\, die dortige backend/.env bleibt erhalten,
 # weil sie im ZIP nicht vorkommt).
-$TorballOrdner = "C:\Torball-Turniere"
+$TorballOrdner = Get-TorballBasisOrdner
 $AppZielOrdner = Join-Path $TorballOrdner "App"
-if (-not (Test-Path (Join-Path $RepoRoot ".git")) -and
+if (-not $PaketModus -and -not (Test-Path (Join-Path $RepoRoot ".git")) -and
     -not $RepoRoot.StartsWith($TorballOrdner, [System.StringComparison]::OrdinalIgnoreCase)) {
     Write-Host ""
     Write-Host "-- Projektordner an einen dauerhaften Ort verlegen --"
@@ -270,9 +298,43 @@ if (-not (Test-Path (Join-Path $RepoRoot ".git")) -and
     }
 }
 
+# --- Paket-Modus: Erstinstallation, Update oder Umstellung einer aelteren Installation? ------------
+# Es gibt keine Rueckfrage mehr, ob der Ordner verlegt werden soll: das Paket kommt immer nach
+# C:\Torball-Turniere\App (auch beim Update - derselbe Ablauf mit einem neueren Paket).
+$Aktualisierung = $false
+$Migration = $false
+$KopierenNoetig = $false
+if ($PaketModus) {
+    Write-Host ""
+    $KopierenNoetig = ($RepoRoot.TrimEnd('\') -ne $AppZielOrdner.TrimEnd('\'))
+    $installiertesPaket = Get-PaketInfo -Ordner $AppZielOrdner
+    if ($installiertesPaket) {
+        $Aktualisierung = $true
+        Write-Host "Bestehende Installation gefunden: Version $($installiertesPaket.version) -> Version $($PaketInfo.version)."
+        if ((Vergleiche-Version $PaketInfo.version $installiertesPaket.version) -lt 0) {
+            Write-Warning "Dieses Paket ist AELTER als die installierte Version."
+            $weiter = Frage-MitDefault -Text "Trotzdem auf die aeltere Version zurueckgehen? (j/n)" -Standard "n"
+            if ($weiter -notin @("j", "J", "ja", "Ja", "JA")) { Write-Host "Abgebrochen."; exit 0 }
+        }
+    } elseif (Test-Path (Join-Path $AppZielOrdner "backend\.env")) {
+        # Aeltere Installation (Quellcode + Build, Server im Konsolenfenster): wird auf das Paket-Format umgestellt.
+        if (Test-Path (Join-Path $AppZielOrdner ".git")) {
+            throw "In $AppZielOrdner liegt ein Git-Checkout (Entwicklungsumgebung) - der wird nicht ueberschrieben. Bitte dort wie gewohnt mit 'git pull' arbeiten."
+        }
+        $Aktualisierung = $true
+        $Migration = $true
+        Write-Host "Bestehende Installation im aelteren Format gefunden - wird auf das neue Format umgestellt."
+        Write-Host "Die Konfiguration und alle Turnierdaten bleiben erhalten."
+    } else {
+        Write-Host "Neue Installation."
+    }
+}
+
 # --- [1/6] Node.js ---------------------------------------------------------------------------
 Write-Host "== [1/6] Node.js =="
-if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+if ($PaketModus) {
+    Write-Host "Node.js ist im Paket enthalten - es muss nichts installiert werden."
+} elseif (-not (Get-Command node -ErrorAction SilentlyContinue)) {
     if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         Write-Error "winget nicht gefunden. Bitte Node.js LTS manuell von https://nodejs.org installieren und dieses Skript erneut starten."
         exit 1
@@ -284,13 +346,21 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
     winget install -e --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
     Update-EnvPath
 }
-if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    Write-Error "Node.js wurde installiert, ist in dieser Konsole aber noch nicht sichtbar. Bitte dieses Fenster schliessen, das Installationsskript per Verknuepfung erneut starten."
-    exit 1
+if (-not $PaketModus) {
+    if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+        Write-Error "Node.js wurde installiert, ist in dieser Konsole aber noch nicht sichtbar. Bitte dieses Fenster schliessen, das Installationsskript per Verknuepfung erneut starten."
+        exit 1
+    }
+    Write-Host "node $(node -v), npm $(npm -v)"
 }
-Write-Host "node $(node -v), npm $(npm -v)"
 
 # --- [2/6] CouchDB -----------------------------------------------------------------------------
+# Bei einem Update ist die Datenbank samt Benutzer schon eingerichtet - dieser Teil entfaellt dann
+# (er braucht ausserdem die Zugangsdaten der Erstinstallation und soll nichts veraendern).
+if ($Aktualisierung) {
+    Write-Host ""
+    Write-Host "== [2/6] + [3/6] CouchDB: bereits eingerichtet - uebersprungen =="
+} else {
 Write-Host ""
 Write-Host "== [2/6] CouchDB =="
 # Alles, was dieses Skript ausserhalb des Projektordners auf dem Rechner ablegt (CouchDB-
@@ -560,9 +630,46 @@ try {
 # stuerzt ab. Bleibt trotzdem auf genau diese eine Datenbank beschraenkt (kein CouchDB-Server-Admin).
 $securityBody = @{ admins = @{ names = @($DbUser); roles = @() }; members = @{ names = @($DbUser); roles = @() } } | ConvertTo-Json
 Invoke-RestMethod -Method Put -Uri "http://127.0.0.1:5984/$Db/_security" -Headers $authHeader -Body $securityBody -ContentType "application/json" | Out-Null
+}
 
 # --- [4/6] App bauen ---------------------------------------------------------------------------
 Write-Host ""
+if ($PaketModus) {
+    # Paket-Modus: nichts zu bauen - die Programmdateien werden kopiert. Bei einem UPDATE gehoert der ganze
+    # Austausch hierher (Dienst anhalten, Sicherung, Kopieren, Dienst starten, Pruefen, bei Fehlschlag zurueck),
+    # bei einer Erstinstallation nur das Kopieren; den Dienst richtet dort erst Schritt 6 ein (dann gibt es
+    # die backend.env).
+    Write-Host "== [4/6] Programmdateien installieren =="
+    $LogOrdner = Join-Path $TorballOrdner "logs"
+    if ($Aktualisierung) {
+        Stop-TorballDienst
+        $null = Stop-AlterTorballServer
+        if ($KopierenNoetig) {
+            Sichere-App -AppOrdner $AppZielOrdner
+            Kopiere-PaketNachApp -Quelle $RepoRoot -Ziel $AppZielOrdner
+        }
+        $RepoRoot = $AppZielOrdner
+        Setze-AppRechte -AppOrdner $AppZielOrdner -LogOrdner $LogOrdner -Rekursiv $Migration
+        $portAlt = Get-PortAusEnv -AppOrdner $AppZielOrdner
+        Registriere-TorballDienst -AppOrdner $AppZielOrdner -LogOrdner $LogOrdner
+        Start-TorballDienst
+        if (-not (Warte-AufAnwendung -AppOrdner $AppZielOrdner -Port $portAlt)) {
+            Write-Warning "Die neue Version antwortet nicht - der bisherige Stand wird wiederhergestellt."
+            Entferne-TorballDienst -AppOrdner $AppZielOrdner
+            if ($KopierenNoetig) { Stelle-AppWiederHer -AppOrdner $AppZielOrdner }
+            if (-not $Migration) {
+                Registriere-TorballDienst -AppOrdner $AppZielOrdner -LogOrdner $LogOrdner
+                Start-TorballDienst
+            }
+            throw "Das Aktualisieren ist fehlgeschlagen. Der bisherige Stand wurde wiederhergestellt. Bitte den Diagnose-Bericht (Konsole-Torball.cmd diagnose) weitergeben."
+        }
+    } else {
+        $null = Stop-AlterTorballServer
+        if ($KopierenNoetig) { Kopiere-PaketNachApp -Quelle $RepoRoot -Ziel $AppZielOrdner }
+        $RepoRoot = $AppZielOrdner
+        Setze-AppRechte -AppOrdner $AppZielOrdner -LogOrdner $LogOrdner -Rekursiv $true
+    }
+} else {
 Write-Host "== [4/6] App bauen (npm install, shared zuerst) =="
 Push-Location $RepoRoot
 try {
@@ -589,6 +696,7 @@ try {
 } finally {
     Pop-Location
 }
+}
 
 # --- [5/6] backend/.env --------------------------------------------------------------------------
 Write-Host ""
@@ -606,7 +714,9 @@ if (Test-Path $EnvFile) {
     $hostZeile = (Get-Content $EnvFile) | Where-Object { $_ -match '^HOST=' } | Select-Object -First 1
     if ($hostZeile -and ($hostZeile -split '=', 2)[1].Trim() -eq "127.0.0.1") {
         if (Frage-Netzwerkzugriff -Standard "n") {
-            ((Get-Content $EnvFile) -replace '^HOST=.*', 'HOST=0.0.0.0') | Set-Content -Path $EnvFile -Encoding utf8
+            # Ohne Byte-Order-Mark schreiben: PowerShell 5.1 haengt bei "Set-Content -Encoding utf8" eines an, und
+            # dann gilt die ERSTE Zeile (PORT=...) fuer Node nicht mehr als Schluessel PORT.
+            [IO.File]::WriteAllLines($EnvFile, [string[]]((Get-Content $EnvFile) -replace '^HOST=.*', 'HOST=0.0.0.0'), (New-Object Text.UTF8Encoding($false)))
             $FirewallRegelNoetig = $true
             Write-Host "HOST in backend/.env auf 0.0.0.0 gesetzt - wirkt ab dem naechsten Start der App."
         }
@@ -617,6 +727,11 @@ if (Test-Path $EnvFile) {
     # (z.B. eine Entwicklungsumgebung oder andere Software), wuerde der Server spaeter beim Start
     # kommentarlos scheitern und der Browser landete verwirrend bei der fremden Anwendung
     # (live erlebt, 2026-08-21).
+    if ($PaketModus) {
+        # Keine Frage: der erste freie Port ab 3000 (ein belegter wird uebersprungen).
+        $Port = [string](Get-FreierPort -Start 3000)
+        Write-Host "Die Anwendung ist spaeter unter dem Port $Port erreichbar."
+    } else {
     $Port = Frage-MitDefault -Text "Port, unter dem die App laufen soll" -Standard "3000"
     while ($true) {
         while ($Port -notmatch '^\d+$') {
@@ -627,6 +742,7 @@ if (Test-Path $EnvFile) {
         if (-not $portBelegt) { break }
         Write-Warning "Port $Port wird auf diesem Rechner gerade von einem anderen Programm verwendet - die App koennte dann nicht starten. Bitte einen anderen Port waehlen."
         $Port = Frage-MitDefault -Text "Port, unter dem die App laufen soll" -Standard "$([int]$Port + 5)"
+    }
     }
 
     # Standard "ja": der Betriebsmodus "Lokales Netzwerk" (Turnier-Codes, Helfer-Erfassung) ist
@@ -663,7 +779,7 @@ TZ=Europe/Berlin
 # Start automatisch umbenannt, sobald sie zu gross wird. Fuer einen Bericht zum Weitergeben:
 # in backend/ "npm run torball -- diagnose" ausfuehren.
 LOG_DATEI=$TorballOrdner\logs\torball-server.log
-"@ | Set-Content -Path $EnvFile -Encoding utf8
+"@ | ForEach-Object { [IO.File]::WriteAllText($EnvFile, $_, (New-Object Text.UTF8Encoding($false))) }
     Write-Host "backend/.env angelegt."
 }
 
@@ -686,8 +802,79 @@ if (($FirewallRegelNoetig -or $netzwerkBereitsAktiv) -and $EffectivePort -match 
 # Erstes Benutzerkonto: braucht die laufende Datenbank (Schritt 2/3), das gebaute Projekt (Schritt 4)
 # und die backend/.env - alles steht jetzt. Bricht nie ab: ohne Konto bleibt die Einrichtung im Browser.
 $ErstesKontoDa = $false
-try { $ErstesKontoDa = Frage-ErstesKonto }
-catch { Write-Host "Das erste Konto konnte hier nicht angelegt werden ($($_.Exception.Message)). Du legst es dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung)." }
+if ($Aktualisierung) {
+    $ErstesKontoDa = $true   # bei einem Update gibt es das Konto schon
+} else {
+    try { $ErstesKontoDa = Frage-ErstesKonto }
+    catch { Write-Host "Das erste Konto konnte hier nicht angelegt werden ($($_.Exception.Message)). Du legst es dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung)." }
+}
+
+# --- [6/6] Paket-Modus: Dienst + Verknuepfungen -----------------------------------------------------
+if ($PaketModus) {
+    Write-Host ""
+    Write-Host "== [6/6] Dienst und Verknuepfungen =="
+    # Batch-Dateien brauchen Windows-Zeilenenden (die Skript-Texte hier haben nur LF).
+    $mitCrlf = { param($text) ($text -replace "`r?`n", "`r`n") }
+    Set-Content -Path (Join-Path $RepoRoot "Start-Torball.cmd") -Value (& $mitCrlf (Get-StartSkriptInhalt)) -Encoding ascii
+    Set-Content -Path (Join-Path $RepoRoot "Konsole-Torball.cmd") -Value (& $mitCrlf (Get-KonsoleSkriptInhalt)) -Encoding ascii
+    Schreibe-Anschluss -AppOrdner $RepoRoot -Port $EffectivePort
+
+    $anwendungLaeuft = $true
+    if (-not $Aktualisierung) {
+        # Erstinstallation: erst jetzt gibt es die backend\.env (Rechte darauf setzen), dann den Dienst einrichten.
+        Setze-AppRechte -AppOrdner $RepoRoot -LogOrdner $LogOrdner -Rekursiv $false
+        Registriere-TorballDienst -AppOrdner $RepoRoot -LogOrdner $LogOrdner
+        Start-TorballDienst
+        $anwendungLaeuft = Warte-AufAnwendung -AppOrdner $RepoRoot -Port $EffectivePort
+    }
+
+    $WshShell = New-Object -ComObject WScript.Shell
+    $AppIconPfad = Join-Path $RepoRoot "frontend\dist\images\torball-app-icon.ico"
+    function Neue-Verknuepfung {
+        param([string]$Pfad, [string]$Ziel, [string]$Beschreibung)
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Pfad) | Out-Null
+        $v = $WshShell.CreateShortcut($Pfad)
+        $v.TargetPath = $Ziel
+        $v.WorkingDirectory = $RepoRoot
+        $v.Description = $Beschreibung
+        if (Test-Path $AppIconPfad) { $v.IconLocation = $AppIconPfad }
+        $v.Save()
+    }
+    $startCmd = Join-Path $RepoRoot "Start-Torball.cmd"
+    Neue-Verknuepfung -Pfad (Join-Path ([Environment]::GetFolderPath("Desktop")) "Torball-Turniere.lnk") -Ziel $startCmd -Beschreibung "Torball-Turniere oeffnen"
+    $startmenue = Join-Path ([Environment]::GetFolderPath("CommonPrograms")) "Torball-Turniere"
+    Neue-Verknuepfung -Pfad (Join-Path $startmenue "Torball-Turniere.lnk") -Ziel $startCmd -Beschreibung "Torball-Turniere oeffnen"
+    Neue-Verknuepfung -Pfad (Join-Path $startmenue "Torball-Turniere aktualisieren.lnk") -Ziel (Join-Path $RepoRoot "Aktualisieren-Torball.cmd") -Beschreibung "Auf die neueste Version aktualisieren"
+    Neue-Verknuepfung -Pfad (Join-Path $startmenue "Anleitung.lnk") -Ziel (Join-Path $RepoRoot "Installations-Anleitung.html") -Beschreibung "Anleitung"
+
+    Write-Host ""
+    if ($Aktualisierung) {
+        Write-Host "Fertig! Torball-Turniere ist jetzt auf Version $($PaketInfo.version)."
+    } else {
+        Write-Host "Fertig! Torball-Turniere ist installiert (Version $($PaketInfo.version))."
+    }
+    Write-Host "Die Anwendung laeuft jetzt im Hintergrund als Windows-Dienst und startet mit dem Rechner von selbst."
+    Write-Host "Oeffnen: ueber die Desktop-Verknuepfung 'Torball-Turniere' (oeffnet http://localhost:$EffectivePort)."
+    if (-not $anwendungLaeuft) {
+        Write-Warning "Die Anwendung hat noch nicht geantwortet. Bitte in einer Minute die Verknuepfung probieren; hilft das nicht, den Rechner neu starten oder den Dienst 'Torball-Turniere' in der Windows-Dienstverwaltung pruefen."
+    }
+    if ($FirewallRegelNoetig -or $netzwerkBereitsAktiv) {
+        Write-Host "Netzwerkzugriff ist aktiv: andere Geraete im selben (W)LAN erreichen die App ueber die"
+        Write-Host "Netzwerk-Adresse dieses Rechners (Port $EffectivePort) - die genaue Adresse zeigt die App im"
+        Write-Host "Turnier unter 'Teilen' bei den Codes fuer das Lokale Netzwerk an."
+    }
+    if (-not $Aktualisierung) {
+        if ($ErstesKontoDa) {
+            Write-Host "Anmelden: mit dem Administrator-Konto, das eben angelegt wurde (bzw. schon vorhanden war)."
+        } else {
+            Write-Host "Beim allerersten Oeffnen fuehrt die Anmeldeseite durch die einmalige Ersteinrichtung des ersten Admin-Kontos."
+        }
+    }
+    Write-Host ""
+    Write-Host "Spaeter aktualisieren: Startmenue -> Torball-Turniere -> 'Torball-Turniere aktualisieren' (oder"
+    Write-Host "'Aktualisieren-Torball.cmd' im Programmordner doppelklicken) - holt die neueste Version selbst."
+    exit 0
+}
 
 # --- [6/6] Start-Skript + Desktop-Verknuepfung ---------------------------------------------------
 # "Aktualisieren-Torball.cmd" wird hier bewusst NICHT (mehr) generiert: ihr Inhalt ist rein

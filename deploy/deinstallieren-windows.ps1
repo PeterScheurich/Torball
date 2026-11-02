@@ -39,7 +39,8 @@ if (-not (Test-Admin)) {
 }
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$TorballOrdner = "C:\Torball-Turniere"
+. (Join-Path $PSScriptRoot "windows-paket.ps1")
+$TorballOrdner = Get-TorballBasisOrdner
 
 Write-Host "Torball-Turniere - lokale Installation entfernen"
 Write-Host "Projektordner: $RepoRoot"
@@ -85,6 +86,22 @@ if (Test-Path $StartCmd) {
     Remove-Item -Path $StartCmd -Force
     Write-Host "Start-Torball.cmd entfernt."
 }
+# Installation aus dem Windows-Paket: der Server laeuft als Dienst "Torball-Turniere" - anhalten und abmelden,
+# dazu die Eintraege im Startmenue. (Die Turnierdaten liegen in CouchDB und bleiben hiervon unberuehrt.)
+if (Get-TorballDienst) {
+    Write-Host "Halte den Dienst 'Torball-Turniere' an und entferne ihn ..."
+    Entferne-TorballDienst -AppOrdner $RepoRoot
+    Write-Host "Dienst entfernt."
+}
+$startmenue = Join-Path ([Environment]::GetFolderPath("CommonPrograms")) "Torball-Turniere"
+if (Test-Path $startmenue) {
+    Remove-Item -Path $startmenue -Recurse -Force
+    Write-Host "Startmenue-Eintraege entfernt."
+}
+foreach ($datei in @("Konsole-Torball.cmd", "anschluss.txt")) {
+    $p = Join-Path $RepoRoot $datei
+    if (Test-Path $p) { Remove-Item -Path $p -Force }
+}
 # Vom Installer ggf. angelegte Firewall-Regel (Netzwerkzugriff fuer Helfer-Geraete) mit
 # aufraeumen - reines Entfernen einer Erlaubnis-Regel, macht den Rechner nur restriktiver.
 $fwRegel = Get-NetFirewallRule -DisplayName "Torball-Turniere Server" -ErrorAction SilentlyContinue
@@ -113,13 +130,17 @@ if ($projektSchritt) {
     }
     $EnvFile = Join-Path $RepoRoot "backend\.env"
     if (Test-Path $EnvFile) { Remove-Item -Path $EnvFile -Force; Write-Host "backend/.env geloescht." }
-    foreach ($ordner in @("node_modules", "backend\node_modules", "frontend\node_modules", "shared\node_modules", "backend\dist", "frontend\dist", "shared\dist")) {
+    # "node" und "dienst" gibt es nur bei einer Installation aus dem Windows-Paket (mitgelieferte node.exe + Dienst-Huelle).
+    foreach ($ordner in @("node_modules", "backend\node_modules", "frontend\node_modules", "shared\node_modules", "backend\dist", "frontend\dist", "shared\dist", "node", "dienst")) {
         $pfad = Join-Path $RepoRoot $ordner
         if (Test-Path $pfad) {
             Remove-Item -Path $pfad -Recurse -Force
             Write-Host "$ordner entfernt."
         }
     }
+    # Sicherung des Standes vor dem letzten Update (<App>.alt) gehoert dazu.
+    $sicherung = "$RepoRoot.alt"
+    if (Test-Path $sicherung) { Remove-Item -Path $sicherung -Recurse -Force; Write-Host "Sicherung des vorherigen Standes entfernt." }
 } else {
     Write-Host "Uebersprungen."
 }

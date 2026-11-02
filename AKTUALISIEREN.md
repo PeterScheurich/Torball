@@ -1,55 +1,58 @@
 # Torball-Turniere aktualisieren
 
-Diese Anleitung gilt für die **lokale Installation auf einem Windows-Rechner** (per `Setup.cmd`
-eingerichtet, z. B. bei einer Turnierleitung vor Ort). Für den Serverbetrieb (Debian/nginx) siehe
-stattdessen `deploy/aktualisieren.sh` bzw. den Befehl `torball-aktualisieren`.
+Diese Anleitung gilt für die **lokale Installation auf einem Windows-Rechner** (per `Setup.cmd` aus dem
+Installationspaket eingerichtet, z. B. bei einer Turnierleitung vor Ort). Für den Serverbetrieb (Debian/nginx)
+siehe stattdessen `deploy/aktualisieren.sh` bzw. den Befehl `torball-aktualisieren`.
 
-## Der einfache Weg: Doppelklick
+## Der einfache Weg: ein Klick
 
-Im Projektordner liegt die Datei **`Aktualisieren-Torball.cmd`** – einfach doppelklicken.
+Im Startmenü unter **„Torball-Turniere“** auf **„Torball-Turniere aktualisieren“** klicken (oder im
+Programmordner `C:\Torball-Turniere\App` die Datei `Aktualisieren-Torball.cmd` doppelklicken) und die
+Windows-Nachfrage nach Administratorrechten bestätigen. Mehr ist nicht zu tun.
 
-Das Skript:
+Das Programm:
 
-1. Lädt den neuesten Quellcode herunter (nur falls die Installation aus einem Git-Repository
-   stammt – bei einer per ZIP heruntergeladenen Installation entfällt dieser Schritt, siehe unten).
-2. Installiert/aktualisiert benötigte Programmbestandteile (`npm install`).
-3. Baut die Anwendung neu.
+1. sieht bei den veröffentlichten Versionen („Releases“) des Projekts nach, ob es eine neuere gibt,
+2. zeigt, was neu ist, und fragt vor dem Aktualisieren nach,
+3. lädt das Paket selbst herunter und prüft es (Prüfsumme),
+4. hält die Anwendung an, sichert den bisherigen Stand (`C:\Torball-Turniere\App.alt`), tauscht die Programmdateien aus
+   und startet die Anwendung wieder,
+5. prüft, ob die neue Version antwortet – **wenn nicht, stellt es den bisherigen Stand automatisch wieder her.**
 
-Am Ende bleibt ein Fenster offen, das mit einer Meldung abschließt – erst dann das Fenster
-schließen. Läuft der Server gerade (startet minimiert in der Taskleiste, Fenstertitel
-„Torball-Turniere-Server - NICHT SCHLIESSEN!“), dieses Fenster vorher über die Taskleiste
-schließen, danach über die Desktop-Verknüpfung neu starten.
+Die Anwendung weist Administratoren außerdem am oberen Rand darauf hin, sobald es eine neue Version gibt.
 
-**Wichtig:** Turnierdaten selbst sind davon nicht betroffen – sie liegen in der Datenbank
-(CouchDB), nicht im Projektordner. Ein Update überschreibt keine Turniere, Mannschaften oder
-Ergebnisse.
+**Wichtig:**
 
-## Woher kommt der neue Quellcode?
+- Nicht mitten in einem Turnier aktualisieren: Während des Austauschs ist die Anwendung etwa eine Minute lang nicht
+  erreichbar.
+- Es ist eine **Internetverbindung** nötig.
+- Turnierdaten selbst sind nicht betroffen – sie liegen in der Datenbank (CouchDB), nicht im Programmordner. Ein Update
+  überschreibt keine Turniere, Mannschaften oder Ergebnisse, und die Konfiguration (`backend\.env`) bleibt erhalten.
+- Vorab-Versionen („Beta“) bekommt nur, wer selbst schon eine Beta-Version installiert hat. Wer eine stabile Version nutzt,
+  sieht nur stabile Veröffentlichungen.
 
-- **Installation aus einem Git-Repository** (`git clone`): `Aktualisieren-Torball.cmd` zieht den
-  neuesten Stand automatisch per `git pull` – genauso ein erneuter Lauf von `Setup.cmd` (prüft
-  dabei zusätzlich nochmal Node.js/CouchDB, dauert also etwas länger).
-- **Installation aus einem heruntergeladenen ZIP** (kein Git-Repository vorhanden):
-  `Aktualisieren-Torball.cmd` baut nur den vorhandenen Stand neu – **es wird dabei kein neuer
-  Quellcode heruntergeladen.** Das Skript weist am Ende deutlich darauf hin, falls das auf diese
-  Installation zutrifft. Für eine neue Version: das aktuelle Quellcode-ZIP erneut herunterladen,
-  irgendwo entpacken und dort `Setup.cmd` starten – die Frage „Projektordner nach
-  `C:\Torball-Turniere\App` verlegen?“ mit „j“ beantworten. Der neue Quellcode landet dann über
-  dem alten Stand, die vorhandene `backend/.env` (und damit die Konfiguration) bleibt erhalten,
-  ebenso alle Turnierdaten in der Datenbank. (Voraussetzung: die Installation liegt bereits unter
-  `C:\Torball-Turniere\App` – bei älteren Installationen an einem anderen Ort einmalig
-  `backend/.env` in den neu entpackten Ordner kopieren und dort `Setup.cmd` ausführen, ab dann
-  gilt der einfache Weg.)
+## Wenn die Installation älter ist (aus dem Quellcode-ZIP)
+
+Installationen, die noch mit dem früheren Quellcode-ZIP eingerichtet wurden (Server im Fenster „NICHT SCHLIESSEN“),
+können sich nicht selbst aktualisieren. Einmalig auf das neue Format umstellen: das aktuelle Paket
+`Torball-Turniere-Windows-….zip` herunterladen, entpacken und dort `Setup.cmd` starten. Das Installationsprogramm erkennt
+die bestehende Installation, stellt sie auf den Hintergrunddienst um und behält Konfiguration und alle Turnierdaten. Ab dann
+gilt der einfache Weg oben.
+
+Entwickler-Installationen (Git-Checkout) werden dabei nie überschrieben – dort gilt weiter `git pull` bzw.
+`Aktualisieren-Torball.cmd` (führt `git pull`, `npm install` und den Neubau aus).
 
 ## Konfiguration ändern (z. B. Port), ohne neu zu installieren
 
+In einer Eingabeaufforderung **als Administrator** im Programmordner:
+
 ```
-npm run torball --workspace=backend -- konfiguration:anzeigen
-npm run torball --workspace=backend -- konfiguration:setzen --schluessel="PORT" --wert="3001"
+Konsole-Torball.cmd konfiguration:anzeigen
+Konsole-Torball.cmd konfiguration:setzen --schluessel="PORT" --wert="3001"
 ```
 
-(im Projektordner ausführen; nach einer Änderung den Server neu starten, siehe `Start-Torball.cmd`)
+Danach den Dienst „Torball-Turniere“ neu starten (Windows-Dienstverwaltung) oder den Rechner neu starten.
 
 ## Deinstallieren
 
-Siehe `Deinstallieren-Torball.cmd` im Projektordner.
+Siehe `Deinstallieren-Torball.cmd` im Programmordner.

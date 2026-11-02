@@ -463,13 +463,30 @@ async function konfigurationSetzen(optionen: Optionen): Promise<void> {
   if (!gefunden) neueZeilen.push(`${schluessel}=${wertFuerDatei}`);
 
   fs.writeFileSync(pfad, neueZeilen.join("\n"));
+  // Installation aus dem Windows-Paket: die Verknuepfung liest den Port aus einer fuer ALLE Benutzer lesbaren
+  // Datei (die .env mit dem Datenbank-Passwort darf sie nicht lesen) - die muss mitziehen.
+  const anschluss = path.resolve(path.dirname(pfad), "..", "anschluss.txt");
+  if (schluessel === "PORT" && fs.existsSync(anschluss)) fs.writeFileSync(anschluss, `${wert}\r\n`);
   console.log(`"${schluessel}" gesetzt. Bitte das Backend neu starten, damit die Aenderung wirkt.`);
+  if (fs.existsSync(path.resolve(path.dirname(pfad), "..", "paket.json"))) {
+    console.log('Neu starten: in der Windows-Dienstverwaltung den Dienst "Torball-Turniere" neu starten (oder den Rechner neu starten).');
+  }
 }
 
 async function aktualisieren(): Promise<void> {
   // process.cwd() ist beim Aufruf ueber "npm run torball" immer backend/ (siehe envDateiPfad()) -
   // das Projekt-Wurzelverzeichnis ist somit immer genau eine Ebene darueber.
   const projektWurzel = path.resolve(process.cwd(), "..");
+
+  // Installation aus dem fertigen Windows-Paket: es gibt weder npm noch Quellcode - das Aktualisieren holt die
+  // neueste veroeffentlichte Version selbst (Aktualisieren-Torball.cmd).
+  if (fs.existsSync(path.join(projektWurzel, "paket.json"))) {
+    console.log(
+      'Diese Installation aktualisiert sich ueber "Aktualisieren-Torball.cmd" (im Programmordner bzw. im Startmenue ' +
+        'unter Torball-Turniere) - ein Doppelklick genuegt, die neueste Version wird selbst heruntergeladen.',
+    );
+    return;
+  }
 
   const ausfuehren = (befehl: string) => {
     console.log(`\n> ${befehl}`);

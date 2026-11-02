@@ -700,6 +700,18 @@ export function eigenesProfilAktualisieren(daten: {
   return anfrage("/benutzer/mich", { method: "PUT", body: JSON.stringify(daten) });
 }
 
+/** Update-Hinweis einer lokalen Installation aus dem Windows-Paket (nur Administratoren; ohne Paket: paket=false). */
+export interface SystemUpdate {
+  paket: boolean;
+  installiert?: string;
+  verfuegbar?: { version: string; name?: string; seite?: string; hinweise?: string };
+  geprueftAm?: string;
+  fehler?: string;
+}
+export function getSystemUpdate(neuPruefen = false): Promise<SystemUpdate> {
+  return anfrage(`/system/update${neuPruefen ? "?neu=1" : ""}`);
+}
+
 /** Bestaetigt die Hinweise zu Aenderungen am eigenen Konto ("Verstanden"). */
 export function kontoHinweiseGelesen(): Promise<BenutzerProfil> {
   return anfrage("/benutzer/mich/hinweise/gelesen", { method: "POST" });

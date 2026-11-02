@@ -1,0 +1,27 @@
+<!--
+  Konfiguration der Windows-Dienst-Huelle WinSW (torball-dienst.exe) fuer die lokale Installation.
+  Aus dieser Vorlage erzeugt der Installer die Datei torball-dienst.xml (er setzt @@LOGPFAD@@ ein).
+  Der Dienst fuehrt die mitgelieferte node.exe aus; %BASE% ist der Ordner dieser Datei (App\dienst).
+-->
+<service>
+  <id>TorballTurniere</id>
+  <name>Torball-Turniere</name>
+  <description>Lokaler Server der Anwendung Torball-Turniere (Turnierverwaltung).</description>
+  <executable>%BASE%\..\node\node.exe</executable>
+  <arguments>--env-file=.env dist\index.js</arguments>
+  <workingdirectory>%BASE%\..\backend</workingdirectory>
+  <!-- Ohne die Datenbank startet der Server nicht: der Dienst wartet auf CouchDB (Dienstname "Apache CouchDB"). -->
+  <depend>Apache CouchDB</depend>
+  <startmode>Automatic</startmode>
+  <!-- Faellt der Server aus (z. B. weil die Datenbank doch noch nicht bereit war), startet er sich selbst neu. -->
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="30 sec"/>
+  <onfailure action="restart" delay="60 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <logpath>@@LOGPFAD@@</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>5120</sizeThreshold>
+    <keepFiles>3</keepFiles>
+  </log>
+</service>

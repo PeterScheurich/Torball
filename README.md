@@ -66,17 +66,22 @@ Je nach Zweck gibt es drei Wege – ausführlich beschrieben in
 | Zweck | Kurzform | Details |
 |---|---|---|
 | Entwickeln/Beitragen (jede Plattform) | Abschnitt „Schnellstart" unten | `docs/installation-konfiguration.md` |
-| Lokal auf einem Windows-Rechner nutzen (z. B. offline am Spielort) | `Setup.cmd` doppelklicken | Abschnitt „Lokale Installation unter Windows" |
+| Lokal auf einem Windows-Rechner nutzen (z. B. offline am Spielort) | Installationspaket `Torball-Turniere-Windows-….zip` entpacken, `Setup.cmd` doppelklicken | `Installations-Anleitung.html` (im Paket), [`AKTUALISIEREN.md`](AKTUALISIEREN.md) |
 | Lokal auf einem Linux-Rechner nutzen (Debian/Ubuntu; **auf Debian 13, Ubuntu 26.04 und Linux Mint 22.3 erprobt**) | `bash Setup-Linux.sh` | [`INSTALLATION-LINUX.md`](INSTALLATION-LINUX.md) |
 | Produktiv auf einem Linux-Server betreiben | `deploy/provision.sh` + `deploy/deploy-instanz.sh` | Abschnitt „Produktive Installation (Debian-LXC/VM)" |
 
-Für die lokale Windows-Installation wird der Quellcode benötigt: mit Zugriff
-auf das interne Repo per `git clone`, sonst bietet jede laufende Instanz ihn
-zusätzlich als ZIP-Download unter `/download/torball-quellcode.zip` an (bei
-jedem Deploy neu erzeugt) – entpacken und danach `Setup.cmd` auf der obersten
-Ebene starten. Spätere Updates: `Aktualisieren-Torball.cmd` (siehe
-`AKTUALISIEREN.md`), Deinstallieren: `Deinstallieren-Torball.cmd` – beide
-ebenfalls auf der obersten Ebene.
+Für die lokale Windows-Installation gibt es ein **fertig gebautes Paket**
+(`Torball-Turniere-Windows-<Version>.zip`, enthält die Anwendung samt Node.js – es muss nichts weiter installiert
+oder gebaut werden). Es wird als Anhang der **GitHub-Releases** des Projekts veröffentlicht: ZIP herunterladen,
+entpacken, `Setup.cmd` starten. Die Anwendung läuft danach als Windows-Dienst; **Aktualisieren** geht mit einem Klick
+(Startmenü → Torball-Turniere → „Torball-Turniere aktualisieren“, siehe [`AKTUALISIEREN.md`](AKTUALISIEREN.md)) und holt
+die neueste veröffentlichte Version selbst. Ein Update steht erst bereit, wenn ein Release veröffentlicht wurde – nicht
+schon mit jedem Commit. Deinstallieren: `Deinstallieren-Torball.cmd`. Das Paket baut `node scripts/baue-windows-paket.mjs`
+(Release-Prozess: siehe `CLAUDE.md`).
+
+Wer den Quellcode nutzt (Entwicklung, `git clone` oder das Quellcode-ZIP, das jede laufende Instanz unter
+`/download/torball-quellcode.zip` anbietet), kann `Setup.cmd` auch dort ausführen – dann wird wie früher aus dem
+Quellcode gebaut (Node.js und `npm install` nötig, kein Dienst).
 
 ### Schnellstart (Entwicklung)
 

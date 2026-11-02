@@ -7,6 +7,19 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Windows: fertiges Installationspaket statt Quellcode, Aktualisieren mit einem Klick.** Die lokale Installation kommt jetzt
+  als ZIP-Datei `Torball-Turniere-Windows-<Version>.zip` (als Anhang eines GitHub-Releases). Sie enthält die fertig gebaute
+  Anwendung samt Node.js – es muss nichts mehr installiert, heruntergeladen oder gebaut werden. Das macht die Installation
+  schneller und deutlich weniger fehleranfällig. Die Anwendung läuft als **Windows-Dienst** im Hintergrund und startet mit dem
+  Rechner von selbst; das Server-Fenster, das man nicht schließen durfte, entfällt. Die Installation stellt nur noch drei Fragen
+  (Datenbank, Netzwerkzugriff, erstes Konto); den Port wählt sie selbst.
+- **Aktualisieren mit einem Klick.** Startmenü → Torball-Turniere → „Torball-Turniere aktualisieren“ (oder
+  `Aktualisieren-Torball.cmd`): Das Programm sieht selbst bei den GitHub-Releases nach, lädt die neueste Version, prüft sie,
+  sichert den bisherigen Stand, tauscht die Programmdateien aus und stellt den alten Stand automatisch wieder her, falls die neue
+  Version nicht antwortet. Turnierdaten und Konfiguration bleiben unverändert. Eine neue Version steht erst bereit, wenn ein
+  Release veröffentlicht wurde – nicht mit jedem Commit. Administratoren sehen in der Anwendung einen Hinweis, sobald es eine
+  neuere Version gibt. Ältere Installationen (aus dem Quellcode-ZIP) werden beim ersten Ausführen des neuen `Setup.cmd` umgestellt;
+  Daten und Konfiguration bleiben erhalten.
 - **Änderungen am eigenen Konto werden gemeldet – auf zwei Wegen.** Wird das Passwort geändert oder zurückgesetzt, die
   E-Mail-Adresse oder Rolle geändert oder die Zwei-Faktor-Anmeldung ein- oder ausgeschaltet, bekommt die Person eine
   E-Mail (bei einer neuen Adresse geht sie auch an die alte) und beim nächsten Aufruf einen Hinweis oben auf der Seite, den
