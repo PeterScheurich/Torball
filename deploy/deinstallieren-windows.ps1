@@ -35,7 +35,7 @@ if (-not (Test-Admin)) {
         -ArgumentList "-NoProfile -ExecutionPolicy Bypass -NoExit -File `"$PSCommandPath`"" `
         -Verb RunAs
     Write-Host "Bitte im neu geoeffneten Fenster (mit Administratorrechten) fortfahren."
-    exit
+    exit 42   # Uebergabe an das Fenster mit Administratorrechten - die aufrufende .cmd schliesst sich dann selbst
 }
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
@@ -246,9 +246,9 @@ if ($nodeSchritt) {
 }
 
 Write-Host ""
-Write-Host "Fertig."
 if (Test-Path $RepoRoot) {
     Write-Host "Der Projektordner selbst ('$RepoRoot') wurde nicht geloescht - falls gewuenscht, jetzt von Hand entfernen (z.B. in den Papierkorb verschieben)."
 } else {
     Write-Host "Der Projektordner ('$RepoRoot') ist ebenfalls entfernt."
 }
+Write-Kasten "FERTIG: Dieses Fenster kann geschlossen werden (X oben rechts oder  exit  eintippen)"

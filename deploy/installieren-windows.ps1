@@ -49,7 +49,9 @@ if (-not (Test-Admin)) {
         -ArgumentList "-NoProfile -ExecutionPolicy Bypass -NoExit -File `"$PSCommandPath`"" `
         -Verb RunAs
     Write-Host "Bitte im neu geoeffneten Fenster (mit Administratorrechten) fortfahren."
-    exit
+    # Code 42 = "an das Fenster mit Administratorrechten uebergeben": Die aufrufende .cmd schliesst sich dann selbst,
+    # statt mit "Druecken Sie eine beliebige Taste" stehenzubleiben (Nutzer-Wunsch 2026-11-02).
+    exit 42
 }
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
@@ -998,6 +1000,14 @@ if ($PaketModus) {
             }
         }
     }
+    Write-Kasten "ZUM SCHLUSS: Dieses Fenster kann geschlossen werden"
+    if ($Aktualisierung -or $ErstesKontoDa) {
+        Write-Host "Die Installation ist abgeschlossen. Du kannst dieses Fenster jetzt schliessen"
+    } else {
+        Write-Host "Sobald du das Administrator-Konto im Browser angelegt hast, kannst du dieses Fenster schliessen"
+    }
+    Write-Host "(mit dem X oben rechts oder indem du  exit  eintippst und Enter drueckst). Die Anwendung laeuft unabhaengig"
+    Write-Host "davon weiter - sie ist ein Windows-Dienst und braucht dieses Fenster nicht."
     exit 0
 }
 

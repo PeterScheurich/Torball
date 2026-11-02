@@ -31,7 +31,7 @@ if (-not (Test-Admin)) {
     Start-Process -FilePath "powershell.exe" `
         -ArgumentList "-NoProfile -ExecutionPolicy Bypass -NoExit -File `"$PSCommandPath`"" -Verb RunAs
     Write-Host "Bitte im neu geoeffneten Fenster (mit Administratorrechten) fortfahren."
-    exit
+    exit 42   # Uebergabe an das Fenster mit Administratorrechten - die aufrufende .cmd schliesst sich dann selbst
 }
 
 $AppOrdner = Split-Path -Parent $PSScriptRoot

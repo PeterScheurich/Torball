@@ -30,6 +30,7 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 - **Windows-Installer übersichtlicher.** Alle Fragen kommen jetzt gebündelt am Anfang, jede in einem deutlich abgesetzten Kasten; danach läuft die Installation ohne
   Unterbrechung durch. Das erste Konto wird nicht mehr in der Konsole abgefragt, sondern im Browser angelegt, der sich am Ende von selbst auf der Seite „Ersteinrichtung“ öffnet. Wie beim Server schützt ein Einrichtungs-Code diese Einrichtung (am Ende deutlich angezeigt, bereits eingetragen, bei erneutem Setup wieder sichtbar, solange es kein Konto gibt).
   Neue Installationen wählen den Port ab 3100 statt ab 3000, damit sie Entwicklungsumgebungen nicht in die Quere kommen.
+- **Weniger Fenster zum Wegklicken.** Installieren, Aktualisieren und Deinstallieren öffnen ein zweites Fenster mit Administratorrechten; das erste schließt sich jetzt selbst. Am Ende steht ein deutlicher Hinweis, dass das übrige Fenster geschlossen werden kann (X oder `exit`).
 - **Nach dem Hochfahren steht die Anwendung schneller bereit.** Der Windows-Dienst startet jetzt direkt mit Windows (vorher erst etwa
   zweieinhalb Minuten später), und die Verknüpfung erkennt, wenn der Rechner noch hochfährt: Sie zeigt dann einen freundlichen Hinweis und
   wartet länger, statt nach einer Minute eine Fehlermeldung zu zeigen.

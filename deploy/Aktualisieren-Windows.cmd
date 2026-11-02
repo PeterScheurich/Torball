@@ -3,5 +3,7 @@ rem Doppelklick-Einstieg fuer aktualisieren-windows.ps1 (laedt die neueste Versi
 rem ExecutionPolicy Bypass gilt nur fuer diesen einen Aufruf, keine dauerhafte Aenderung. Das Fenster
 rem bleibt am Ende offen, damit die Meldungen lesbar bleiben.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0aktualisieren-windows.ps1"
+rem Code 42 = Uebergabe an ein zweites Fenster mit Administratorrechten: dieses hier schliesst sich selbst.
+if %errorlevel%==42 exit
 echo.
 pause
