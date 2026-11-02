@@ -39,6 +39,7 @@ import { EinstellungenPage } from "./pages/EinstellungenPage";
 import { HilfePage } from "./pages/HilfePage";
 import { UeberPage } from "./pages/UeberPage";
 import { FehlerMeldenPage } from "./pages/FehlerMeldenPage";
+import { UeberblickPage } from "./pages/UeberblickPage";
 import { GeschuetzteRoute } from "./components/GeschuetzteRoute";
 import { KopfzeilenMenue } from "./components/KopfzeilenMenue";
 import { UmgebungsBanner } from "./components/UmgebungsBanner";
@@ -458,6 +459,7 @@ function App() {
             <Route path="/turniere/:id/oeffentlich/druck" element={<OeffentlicheDruckansichtPage />} />
             <Route path="/einstellungen" element={<EinstellungenPage />} />
             <Route path="/hilfe" element={<HilfePage />} />
+            <Route path="/ueberblick" element={<UeberblickPage />} />
             {/* Root ist oeffentlich: Gaeste sehen die Startseite, Angemeldete die Verwaltungsliste. */}
             <Route path="/" element={<StartRoute wartung={wartung} />} />
 

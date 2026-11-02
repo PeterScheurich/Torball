@@ -5,6 +5,8 @@ Computer zu protokollieren** – von den teilnehmenden Mannschaften über Spielp
 und Schiedsrichter-Einteilung bis zu Ergebnissen, einer öffentlichen
 Turnierseite und einer barrierefreien Bedienung.
 
+Kurz und für Neue verständlich steht alles Wichtige auf der Seite **„Torball-Turniere auf einen Blick“** (in der Anwendung unter `/ueberblick`, von der Startseite verlinkt): was geht, was nicht, Betriebsarten, Voraussetzungen.
+
 ## Funktionsüberblick
 
 - **Turnierplanung** per Assistent: Grunddaten, Mannschaften (mit Kader und

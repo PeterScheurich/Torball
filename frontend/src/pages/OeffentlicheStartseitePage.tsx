@@ -72,6 +72,10 @@ export function OeffentlicheStartseitePage() {
             Öffentlich freigegebene Turniere im Überblick. Zur Verwaltung bitte{" "}
             <Link to="/login">anmelden</Link>.
           </p>
+          <p>
+            Neu hier? <Link to="/ueberblick">Torball-Turniere auf einen Blick</Link>: was die Anwendung kann, was sie braucht und wie du
+            sie einsetzen kannst.
+          </p>
         </div>
         {introVideoEmbedUrl && (
           <div className="startseite-video">

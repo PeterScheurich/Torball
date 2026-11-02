@@ -7,6 +7,8 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
 
 ## [Unveröffentlicht]
 
+- **Neue Seite „Torball-Turniere auf einen Blick“.** Ohne Anmeldung erreichbar, verlinkt von der Startseite („Neu hier?“): was die Anwendung kann und was nicht, die Betriebsarten (Internet, lokale Installation, selbst betreiben), Voraussetzungen, was auf einen zukommt, Kosten und Lizenz. Lässt sich drucken oder als PDF speichern. Die Kontaktadresse erscheint erst auf Knopfdruck (Schutz vor Spam).
+
 ## [0.10.0-beta] - 2026-11-02
 
 ### Das ist neu in dieser Version
