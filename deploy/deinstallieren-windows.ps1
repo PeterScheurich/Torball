@@ -180,8 +180,30 @@ if ($couchdbSchritt) {
     try { & sc.exe delete "Apache CouchDB" | Out-Null } catch { }
 
     if (Test-Path $TorballOrdner) {
-        Remove-Item -Path $TorballOrdner -Recurse -Force
-        Write-Host "'$TorballOrdner' (Programm + alle Turnierdaten) geloescht."
+        # Ein Ordner laesst sich nicht loeschen, solange ein Programm "in ihm steht" (aktueller Ordner eines Fensters)
+        # oder ein Explorer-Fenster ihn anzeigt. Live erlebt (2026-11-02): das Fenster, aus dem der Deinstaller per
+        # Doppelklick gestartet wurde, stand noch im Programmordner - das Loeschen brach mit einer Fehlermeldung ab und
+        # der Rest (Node.js-Schritt, Abschlusstext) lief nicht mehr. Deshalb: selbst aus dem Ordner herausgehen, ein paar
+        # Mal wiederholen und bei Misserfolg erklaeren, was zu tun ist - statt abzubrechen.
+        Set-Location $env:SystemRoot
+        $geloescht = $false
+        for ($versuch = 1; $versuch -le 3 -and -not $geloescht; $versuch++) {
+            try {
+                Remove-Item -Path $TorballOrdner -Recurse -Force -ErrorAction Stop
+                $geloescht = $true
+            } catch {
+                if ($versuch -lt 3) { Start-Sleep -Seconds 2 }
+            }
+        }
+        if ($geloescht) {
+            Write-Host "'$TorballOrdner' (Programm + alle Turnierdaten) geloescht."
+        } else {
+            Write-Host ""
+            Write-Warning "Der Ordner '$TorballOrdner' konnte nicht ganz geloescht werden - er wird noch von einem anderen Programm benutzt."
+            Write-Host "Meist ist es ein geoeffnetes Explorer-Fenster, das diesen Ordner zeigt, oder das Fenster, aus dem du die"
+            Write-Host "Deinstallation gestartet hast. Bitte diese Fenster schliessen und danach den Ordner '$TorballOrdner'"
+            Write-Host "im Explorer loeschen (CouchDB und das Programm selbst sind bereits entfernt)."
+        }
     }
 } else {
     Write-Host "Uebersprungen - CouchDB und die gespeicherten Turnierdaten bleiben erhalten."
