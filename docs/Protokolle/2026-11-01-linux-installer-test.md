@@ -148,6 +148,40 @@ Beobachtung ohne Änderung:
 Anwendungsstarter“ zeigt (Xfce prüft die Ausführbarkeit, ggf. auch eine Prüfsumme in den Metadaten), und ob der Browser mit der App aufgeht. Der Bildschirm der
 Sitzung war per Bildschirmfoto schwarz (gesperrt/Ruhezustand); eine Bedienung der Sitzung von außen wurde bewusst nicht versucht.
 
+## Sechster Durchgang: Abfrage des ersten Administrator-Kontos im Installer – am 2026-11-02
+
+Auftrag aus der Sitzung „SW-Projekt Torball (Teil 15)“: Die Abfrage nach dem Dienststart (Nachname, Vorname, E-Mail, Passwort zweimal verdeckt;
+das Passwort geht nur über die Umgebungsvariable `TORBALL_ERSTES_PASSWORT` an `erstes-konto:anlegen`) war der letzte ungeprüfte Linux-Punkt.
+Geprüft auf **Linux Mint 22.3** (klassisches `sudo 1.9.15`, Xfce-frei, deutsch) und **Xubuntu 26.04.1** (`sudo-rs 0.2.13`), jeweils frisch
+installiert (vorher alles entfernt). Quelle: ZIP aus `git archive HEAD` (Stand `a190d06`). Die Tastaturfälle liefen über ein Pseudo-Terminal
+(`pty`), das die Fragen des Installers beantwortet, die Passwörter wurden zufällig erzeugt und nie ausgegeben.
+
+| Fall | System | Ergebnis |
+|---|---|---|
+| 1. Unbeaufsichtigt **mit** `TORBALL_ADMIN_*` | Mint, Xubuntu | Installation Exit 0, „Das Administrator-Konto für … wurde angelegt“. `POST /api/auth/login`: richtiges Passwort **200**, falsches **401**; Rolle `admin`, Name und Vorname korrekt. **`TORBALL_ERSTES_PASSWORT` kommt durch `runuser -u torball -- env HOME=… npm run torball` an** (sonst wäre die Anmeldung nicht möglich). |
+| 2a. Tastatur, alle Fehlerwege | Mint | Leerer Nachname wird erneut gefragt, Vorname leer erlaubt, ungültige E-Mail („kaputt“) wird erneut gefragt, Wiederholung ungleich → „Die beiden Eingaben stimmen nicht ueberein.“, 8 Zeichen → „braucht mindestens 12 Zeichen“, dritter Versuch gültig → Konto angelegt, Anmeldung **200**, mit dem kurzen Passwort **401**. Alle 12 Antworten verbraucht, Exit 0. |
+| 2b. Tastatur, Abbruch mit „n“ | Xubuntu | „Uebersprungen. Das erste Konto legst du dann beim ersten Oeffnen der Seite im Browser an (Ersteinrichtung).“ Installation läuft zu Ende („Fertig!“, Hinweis auf die Ersteinrichtung), `ERSTES-KONTO: FREI`, Dienst aktiv, `/auth/bootstrap-verfuegbar` meldet `verfuegbar: true`. |
+| 3. Zweiter Lauf mit Konto | Mint, Xubuntu | Unbeaufsichtigt (sogar mit **anderen** `TORBALL_ADMIN_*`-Angaben) und per Tastatur: keine Frage, Meldung „Es gibt bereits ein Benutzerkonto - hier wird kein neues angelegt.“; genau ein Konto bleibt, die Anmeldung mit dem alten Passwort geht weiter (200). |
+
+**Wo taucht das Passwort auf?** Installationsausgabe, Prozessliste (alle 0,1 s während der Installation abgetastet), Dienst-Journal, `/opt`,
+`/etc/torball-turniere` und das Home-Verzeichnis: **nirgends**. Beim Tastaturweg auch nicht im Ablaufprotokoll (der Installer liest verdeckt).
+
+**Gefunden – nicht behoben, Entscheidung offen:**
+
+12. **Klassisches `sudo` protokolliert das Passwort bei unbeaufsichtigter Installation.** Der Installer ruft sich mit
+    `sudo --preserve-env=…,TORBALL_ADMIN_PASSWORT,…` neu auf; `sudo 1.9` (Mint, Debian, ältere Ubuntu) schreibt die weitergereichten
+    Variablen als `ENV=…` in `/var/log/auth.log` und ins Journal – **mit dem Klartext-Passwort** (auf Mint zweimal gefunden, je Lauf eine Zeile).
+    Auf Xubuntu (`sudo-rs`) nicht. Das betrifft nur den unbeaufsichtigten Weg mit der Umgebungsvariable (gedacht für Tests und Automatisierung);
+    der Tastaturweg ist nicht betroffen. Gelesen werden kann das Protokoll nur von `root` und der Gruppe `adm`. Vorerst in
+    `INSTALLATION-LINUX.md` als Warnung festgehalten. Sauber wäre eine Möglichkeit, das Passwort aus einer Datei zu lesen
+    (`TORBALL_ADMIN_PASSWORT_DATEI`), dann stünde nur der Pfad im Protokoll.
+
+Hinweis zur Messung: Ein erster Suchlauf zeigte „1 Datei“ auch auf Xubuntu – das war der Suchbefehl selbst (`sudo grep -F <Passwort>` steht mit seinem
+Argument im Protokoll). Die Gegenprobe mit dem Variablennamen statt des Passworts zeigte: Mint 3 Treffer (zwei mit Passwort), Xubuntu keine in den Dateien.
+
+Beim Testen ebenfalls aufgefallen: Auch bei einem **erneuten Lauf** (Aktualisieren) fragt der Installer im Tastaturmodus jeden Zustimmungsschritt noch einmal
+ab („Grundpakete installieren … [J/n]“, Firewall usw.), obwohl nichts zu ändern ist. Kein Fehler, aber für einen Update-Lauf etwas lang.
+
 ## Kleinigkeiten, nicht geändert
 
 - Der Diagnose-Bericht landet im Programmordner (`/opt/torball-turniere/app/backend/…`), wo ihn ein Laie nicht sucht. Der Pfad wird

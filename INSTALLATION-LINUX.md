@@ -55,6 +55,11 @@ Für Tests ohne Tastatur (`TORBALL_UNBEAUFSICHTIGT=1`) lassen sich die Angaben �
 `TORBALL_ADMIN_VORNAME` (optional), `TORBALL_ADMIN_EMAIL` und `TORBALL_ADMIN_PASSWORT` mitgeben; fehlen sie, wird die
 Frage übersprungen.
 
+> **Nur für Wegwerf-Rechner und Tests:** Das klassische `sudo` (Debian, Ubuntu bis 25.04, Linux Mint) schreibt die so
+> weitergereichten Umgebungsvariablen **einschließlich des Passworts** in das Systemprotokoll (`/var/log/auth.log` bzw. das
+> Journal). Auf einem echten Rechner das Konto daher per Tastatur anlegen (Standard) oder im Browser einrichten. Das neuere
+> `sudo-rs` (Ubuntu ab 25.10) protokolliert das nicht.
+
 ## Was wo liegt
 
 | Was | Wo |
