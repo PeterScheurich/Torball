@@ -25,7 +25,9 @@ neuen Versionseintrag: siehe Abschnitt „Release-Prozess" in `CLAUDE.md`.
   Auf einem Ubuntu-Desktop wird die Schreibtisch-Verknüpfung jetzt gleich als startbar markiert; der Start per Klick bis zur
   Einrichtung des ersten Benutzers wurde geprüft. Der Installer prüft jetzt gleich zu Beginn, ob das System 64 Bit hat (CouchDB gibt es nicht für 32 Bit, etwa das ältere
   Raspberry Pi OS) und meldet es verständlich. Auch auf Linux Mint 22.3 (deutsch) durchgespielt; dabei behoben: Auf einem deutschsprachigen System erkannte der Installer die
-  aktive Firewall nicht und gab Port 3000 nicht frei. Noch nicht erprobt sind andere Firewalls (`firewalld`).
+  aktive Firewall nicht und gab Port 3000 nicht frei. Noch nicht erprobt sind andere Firewalls (`firewalld`). Außerdem prüft der Installer jetzt ganz zu Beginn, ob es für das System CouchDB-Pakete gibt
+  (für Zwischenversionen wie Ubuntu 26.10 nicht – dort bricht er ab, bevor etwas verändert wird), und gibt die Einstellungen für den unbeaufsichtigten
+  Modus auch unter Ubuntu 25.10 und neuer an das Skript weiter.
 - **Turniermodi kopieren und anpassen.** Unter Admin → Turniermodi lässt sich jede Vorlage mit „Kopie anlegen“ als
   eigene Vorlage kopieren. Die Kopie hat einen eigenen Namen und eigene Standardwerte (mögliche Endrunden, Standard-
   Endrunde, Spiel um Platz 3, Platzierungsspiele, Hin- und Rückspiel) und steht dann bei jedem Turnier zur Auswahl. Die

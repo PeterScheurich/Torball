@@ -15,7 +15,7 @@ INSTALL_DIR="/opt/torball-turniere"
 APP_DIR="${INSTALL_DIR}/app"
 
 if [[ $EUID -ne 0 ]]; then
-  command -v sudo >/dev/null 2>&1 && exec sudo -E bash "$(readlink -f "${BASH_SOURCE[0]}")" "$@"
+  command -v sudo >/dev/null 2>&1 && exec sudo --preserve-env=TORBALL_UNBEAUFSICHTIGT,TORBALL_PORT,TORBALL_NETZWERK,TORBALL_ADMIN_NAME,TORBALL_ADMIN_VORNAME,TORBALL_ADMIN_EMAIL,TORBALL_ADMIN_PASSWORT,TORBALL_ALLES_ENTFERNEN bash "$(readlink -f "${BASH_SOURCE[0]}")" "$@"
   echo "FEHLER: Bitte als Administrator ausfuehren." >&2; exit 1
 fi
 [[ -d "$APP_DIR/backend" ]] || { echo "FEHLER: Keine Installation unter ${APP_DIR} gefunden." >&2; exit 1; }

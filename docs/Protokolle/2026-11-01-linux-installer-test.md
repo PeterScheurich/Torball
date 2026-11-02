@@ -93,6 +93,22 @@ Geprüft und in Ordnung: Schreibtisch-Ordner heißt hier `Schreibtisch` (der Ins
 Benutzer mit eigener Gruppe, Menü-Eintrag ohne Hinweise gültig (`Categories=Office;`), vollständiges Deinstallieren räumt Dienst, Benutzer,
 Dateien, Firewall-Regel, Menü-Eintrag und Verknüpfung weg, `apt update` danach ohne Warnung.
 
+## Vierter Durchgang: Xubuntu 26.10 (Zwischenversion) – am 2026-11-02
+
+Proxmox-VM, 4 GB RAM, Xfce, `lightdm`, deutschsprachig. Das System meldete `Ubuntu 26.10 (stonking)` – eine **Zwischenversion ohne Langzeit-Support**.
+Für `stonking` gibt es keine CouchDB-Paketquelle (HTTP 404; für `noble` und `resolute` schon), die Anwendung lässt sich dort also nicht installieren.
+Der Installer meldete das klar, aber erst beim CouchDB-Schritt – zu dem Zeitpunkt war Node.js schon installiert. Der eigentliche Xfce-Test
+(Schreibtisch-Verknüpfung, Menü-Eintrag) steht daher noch aus und braucht eine LTS-Fassung (Xubuntu 24.04 oder 26.04).
+
+Gefunden und behoben:
+
+8. **Prüfung auf CouchDB-Pakete kam zu spät.** Sie steht jetzt in der Vorprüfung, vor jeder Änderung am Rechner; die Meldung nennt die unterstützten
+   Versionen und sagt ausdrücklich, dass nichts verändert wurde. Geprüft auf der VM: Abbruch ohne neue Paketquelle.
+9. **`sudo -E` greift unter sudo-rs nicht.** Ubuntu 25.10 und neuer ersetzt `sudo` durch sudo-rs; dort wird `-E` ignoriert (mit verwirrender Warnung),
+   die Umgebung verworfen. Folge: Die `TORBALL_*`-Variablen des unbeaufsichtigten Modus (Port, Netzwerk, erstes Konto) kämen nicht beim Skript an.
+   Alle drei Skripte nutzen jetzt `sudo --preserve-env=<Liste der TORBALL_-Variablen>` (auf sudo-rs 0.2.14 geprüft: die Variable kommt an). Mit dem
+   klassischen `sudo` (Debian, Mint) noch zu prüfen.
+
 ## Kleinigkeiten, nicht geändert
 
 - Der Diagnose-Bericht landet im Programmordner (`/opt/torball-turniere/app/backend/…`), wo ihn ein Laie nicht sucht. Der Pfad wird

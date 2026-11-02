@@ -12,7 +12,9 @@ Netzwerk. (Für einen Server im Internet gibt es einen anderen Weg, siehe `docs/
 
 ## Voraussetzungen
 
-- Debian, Ubuntu oder ein davon abgeleitetes System (z. B. Linux Mint), jeweils eine aktuelle Version.
+- Debian, Ubuntu oder ein davon abgeleitetes System (z. B. Linux Mint). Es muss eine Version mit **Langzeit-Support** sein (Ubuntu 24.04 oder 26.04,
+  Debian 12 oder 13): Für Zwischenversionen wie Ubuntu 25.10 oder 26.10 stellt das CouchDB-Projekt keine Pakete bereit. Der Installer prüft das gleich
+  zu Beginn und ändert in dem Fall nichts am Rechner.
 - Ein **64-Bit-System** (Intel/AMD oder ARM). Die Datenbank CouchDB gibt es nicht für 32 Bit; auf einem Raspberry Pi also die
   64-Bit-Fassung von Raspberry Pi OS nehmen. Andere Linux-Familien (Fedora, openSUSE, Arch …) werden nicht unterstützt – der Installer
   sagt das gleich zu Beginn.

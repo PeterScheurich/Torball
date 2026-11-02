@@ -40,7 +40,7 @@ fehler() { echo; echo "FEHLER: $*" >&2; exit 1; }
 if [[ $EUID -ne 0 ]]; then
   if command -v sudo >/dev/null 2>&1; then
     echo "Die Installation braucht Administrator-Rechte - du wirst gleich nach deinem Passwort gefragt."
-    exec sudo -E bash "${BASH_SOURCE[0]}" "$@"
+    exec sudo --preserve-env=TORBALL_UNBEAUFSICHTIGT,TORBALL_PORT,TORBALL_NETZWERK,TORBALL_ADMIN_NAME,TORBALL_ADMIN_VORNAME,TORBALL_ADMIN_EMAIL,TORBALL_ADMIN_PASSWORT,TORBALL_ALLES_ENTFERNEN bash "${BASH_SOURCE[0]}" "$@"
   fi
   fehler "Bitte als Administrator ausfuehren. Auf einem Debian ohne 'sudo': erst mit 'su -' zum Administrator werden und dann erneut 'bash Setup-Linux.sh' starten."
 fi
@@ -98,6 +98,15 @@ ARCH="$(dpkg --print-architecture)"
 pruefe_architektur "$ARCH"
 echo "System: ${PRETTY_NAME:-?} (${CODENAME}, ${ARCH})"
 command -v systemctl >/dev/null 2>&1 || fehler "Dieses System nutzt kein systemd - das wird nicht unterstuetzt."
+# Gibt es fuer dieses System CouchDB-Pakete? Das gehoert VOR jede Aenderung am Rechner (live auf einem Ubuntu
+# 26.10 erlebt: Node.js war schon installiert, als erst beim CouchDB-Schritt auffiel, dass es fuer
+# Zwischenversionen ohne Langzeit-Support keine Paketquelle gibt). Nur ein eindeutiges 404 bricht hier ab;
+# fehlt curl noch oder ist das Netz weg, entscheidet der spaetere Schritt (dort steht dieselbe Pruefung).
+if ! dpkg -s couchdb >/dev/null 2>&1 && command -v curl >/dev/null 2>&1; then
+  CODE_VOR="$(curl -s -o /dev/null -w '%{http_code}' "https://apache.jfrog.io/artifactory/couchdb-deb/dists/${CODENAME}/Release" || true)"
+  [[ "$CODE_VOR" != "404" ]] \
+    || fehler "Fuer '${CODENAME}' (${PRETTY_NAME:-dieses System}) gibt es keine CouchDB-Pakete - ohne die Datenbank laeuft die Anwendung nicht. Unterstuetzt sind die jeweils aktuellen Debian- und Ubuntu-LTS-Versionen (z. B. Ubuntu 24.04 oder 26.04, Debian 12 oder 13), keine Zwischenversionen wie Ubuntu 25.10/26.10. Es wurde nichts veraendert."
+fi
 [[ -d "${QUELLE}/backend" && -d "${QUELLE}/frontend" && -d "${QUELLE}/shared" ]] \
   || fehler "Der Projektordner ist unvollstaendig (${QUELLE}). Bitte das Quellcode-ZIP vollstaendig entpacken."
 
