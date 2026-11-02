@@ -23,7 +23,7 @@ export async function erzeugeSatz({ text, vorher, danach, basis }) {
   const mp3Pfad = `${basis}.mp3`;
   if (existsSync(jsonPfad) && existsSync(mp3Pfad)) {
     const alt = JSON.parse(readFileSync(jsonPfad, "utf8"));
-    if (alt.text === text && JSON.stringify(alt.einstellungen) === JSON.stringify(EINSTELLUNGEN)) {
+    if (alt.text === text && alt.danach === danach && JSON.stringify(alt.einstellungen) === JSON.stringify(EINSTELLUNGEN)) {
       return { zeitmarken: alt.zeitmarken, neu: false, zeichen: 0 };
     }
   }
@@ -40,7 +40,7 @@ export async function erzeugeSatz({ text, vorher, danach, basis }) {
   });
   mkdirSync(dirname(mp3Pfad), { recursive: true });
   writeFileSync(mp3Pfad, Buffer.from(antwort.audio_base64, "base64"));
-  writeFileSync(jsonPfad, JSON.stringify({ text, einstellungen: EINSTELLUNGEN, zeitmarken: antwort.alignment }));
+  writeFileSync(jsonPfad, JSON.stringify({ text, danach, einstellungen: EINSTELLUNGEN, zeitmarken: antwort.alignment }));
   return { zeitmarken: antwort.alignment, neu: true, zeichen: text.length };
 }
 

@@ -49,6 +49,9 @@ for (const a of abschnitte) {
     }
   }
 }
+// Kontext, der NICHT gesprochen wird: Der letzte Satz hat keinen Folgesatz, die Stimme laesst dann die Betonung offen (steigt statt zu fallen).
+// Mit einem Schlusssatz als next_text weiss sie, dass hier Schluss ist.
+const KONTEXT_DANACH = { "E-03": "Bis zum naechsten Video." };
 saetze.forEach((s, i) => { s.basis = join(AUSGABE, "Saetze", `${s.abschnitt}-${String(s.nr).padStart(2, "0")}`); s.index = i; });
 
 if (process.argv.includes("--trocken")) {
@@ -71,7 +74,7 @@ for (const s of saetze) {
   const r = await erzeugeSatz({
     text: s.text,
     vorher: s.index > 0 ? saetze[s.index - 1].text.slice(-300) : undefined,
-    danach: s.index < saetze.length - 1 ? saetze[s.index + 1].text.slice(0, 300) : undefined,
+    danach: KONTEXT_DANACH[`${s.abschnitt}-${String(s.nr).padStart(2, "0")}`] ?? (s.index < saetze.length - 1 ? saetze[s.index + 1].text.slice(0, 300) : undefined),
     basis: s.basis,
   });
   s.zeitmarken = r.zeitmarken;
