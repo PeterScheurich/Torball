@@ -2338,6 +2338,15 @@ Warnung, dass andere Software auf demselben Rechner ebenfalls Node.js brauchen k
 Projektordner selbst wird nie automatisch gelöscht (das Skript liegt selbst darin) – bleibt der
 Person zum manuellen Aufräumen überlassen (z. B. Papierkorb).
 
+## Tutorial-Videos (`tools/tutorial-videos/`, seit 2026-11-02)
+
+Eigenes Werkzeug (eigenes `package.json`, kein Workspace, nicht Teil von Build/Lint/Test): Die Anleitungsvideos entstehen als Code - Sprache per ElevenLabs
+(satzweise, mit Zwischenspeicher), Bild per Playwright-Aufnahme gegen die Dev-Instanz, Schnitt per Skript in DaVinci Resolve. **Vor jeder Arbeit daran
+`tools/tutorial-videos/UEBERGABE.md` lesen** (Standards, Ablauf, Befehle, offene Punkte), dazu `ANMERKUNGEN.md` (Marker-Farben beim Abnehmen) und die Memory-Datei
+`project_tutorial_videos.md`. Harte Regeln: Der ElevenLabs-Schluessel und die Testkonto-Datei liegen ausserhalb des Repos und werden nie ausgegeben; Resolve wird
+ausschliesslich im Projekt "Torball-Turniere-Tutorials-mit-Claude" angefasst (die Skripte brechen sonst ab); Medien (mp3/wav/webm) gehoeren nie ins Repo; neue
+Videotexte gibt Peter vor jeder Sprachausgabe frei (Credits kosten Geld). Die Ausgaben liegen unter `D:/Projekte/Videos/Tutorials/Torball/Neu/`.
+
 ## Dokumentation
 
 - Größere fachliche oder technische Entscheidungen als Protokoll unter
